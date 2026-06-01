@@ -1,0 +1,19 @@
+/generate_testcases_from_requirements
+
+# CONTEXT
+- System type: [Web / Mobile / API]
+- Module: [Tên module cần test]
+- URL (nếu có): [URL hệ thống]
+- Requirement: [DÁN NỘI DUNG REQUIREMENT VÀO ĐÂY / UPLOAD FILE]
+
+# MODE
+# [Chọn 1 trong 2 modes]
+# - QUICK: Sinh test cases nhanh (mặc định nếu không chỉ định)
+# - FULL RBT: Quy trình 6 bước đầy đủ → thay bằng /generate_manual_testcases_rbt
+
+# OUTPUT FORMAT
+- Xuất ra file Markdown tổng hợp chứa Traceability Matrix, Risk Level, statistics...
+- Tự động convert file Markdown sang Excel (.xlsx) bằng script tích hợp trong dự án.
+- Các cột bắt buộc trong Bảng Test Cases:
+  TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data
+- Quy tắc TC ID: [DỰ_ÁN]_[MODULE]_TC_[SỐ] (Ví dụ: CRM_LOGIN_TC_001)
