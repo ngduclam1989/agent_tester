@@ -83,7 +83,8 @@ Sinh test cases **nhanh, đủ chất lượng** từ requirements/user stories 
 
 **Agent phải:**
 
-1. **Đọc và hiểu requirements** được cung cấp
+1. **Tiền xử lý file tài liệu (nếu áp dụng):** Nếu tài liệu requirements được cung cấp dưới dạng file Word (`.docx`) và chưa có file `.md` tương ứng trong workspace, Agent bắt buộc chạy `node scripts/convert_doc/docx_to_md.js <đường_dẫn_tới_file_docx>` để tạo file `.md` trước.
+2. **Đọc và hiểu requirements** được cung cấp (sử dụng file `.md` đã được chuyển đổi nếu áp dụng)
 2. **Xác định các luồng chính:**
    - Happy Path (luồng chính)
    - Negative Path (dữ liệu sai, thiếu)
@@ -182,9 +183,12 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
    - Mô tả hệ thống hiện tại
    - Mục tiêu kiểm thử MVP
    - Tài liệu yêu cầu (Requirements, User Stories, Figma link, PDF...)
-2. Đọc kỹ tài liệu và xác nhận đã hiểu bối cảnh
-3. Tóm tắt scope kiểm thử
-4. **Chờ user xác nhận** trước khi sang Bước 2
+2. **Tiền xử lý file tài liệu Word (.docx):**
+   - Nếu tài liệu yêu cầu người dùng cung cấp có định dạng Word (`.docx`) và chưa có file `.md` tương ứng trong workspace, Agent **bắt buộc** phải tự động chạy script `node scripts/convert_doc/docx_to_md.js <path_to_docx>` để tạo file `.md` trước.
+   - Nếu là file `.doc` cũ, thông báo người dùng Save As sang `.docx` trước khi chạy script.
+3. Đọc kỹ tài liệu (sử dụng file `.md` đã được chuyển đổi nếu áp dụng) và xác nhận đã hiểu bối cảnh
+4. Tóm tắt scope kiểm thử
+5. **Chờ user xác nhận** trước khi sang Bước 2
 
 **Output:** Xác nhận hiểu bối cảnh + tóm tắt scope kiểm thử.
 

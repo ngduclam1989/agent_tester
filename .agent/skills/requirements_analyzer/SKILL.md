@@ -12,7 +12,14 @@ Kỹ năng này cung cấp các hướng dẫn chi tiết để AI (Antigravity)
 - Đảm bảo tính nhất quán, tính bao quát cho cả Happy Path và Edge Cases (Trường hợp ngoại lệ/báo lỗi).
 - Định dạng xuất ra một cách chuyên nghiệp (Sử dụng cấu trúc Artifact).
 
-## 2. Quy trình trích xuất thông tin
+## 2. Tiền xử lý tài liệu Word (.docx)
+Khi nhận được tài liệu yêu cầu đầu vào dạng file Word (`.docx`) và chưa có file `.md` tương ứng trong workspace:
+- Agent **bắt buộc** phải tự động chạy script convert bằng cách gọi lệnh Node.js sau để tạo file `.md` trước khi phân tích:
+  `node scripts/convert_doc/docx_to_md.js <đường_dẫn_tới_file_docx>`
+- Nếu file ở định dạng `.doc` cũ, Agent cần thông báo và hướng dẫn người dùng "Save As" sang `.docx` trước khi thực hiện.
+- Sử dụng nội dung file `.md` được sinh ra làm dữ liệu đầu vào chính để phân tích.
+
+## 3. Quy trình trích xuất thông tin
 Khi được yêu cầu tạo Requirements từ một trang web:
 1. **Phân tích Khung giao diện (Layout Analysis):** Xác định các phần Header, Footer, Sidebar, và Nội dung chính (Main Content).
 2. **Thu thập Form & Inputs:**
@@ -24,21 +31,21 @@ Khi được yêu cầu tạo Requirements từ một trang web:
 4. **Trích xuất Luồng công việc (Workflows):**
    - Sự phụ thuộc giữa các thành phần (VD: Nút Submit chỉ enable khi đã tích chọn Checkbox "Tôi đồng ý").
 
-## 3. Cấu trúc Tài liệu Yêu cầu Đầu ra (Output Format)
+## 4. Cấu trúc Tài liệu Yêu cầu Đầu ra (Output Format)
 Tài liệu cần được format theo Markdown chuyên nghiệp hoặc lưu dưới dạng Artifact (`requirements_spec.md`).
 
 **Nội dung bắt buộc phải có:**
 
-### 3.1. Tổng quan (Overview)
+### 4.1. Tổng quan (Overview)
 Mô tả tóm tắt tính năng và mục đích của trang web/module.
 
-### 3.2. Yêu cầu Chức năng (Functional Requirements)
+### 4.2. Yêu cầu Chức năng (Functional Requirements)
 Chia thành các **User Stories** hoặc **Use Cases**:
 - **Tên tính năng** (Ví dụ: Chức năng Đăng nhập)
 - **Mô tả:** "Là một người dùng, tôi muốn... để có thể..."
 - **Tiêu chí chấp nhận (Acceptance Criteria):** Ghi rõ các điều kiện cần thỏa mãn.
 
-### 3.3. Đặc tả Trường Dữ Liệu (Field Specifications)
+### 4.3. Đặc tả Trường Dữ Liệu (Field Specifications)
 Đây là phần cốt lõi dành cho Automation Tester:
 * Dùng bảng Markdown (*Markdown Table*) để liệt kê:
   - Tên Trường (Label)
@@ -46,10 +53,10 @@ Chia thành các **User Stories** hoặc **Use Cases**:
   - Validation Rules (Bắt buộc / Mặc định / Giới hạn độ dài).
   - Ghi chú (Notes).
 
-### 3.4. Các luồng xử lý và Báo lỗi (Business Rules & Validations)
+### 4.4. Các luồng xử lý và Báo lỗi (Business Rules & Validations)
 Liệt kê chi tiết các Validation Message mong đợi khi người dùng nhập sai dữ liệu.
 
-## 4. Bắt buộc (Strict Rules)
+## 5. Bắt buộc (Strict Rules)
 - Luôn viết bằng **Tiếng Việt**.
 - Không tự suy diễn các yêu cầu nghiệp vụ phức tạp nếu không có căn cứ từ UI. Nếu thiếu logic, hãy liệt kê chúng vào mục "Câu hỏi/Làm rõ với PO-User".
 - Nếu có Playwright MCP, ưu tiên mở browser thật để screenshot/capture giao diện nếu cần.
