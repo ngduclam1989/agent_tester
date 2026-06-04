@@ -1,7 +1,5 @@
 ---
 description: Phân tích requirement document (Jira ticket, .doc, user story) — sinh tài liệu phân tích chi tiết, KHÔNG sinh test cases.
-skills:
-  - requirements_analyzer
 ---
 
 > **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`requirements_analyzer`** (tại `.agent/skills/requirements_analyzer/SKILL.md`) để hiểu cách phân tích yêu cầu chuẩn trước khi bắt đầu.
@@ -89,7 +87,8 @@ Với mỗi ambiguity, ghi rõ:
 
 Các hướng phát hiện ambiguity:
 - Từ khóa mơ hồ: "where applicable", "as needed", "similar to", "etc."
-- Validation rules thiếu: min/max, format, required/optional
+- các quyền còn thiếu: vd: hệ thống có 5 nhóm quyền, nhưng tài liệu chỉ có 1 nhóm quyền cho chức năng cần phân tích
+- Validation rules thiếu: min/max, format, required/optional, 
 - Hành vi edge case: lỗi mạng, concurrent access, trống data
 - Inconsistency giữa document và mockup (tên cột, format, layout)
 - Threshold/config chưa xác định (ví dụ: bao nhiêu ngày = "approaching deadline"?)

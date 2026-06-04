@@ -30,6 +30,10 @@ Khi được yêu cầu tạo Requirements từ một trang web:
    - Các cảnh báo, thông báo (Alerts, Toasts, Validation Messages) xuất hiện khi tương tác lỗi.
 4. **Trích xuất Luồng công việc (Workflows):**
    - Sự phụ thuộc giữa các thành phần (VD: Nút Submit chỉ enable khi đã tích chọn Checkbox "Tôi đồng ý").
+5. **Trích xuất chi tiết thuộc tính UI và Validate trường dữ liệu (Field-Level & UI Details):**
+   - **Bắt buộc** lập bảng danh sách tất cả các trường dữ liệu và elements trên form/UI.
+   - Trích xuất chi tiết: Label hiển thị, Placeholder, Ký hiệu bắt buộc `*`, Trạng thái mặc định, Validation rules chi tiết (Max/Min length, Pattern, unique check).
+   - Phát hiện các phần thiếu sót hoặc mờ nhạt (Ambiguities) trong tài liệu liên quan đến validate (ví dụ: thiếu độ dài tối đa, định dạng sđt, email, ký tự đặc biệt, unicode, XSS, SQL injection).
 
 ## 4. Cấu trúc Tài liệu Yêu cầu Đầu ra (Output Format)
 Tài liệu cần được format theo Markdown chuyên nghiệp hoặc lưu dưới dạng Artifact (`requirements_spec.md`).

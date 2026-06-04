@@ -1,7 +1,5 @@
 ---
 description: Sinh manual test cases nhanh từ requirements (QUICK mode — không qua quy trình 6 bước).
-skills:
-  - rbt_manual_testing
 ---
 
 > **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`rbt_manual_testing`** (tại `.agent/skills/rbt_manual_testing/SKILL.md`) trước khi bắt đầu thực hiện tác vụ này. Sử dụng **Mode QUICK** của skill.
@@ -42,10 +40,10 @@ Workflow này sử dụng **Mode QUICK** của skill `rbt_manual_testing` để 
    - Priority (Critical / High / Medium / Low)
 6. **Xuất ra file Markdown tổng hợp và chuyển sang Excel:**
    - **Tạo file Markdown tổng hợp:** Chứa thông tin chung, Bảng tổng hợp Risk Level, Test Data thiết yếu, Traceability Matrix, Bảng Ambiguities & Q&A, Bảng thống kê số lượng TC, và Bảng Test Cases chi tiết chia theo 5 nhóm rủi ro:
-     * **Function** (High risk - happy/unhappy)
-     * **Validation** (Medium risk - kiểm tra chéo các loại dữ liệu của từng field)
-     * **UI & Behavior** (Medium risk - elements, font, màu; behavior: tab, hover, resize, focus, load)
-     * **Phân quyền** (High risk)
+     * **Function** (High risk - happy/unhappy) - kết hợp kĩ theo bảng quyết định và chuyển trạng thái để sinh các TC kết hợp nhiều dữ liệu nhất có thể, - không gộp chung các TC tắt
+     * **Validation** (Medium risk - kiểm tra chéo các loại dữ liệu của từng field - bắt buộc phải có kiểm tra require, bỏ trống, dấu cách, các loại dữ liệu đúng kết hợp với sai, các loại dữ liệu sai)
+     * **UI & Behavior** (Medium risk - đối với từng elements: kiểm tra thông tin vị trí, kích cỡ, thông tin nội dung, font, màu; behavior đối với từng elements: tab, shift tab, hover, resize, focus, load)
+     * **Phân quyền** (High risk) kiểm tra với tất cả các quyền có trong hệ thống (mỗi quyền 1 TC)
      * **Ảnh hưởng chức năng liên quan** (High risk)
      
      *Cột bắt buộc trong Bảng Test Cases:* `| TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data |`
@@ -68,7 +66,7 @@ Workflow này sử dụng **Mode QUICK** của skill `rbt_manual_testing` để 
 - Test Data phải cụ thể: `test_login_01@domain.com`, không phải "email hợp lệ"
 - Phải bao gồm cả Positive, Negative, Boundary, và Edge cases
 - Mỗi trường input phải có validation TCs riêng (không gộp nhiều trường vào 1 TC)
-- TC ID theo format thống nhất do user quy ước hoặc mặc định `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`
+- TC ID theo format thống nhất do user quy ước hoặc mặc định `[DỰ_ÁN]_[MODULE]_TC_[SỐ]` và lưu vào folder practices\testcases theo các thông tin từ requirement
 - Nếu quá nhiều TCs → chia thành Part 1, Part 2 và hỏi user
 
 ## Khi nào chuyển sang FULL RBT
