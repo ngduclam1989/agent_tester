@@ -284,11 +284,54 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 
    - **High Risk:**
      - **Function:** Test kỹ, nhiều cases bao gồm cả Happy Path (bắt buộc gồm: (1) nhập đầy đủ tất cả thông tin bắt buộc + optional, và (2) chỉ nhập thông tin bắt buộc tối thiểu) và Unhappy Path của module đó để lần sau không bị thiếu nữa.
-       - **Logic rẽ nhánh & Điều kiện (Conditional/Branching Logic):** Kiểm tra sự thay đổi thuộc tính/validate của các trường (bắt buộc/tùy chọn với tất cả các TH CRUD) dựa trên lựa chọn dữ liệu (ví dụ: khi loại Tenant là GARAGE thì các trường Invoice và Consultant là bắt buộc, còn khi là VENDOR thì là tùy chọn). Các TC phải đi từng điều kiện theo sơ đồ hình cây để có thể kết hợp đầy đủ không bị sót điều kiện kết hợp(với tất cả các case happy vs unhappy path).
-       - **Ngoại lệ hệ thống & Môi trường (System Exceptions & Environment):** Bắt buộc viết kịch bản mất kết nối Internet, lỗi kết nối API/DB 500 để verify khả năng hiển thị lỗi và bảo toàn dữ liệu.
+
+       - **Logic rẽ nhánh & Điều kiện (Conditional/Branching Logic):** Kiểm tra đầy đủ các tổ hợp điều kiện theo sơ đồ hình cây. Ví dụ theo hình bên dưới: gốc là **Màu - Cỡ**, tách thành 3 nhánh màu **trắng**, **xanh**, **đen**; mỗi nhánh màu tiếp tục tách thành 5 cỡ **S**, **M**, **L**, **XL**, **XXL**. Các TC phải bao phủ từng tổ hợp màu - cỡ để không bỏ sót điều kiện kết hợp (với tất cả các case happy vs unhappy path).
+         Ví dụ:
+         ```mermaid
+         graph TD
+
+         ```
+
+       A[Màu - Cỡ] --> B[trắng]
+       A --> C[xanh]
+       A --> D[đen]
+
+       %% Nhánh màu trắng
+       B --> B1[S]
+       B --> B2[M]
+       B --> B3[L]
+       B --> B4[XL]
+       B --> B5[XXL]
+
+       %% Nhánh màu xanh
+       C --> C1[S]
+       C --> C2[M]
+       C --> C3[L]
+       C --> C4[XL]
+       C --> C5[XXL]
+
+       %% Nhánh màu đen
+       D --> D1[S]
+       D --> D2[M]
+       D --> D3[L]
+       D --> D4[XL]
+       D --> D5[XXL]
+
+       %% Định dạng màu sắc trực quan
+       style A fill:#ffffff,stroke:#87bf65,stroke-width:2px
+       style B fill:#ffffff,stroke:#ffffff,stroke-width:0px
+       style C fill:#ffffff,stroke:#ffffff,stroke-width:0px
+       style D fill:#ffffff,stroke:#ffffff,stroke-width:0px
+
+       ```
+
+       ```
+     - **Ngoại lệ hệ thống & Môi trường (System Exceptions & Environment):** Bắt buộc viết kịch bản mất kết nối Internet, lỗi kết nối API/DB 500 để verify khả năng hiển thị lỗi và bảo toàn dữ liệu.
+
        - **Các Tab/Sub-modules mở rộng (Extended Sub-modules):** Đối với các thực thể lớn, phải bao phủ kịch bản kiểm thử các tab chức năng liên quan (ví dụ: tab chỉnh sửa hồ sơ năng lực, tab quản lý tài khoản con, tab liên kết đối tác/nhà xe).
      - **Phân quyền:** Kiểm tra phân quyền của các user khác nhau (vd: trong hệ thống có các role như sau System Admin, Admin, BD Head, BD Lead, User thường...) bắt buộc phải có test case với từng loại có quyền và không có quyền sử dụng chức năng.
      - **Ảnh hưởng chức năng liên quan (Dependencies & Database Integrity):** Bắt buộc có các kịch bản kiểm tra (các luồng liên quan có thể sẽ thêm 1 hoặc vài TC theo luồng chính của luồng liên quan):
+
        - Kiểm tra dữ liệu hiển thị trên màn hình danh sách (List) sau khi lưu thành công.
        - Kiểm tra dữ liệu hiển thị trên màn hình chi tiết (Detail) sau khi lưu thành công.
        - Kiểm tra database record được lưu chính xác (đủ các trường dữ liệu và đúng kiểu).
@@ -358,7 +401,7 @@ File Markdown phải chứa TOÀN BỘ các thông tin sau:
 *Các cột bắt buộc trong Bảng Test Cases:* `TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data`
 
 - **Quy tắc TC ID:** Bắt buộc tuân thủ nghiêm ngặt định dạng **`[DỰ_ÁN]_[MODULE]_TC_[SỐ]`** (Ví dụ: `CARDOCTOR_ONBOARD_TC_001`). Đánh số tuần tự, liên tiếp từ `001` đến hết cho toàn bộ test cases (không chèn thêm các ký tự phụ như `VAL`, `UI` giữa các nhóm test cases).
-- **Phân nhóm trong Excel:** Để tạo các dòng tiêu đề phân nhóm trực quan trong file Excel Excel, hãy chèn một hàng rỗng chứa tiêu đề in đậm vào cột `TC ID` tại đầu mỗi nhóm, các cột khác để trống. Ví dụ:
+- **Phân nhóm trong Excel:** Để tạo các dòng tiêu đề phân nhóm trực quan trong file Excel, hãy chèn một hàng rỗng chứa tiêu đề in đậm vào cột `TC ID` tại đầu mỗi nhóm, các cột khác để trống. Ví dụ:
   `| **NHÓM FUNCTION** | | | | | | | | |`
   `| **NHÓM VALIDATE** | | | | | | | | |`
   `| **NHÓM UI & BEHAVIOR** | | | | | | | | |`
