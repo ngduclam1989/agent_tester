@@ -215,7 +215,7 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
    - Đọc kỹ các diagram (State Diagram, Sequence, Data Flow, Activity Diagram...) đã có sẵn hoặc các sơ đồ nháp được confirm ở Bước 1.
    - Phân tích các bước chuyển trạng thái (State transitions), các luồng tương tác giữa các hệ thống (Sequence), luồng dữ liệu (Data flow) và luồng hoạt động (Activity flow).
 2. **Xác định và phân rã chi tiết các luồng kiểm thử (không được viết gộp chung):**
-   - **Happy Path:** Bao gồm kịch bản nhập đầy đủ (Full fields), kịch bản chỉ nhập bắt buộc tối thiểu (Minimal fields), và các kịch bản kết hợp bỏ trống các trường tùy chọn (Optional fields combinations).
+   - **Happy Path:** Bao gồm kịch bản nhập đầy đủ (Full fields), kịch bản chỉ nhập bắt buộc tối thiểu (Minimal fields), và các kịch bản kết hợp bỏ trống các trường tùy chọn (Optional fields combinations) - áp dụng với tất cả các trường hợp thêm, sửa thông tin dữ liệu bản ghi.
    - **Alternate Paths & Branching Scenarios:** Các luồng xử lý thành công khác theo Feature Flags, loại thực thể hoặc các điều kiện rẽ nhánh. **Bổ sung chi tiết các scenarios cho tất cả các phần rẽ nhánh, các trường hợp điều kiện (Conditional Logic)** dựa trên diagram và tài liệu (ví dụ: nếu điều kiện A đúng -> chạy luồng X, nếu điều kiện A sai -> chạy luồng Y).
    - **Exception & Validation Paths:** Bao gồm các kịch bản thiếu từng trường bắt buộc riêng lẻ, thiếu 2 trường, thiếu nhiều trường, vi phạm ràng buộc duy nhất (Unique Constraints), vi phạm trạng thái nghiệp vụ (State Constraints) (được bóc tách chi tiết từ State Diagram), vi phạm logic rẽ nhánh có điều kiện, và lỗi tích hợp hệ thống.
 3. **Phát hiện Ambiguities (Điểm mờ, thiếu sót, mâu thuẫn):**
@@ -284,11 +284,11 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 
    - **High Risk:**
      - **Function:** Test kỹ, nhiều cases bao gồm cả Happy Path (bắt buộc gồm: (1) nhập đầy đủ tất cả thông tin bắt buộc + optional, và (2) chỉ nhập thông tin bắt buộc tối thiểu) và Unhappy Path của module đó để lần sau không bị thiếu nữa.
-       - **Logic rẽ nhánh & Điều kiện (Conditional/Branching Logic):** Kiểm tra sự thay đổi thuộc tính/validate của các trường (bắt buộc/tùy chọn) dựa trên lựa chọn dữ liệu (ví dụ: khi loại Tenant là GARAGE thì các trường Invoice và Consultant là bắt buộc, còn khi là VENDOR thì là tùy chọn).
+       - **Logic rẽ nhánh & Điều kiện (Conditional/Branching Logic):** Kiểm tra sự thay đổi thuộc tính/validate của các trường (bắt buộc/tùy chọn với tất cả các TH CRUD) dựa trên lựa chọn dữ liệu (ví dụ: khi loại Tenant là GARAGE thì các trường Invoice và Consultant là bắt buộc, còn khi là VENDOR thì là tùy chọn). Các TC phải đi từng điều kiện theo sơ đồ hình cây để có thể kết hợp đầy đủ không bị sót điều kiện kết hợp(với tất cả các case happy vs unhappy path).
        - **Ngoại lệ hệ thống & Môi trường (System Exceptions & Environment):** Bắt buộc viết kịch bản mất kết nối Internet, lỗi kết nối API/DB 500 để verify khả năng hiển thị lỗi và bảo toàn dữ liệu.
        - **Các Tab/Sub-modules mở rộng (Extended Sub-modules):** Đối với các thực thể lớn, phải bao phủ kịch bản kiểm thử các tab chức năng liên quan (ví dụ: tab chỉnh sửa hồ sơ năng lực, tab quản lý tài khoản con, tab liên kết đối tác/nhà xe).
-     - **Phân quyền:** Kiểm tra phân quyền của các user khác nhau (System Admin, Admin, BD Head, BD Lead, User thường...) bắt buộc phải có test case với từng loại có quyền và không có quyền sử dụng chức năng.
-     - **Ảnh hưởng chức năng liên quan (Dependencies & Database Integrity):** Bắt buộc có các kịch bản kiểm tra:
+     - **Phân quyền:** Kiểm tra phân quyền của các user khác nhau (vd: trong hệ thống có các role như sau System Admin, Admin, BD Head, BD Lead, User thường...) bắt buộc phải có test case với từng loại có quyền và không có quyền sử dụng chức năng.
+     - **Ảnh hưởng chức năng liên quan (Dependencies & Database Integrity):** Bắt buộc có các kịch bản kiểm tra (các luồng liên quan có thể sẽ thêm 1 hoặc vài TC theo luồng chính của luồng liên quan):
        - Kiểm tra dữ liệu hiển thị trên màn hình danh sách (List) sau khi lưu thành công.
        - Kiểm tra dữ liệu hiển thị trên màn hình chi tiết (Detail) sau khi lưu thành công.
        - Kiểm tra database record được lưu chính xác (đủ các trường dữ liệu và đúng kiểu).
