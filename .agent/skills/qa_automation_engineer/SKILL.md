@@ -1,6 +1,6 @@
 ---
 name: QA Automation Engineer
-description: Skill hỗ trợ agent thực hiện các tác vụ QA automation testing bao gồm generate test cases, automation scripts, API tests, locators, phân tích flaky tests, và tạo test data.
+description: Skill hỗ trợ agent thực hiện QA automation testing: generate automation scripts, API/a11y/regression tests, UI recon, locators, flaky analysis, test data và framework handoff. Dùng reference Playwright/Selenium/API bổ trợ khi cần.
 ---
 
 # QA Automation Engineer
@@ -22,6 +22,22 @@ The agent can:
 - Generate requirements from website analysis
 
 This skill is designed for modern QA workflows and automation development.
+
+---
+
+# Routing Principles
+
+- Treat this skill as the **automation router**, not the owner of every testing activity.
+- Manual TC generation and TC schema belong to `rbt_manual_testing`.
+- UI/DOM inspection belongs to `ui_debug_agent`; use it as optional recon before script generation when UI details are missing.
+- Locator creation/healing belongs to `smart_locator_agent` and `locator_healer_agent`.
+- Flaky investigation belongs to `flaky_test_analyzer`.
+- Framework scaffold belongs to `framework_architect`.
+- Test data generation belongs to `test_data_generator`.
+- Jira/Xray integration belongs to `jira_integration`.
+- Requirement extraction from a running website belongs to `requirements_analyzer`.
+- Before doing complex automation work, read `references/AUTOTEST_HANDOFF_CONTRACT.md`.
+- To choose detailed Playwright/Selenium/API/a11y/regression references, read `references/AUTOTEST_REFERENCE_MAP.md`.
 
 ---
 
@@ -48,6 +64,7 @@ Typical prompts include:
 - Generate automation from UI steps
 - Generate API tests from Swagger
 - Generate regression suite → _(redirect sang `generate_application_test_plan` hoặc `generate_manual_testcases_rbt`)_
+- Generate accessibility automation checks
 - Generate test data
 - Analyze flaky test
 - Generate locator for element
@@ -78,6 +95,14 @@ Triggers when user asks:
 
 Use workflow: `generate_automation_from_testcases`
 
+Before generating code:
+
+- Confirm the manual TC has been reviewed or is accepted by the user.
+- Preserve TC IDs in generated test names when available.
+- If the TC lacks UI details/locators, run optional UI recon through `ui_debug_agent` first.
+- Select the target stack (Playwright, Selenium, Appium, API) from the project context or ask if unclear.
+- Load only the relevant references from `references/AUTOTEST_REFERENCE_MAP.md`.
+
 Triggers when user asks:
 
 - convert test case to automation
@@ -89,6 +114,8 @@ Triggers when user asks:
 ### Generate automation from UI steps
 
 Use workflow: `generate_automation_from_ui_flow`
+
+Use optional UI recon when the flow is described in natural language and not backed by current DOM/locator evidence.
 
 Triggers when user asks:
 
@@ -102,10 +129,20 @@ Triggers when user asks:
 
 Use workflow: `generate_api_tests_from_swagger`
 
+Reference guidance:
+
+- REST/API patterns: `references/api-rest-api-patterns.md`
+- Schema validation: `references/api-schema-validation.md`
+- Contract testing: `references/api-contract-testing.md`
+- Playwright API: `references/api-playwright-api-testing.md`
+- REST Assured: `references/api-rest-assured-testing.md`
+
 Triggers when user provides:
 
 - Swagger URL
 - OpenAPI specification
+
+Also use this route when user asks for auth tests, schema validation, contract checks, pagination/sorting/filtering, or negative API tests.
 
 ---
 
@@ -158,10 +195,38 @@ Triggers when user asks:
 
 > **Không có workflow riêng.** Dùng `generate_application_test_plan` (Mode PLAN) hoặc `generate_manual_testcases_rbt` (FULL RBT) tùy theo input.
 
+Reference guidance:
+
+- Strategy/tier/tagging: `references/regression-regression-strategy.md`
+- CI/CD integration: `references/regression-ci-cd-integration.md`
+- Flaky management: `references/regression-flaky-management.md`
+
 Triggers when user asks:
 
 - create regression test suite
 - generate regression scenarios
+- organize smoke/sanity/regression/full tiers
+- tag Playwright regression tests
+
+---
+
+### Generate accessibility automation checks
+
+Use target-stack automation workflow and references. This is an add-on to UI/API automation, not a replacement for manual accessibility review.
+
+Reference guidance:
+
+- Playwright + axe/WCAG: `references/a11y-playwright-wcag21aa-checklist.md`
+- ARIA/focus/keyboard patterns: `references/a11y-playwright-aria_patterns.md`
+- Selenium + axe: `references/a11y-selenium-axe_patterns.md`
+
+Triggers when user asks:
+
+- add accessibility tests
+- add axe-core checks
+- test keyboard navigation
+- validate WCAG / ARIA / focus management
+- accessibility regression tests
 
 ---
 
@@ -188,6 +253,7 @@ Use workflow: `generate_application_test_plan`
 
 > Workflow này có **2 modes**: PLAN (mặc định — chỉ test plan) và FULL (test plan + automation skeleton).
 > Khi user yêu cầu "full automation suite" hoặc "bootstrap automation" → tự động chọn Mode FULL.
+> Nếu user đã có requirements và chỉ muốn so sánh current web behavior, use optional UI recon / `requirements_analyzer` output as reference. Do not replace the existing requirements unless user asks.
 
 Triggers when user asks:
 
@@ -203,6 +269,8 @@ Triggers when user asks:
 
 Use workflow: `analyze_flaky_tests`
 
+Delegate root-cause analysis to `flaky_test_analyzer`; use `references/regression-flaky-management.md` for quarantine/retry/suite health policy.
+
 Triggers when user asks:
 
 - why is this test flaky
@@ -213,6 +281,8 @@ Triggers when user asks:
 ### Generate stable locators
 
 Use workflow: `generate_locator`
+
+Delegate locator selection to `smart_locator_agent`. If an existing locator broke after UI changes, use `locator_healer_agent` instead.
 
 Triggers when user asks:
 
@@ -289,6 +359,18 @@ Default automation stack:
 - **Mobile automation:** Appium
 - **Design pattern:** Page Object Model (POM)
 
+Stack-specific references:
+
+| Stack / concern | References |
+|---|---|
+| Playwright E2E | `playwright-e2e-page_object_model.md`, `playwright-e2e-locator_strategies.md`, `playwright-e2e-debugging.md`, `playwright-e2e-snippets.md` |
+| Playwright browser/CLI recon | `playwright-cli-running-code.md`, `playwright-cli-test-generation.md`, `playwright-cli-storage-state.md`, `playwright-cli-tracing.md` |
+| Webapp Playwright MCP | `webapp-playwright-common_patterns.md`, `webapp-playwright-page_object_model.md`, `webapp-playwright-api_testing.md` |
+| Selenium webapp | `selenium-webapp-page_object_model.md`, `selenium-webapp-locator_strategies.md`, `selenium-webapp-wait_strategies.md` |
+| API | `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md`, `api-rest-assured-testing.md` |
+| Accessibility | `a11y-playwright-wcag21aa-checklist.md`, `a11y-playwright-aria_patterns.md`, `a11y-selenium-axe_patterns.md` |
+| Regression / CI | `regression-regression-strategy.md`, `regression-ci-cd-integration.md`, `regression-flaky-management.md` |
+
 ---
 
 # Locator Strategy
@@ -335,6 +417,8 @@ The agent MUST also follow the detailed rules defined in `.agent/rules/`:
 
 The agent may consult additional documentation in the `references/` folder:
 
+- `AUTOTEST_HANDOFF_CONTRACT.md` — ownership boundaries and end-to-end automation handoff flow
+- `AUTOTEST_REFERENCE_MAP.md` — which references to load for Playwright, Selenium, API, a11y, regression, locator, flaky, framework tasks
 - `PROJECT_CONTEXT.md` — Project domain, tech stack, key modules
 - `TEST_STRATEGY.md` — Testing objectives, scope, execution plan
 - `PROMPT_TEMPLATES.md` — Reusable prompt templates for common QA tasks
@@ -364,3 +448,6 @@ Automation outputs should include:
 - Test classes
 - Assertions validating expected behavior
 - Clean, readable, maintainable code (no debug logs, no commented code)
+- Stable locators or a note that UI recon is required before finalizing locators
+- Test data setup/cleanup strategy when the scenario mutates data
+- Run command and expected report/artifact locations when applicable

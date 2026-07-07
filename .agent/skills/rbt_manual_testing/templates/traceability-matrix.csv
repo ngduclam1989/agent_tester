@@ -1,0 +1,2 @@
+yêu cầu_id,yêu cầu_desc,test_condition_id,test_case_id,tự động hóa_test_file,tự động_test_name,trạng thái,ghi chú
+REQ-TÌM KIẾM-001,"Tìm kiếm trả về sản phẩm phù hợp",COND-TÌM KIẾM-001,TC-001,tests/search.spec.ts,"TC-001 @smoke tìm kiếm trả về kết quả",Đã lên kế hoạch,"Liên kết tới story/AC và lịch sử lỗi"

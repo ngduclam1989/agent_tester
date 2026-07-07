@@ -1,0 +1,467 @@
+<!--
+  grill-me-qa - Mẫu tóm tắt HTML
+  Được tạo ở cuối phiên chất vấn QA.
+  Tất cả placeholder dùng cú pháp {{PLACEHOLDER}} và sẽ được thay khi tạo nội dung.
+-->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TSDR - {{PROJECT_NAME}} - Bản ghi quyết định chiến lược test</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-primary: #080c12;
+      --bg-secondary: #0d1117;
+      --bg-card: #111821;
+      --bg-card-hover: #151d28;
+      --border-subtle: #1e2733;
+      --border-accent: #2a3545;
+      --text-primary: #e6edf3;
+      --text-secondary: #8b949e;
+      --text-muted: #6e7681;
+      --accent-blue: #4d9fff;
+      --accent-green: #2ed47a;
+      --accent-amber: #ffb946;
+      --accent-red: #ff5c5c;
+      --glow-green: rgba(46, 212, 122, 0.15);
+      --glow-amber: rgba(255, 185, 70, 0.12);
+      --glow-red: rgba(255, 92, 92, 0.12);
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      line-height: 1.6;
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container { max-width: 1100px; margin: 0 auto; }
+
+    .header {
+      text-align: center;
+      padding: 40px 32px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-family: 'Sora', sans-serif;
+      font-weight: 800;
+      font-size: 2rem;
+      color: var(--text-primary);
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      font-size: 0.95rem;
+      margin-top: 8px;
+    }
+
+    .meta {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .progress-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 24px 32px;
+      margin-bottom: 32px;
+    }
+
+    .progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .progress-title {
+      font-family: 'Sora', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .progress-stats {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+    }
+
+    .stat-resolved { color: var(--accent-green); }
+    .stat-deferred { color: var(--accent-amber); }
+    .stat-open { color: var(--accent-red); }
+
+    .progress-bar {
+      height: 8px;
+      background: var(--bg-primary);
+      border-radius: 4px;
+      overflow: hidden;
+      display: flex;
+    }
+
+    .progress-fill-resolved { background: var(--accent-green); }
+    .progress-fill-deferred { background: var(--accent-amber); }
+    .progress-fill-open { background: var(--border-accent); }
+
+    .dimensions-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+
+    .dimension-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      overflow-x: auto;
+    }
+
+    .dimension-card:hover {
+      border-color: var(--border-accent);
+      background: var(--bg-card-hover);
+    }
+
+    .dimension-card.resolved { border-left: 3px solid var(--accent-green); }
+    .dimension-card.deferred { border-left: 3px solid var(--accent-amber); }
+    .dimension-card.open { border-left: 3px solid var(--accent-red); }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .card-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: var(--bg-primary);
+      padding: 4px 8px;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .card-title {
+      font-family: 'Sora', sans-serif;
+      font-weight: 700;
+      font-size: 1.15rem;
+    }
+
+    .card-status {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .status-resolved { color: var(--accent-green); background: var(--glow-green); border: 1px solid rgba(46, 212, 122, 0.3); }
+    .status-deferred { color: var(--accent-amber); background: var(--glow-amber); border: 1px solid rgba(255, 185, 70, 0.3); }
+    .status-open { color: var(--accent-red); background: var(--glow-red); border: 1px solid rgba(255, 92, 92, 0.3); }
+
+    .card-summary {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
+
+    .decisions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      min-width: 720px;
+    }
+
+    .decisions-table th {
+      text-align: left;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .decisions-table td {
+      padding: 10px 12px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: top;
+    }
+
+    .decisions-table td:first-child {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    .decision-recommended { color: var(--accent-blue); font-style: italic; }
+    .decision-chosen { color: var(--text-primary); font-weight: 500; }
+    .decision-rationale { color: var(--text-secondary); font-size: 0.82rem; }
+
+    .footer {
+      text-align: center;
+      padding: 32px;
+      margin-top: 40px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      body { padding: 20px 12px; }
+      .header { padding: 32px 20px; }
+      .header h1 { font-size: 1.5rem; }
+      .dimension-card { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Bản ghi quyết định chiến lược test</h1>
+      <p class="subtitle">{{PROJECT_NAME}}</p>
+      <div class="meta">
+        <span>{{DATE}}</span>
+        <span>{{PARTICIPANTS}}</span>
+        <span>grill-me-qa</span>
+      </div>
+    </div>
+
+    <div class="progress-section">
+      <div class="progress-header">
+        <span class="progress-title">Tiến độ phiên chất vấn</span>
+        <div class="progress-stats">
+          <span class="stat-resolved">{{RESOLVED_COUNT}}/7 đã chốt</span>
+          <span class="stat-deferred">{{DEFERRED_COUNT}} trì hoãn</span>
+          <span class="stat-open">{{OPEN_COUNT}} còn mở</span>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill-resolved" style="width: {{RESOLVED_PERCENT}}%"></div>
+        <div class="progress-fill-deferred" style="width: {{DEFERRED_PERCENT}}%"></div>
+        <div class="progress-fill-open" style="width: {{OPEN_PERCENT}}%"></div>
+      </div>
+    </div>
+
+    <div class="dimensions-grid">
+      <div class="dimension-card {{D1_STATUS_CLASS}}">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-number">01</span>
+            <span class="card-title">Chiến lược test và độ bao phủ</span>
+          </div>
+          <span class="card-status {{D1_STATUS_BADGE}}">{{D1_STATUS_TEXT}}</span>
+        </div>
+        <p class="card-summary">{{D1_SUMMARY}}</p>
+        <table class="decisions-table">
+          <thead>
+            <tr><th>#</th><th>Quyết định</th><th>Đề xuất</th><th>Đã chọn</th><th>Lý do</th></tr>
+          </thead>
+          <tbody>
+            <!-- D1_DECISIONS_ROWS - lặp lại cho từng quyết định -->
+            <tr>
+              <td>1.1</td>
+              <td><span class="decision-chosen">{{D1_Q1}}</span></td>
+              <td><span class="decision-recommended">{{D1_REC1}}</span></td>
+              <td><span class="decision-chosen">{{D1_A1}}</span></td>
+              <td><span class="decision-rationale">{{D1_R1}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dimension-card {{D2_STATUS_CLASS}}">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-number">02</span>
+            <span class="card-title">Framework và tool</span>
+          </div>
+          <span class="card-status {{D2_STATUS_BADGE}}">{{D2_STATUS_TEXT}}</span>
+        </div>
+        <p class="card-summary">{{D2_SUMMARY}}</p>
+        <table class="decisions-table">
+          <thead>
+            <tr><th>#</th><th>Quyết định</th><th>Đề xuất</th><th>Đã chọn</th><th>Lý do</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2.1</td>
+              <td><span class="decision-chosen">{{D2_Q1}}</span></td>
+              <td><span class="decision-recommended">{{D2_REC1}}</span></td>
+              <td><span class="decision-chosen">{{D2_A1}}</span></td>
+              <td><span class="decision-rationale">{{D2_R1}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dimension-card {{D3_STATUS_CLASS}}">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-number">03</span>
+            <span class="card-title">Kiến trúc testing</span>
+          </div>
+          <span class="card-status {{D3_STATUS_BADGE}}">{{D3_STATUS_TEXT}}</span>
+        </div>
+        <p class="card-summary">{{D3_SUMMARY}}</p>
+        <table class="decisions-table">
+          <thead>
+            <tr><th>#</th><th>Quyết định</th><th>Đề xuất</th><th>Đã chọn</th><th>Lý do</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>3.1</td>
+              <td><span class="decision-chosen">{{D3_Q1}}</span></td>
+              <td><span class="decision-recommended">{{D3_REC1}}</span></td>
+              <td><span class="decision-chosen">{{D3_A1}}</span></td>
+              <td><span class="decision-rationale">{{D3_R1}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dimension-card {{D4_STATUS_CLASS}}">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-number">04</span>
+            <span class="card-title">Tích hợp AI</span>
+          </div>
+          <span class="card-status {{D4_STATUS_BADGE}}">{{D4_STATUS_TEXT}}</span>
+        </div>
+        <p class="card-summary">{{D4_SUMMARY}}</p>
+        <table class="decisions-table">
+          <thead>
+            <tr><th>#</th><th>Quyết định</th><th>Đề xuất</th><th>Đã chọn</th><th>Lý do</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>4.1</td>
+              <td><span class="decision-chosen">{{D4_Q1}}</span></td>
+              <td><span class="decision-recommended">{{D4_REC1}}</span></td>
+              <td><span class="decision-chosen">{{D4_A1}}</span></td>
+              <td><span class="decision-rationale">{{D4_R1}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dimension-card {{D5_STATUS_CLASS}}">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-number">05</span>
+            <span class="card-title">CI/CD pipeline</span>
+          </div>
+          <span class="card-status {{D5_STATUS_BADGE}}">{{D5_STATUS_TEXT}}</span>
+        </div>
+        <p class="card-summary">{{D5_SUMMARY}}</p>
+        <table class="decisions-table">
+          <thead>
+            <tr><th>#</th><th>Quyết định</th><th>Đề xuất</th><th>Đã chọn</th><th>Lý do</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>5.1</td>
+              <td><span class="decision-chosen">{{D5_Q1}}</span></td>
+              <td><span class="decision-recommended">{{D5_REC1}}</span></td>
+              <td><span class="decision-chosen">{{D5_A1}}</span></td>
+              <td><span class="decision-rationale">{{D5_R1}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dimension-card {{D6_STATUS_CLASS}}">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-number">06</span>
+            <span class="card-title">Quality engineering</span>
+          </div>
+          <span class="card-status {{D6_STATUS_BADGE}}">{{D6_STATUS_TEXT}}</span>
+        </div>
+        <p class="card-summary">{{D6_SUMMARY}}</p>
+        <table class="decisions-table">
+          <thead>
+            <tr><th>#</th><th>Quyết định</th><th>Đề xuất</th><th>Đã chọn</th><th>Lý do</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>6.1</td>
+              <td><span class="decision-chosen">{{D6_Q1}}</span></td>
+              <td><span class="decision-recommended">{{D6_REC1}}</span></td>
+              <td><span class="decision-chosen">{{D6_A1}}</span></td>
+              <td><span class="decision-rationale">{{D6_R1}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="dimension-card {{D7_STATUS_CLASS}}">
+        <div class="card-header">
+          <div class="card-title-group">
+            <span class="card-number">07</span>
+            <span class="card-title">Khả năng bảo trì và bền vững</span>
+          </div>
+          <span class="card-status {{D7_STATUS_BADGE}}">{{D7_STATUS_TEXT}}</span>
+        </div>
+        <p class="card-summary">{{D7_SUMMARY}}</p>
+        <table class="decisions-table">
+          <thead>
+            <tr><th>#</th><th>Quyết định</th><th>Đề xuất</th><th>Đã chọn</th><th>Lý do</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>7.1</td>
+              <td><span class="decision-chosen">{{D7_Q1}}</span></td>
+              <td><span class="decision-recommended">{{D7_REC1}}</span></td>
+              <td><span class="decision-chosen">{{D7_A1}}</span></td>
+              <td><span class="decision-rationale">{{D7_R1}}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footer">
+      Được tạo bởi skill grill-me-qa · {{DATE}}
+    </div>
+  </div>
+</body>
+</html>
