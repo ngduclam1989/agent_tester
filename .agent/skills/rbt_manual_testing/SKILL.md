@@ -281,7 +281,7 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 
 **Agent phải:**
 
-1. Xây dựng **Traceability Matrix** ánh xạ: `Requirements (REQ-ID) ↔ Test Conditions ↔ Test Scenarios / Test Cases`.
+1. Xây dựng **Traceability Matrix** ánh xạ: `Requirements (REQ-ID) ↔ Test Conditions ↔ Test Scenarios / Test Cases` (Tham chiếu `templates/traceability-matrix.csv` để sử dụng format chuẩn khi xuất cấu trúc matrix).
 2. Cross-check xem có yêu cầu nào bị thiếu trong danh sách phân rã (Gap Analysis) để phát hiện lỗ hổng kiểm thử (Test coverage gaps).
 3. Liệt kê High-Level Test Scenarios cho từng Module, tập trung vào các Test Conditions:
    - Security / phân quyền (Access Control & Roles)
@@ -521,6 +521,7 @@ Các tài nguyên này là playbook tham chiếu để enrich workflow RBT. Agen
 | Nhu cầu | File tham chiếu |
 | --- | --- |
 | Bảo vệ schema mẫu TC cũ | `references/tc-output-contract.md` |
+| Thuật ngữ ISTQB | `references/istqb-glossary.md` |
 | Biết khi nào handoff sang skill khác | `references/cross-skill-handoff-map.md` |
 | Test process và deliverables | `references/test-process-and-deliverables.md` |
 | Risk-based testing formal | `references/risk-based-testing.md` |
