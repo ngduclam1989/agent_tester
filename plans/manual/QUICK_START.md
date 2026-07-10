@@ -8,12 +8,12 @@ Có **2 luồng** riêng biệt, tuỳ tool AI bạn đang dùng:
 
 ```
 Gõ: /generate_manual_testcases_rbt + dán requirements
-→ AI tự chạy 6 bước theo skill, dừng ở checkpoint chờ bạn
-→ KHÔNG cần copy-paste prompt templates
+→ AI tự chạy 6 bước theo skill, tự đọc prompt template tương ứng ở mỗi bước, dừng ở checkpoint chờ bạn
+→ Bạn KHÔNG cần tự copy-paste prompt templates
 ```
 
 **Ưu điểm:** Nhanh, tự động, agent nhớ context xuyên suốt.
-**Nhược điểm:** Hướng dẫn ở mức tổng quát (không chi tiết bằng prompt templates).
+**Lưu ý:** Agent vẫn phải dùng prompt templates trong `plans/manual/` làm checklist chi tiết; bạn chỉ không cần copy thủ công.
 
 ### Luồng 2: Copy-Paste Prompt — Thủ công (ChatGPT / Claude / AI bất kỳ)
 

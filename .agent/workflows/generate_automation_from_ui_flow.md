@@ -4,17 +4,27 @@ skills:
   - ui_debug_agent
   - smart_locator_agent
   - qa_automation_engineer
+  - test_data_generator
+  - framework_architect
 ---
 
 # Workflow: Sinh Automation từ UI Flow
 
-> **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`ui_debug_agent`** (tại `.agent/skills/ui_debug_agent/SKILL.md`) trước khi bắt đầu. Ngoài ra tham khảo thêm skill **`smart_locator_agent`** để sinh locator ổn định và **`qa_automation_engineer`** cho quy tắc automation chung.
+> **BẮT BUỘC (MANDATORY SKILLS):** Bạn PHẢI nạp và đọc kỹ trước khi bắt đầu:
+> - **`ui_debug_agent`** (`.agent/skills/ui_debug_agent/SKILL.md`) — Chạy UI flow, inspect DOM, evidence
+> - **`smart_locator_agent`** (`.agent/skills/smart_locator_agent/SKILL.md`) — Sinh locator ổn định
+> - **`qa_automation_engineer`** (`.agent/skills/qa_automation_engineer/SKILL.md`) — Sinh automation code + execution rules
+> - **`test_data_generator`** (`.agent/skills/test_data_generator/SKILL.md`) — Sinh data unique/traceable khi flow tạo/sửa dữ liệu
+> - **`framework_architect`** (`.agent/skills/framework_architect/SKILL.md`) — Dùng khi project chưa có framework
+> - **Reference:** `.agent/skills/qa_automation_engineer/references/AUTOTEST_HANDOFF_CONTRACT.md`
+> - **Reference:** `.agent/skills/qa_automation_engineer/references/AUTOTEST_REFERENCE_MAP.md`
 
 Workflow này giúp agent **thực thi trực tiếp** một chuỗi thao tác UI trên browser thật, thu thập locators từ DOM thực tế, và sinh automation scripts hoàn chỉnh — tất cả trong một luồng tự động, không cần manual test case có sẵn.
 
 ## ⚠️ Nguyên tắc thực thi
 
 - **Tất cả output bằng Tiếng Việt**
+- **PHẢI đọc AUTOTEST handoff/reference map** trước khi sinh code để chọn đúng stack references
 - **TUYỆT ĐỐI KHÔNG ĐOÁN locator** — phải lấy từ DOM thực tế bằng MCP browser tools
 - **Phải chạy từng bước UI trên browser thật** trước khi sinh code
 - **Desktop viewport 1920×1080** cho tất cả UI debugging
@@ -44,6 +54,7 @@ Nếu user chưa cung cấp đủ → hỏi:
 - Mô tả flow cần automate (từng bước)?
 - Credentials nếu cần đăng nhập?
 - Framework mong muốn? (mặc định: Playwright + TypeScript)
+- Project hiện có hay cần scaffold mới? Nếu chưa có project, dùng `framework_architect` trước khi sinh code.
 
 ## Các bước thực hiện
 
@@ -67,6 +78,8 @@ Nếu user chưa cung cấp đủ → hỏi:
    | **Playwright** | Python | Khi user dùng Python stack |
    | **Selenium** | Java | Khi user yêu cầu Java/Selenium |
    | **Appium** | Java | Mobile app automation |
+
+   Nếu user chưa có automation project, scaffold cấu trúc nền tảng theo `framework_architect` trước khi sang bước sinh Page Object/Test.
 
 3. **Tạo artifact `task.md`** để theo dõi tiến độ:
    ```markdown
@@ -193,6 +206,7 @@ Nếu user chưa cung cấp đủ → hỏi:
    - Structure: **Arrange → Act → Assert**
    - Assertions rõ ràng với message mô tả
    - Test data unique + traceable (dùng timestamp/random)
+   - Nếu flow tạo/sửa dữ liệu, dùng `test_data_generator` để sinh data factory và cleanup strategy
 
 3. **Nguyên tắc sinh code:**
    - Locator PHẢI lấy từ Bước 2 (đã verify trên DOM) — KHÔNG ĐOÁN

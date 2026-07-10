@@ -3,11 +3,18 @@ description: Sinh API test cases và automation scripts từ Swagger/OpenAPI spe
 skills:
   - qa_automation_engineer
   - test_data_generator
+  - framework_architect
 ---
 
 # Workflow: Sinh API Tests từ Swagger/OpenAPI
 
-> **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`qa_automation_engineer`** (tại `.agent/skills/qa_automation_engineer/SKILL.md`) trước khi bắt đầu. Ngoài ra, tham khảo thêm skill **`test_data_generator`** để sinh test data đúng chuẩn.
+> **BẮT BUỘC (MANDATORY SKILLS):** Bạn PHẢI nạp và đọc kỹ trước khi bắt đầu:
+> - **`qa_automation_engineer`** (`.agent/skills/qa_automation_engineer/SKILL.md`) — Routing + API automation rules
+> - **`test_data_generator`** (`.agent/skills/test_data_generator/SKILL.md`) — Sinh payload/data unique, traceable
+> - **`framework_architect`** (`.agent/skills/framework_architect/SKILL.md`) — Dùng khi Mode FULL cần scaffold project/API framework
+> - **Reference:** `.agent/skills/qa_automation_engineer/references/AUTOTEST_HANDOFF_CONTRACT.md`
+> - **Reference:** `.agent/skills/qa_automation_engineer/references/AUTOTEST_REFERENCE_MAP.md` — chọn đúng API references, không load tràn lan
+> - **API References (chọn theo stack):** `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md`, `api-rest-assured-testing.md`
 
 Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác định các endpoints, sinh API test cases có cấu trúc, và (tùy mode) tự động sinh automation scripts hoàn chỉnh.
 
@@ -15,6 +22,7 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 
 - **Tất cả output bằng Tiếng Việt**
 - **KHÔNG đoán** schema/endpoint — phải đọc spec thực tế (JSON/YAML)
+- **PHẢI chọn API reference tối thiểu** theo `AUTOTEST_REFERENCE_MAP.md` trước khi sinh code: `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md` hoặc `api-rest-assured-testing.md` theo stack
 - **Phải chờ user xác nhận** scope tại Bước 2 trước khi sinh chi tiết
 - Nếu user chưa cung cấp Swagger URL/file → hỏi trước khi bắt đầu
 - ⚠️ **Rule E3:** Khi test FAIL → tự đọc log → phân tích → sửa → chạy lại. KHÔNG hỏi user trong quá trình fix lỗi
@@ -73,6 +81,22 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 | **Requests + Pytest** | Python | Khi user dùng Python stack |
 
 ### Bước 3: Sinh API Test Scenarios & Test Data
+
+0. **Áp dụng rule sinh Test Case kiểu RBT ngay trong workflow API** (copy trực tiếp, không cần load thêm skill khác):
+   - **Không đoán business rule:** Trước khi sinh TC chi tiết, rà soát Swagger/OpenAPI, schema, error model, auth/role, state/lifecycle, dependencies. Nếu có điểm mờ, thiếu, mâu thuẫn hoặc spec không nói rõ expected behavior, phải tạo mục **Ambiguities & Q&A** với cấu trúc: `Context` → `QA Assumption` → `Proposed handling`.
+   - **Traceability bắt buộc:** Với mỗi endpoint/operation, ánh xạ `Source` (`operationId`, `method + path`, schema field, status code, business rule) → `Test Condition` → `TC ID`. Nếu không đưa vào bảng TC chính thì phải có section **Traceability Matrix** riêng.
+   - **Risk Level cho mỗi endpoint/chức năng:**
+     - **High Risk:** Auth/permission, thanh toán/tài chính, dữ liệu định danh, API tạo/sửa/xóa dữ liệu, API nhiều role, lifecycle/stateful workflow, integration/webhook/message queue/third-party, rủi ro bảo mật hoặc ảnh hưởng dữ liệu liên quan. Bắt buộc có đủ happy path full data, happy path minimum required data, negative, boundary, auth/role, dependency/integrity, system/third-party failure.
+     - **Medium Risk:** Field-level validation, pagination/filter/sort/search, PUT/PATCH semantics, idempotency, duplicate/unique constraints, concurrency, response schema và error format.
+     - **Low Risk:** Health check, metadata/read-only đơn giản, behavior ít ảnh hưởng dữ liệu.
+   - **Priority mapping:** `Critical/P1` cho High Risk hoặc blocking/security/data-loss; `High/P2` cho validation/permission quan trọng; `Medium/P3` cho edge/boundary phổ biến; `Low/P4` cho cosmetic/metadata/rare case.
+   - **Áp dụng kỹ thuật thiết kế TC:** Equivalence Partitioning, Boundary Value Analysis, Decision Table Testing cho rule kết hợp/conditional, State Transition Testing cho lifecycle/status, Use Case/E2E Testing cho luồng nghiệp vụ qua nhiều API.
+   - **Granularity mặc định:** Viết TC riêng cho từng lỗi validation của từng field. Không gộp nhiều field hoặc nhiều điều kiện validate vào một TC nếu làm mất khả năng xác định lỗi.
+   - **Happy Path bắt buộc:** Ít nhất 1 TC gửi đầy đủ required + optional fields; ít nhất 1 TC chỉ gửi required fields tối thiểu; với optional fields quan trọng, test omit từng field/cặp field hoặc tổ hợp có ý nghĩa để verify backend xử lý default/null.
+   - **Required/conditional fields:** Test thiếu từng required field riêng lẻ, thiếu đồng thời 2 required fields, thiếu nhiều required fields, body rỗng `{}`, và các required field có điều kiện theo enum/feature flag/business branch.
+   - **Business/logic failures:** Bắt buộc có TC cho unique constraints, conditional branching sai, state/lifecycle không hợp lệ, dependency/DB integrity, third-party/backend failure, retry/idempotency nếu API có khả năng gọi lặp.
+   - **Test case quality:** `TC ID` theo format `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`, đánh số tuần tự; `Test Steps` và `Expected Result` phải đánh số tương ứng 1-1; `Test Data` phải cụ thể, unique, traceable; expected phải dựa trên **Test Oracle** rõ ràng từ spec, business rule đã xác nhận hoặc API contract quan sát được.
+   - **Không thêm cột phụ tùy tiện:** Nếu cần ghi `Technique`, `Automation Candidate`, `Test Type`, `Risk Score`, `Environment`, hãy đặt ở summary/phụ lục/handoff note, không nhét vào bảng TC chính nếu user không yêu cầu đổi mẫu.
 
 1. **Với mỗi endpoint** trong scope đã xác nhận, sinh test scenarios theo 7 loại:
    - **✅ Happy Path** — Request hợp lệ, response đúng schema + status code
@@ -167,10 +191,13 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 1. Tạo **artifact** `api_test_cases.md` với cấu trúc:
    - **Tổng quan API** — Base URL, Version, Auth method, Tổng endpoints
    - **Endpoint Catalog** — Bảng: `| # | Method | Path | Mô tả | Số Test Cases |`
+   - **Risk Summary** — Risk Level theo endpoint/module và lý do đánh giá
+   - **Ambiguities & Q&A / Assumptions** — Điểm mờ, giả định QA và hướng xử lý đề xuất
+   - **Traceability Matrix** — `Source/Operation/Schema Field` ↔ `Test Condition` ↔ `TC ID`
    - **Test Cases chi tiết** — Theo từng endpoint:
 
    ```
-   | TC ID | Endpoint | Scenario | Request | Expected Response | Priority | Loại |
+   | TC ID | Module | Endpoint | Risk Level | Test Title | Pre-Condition | Test Steps | Request/Test Data | Expected Response | Priority | Loại |
    ```
 
    - **Test Data Matrix** — Bảng data valid/invalid/boundary cho mỗi model
@@ -181,6 +208,7 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 ### Bước 5: Sinh Automation Scripts (Mode FULL)
 
 > Chỉ thực hiện khi ở **Mode FULL**
+> Nếu project/framework chưa tồn tại, dùng skill `framework_architect` hoặc workflow `/generate_automation_framework` để scaffold nền tảng API trước khi sinh test classes.
 
 1. **Thiết kế project structure** phù hợp với framework:
 

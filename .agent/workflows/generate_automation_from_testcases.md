@@ -16,6 +16,8 @@ skills:
 > - **`smart_locator_agent`** (`.agent/skills/smart_locator_agent/SKILL.md`) — Sinh locator ổn định
 > - **`test_data_generator`** (`.agent/skills/test_data_generator/SKILL.md`) — Sinh test data unique, traceable
 > - **`framework_architect`** (`.agent/skills/framework_architect/SKILL.md`) — Scaffold/cấu trúc framework khi project chưa có nền tảng automation
+> - **Reference:** `.agent/skills/qa_automation_engineer/references/AUTOTEST_HANDOFF_CONTRACT.md`
+> - **Reference:** `.agent/skills/qa_automation_engineer/references/AUTOTEST_REFERENCE_MAP.md` — chọn đúng references theo stack, không load tràn lan
 
 Workflow này giúp agent đọc file manual test cases do user cung cấp, tự mở browser inspect UI, thu thập locators thực tế, sinh automation scripts hoàn chỉnh (POM + Test), chạy test và tự sửa lỗi cho đến khi PASS.
 
@@ -23,6 +25,7 @@ Workflow này giúp agent đọc file manual test cases do user cung cấp, tự
 
 - **Vai trò:** Agent đóng vai Senior Automation Engineer — tuân thủ Clean Code + POM
 - **Tất cả output bằng Tiếng Việt**
+- **PHẢI đọc AUTOTEST handoff/reference map** trước khi sinh code để giữ đúng ownership: UI recon → `ui_debug_agent`, locator → `smart_locator_agent`, framework → `framework_architect`, data → `test_data_generator`
 - **TUYỆT ĐỐI KHÔNG ĐOÁN locator** — phải inspect DOM thực tế bằng MCP browser tools
 - **Desktop viewport 1920×1080** cho tất cả UI debugging
 - ⚠️ **Rule E3 (CRITICAL):** Khi test FAIL → tự đọc log → phân tích → sửa code → chạy lại. **CẤM hỏi user trong quá trình fix lỗi.** Chỉ hỏi khi gặp business rule mâu thuẫn hoặc hết 5 vòng auto-heal

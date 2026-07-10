@@ -119,7 +119,7 @@ Sinh test cases **nhanh, đủ chất lượng** từ requirements/user stories 
 6. **Sinh test cases** với đầy đủ fields:
    - TC ID (format: `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`)
    - Module
-   - Test Case Title / Test Scenario
+   - Test Scenario
    - Pre-conditions
    - Test Steps (đánh số)
    - Expected Results (đánh số tương ứng)

@@ -46,7 +46,10 @@ DELETE /api/customers/{id}
 # OUTPUT FORMAT
 ## Mode SPEC:
 1. API Overview (base URL, auth, endpoints)
-2. Test Cases chi tiết theo 7 loại:
+2. Risk Summary theo endpoint/module
+3. Ambiguities & Q&A / Assumptions nếu spec còn mơ hồ
+4. Traceability Matrix: Source/Operation/Schema Field → Test Condition → TC ID
+5. Test Cases chi tiết theo 7 loại:
    - Happy Path
    - Negative (Validation + Auth)
    - Boundary Values
@@ -54,9 +57,20 @@ DELETE /api/customers/{id}
    - Field-Level Validation (từng field trong request body)
    - Security (injection, IDOR, sensitive data)
    - Pagination & Filtering (cho GET list)
-3. Test Data Matrix (valid / invalid / boundary)
-4. PUT vs PATCH distinction (nếu có)
-5. Execution Order & Dependencies
+6. Test Data Matrix (valid / invalid / boundary)
+7. PUT vs PATCH distinction (nếu có)
+8. Execution Order & Dependencies
+
+# API TC QUALITY RULES (copy từ rule gen TC RBT, áp dụng trực tiếp)
+- Không đoán business rule. Nếu Swagger/spec thiếu expected behavior, tạo Ambiguities & Q&A với `Context` → `QA Assumption` → `Proposed handling`.
+- Với mỗi endpoint/field/status code, phải có traceability tới TC ID.
+- Đánh giá `Risk Level` cho từng endpoint: High cho auth/permission/data mutation/security/integration/stateful; Medium cho validation/pagination/PUT-PATCH/idempotency/concurrency/schema; Low cho health/read-only đơn giản.
+- Áp dụng Equivalence Partitioning, Boundary Value Analysis, Decision Table, State Transition, Use Case/E2E Testing khi thiết kế TC.
+- Happy Path bắt buộc có full data và minimum required data. Optional fields quan trọng phải test omit từng field/cặp field/tổ hợp có ý nghĩa.
+- Required fields phải test thiếu từng field riêng lẻ, thiếu 2 fields, thiếu nhiều fields, body rỗng `{}`, và conditional required fields theo enum/feature flag/business branch.
+- Field-level validation phải tách TC riêng theo từng field và từng lỗi quan trọng; không gộp nhiều field/condition vào một TC nếu làm mất khả năng xác định lỗi.
+- Business/logic failures bắt buộc gồm unique constraints, conditional branching sai, lifecycle/state không hợp lệ, dependency/DB integrity, third-party/backend failure, retry/idempotency nếu API hỗ trợ.
+- TC ID theo format `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`; Test Steps và Expected Result đánh số 1-1; Test Data cụ thể, unique, traceable; Expected dựa trên Test Oracle rõ ràng từ spec/business rule/API contract.
 
 ## Mode FULL:
 1. Tất cả Mode SPEC, cộng thêm:
@@ -68,6 +82,7 @@ DELETE /api/customers/{id}
 
 # GHI CHÚ
 - Mode SPEC: Agent chỉ sinh test cases dạng tài liệu
-- Mode FULL: Agent sinh code + chạy test + auto-heal nếu FAIL
+- Mode FULL: Agent dùng `framework_architect` nếu chưa có project/API framework, sinh code + chạy test + auto-heal nếu FAIL
+- Agent phải đọc `AUTOTEST_REFERENCE_MAP.md` để chọn API references đúng stack: tối thiểu `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, cộng thêm `api-playwright-api-testing.md` hoặc `api-rest-assured-testing.md` theo framework
 - Agent BẮT BUỘC phải liệt kê từng field trong request body và sinh validation TCs riêng cho TỪNG field
 - Agent phải sinh Security test cases (injection, IDOR, auth bypass, sensitive data)

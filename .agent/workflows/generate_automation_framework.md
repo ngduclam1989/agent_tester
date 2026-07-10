@@ -8,6 +8,7 @@ skills:
 # Workflow: Thiết Kế Automation Framework
 
 > **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`framework_architect`** (tại `.agent/skills/framework_architect/SKILL.md`) trước khi bắt đầu. Ngoài ra, tham khảo thêm skill **`qa_automation_engineer`** để nắm các quy tắc automation chung.
+> Với framework có API/hybrid/regression layer, đọc thêm `.agent/skills/qa_automation_engineer/references/AUTOTEST_REFERENCE_MAP.md` để chọn reference tối thiểu theo stack.
 
 Workflow này giúp agent thiết kế, scaffold và triển khai một automation framework hoàn chỉnh từ đầu, phù hợp với nhu cầu cụ thể của project.
 

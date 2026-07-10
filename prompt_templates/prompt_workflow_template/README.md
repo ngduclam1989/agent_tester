@@ -19,14 +19,14 @@ Khi paste vào Antigravity, agent sẽ tự động load đúng skill và thực
 |---|------|----------|-------|
 | 01 | `prompt_01_generate_requirements` | `/generate_requirements_from_website` | `requirements_analyzer` |
 | 02 | `prompt_02_generate_test_cases` | `/generate_testcases_from_requirements` | `rbt_manual_testing` |
-| 03 | `prompt_03_create_framework_playwright` | `/generate_automation_framework` | `qa_automation_engineer` |
-| 03 | `prompt_03_create_framework_selenium` | `/generate_automation_framework` | `qa_automation_engineer` |
-| 04 | `prompt_04_generate_script_playwright` | `/generate_automation_from_testcases` | `qa_automation_engineer` |
-| 04 | `prompt_04_generate_script_selenium` | `/generate_automation_from_testcases` | `qa_automation_engineer` |
-| 05 | `prompt_05_convert_manual_to_automation` | `/generate_automation_from_testcases` | `qa_automation_engineer` |
+| 03 | `prompt_03_create_framework_playwright` | `/generate_automation_framework` | `framework_architect` + `qa_automation_engineer` |
+| 03 | `prompt_03_create_framework_selenium` | `/generate_automation_framework` | `framework_architect` + `qa_automation_engineer` |
+| 04 | `prompt_04_generate_script_playwright` | `/generate_automation_from_testcases` | `qa_automation_engineer` + `ui_debug_agent` + `smart_locator_agent` + `test_data_generator` |
+| 04 | `prompt_04_generate_script_selenium` | `/generate_automation_from_testcases` | `qa_automation_engineer` + `ui_debug_agent` + `smart_locator_agent` + `test_data_generator` |
+| 05 | `prompt_05_convert_manual_to_automation` | `/generate_automation_from_testcases` | `qa_automation_engineer` + `ui_debug_agent` + `smart_locator_agent` + `test_data_generator` |
 | 07 | `prompt_07_generate_test_data` | `/generate_test_data` | `test_data_generator` |
 | 08 | `prompt_08_analyze_flaky_tests` | `/analyze_flaky_tests` | `flaky_test_analyzer` |
-| 09 | `prompt_09_generate_api_tests` | `/generate_api_tests_from_swagger` | `qa_automation_engineer` |
+| 09 | `prompt_09_generate_api_tests` | `/generate_api_tests_from_swagger` | `qa_automation_engineer` + `test_data_generator` + `framework_architect` |
 
 Lưu ý: prompt_06 (Review Code) không có workflow riêng nên không có trong thư mục này.
 

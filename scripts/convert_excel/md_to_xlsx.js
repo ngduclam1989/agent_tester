@@ -2,7 +2,7 @@
  * Script: md_to_xlsx.js
  * Mô tả:  Convert file Markdown Test Cases sang Excel (.xlsx) có format đẹp.
  * Cách dùng:
- *   node scripts/md_to_xlsx.js <input.md> [output.xlsx]
+ *   node scripts/convert_excel/md_to_xlsx.js <input.md> [output.xlsx]
  *
  * Yêu cầu: npm install xlsx   (hoặc chạy 1 lần: npm i xlsx --save-dev)
  */
@@ -158,7 +158,7 @@ function main() {
   const args = process.argv.slice(2);
 
   if (args.length < 1) {
-    console.log("Cách dùng: node scripts/md_to_xlsx.js <input.md> [output.xlsx]");
+    console.log("Cách dùng: node scripts/convert_excel/md_to_xlsx.js <input.md> [output.xlsx]");
     process.exit(1);
   }
 
