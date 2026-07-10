@@ -156,6 +156,7 @@ Agent sử dụng skills trong `.agent/skills/` tùy theo nhiệm vụ:
 | `locator_healer_agent`   | Sửa locator hỏng                                                                        |
 | `test_data_generator`    | Sinh test data unique, traceable — hỗ trợ multi-step pipeline & combinatorial data       |
 | `flaky_test_analyzer`    | Phân tích và khắc phục flaky tests                                                   |
+| `framework_architect`    | Thiết kế/scaffold automation framework — project structure, base classes, config, reporting, CI/CD |
 | `jira_integration`       | Tích hợp Jira/Xray — lấy requirements, đẩy test results                             |
 
 ## 6. Kế Hoạch Kiểm Thử (Plan Templates)

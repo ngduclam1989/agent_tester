@@ -2,6 +2,7 @@
 description: Lấy Requirements / User Stories từ Jira ticket và lưu thành file markdown hoặc JSON.
 skills:
   - jira_integration
+  - requirements_analyzer
 ---
 
 # Workflow: Fetch Jira Requirements

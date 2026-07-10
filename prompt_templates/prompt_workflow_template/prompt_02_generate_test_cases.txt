@@ -12,8 +12,8 @@
 # - FULL RBT: Quy trình 6 bước đầy đủ → thay bằng /generate_manual_testcases_rbt
 
 # OUTPUT FORMAT
-- Xuất ra file Markdown tổng hợp chứa Traceability Matrix, Risk Level, statistics...
-- Tự động convert file Markdown sang Excel (.xlsx) bằng script tích hợp trong dự án.
+- Mode QUICK chỉ xuất bảng Test Cases Markdown theo schema QUICK.
+- Nếu cần Traceability Matrix, Risk Level, Q&A nhiều bước hoặc Excel mapping đầy đủ → dùng `/generate_manual_testcases_rbt`.
 - Các cột bắt buộc trong Bảng Test Cases:
-  TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data
+  TC ID | Module | Test Scenario | Pre-Condition | Test Steps | Test Data | Expected Result | Priority
 - Quy tắc TC ID: [DỰ_ÁN]_[MODULE]_TC_[SỐ] (Ví dụ: CRM_LOGIN_TC_001)

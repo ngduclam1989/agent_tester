@@ -5,6 +5,7 @@ skills:
   - ui_debug_agent
   - smart_locator_agent
   - test_data_generator
+  - framework_architect
 ---
 
 # Workflow: Sinh Automation Scripts từ Manual Test Cases
@@ -14,6 +15,7 @@ skills:
 > - **`ui_debug_agent`** (`.agent/skills/ui_debug_agent/SKILL.md`) — Inspect DOM, thu thập locators
 > - **`smart_locator_agent`** (`.agent/skills/smart_locator_agent/SKILL.md`) — Sinh locator ổn định
 > - **`test_data_generator`** (`.agent/skills/test_data_generator/SKILL.md`) — Sinh test data unique, traceable
+> - **`framework_architect`** (`.agent/skills/framework_architect/SKILL.md`) — Scaffold/cấu trúc framework khi project chưa có nền tảng automation
 
 Workflow này giúp agent đọc file manual test cases do user cung cấp, tự mở browser inspect UI, thu thập locators thực tế, sinh automation scripts hoàn chỉnh (POM + Test), chạy test và tự sửa lỗi cho đến khi PASS.
 

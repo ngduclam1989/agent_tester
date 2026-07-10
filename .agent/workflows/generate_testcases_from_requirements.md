@@ -1,8 +1,11 @@
 ---
 description: Sinh manual test cases nhanh từ requirements (QUICK mode — không qua quy trình 6 bước).
+skills:
+  - rbt_manual_testing
 ---
 
 > **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`rbt_manual_testing`** (tại `.agent/skills/rbt_manual_testing/SKILL.md`) trước khi bắt đầu thực hiện tác vụ này. Sử dụng **Mode QUICK** của skill.
+> Trước khi xuất bảng Test Cases, đọc thêm `.agent/skills/rbt_manual_testing/references/tc-output-contract.md` để giữ đúng schema QUICK.
 
 # Workflow: Sinh Manual Test Cases Nhanh từ Requirements
 
@@ -13,6 +16,7 @@ Workflow này sử dụng **Mode QUICK** của skill `rbt_manual_testing` để 
 - **Mode:** QUICK (1 lượt duy nhất, không chờ user giữa chừng)
 - Phù hợp cho module đơn giản, requirements đã rõ ràng
 - Nếu phát hiện requirements quá phức tạp hoặc mơ hồ → **tự động chuyển sang FULL RBT** và thông báo user
+- QUICK mode **KHÔNG** thêm `Risk Level`, `Traceability Matrix`, `Ambiguities & Q&A` vào bảng TC chính
 - Tất cả output bằng **Tiếng Việt**
 
 ## Các bước thực hiện
@@ -32,33 +36,24 @@ Workflow này sử dụng **Mode QUICK** của skill `rbt_manual_testing` để 
 5. **Sinh test cases đầy đủ fields:**
    - TC ID (format: `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`)
    - Module
-   - Test Scenario / Test Case Title
+   - Test Scenario
    - Pre-conditions
    - Test Steps (đánh số)
    - Expected Results (đánh số tương ứng)
    - Test Data (**phải cụ thể**, không placeholder)
    - Priority (Critical / High / Medium / Low)
-6. **Xuất ra file Markdown tổng hợp và chuyển sang Excel:**
-   - **Tạo file Markdown tổng hợp:** Chứa thông tin chung, Bảng tổng hợp Risk Level, Test Data thiết yếu, Traceability Matrix, Bảng Ambiguities & Q&A, Bảng thống kê số lượng TC, và Bảng Test Cases chi tiết chia theo 5 nhóm rủi ro:
-     * **Function** (High risk - happy/unhappy) - kết hợp kĩ theo bảng quyết định và chuyển trạng thái để sinh các TC kết hợp nhiều dữ liệu nhất có thể, - không gộp chung các TC tắt
-     * **Validation** (Medium risk - kiểm tra chéo các loại dữ liệu của từng field - bắt buộc phải có kiểm tra require, bỏ trống, dấu cách, các loại dữ liệu đúng kết hợp với sai, các loại dữ liệu sai)
-     * **UI & Behavior** (Medium risk - đối với từng elements: kiểm tra thông tin vị trí, kích cỡ, thông tin nội dung, font, màu; behavior đối với từng elements: tab, shift tab, hover, resize, focus, load)
-     * **Phân quyền** (High risk) kiểm tra với tất cả các quyền có trong hệ thống (mỗi quyền 1 TC)
-     * **Ảnh hưởng chức năng liên quan** (High risk)
-     
-     *Cột bắt buộc trong Bảng Test Cases:* `| TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data |`
-     - Quy tắc TC ID: `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`.
-     - Test Steps và Expected Result đánh số cụ thể, tương thích 1-1, dùng `<br>` để xuống dòng.
-     - Dữ liệu Test Data phải cụ thể, chi tiết.
-   - **Convert sang file Excel (.xlsx) tự động:**
-     Bạn (Agent) **BẮT BUỘC** phải tự động chạy lệnh Terminal trong Workspace để convert file Markdown sang Excel:
-     `node scripts/convert_excel/md_to_xlsx.js <đường_dẫn_tuyệt_đối_tới_file_markdown>`
-     Báo cáo rõ đường dẫn file Excel được tạo ra cho user.
+6. **Xuất bảng Test Cases Markdown theo schema QUICK:**
+   - Có thể kèm phần tóm tắt ngắn ở trên bảng nếu cần, nhưng **không được thêm/xóa/đổi cột** của bảng TC chính.
+   - *Cột bắt buộc trong Bảng Test Cases:* `| TC ID | Module | Test Scenario | Pre-Condition | Test Steps | Test Data | Expected Result | Priority |`
+   - Quy tắc TC ID: `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`.
+   - Test Steps và Expected Result đánh số cụ thể, tương thích 1-1, dùng `<br>` để xuống dòng.
+   - Test Data phải cụ thể, chi tiết, không dùng placeholder.
+   - Nếu user yêu cầu file, lưu Markdown vào `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/TC_[MODULE].md` và tránh ghi đè file cũ.
 
 ## Bảng Output (trong file Markdown)
 
 ```markdown
-| TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data |
+| TC ID | Module | Test Scenario | Pre-Condition | Test Steps | Test Data | Expected Result | Priority |
 ```
 
 ## Quy tắc quan trọng
@@ -66,8 +61,9 @@ Workflow này sử dụng **Mode QUICK** của skill `rbt_manual_testing` để 
 - Test Data phải cụ thể: `test_login_01@domain.com`, không phải "email hợp lệ"
 - Phải bao gồm cả Positive, Negative, Boundary, và Edge cases
 - Mỗi trường input phải có validation TCs riêng (không gộp nhiều trường vào 1 TC)
+- Không thêm cột `Risk Level`, `Technique`, `Automation Candidate`, `Test Type`, `Risk Score` vào bảng QUICK; nếu user cần các thông tin này, chuyển sang FULL RBT
 - TC ID theo format thống nhất do user quy ước hoặc mặc định `[DỰ_ÁN]_[MODULE]_TC_[SỐ]` và lưu vào folder practices\testcases theo các thông tin từ requirement
-- Nếu quá nhiều TCs → chia thành Part 1, Part 2 và hỏi user
+- Nếu quá nhiều TCs → đề xuất chuyển FULL RBT hoặc chia thành Part 1, Part 2 và hỏi user
 
 ## Khi nào chuyển sang FULL RBT
 

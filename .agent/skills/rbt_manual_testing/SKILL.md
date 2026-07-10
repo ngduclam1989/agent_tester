@@ -190,8 +190,8 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 > [!NOTE]
 > **2 luồng sử dụng riêng biệt:**
 >
-> - **Luồng Antigravity (slash command):** Agent thực hiện theo hướng dẫn tổng quát bên dưới. Agent KHÔNG cần đọc file prompt.txt.
-> - **Luồng Copy-Paste (ChatGPT/Claude):** QA team copy nội dung prompt chi tiết từ `plans/manual/01-06/prompt.txt` vào chat AI, từng bước một.
+> - **Luồng Antigravity (slash command):** Agent thực hiện theo hướng dẫn tổng quát bên dưới và **phải đọc prompt template tương ứng trong `plans/manual/` trước mỗi bước** để giữ đủ checklist chi tiết. User không cần tự copy-paste prompt.
+> - **Luồng Copy-Paste (ChatGPT/Claude):** QA team tự copy nội dung `prompt.txt` trong từng thư mục con của `plans/manual/` vào chat AI, từng bước một.
 
 ### Bước 1: Context & Role-play (Khởi tạo ngữ cảnh & Tĩnh kiểm thử)
 
