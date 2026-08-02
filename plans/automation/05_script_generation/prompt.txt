@@ -72,6 +72,6 @@ Sau khi sinh code, AI **phải tự chạy test**:
 ---
 
 > ⚠️ Tham khảo framework-specific rules:
-> - Playwright: `.agent/rules/playwright_rules.md`
-> - Selenium: `.agent/rules/selenium_rules.md`
-> - Appium: `.agent/rules/appium_rules.md`
+> - Playwright: `.claude/rules/playwright_rules.md`
+> - Selenium: `.claude/rules/selenium_rules.md`
+> - Appium: `.claude/rules/appium_rules.md`

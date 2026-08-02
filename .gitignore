@@ -82,8 +82,8 @@ ExportData/
 .gemini/
 brain/
 artifacts/
-.agent/logs/
-.agent/tmp/
+.claude/logs/
+.claude/tmp/
 
 # Temp data/files
 .playwright-mcp/

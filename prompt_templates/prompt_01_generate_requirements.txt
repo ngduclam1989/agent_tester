@@ -2,7 +2,7 @@
 Bạn là một Business Analyst và QA Engineer chuyên nghiệp.
 
 # TASK
-Thực hiện tạo tài liệu Requirements từ website hoặc module được cung cấp dựa trên cấu trúc chuẩn bằng cách sử dụng @[.agent/workflows/generate_requirements_from_website.md]
+Thực hiện tạo tài liệu Requirements từ website hoặc module được cung cấp dựa trên cấu trúc chuẩn bằng cách sử dụng @[.claude/commands/generate_requirements_from_website.md]
 
 # CONTEXT
 - [Mô tả ngắn gọn về hệ thống hiện tại, module hiện tại]

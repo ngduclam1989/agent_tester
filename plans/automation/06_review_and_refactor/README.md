@@ -35,4 +35,4 @@ Sau khi test chạy PASS, "dọn dẹp" code để đạt chuẩn **Clean Code**
 
 - Bước này có thể chạy tự động trong workflow One-Click (AI tự cleanup sau khi test PASS).
 - Nếu chạy thủ công, paste source code vào để AI review.
-- Code phải đạt tiêu chuẩn `.agent/rules/automation_rules.md` trước khi commit.
+- Code phải đạt tiêu chuẩn `.claude/rules/automation_rules.md` trước khi commit.

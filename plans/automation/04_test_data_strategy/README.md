@@ -31,4 +31,4 @@ Ví dụ: `auto_createCustomer_20260402_A3F2@test.com`
 
 - Mỗi test method có data **riêng biệt** → chạy parallel an toàn.
 - Dùng Faker library cho data realistic (tên người, địa chỉ, SĐT...).
-- Tuân thủ quy tắc trong `.agent/rules/automation_rules.md` (Section 2: Test Data).
+- Tuân thủ quy tắc trong `.claude/rules/automation_rules.md` (Section 2: Test Data).

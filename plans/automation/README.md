@@ -47,11 +47,11 @@ Gọi workflow `/generate_automation_from_testcases` + đính kèm Test Cases:
 
 ## 📋 Rules tham chiếu
 
-- `.agent/rules/automation_rules.md` — POM, Data, Naming conventions
-- `.agent/rules/locator_strategy.md` — Thứ tự ưu tiên locator
-- `.agent/rules/playwright_rules.md` — Playwright-specific rules
-- `.agent/rules/selenium_rules.md` — Selenium-specific rules
-- `.agent/rules/appium_rules.md` — Appium-specific rules
+- `.claude/rules/automation_rules.md` — POM, Data, Naming conventions
+- `.claude/rules/locator_strategy.md` — Thứ tự ưu tiên locator
+- `.claude/rules/playwright_rules.md` — Playwright-specific rules
+- `.claude/rules/selenium_rules.md` — Selenium-specific rules
+- `.claude/rules/appium_rules.md` — Appium-specific rules
 
 ## 📁 Hướng dẫn nhanh
 

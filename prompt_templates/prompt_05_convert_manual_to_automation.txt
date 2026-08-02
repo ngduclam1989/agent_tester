@@ -19,7 +19,7 @@ Hoặc: "Dựa vào nội dung file đính kèm theo prompt này."
    - Locators phải ổn định, không dùng xpath/css quá dài chứa tag cha con liên tiếp.
    - Ưu tiên sử dụng công cụ browser (MCP) để inspect DOM thật trước khi viết locator.
    - TUYỆT ĐỐI KHÔNG đoán (guess) cấu trúc DOM. Nếu không thể inspect, hãy tạo biến giả lập kèm comment nhắc nhở.
-   - Thứ tự ưu tiên locator: tham khảo .agent/rules/locator_strategy.md
+   - Thứ tự ưu tiên locator: tham khảo .claude/rules/locator_strategy.md
 3. Smart Waits (Xử lý đồng bộ):
 - KHÔNG bao giờ sử dụng Hard Sleep (như Thread.sleep hoặc waitForTimeout).
 - CHỈ sử dụng Smart Waits / Auto-waiting (như expect().toBeVisible(), WebDriverWait, v.v.).

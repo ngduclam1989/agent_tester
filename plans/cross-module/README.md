@@ -98,7 +98,7 @@ plans/cross-module/
 **Workflows tham chiếu:**
 
 ```
-.agent/workflows/
+.claude/commands/
 ├── generate_cross_module_test_plan.md       ← Workflow mới: Phân tích + Ma trận
 └── generate_combinatorial_test_data.md      ← Workflow mới: Sinh test data
 ```
@@ -106,7 +106,7 @@ plans/cross-module/
 **Skill mở rộng:**
 
 ```
-.agent/skills/test_data_generator/SKILL.md   ← Thêm: Multi-Step Pipeline + Combinatorial Data
+.claude/skills/test_data_generator/SKILL.md   ← Thêm: Multi-Step Pipeline + Combinatorial Data
 ```
 
 ---

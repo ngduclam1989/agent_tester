@@ -56,7 +56,7 @@ private final By submitButton = By.cssSelector("button[data-testid='submit-btn']
 - ⛔ **CHƯA sinh file Test script** — chỉ thiết kế Page classes
 - ✅ Phác thảo cấu trúc file, tên class, locator declarations, method signatures
 - ✅ Có thể viết body method nếu logic rõ ràng
-- ✅ Tuân thủ `.agent/rules/automation_rules.md` (naming conventions, POM structure)
+- ✅ Tuân thủ `.claude/rules/automation_rules.md` (naming conventions, POM structure)
 
 ---
 

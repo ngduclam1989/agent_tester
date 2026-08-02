@@ -51,7 +51,7 @@ Sử dụng **công cụ trình duyệt** (Playwright MCP / Selenium MCP) để:
    - Đọc Accessibility Tree
    - Inspect DOM attributes: `id`, `data-testid`, `name`, `aria-label`, `role`, `placeholder`
    - TUYỆT ĐỐI **không đoán** selector — chỉ lấy từ DOM thật
-4. **Ưu tiên** locator theo thứ tự (tham khảo `.agent/rules/locator_strategy.md`):
+4. **Ưu tiên** locator theo thứ tự (tham khảo `.claude/rules/locator_strategy.md`):
    - Playwright: `getByRole` > `getByLabel` > `getByPlaceholder` > `getByTestId` > CSS > XPath
    - Selenium: `id` > `data-testid` > `name` > `cssSelector` > `xpath`
 5. **Trả kết quả** dưới dạng bảng:
