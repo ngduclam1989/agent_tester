@@ -1,0 +1,203 @@
+# Prompt Version: 1.2.0 | Last Updated: 2026-06-10
+# Changelog v1.2.0:
+#   - Added MALFORMED_JSON_CHECK config
+#   - Added EXTRA_FIELDS_CHECK config
+#   - Added explicit rule for Optional field Type check (Constraint #7)
+#   - Updated algorithm Bước 1.5 and Bước 4 for new cases
+#   - Updated Golden Sample and Self-Audit
+================= LỆNH THỰC THI - CẤU PHẦN 2: SCHEMA VALIDATION (MARKMAP FORMAT) =================
+
+Sử dụng toàn bộ kiến thức, tài liệu (RSD & PTTK) và quy tắc Markmap đã ghi nhớ ở PROMPT 0.
+Hãy thực thi sinh Test Design cho API chỉ định trong:
+Mục III. GLOBAL RULES → 5. Giới hạn phạm vi dữ liệu (SCOPE LIMITATION - QUAN TRỌNG)
+
+---
+
+## CẤU HÌNH KIỂM SOÁT CẤU PHẦN (ĐỌC TRƯỚC KHI THỰC THI)
+
+```
+MANDATORY_CHECK : [DEFAULT]
+# DEFAULT / BOTH  : Sinh Missing và Empty cho field Required=Y (tra Bảng quy đổi Mục I).
+# MISSING_ONLY    : Chỉ sinh Missing.
+# EMPTY_ONLY      : Chỉ sinh Empty. Bỏ qua tự động nếu kiểu Integer/Number/Boolean.
+# OFF             : Bỏ qua toàn bộ.
+
+TYPE_CHECK      : [DEFAULT]
+# DEFAULT / ON    : Sinh 1 case sai kiểu cơ bản mỗi field.
+# STRICT          : Sinh 2 case sai kiểu (cơ bản + 1 kiểu sai khác).
+# OFF             : Bỏ qua.
+
+LENGTH_CHECK    : [DEFAULT]
+# DEFAULT / MAX_ONLY : Sinh case N+1 ký tự nếu PTTK có Max Length.
+# MIN_ONLY        : Sinh case N-1 ký tự nếu PTTK có Min Length.
+# BOTH            : Sinh cả N+1 (Max) và N-1 (Min) nếu có đủ cả hai.
+# OFF             : Bỏ qua.
+
+MALFORMED_JSON_CHECK : [DEFAULT]
+# NEW v1.2.0
+# DEFAULT / ON    : Sinh 1 case gửi JSON body sai cú pháp (syntax error).
+#                   VD: thiếu dấu đóng ngoặc, trailing comma, key không có dấu nháy.
+# OFF             : Bỏ qua.
+
+EXTRA_FIELDS_CHECK : [DEFAULT]
+# NEW v1.2.0
+# DEFAULT / ON    : Sinh 1 case gửi payload có thêm field lạ không định nghĩa trong PTTK.
+#                   Mục đích: kiểm tra mass assignment, data leakage, và API robustness.
+# OFF             : Bỏ qua.
+
+SCOPE_FIELDS    : [DEFAULT]
+# DEFAULT         : Duyệt toàn bộ field trong Request Payload (trừ Header).
+# [field_1, ...]  : Chỉ duyệt các field được liệt kê.
+```
+
+> **Quy tắc bắt buộc:**
+> - Đọc và áp dụng CẤU HÌNH TRƯỚC khi chạy Thuật toán.
+> - Tham số [DEFAULT] = hành vi gốc.
+> - Tham số khác DEFAULT = ghi đè bước tương ứng trong Thuật toán.
+> - SCOPE_FIELDS khác DEFAULT: bỏ qua field không trong danh sách, kể cả Required.
+
+---
+
+## I. MỤC TIÊU VÀ ĐỘ PHỦ
+
+Chỉ kiểm thử Cấu trúc dữ liệu (Schema) của Request Body/Params theo bảng PTTK:
+- [Missing] / [Empty]  Mandatory Check: Required=Y → Missing key và Empty value.
+- [Type]               Data Type Check: Sai kiểu dữ liệu.
+- [Max Length]         Length Check: Vượt Max Length (N+1 ký tự).
+- [Malformed]          Malformed JSON: Cú pháp JSON không hợp lệ.          (NEW)
+- [Extra-Fields]       Extra Fields: Payload có field lạ ngoài PTTK.        (NEW)
+
+**Bảng quy đổi giá trị "Empty" theo kiểu dữ liệu — BẮT BUỘC tra khi sinh case [Empty]:**
+
+| Kiểu (PTTK)       | Giá trị truyền [Empty] | Ghi chú                                      |
+|-------------------|------------------------|----------------------------------------------|
+| String / Text     | `""`                   | Áp dụng bình thường                          |
+| Array             | `[]`                   | Áp dụng bình thường                          |
+| Object            | `{}`                   | Áp dụng bình thường                          |
+| Date / DateTime   | `""`                   | Coi như String rỗng                          |
+| Integer / Number  | ❌ KHÔNG ÁP DỤNG       | Chỉ sinh [Missing]. Không có "rỗng" cho số. |
+| Boolean           | ❌ KHÔNG ÁP DỤNG       | Chỉ sinh [Missing]. Không có "rỗng" cho bool|
+
+## II. LỆNH CẤM
+
+1. KHÔNG sinh case liên quan đến HEADER (Authorization, Token...).
+2. KHÔNG tạo case truyền null. Chỉ dùng Missing và Empty (theo Bảng quy đổi Mục I).
+3. KHÔNG tự bịa / assume con số Max Length nếu PTTK không ghi. Không ghi = bỏ qua.
+4. KHÔNG test logic nghiệp vụ, số âm, business rules, logic chéo (dành cho Cấu phần 3).
+5. KHÔNG Verify DB cho case Validation lỗi (HTTP 400). Chỉ Verify DB cho Happy Path.
+6. Với field Object/Array top-level: Chỉ check Missing và Type ở cấp cha. KHÔNG tự
+   recurse vào child fields trừ khi child fields được liệt kê riêng trong PTTK với
+   cột Required/Type của riêng chúng. Nếu có → duyệt như field độc lập và ghi chú
+   <!-- Child field của <tên cha> -->.
+7. [NEW v1.2.0] Optional fields (Required=N) khi CÓ TRONG REQUEST vẫn phải sinh case
+   [Type] nếu TYPE_CHECK bật. Lý do: field optional được truyền lên nhưng sai kiểu
+   vẫn là lỗi cần bắt. Ghi chú <!-- Optional field — chỉ sinh [Type], không sinh [Missing]/[Empty] -->.
+
+## III. THUẬT TOÁN TƯ DUY (INTERNAL ALGORITHM)
+
+- Bước 0: Đọc CẤU HÌNH. Ghi nhớ tất cả tham số.
+- Bước 1: Sinh TD_001 Happy Path [Smoke] — Request đầy đủ, đúng định dạng.
+- Bước 1.5: **[Malformed]** — Áp dụng MALFORMED_JSON_CHECK. (NEW)
+  ON/DEFAULT: Sinh 1 case body JSON bị lỗi cú pháp (VD: `{"field": "value"` thiếu `}`).
+              Expected: HTTP 400, Code 'ERR_INVALID_JSON' hoặc 'ERR_BAD_REQUEST'.
+  OFF: Bỏ qua.
+- Bước 2: Xác định danh sách field cần duyệt:
+  SCOPE_FIELDS=DEFAULT: toàn bộ field trong Request Payload (bỏ Header).
+  Với Object/Array: chỉ cấp cha trừ khi child fields liệt kê riêng trong PTTK.
+  SCOPE_FIELDS có danh sách: chỉ duyệt field trong danh sách.
+- Bước 3: Vòng lặp Field-by-Field. Với mỗi field F:
+
+  **[Mandatory Check]** — Áp dụng MANDATORY_CHECK:
+  - Required=Y:
+    DEFAULT/BOTH: sinh [Missing] VÀ [Empty] (tra Bảng quy đổi Mục I).
+    MISSING_ONLY: chỉ [Missing].
+    EMPTY_ONLY: chỉ [Empty] (bỏ qua nếu Integer/Number/Boolean).
+    OFF: bỏ qua.
+  - Required=N (Optional): KHÔNG sinh [Missing] và [Empty]. Chỉ sinh [Type] nếu TYPE_CHECK bật.
+    Ghi chú <!-- Optional field --> phía trên.
+
+  **[Type Check]** — Áp dụng TYPE_CHECK:
+  DEFAULT/ON: sinh 1 case sai kiểu cơ bản (áp dụng cả Required=Y và Required=N).
+  STRICT: sinh 2 case sai kiểu.
+  OFF: bỏ qua.
+
+  **[Length Check]** — Áp dụng LENGTH_CHECK (chỉ khi PTTK có con số):
+  DEFAULT/MAX_ONLY: sinh N+1 ký tự.
+  MIN_ONLY: sinh N-1 ký tự.
+  BOTH: sinh cả hai.
+  OFF: bỏ qua.
+
+  BẮT BUỘC xong field F mới chuyển field tiếp theo.
+
+- Bước 4: **[Extra-Fields]** — Áp dụng EXTRA_FIELDS_CHECK (sau khi xong toàn bộ vòng lặp). (NEW)
+  ON/DEFAULT: Sinh 1 case payload có đủ field hợp lệ + thêm 1 field lạ không có trong PTTK.
+              Tag: [Extra-Fields].
+              Expected: HTTP 400 'ERR_UNEXPECTED_FIELD' HOẶC HTTP 200 với field lạ bị
+              bỏ qua hoàn toàn (không lưu DB). Ghi chú expected behavior theo PTTK.
+              [ASSUMPTION nếu PTTK không định nghĩa]: API nên trả 400 hoặc silently ignore.
+  OFF: Bỏ qua.
+
+## IV. VÍ DỤ MẪU OUTPUT (GOLDEN SAMPLE)
+
+```
+## Schema Validation
+<!-- Happy Path này chỉ verify lớp Schema. Không thay thế HP ở C1, C3, C4. -->
+### TD_P2_001 - [Smoke] - Happy Path (Valid Schema)
+- **Steps**: Request body đầy đủ, đúng kiểu dữ liệu, đúng định dạng.
+- **Expected**: HTTP 200, Code 'SUCCESS'. DB lưu 1 record mới.
+
+<!-- BƯỚC 1.5: MALFORMED JSON (NEW v1.2.0) -->
+### TD_P2_002 - [Malformed] - Request body không hợp lệ về cú pháp JSON
+- **Steps**: Gửi request với body JSON bị lỗi cú pháp: `{"amount": 50000, "desc": "test"` (thiếu `}`).
+- **Expected**: HTTP 400, Code 'ERR_INVALID_JSON' hoặc 'ERR_BAD_REQUEST'.
+
+<!-- VÒNG LẶP FIELD: 'amount' (Type: Integer, Required: Y, Max-len: N/A) -->
+<!-- Integer → [Empty] bỏ qua theo Bảng quy đổi Mục I. Chỉ sinh [Missing] và [Type]. -->
+### TD_P2_003 - [Missing] - Field 'amount' bị Missing
+- **Steps**: Request thiếu key 'amount'.
+- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
+### TD_P2_004 - [Type] - Field 'amount' sai kiểu (String)
+- **Steps**: Request với 'amount' = "một triệu".
+- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
+
+<!-- VÒNG LẶP FIELD: 'description' (Type: String, Required: Y, Max-len: 200) -->
+### TD_P2_005 - [Missing] - Field 'description' bị Missing
+- **Steps**: Request thiếu key 'description'.
+- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
+### TD_P2_006 - [Empty] - Field 'description' truyền rỗng
+- **Steps**: Request với 'description' = "" (String → Empty = "").
+- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
+### TD_P2_007 - [Type] - Field 'description' sai kiểu (Integer)
+- **Steps**: Request với 'description' = 12345.
+- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
+### TD_P2_008 - [Max Length] - Field 'description' vượt Max Length (201 ký tự)
+- **Steps**: Request với 'description' = chuỗi 201 ký tự (Max=200, nhập N+1=201).
+- **Expected**: HTTP 400, Code 'ERR_MAX_LENGTH_EXCEEDED'.
+
+<!-- VÒNG LẶP FIELD: 'note' (Type: String, Required: N — Optional field) -->
+<!-- Optional field → KHÔNG sinh [Missing]/[Empty]. Chỉ sinh [Type] nếu TYPE_CHECK bật. -->
+### TD_P2_009 - [Type] - Optional field 'note' được truyền nhưng sai kiểu (Integer)
+- **Steps**: Request có field 'note' = 999 (số nguyên thay vì String).
+- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
+
+<!-- BƯỚC 4: EXTRA FIELDS (NEW v1.2.0) — sau khi xong toàn bộ vòng lặp -->
+### TD_P2_010 - [Extra-Fields] - Payload chứa field lạ không định nghĩa trong PTTK
+- **Steps**: Gửi request hợp lệ + thêm field lạ: `"injected_admin": true`.
+- **Expected**: HTTP 400 'ERR_UNEXPECTED_FIELD' HOẶC HTTP 200 với 'injected_admin'
+  bị bỏ qua hoàn toàn (không lưu DB, không xuất hiện trong response).
+  [ASSUMPTION nếu PTTK không định nghĩa behavior: expect HTTP 400].
+```
+
+## V. THỰC THI CUỐI
+
+1. Self-Audit:
+   - Xóa hết case test Header?
+   - Có case Null? (Xóa ngay).
+   - Tự bịa Max Length? (Xóa ngay).
+   - Sinh [Empty] cho Integer/Number/Boolean? (Xóa ngay, giữ [Missing]).
+   - Tự recurse vào child Object/Array khi PTTK không liệt kê? (Xóa ngay).
+   - [NEW] Optional field vẫn sinh [Missing]/[Empty]? (Xóa ngay, chỉ giữ [Type]).
+   - [NEW] MALFORMED_JSON_CHECK=ON/DEFAULT nhưng không có case [Malformed]? (Bổ sung).
+   - [NEW] EXTRA_FIELDS_CHECK=ON/DEFAULT nhưng không có case [Extra-Fields]? (Bổ sung).
+   - Happy Path dùng [ST] thay vì [Smoke]? (Sửa ngay).
+2. Rendering: MỘT FILE MARKDOWN DUY NHẤT trong code fence. Không có văn bản ngoài luồng.

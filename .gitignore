@@ -104,5 +104,3 @@ node_modules/
 # Google Service Account (ignore both naming conventions)
 service_account.json
 service-account.json
-.claude/
-CLAUDE.md
