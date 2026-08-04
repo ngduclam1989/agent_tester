@@ -48,7 +48,7 @@ Workflow này sử dụng **Mode QUICK** của skill `rbt_manual_testing` để 
    - Quy tắc TC ID: `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`.
    - Test Steps và Expected Result đánh số cụ thể, tương thích 1-1, dùng `<br>` để xuống dòng.
    - Test Data phải cụ thể, chi tiết, không dùng placeholder.
-   - Nếu user yêu cầu file, lưu Markdown vào `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/TC_[MODULE].md` và tránh ghi đè file cũ.
+   - Nếu user yêu cầu file, lưu Markdown vào `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/TC_[MODULE].md` (TC UI luôn nằm trong thư mục con `ui/`, tách biệt khỏi TC API trong `api/`) và tránh ghi đè file cũ.
 
 ## Bảng Output (trong file Markdown)
 

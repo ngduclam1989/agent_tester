@@ -107,14 +107,15 @@ Thực hiện theo hướng dẫn chi tiết trong skill `rbt_manual_testing` �
      `| **NHÓM CÁC PHẦN ẢNH HƯỞNG CHỨC NĂNG LIÊN QUAN** | | | | | | | | |`
    - Test Steps và Expected Result đánh số cụ thể, tương thích 1-1, dùng `<br>` để xuống dòng.
    - Không được bỏ sót bất kỳ test case nào đã sinh ở Bước 5.
-   - **Yêu cầu lưu trữ & Tránh ghi đè (Version Control):** Bắt buộc lưu trực tiếp vào thư mục con tương ứng của folder **`practices/testcases/[TÊN_FOLDER_REQUIREMENT]/`** của workspace. **TUYỆT ĐỐI KHÔNG ĐƯỢC ghi đè (overwrite)** lên file Test Cases cũ đã có sẵn. Hãy kiểm tra nếu file `TC_[MODULE].md` đã tồn tại, tự động tăng số thứ tự Version tiếp theo vào tên file (ví dụ: `TC_[MODULE] 2.md`, `TC_[MODULE] 3.md`, v.v.). Sử dụng `IsArtifact: false` khi ghi file để tránh lưu vào thư mục brain tạm thời của IDE.
+   - **Yêu cầu lưu trữ & Tránh ghi đè (Version Control):** Bắt buộc lưu trực tiếp vào thư mục con **`practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/`** của workspace (TC UI luôn nằm trong `ui/`, tách biệt khỏi TC API trong `api/` — xem skill `rbt_manual_testing` mục rẽ nhánh Scope). **TUYỆT ĐỐI KHÔNG ĐƯỢC ghi đè (overwrite)** lên file Test Cases cũ đã có sẵn. Hãy kiểm tra nếu file `TC_[MODULE].md` đã tồn tại, tự động tăng số thứ tự Version tiếp theo vào tên file (ví dụ: `TC_[MODULE] 2.md`, `TC_[MODULE] 3.md`, v.v.). Sử dụng `IsArtifact: false` khi ghi file để tránh lưu vào thư mục brain tạm thời của IDE.
 2. **Convert sang file Excel (.xlsx) tự động:**
    - Bạn (Agent) **BẮT BUỘC** phải tự động chạy lệnh Terminal trong Workspace để convert file Markdown sang Excel:
      `node scripts/convert_excel/md_to_xlsx.js <đường_dẫn_tuyệt_đối_tới_file_markdown>`
-   - Báo cáo rõ ràng đường dẫn file Excel mới được tạo ra trong cùng thư mục `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/` cho user.
+   - Báo cáo rõ ràng đường dẫn file Excel mới được tạo ra trong cùng thư mục `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/` cho user.
 
 ## Output
 
-- Bảng Test Cases Markdown hoàn chỉnh được lưu tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/TC_[MODULE].md`
-- File Excel (.xlsx) được convert tự động tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/TC_[MODULE].xlsx`
+- Bảng Test Cases Markdown hoàn chỉnh được lưu tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/TC_[MODULE].md`
+- File Excel (.xlsx) được convert tự động tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/TC_[MODULE].xlsx`
+- Nếu module có phần API: TC API nằm riêng tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/api/` dạng `.md`+`.xlsx` (sinh bởi skill `api_test_design`, xem mục rẽ nhánh Scope ở trên)
 - Traceability Matrix và Danh sách Ambiguities đã giải quyết trong file.

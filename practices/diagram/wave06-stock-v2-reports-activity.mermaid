@@ -1,0 +1,43 @@
+flowchart TD
+    Start([Bắt đầu]) --> S1[Mở module Tồn kho]
+    S1 --> S2{Chọn báo cáo}
+    S2 -->|Báo cáo tồn kho| L1[STK-LIST-V2 - filter mặc định hôm nay, tất cả kho]
+    S2 -->|Báo cáo NXT| N1[IP-VIEW-V2 - filter mặc định tháng hiện tại]
+
+    subgraph LIST[STK-LIST-V2 - Web va Mobile]
+    L1 --> L2[Hiển thị bảng 8 cột + dòng Tổng]
+    L2 --> L3{Người dùng thao tác}
+    L3 -->|Đổi filter search/kho/ngày| L4[Refetch stockLedgerAtDate]
+    L4 --> L2
+    L3 -->|Xem lịch sử - chỉ Web| L5[Điều hướng STK-DETAIL-V2 kèm mã và kho]
+    L3 -->|Xuất file - chỉ Web| L6[Tải Báo cáo tồn kho.xlsx]
+    end
+
+    subgraph NXT[IP-VIEW-V2 - Web only]
+    N1 --> N2[Hiển thị bảng 13 cột header 2 tầng + dòng Tổng]
+    N2 --> N3{Người dùng thao tác}
+    N3 -->|Đổi filter| N4[Refetch stockInoutSummary]
+    N4 --> N2
+    N3 -->|Click Mã SP nội bộ| N5{productId có giá trị?}
+    N5 -->|Có| N6[Điều hướng trang chi tiết sản phẩm nội bộ]
+    N5 -->|Null - BE chưa hoàn thiện| N7[Hiển thị text thường - không render link]
+    N3 -->|Xuất file| N8[Tải Báo cáo nhập xuất tồn.xlsx]
+    end
+
+    subgraph CARD[STK-DETAIL-V2 - Thẻ kho - Web only]
+    L5 --> D1[Mở full-page - auto-fill khoảng ngày bằng tháng hiện tại]
+    D1 --> D2[Hiển thị bảng running theo phiếu + dòng Tổng]
+    D2 --> D3{Người dùng thao tác}
+    D3 -->|Đổi khoảng ngày| D4[Refetch stockCardDetail]
+    D4 --> D2
+    D3 -->|Click Số phiếu| D5{Loại phiếu}
+    D5 -->|Phiếu nhập| D6[Điều hướng chi tiết phiếu nhập]
+    D5 -->|Phiếu xuất| D7[Điều hướng chi tiết phiếu xuất]
+    D3 -->|Xuất file| D8[Tải Báo cáo thẻ kho.xlsx]
+    D3 -->|Đóng| D9[Quay lại STK-LIST-V2]
+    end
+
+    D9 --> L1
+    L6 --> End1([Kết thúc])
+    N8 --> End1
+    D8 --> End1

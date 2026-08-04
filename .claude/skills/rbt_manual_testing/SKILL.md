@@ -252,10 +252,16 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
    - Kiểm tra các yêu cầu bị thiếu sót (ví dụ: không quy định độ dài tối đa/tối thiểu của các trường textbox, định dạng regex của email/SĐT, timeout, hành vi xử lý khi mất kết nối mạng...).
    - Phát hiện các yêu cầu mâu thuẫn giữa các phần, giữa tài liệu mới và baseline legacy, hoặc giữa tài liệu đặc tả và diagram.
    - Phát hiện các điểm mô tả chưa rõ ràng về logic nghiệp vụ (Business Rules).
-5. **Đặt câu hỏi Q&A có cấu trúc rõ ràng:**
+5. **Đặt câu hỏi Q&A có cấu trúc rõ ràng — BẮT BUỘC đủ 5 phần, không được viết cụt lủn:**
    - Đặt câu hỏi Q&A có đánh số thứ tự (Q1, Q2...) cho user/PO/BA giải đáp.
-   - **Bắt buộc** mỗi câu hỏi phải có cấu trúc gồm 3 phần: (1) Ngữ cảnh phát hiện điểm mờ (Ambiguity Context), (2) Giả định của QA (QA Assumption) nếu không được trả lời, và (3) Đề xuất phương án xử lý (Proposed solution).
+   - **Bắt buộc** mỗi câu hỏi phải trình bày đủ **5 phần** theo đúng thứ tự sau (áp dụng cho MỌI câu hỏi Q&A sinh ra ở Bước 2, không có ngoại lệ, kể cả khi câu hỏi có vẻ đơn giản):
+     1. **Nguồn trích dẫn (Source Citation):** liệt kê rõ **đường dẫn file + số dòng cụ thể** (định dạng `path/to/file.md:line` hoặc range `path/to/file.md:line-line`) của đoạn tài liệu làm phát sinh điểm mờ — kèm **trích dẫn nguyên văn** (quote) đoạn đó. Nếu điểm mờ đến từ nhiều file (ví dụ mâu thuẫn giữa 2 nguồn), liệt kê đủ từng file + dòng riêng biệt. Agent PHẢI đọc trực tiếp file và ghi đúng số dòng thật — không suy đoán/bịa số dòng.
+     2. **Bối cảnh nghiệp vụ (Business Context):** giải thích ngắn gọn vai trò/mục đích nghiệp vụ của phần liên quan (feature/luồng nào, tại sao nó tồn tại), để user không cần tự tra lại tài liệu mới hiểu được câu hỏi đang nói về cái gì.
+     3. **Vấn đề cụ thể (Specific Problem):** mô tả chính xác điểm mờ/thiếu sót/mâu thuẫn là gì — không nói chung chung ("chưa rõ ràng") mà phải chỉ ra rõ 2 khả năng hiểu khác nhau, hoặc thông tin còn thiếu là thông tin gì.
+     4. **Ảnh hưởng nếu không giải quyết (Impact if Unresolved):** hậu quả cụ thể tới việc sinh/thực thi test case nếu câu hỏi này không được trả lời (ví dụ: TC sẽ fail oan, TC không thực thi được, bỏ sót luồng rủi ro cao, gây báo cáo sai lệch...).
+     5. **Đề xuất giải quyết (Proposed Solution):** phương án QA đề xuất áp dụng nếu user không phản hồi — phải là một giả định/quyết định cụ thể, khả thi, không mơ hồ (ví dụ chọn rõ 1 trong 2 phương án, ghi rõ Priority/ghi chú sẽ áp dụng vào TC).
    - **Tuyệt đối không tự ý phỏng đoán** logic nghiệp vụ để tự sinh test cases khi các điểm mờ cốt lõi chưa được làm rõ.
+   - **Tuyệt đối không viết câu hỏi cụt lủn** (chỉ 1-2 dòng, thiếu trích dẫn nguồn) — mọi câu hỏi phải đủ 5 phần trên dù trong Bước 2 hay khi phát sinh câu hỏi bổ sung sau này (Bước 4/5) trong cùng phiên FULL RBT.
 6. **DỪNG LẠI — Chờ user trả lời** các câu hỏi Q&A trước khi chuyển sang Bước 3.
 
 **Output:** Danh sách Test Conditions + Danh sách luồng kiểm thử + Các kịch bản rẽ nhánh theo diagram + Ambiguities + Câu hỏi Q&A.
@@ -289,15 +295,16 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 
 1. Xây dựng **Traceability Matrix** ánh xạ: `Requirements (REQ-ID) ↔ Test Conditions ↔ Test Scenarios / Test Cases` (Tham chiếu `templates/traceability-matrix.csv` để sử dụng format chuẩn khi xuất cấu trúc matrix).
 2. Cross-check xem có yêu cầu nào bị thiếu trong danh sách phân rã (Gap Analysis) để phát hiện lỗ hổng kiểm thử (Test coverage gaps).
-3. Liệt kê High-Level Test Scenarios cho từng Module, tập trung vào các Test Conditions:
-   - Security / phân quyền (Access Control & Roles)
-   - UI Validation (Giao diện và định dạng)
-   - Business Logic & State Transitions (Nghiệp vụ & Chuyển trạng thái)
-   - Data Integrity (Tính toàn vẹn dữ liệu trong DB và Backend)
-   - Error Handling (Xử lý lỗi hệ thống & Ngoại lệ)
-4. **Chờ user review** danh sách scenarios và ma trận truy vết trước khi sinh test case chi tiết.
+3. Liệt kê High-Level Test Scenarios cho từng Module, **BẮT BUỘC dùng đúng 5 nhóm risk category giống hệt Bước 5** (KHÔNG dùng taxonomy khác/tương đương — sai lệch taxonomy giữa Bước 4 và Bước 5 là nguyên nhân phổ biến khiến sót nhóm khi sinh TC chi tiết):
+   - **Function** (High risk) — Happy path + Unhappy path theo từng luồng nghiệp vụ/scenario đã phân rã ở Bước 2/3
+   - **Validate** (Medium risk) — kiểm tra **field-level** cho từng field nhập liệu/filter cụ thể (required, độ dài, ký tự đặc biệt, XSS/SQLi, khoảng ngày hợp lệ...) — chỉ áp dụng cho module có form/filter thật; nếu module không có input field nào (vd dialog xác nhận thuần), ghi rõ "N/A — không có field cần validate" thay vì bỏ trống nhóm
+   - **UI & Behavior** (Medium risk) — label/placeholder/text hiển thị đúng verbatim nguồn thiết kế (đặc biệt các điểm đã phát hiện lệch giữa 2 nguồn tài liệu ở Bước 2), tab order, hover, focus, resize, disabled-state
+   - **Phân quyền** (High risk) — Access Control & Roles, **PHẢI có ít nhất 1 REQ/scenario cho MỖI module/sub-module riêng biệt** (không gộp chung 1 REQ cho toàn bộ feature nếu từng module có màn hình/hành động khác nhau — kể cả các nút hành động phụ như Recalc/Delete nằm lồng trong màn khác vẫn phải có REQ phân quyền riêng)
+   - **Ảnh hưởng chức năng liên quan** (High risk) — Dependencies & Data Integrity: dữ liệu hiển thị đúng ở List/Detail liên quan **sau khi** thao tác ghi (create/update/delete) thành công, logic kế thừa dữ liệu ngầm định, tác động sang màn hình/feature khác (kể cả ngoài phạm vi wave hiện tại — vẫn phải ghi nhận, đánh dấu Priority theo mức độ liên quan)
+4. **Self-check gate bắt buộc trước khi trình user**: với MỖI module đã phân rã ở Bước 3, xác nhận đã có ít nhất 1 REQ-ID thuộc **cả 5 nhóm** trên (hoặc note "N/A" có lý do rõ ràng cho nhóm không áp dụng). Nếu module nào thiếu 1+ nhóm, agent phải tự bổ sung REQ/Scenario cho đủ trước khi đưa ra Bước 4 output — không để user phải tự phát hiện thiếu sót này.
+5. **Chờ user review** danh sách scenarios và ma trận truy vết trước khi sinh test case chi tiết.
 
-**Output:** Traceability Matrix đa chiều + High-Level Test Scenarios.
+**Output:** Traceability Matrix đa chiều + High-Level Test Scenarios — đã tự-audit đủ 5 nhóm risk cho từng module (xem mục 4).
 
 > [!WARNING]
 > **Human Checkpoint:** User cần review danh sách scenarios để bổ sung các trường hợp đặc thù mà AI có thể bỏ sót. Đây là bước đánh giá rủi ro do con người thực hiện.
@@ -311,11 +318,11 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 > **Rẽ nhánh theo Scope (tự động, dựa trên phân loại UI/API/BOTH đã xác định ở Bước 1 — không hỏi lại user trừ khi phân loại còn mơ hồ):**
 >
 > - **UI-only** → thực hiện quy trình bên dưới (không đổi gì).
-> - **API-only** → **rẽ hẳn sang skill `api_test_design`** (`.claude/skills/api_test_design/SKILL.md`): chạy quy trình 5 bước 4-phase để sinh Test Design (Markmap), **chờ user confirm Test Design**, rồi chạy tiếp bước sinh Test Case (TSV 19 cột) theo `references/API-Gen-TC-From-TD-v4.txt` của skill đó. **Bỏ qua toàn bộ quy trình UI bên dưới** cho module này — TC API dùng schema/định dạng riêng (TSV), không phải bảng Markdown 9 cột của RBT UI.
+> - **API-only** → **rẽ hẳn sang skill `api_test_design`** (`.claude/skills/api_test_design/SKILL.md`): chạy quy trình 5 bước 4-phase để sinh Test Design (Markmap), **chờ user confirm Test Design**, rồi chạy tiếp bước sinh Test Case (schema 19 cột) theo `references/API-Gen-TC-From-TD-v4.txt` của skill đó, convert sang `.md`+`.xlsx` và xóa file `.tsv` trung gian (xem mục "Lưu trữ" của `api_test_design`). **Bỏ qua toàn bộ quy trình UI bên dưới** cho module này — TC API dùng schema/định dạng riêng (19 cột), không phải bảng Markdown 9 cột của RBT UI.
 > - **BOTH** → xử lý **tuần tự, API trước — UI sau** (không làm song song):
->   1. Chạy nhánh API-only ở trên trước → ra file TC API (`.tsv`) → **chờ user confirm xong TC API**.
+>   1. Chạy nhánh API-only ở trên trước → ra file TC API (`.md`+`.xlsx`, TSV trung gian đã xóa) → **chờ user confirm xong TC API**.
 >   2. Sau khi TC API đã confirm, mới tiếp tục quy trình UI bên dưới cho phần UI của cùng feature.
->   3. **Không gộp chung 1 file** — TC API (`TC_[MODULE]_API.tsv`, 19 cột) và TC UI (`TC_[MODULE].md`/`.xlsx`, 9 cột) là 2 file riêng biệt do khác schema, cùng lưu trong `practices/testcases/[folder]/`. Bước 6 (Template Mapping/Excel) bên dưới chỉ áp dụng cho phần TC UI.
+>   3. **Không gộp chung 1 file, và không gộp chung 1 thư mục** — TC API (`TC_[MODULE]_API.md`/`.xlsx`, 19 cột) và TC UI (`TC_[MODULE].md`/`.xlsx`, 9 cột) là 2 bộ file riêng biệt do khác schema. **Bắt buộc lưu vào 2 thư mục con riêng biệt** cùng cấp trong `practices/testcases/[folder]/`: TC API → `practices/testcases/[folder]/api/`, TC UI → `practices/testcases/[folder]/ui/`. Bước 6 (Template Mapping/Excel) bên dưới chỉ áp dụng cho phần TC UI (UI convert theo `md_to_xlsx.js`, khác script với API).
 
 **Agent phải thực hiện nghiêm ngặt các quy tắc sau (áp dụng khi UI-only hoặc phần UI của BOTH):**
 
@@ -369,8 +376,15 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 
 4. **Bao phủ đa dạng:** Happy Path (gồm case nhập full thông tin và case chỉ nhập thông tin bắt buộc tối thiểu), Negative Path (giá trị biên, vượt ký tự, validate thiếu dần các trường bắt buộc), Edge Cases.
 5. **Nếu scenarios quá nhiều:** Sinh từng Module một, hỏi user để tiếp tục.
+6. **Traceability Coverage Audit — BẮT BUỘC, không được bỏ qua dù chỉ 1 module:**
+   > **Lý do bắt buộc:** Khi sinh hàng trăm TC bằng tay qua nhiều lượt, việc bỏ sót REQ/Scenario đã chốt ở Bước 4 (viết ra rồi quên đưa vào bảng TC) là lỗi hệ thống rất dễ xảy ra và rất khó tự phát hiện bằng mắt thường — đã xảy ra thật trong thực tế (5-7 REQ bị rớt khỏi TC dù đã note test data cho chúng). Bước audit dưới đây tồn tại chính để chặn lỗi này trước khi đưa cho user, không phải thủ tục hình thức.
+   - Sau khi sinh xong TC cho **toàn bộ** các module (không phải từng module riêng lẻ — audit ở cấp toàn bộ output cuối), lập bảng đối chiếu **mỗi REQ-ID ở Bước 4 ↔ ít nhất 1 TC ID** đã sinh. REQ nào không có TC nào tham chiếu tới → coi là lỗi, PHẢI bổ sung TC trước khi trình user, không được báo "hoàn thành" khi còn REQ trống.
+   - Nếu trong file test data (mục "Test Data thiết yếu") có khai một giá trị/tài khoản/mã cụ thể (vd `PN-18903`, tài khoản tenant khác...) — kiểm tra giá trị đó **thực sự được dùng** trong ≥1 TC. Test data khai nhưng không TC nào dùng là dấu hiệu chắc chắn của 1 scenario bị rớt.
+   - Mọi con số tổng hợp (Risk Level summary, Priority stats, "Tổng số TC") **PHẢI được tính lại trực tiếp từ nội dung bảng TC cuối cùng** (đếm bằng script/công cụ, không viết theo trí nhớ hoặc ước lượng trước khi chốt nội dung) — đây là nguồn lỗi phổ biến thứ hai đã xảy ra thật (bảng thống kê viết trước rồi không đồng bộ lại sau khi TC thay đổi).
+   - Mọi TC ID được **tham chiếu trong văn xuôi** ở nơi khác trong tài liệu (mục Ambiguities & Q&A, ghi chú...) phải được verify lại là **đúng ID thật** sau bất kỳ lần chỉnh sửa/renumber nào — không tự tin trích dẫn theo trí nhớ.
+   - Nếu workspace có `scripts/validate_testcases/validate_tc.py`, **PHẢI chạy script này** trên từng file TC đã sinh trước khi báo hoàn thành hoặc trước khi chuyển sang Bước 6; sửa hết lỗi script báo trước khi tiếp tục.
 
-**Output:** Danh sách Test Cases chi tiết có Risk Level.
+**Output:** Danh sách Test Cases chi tiết có Risk Level — đã chạy Traceability Coverage Audit (mục 6) sạch lỗi.
 
 ---
 
@@ -411,7 +425,7 @@ Kết quả grill có thể dùng để:
 
 #### BƯỚC 1: TẠO FILE MARKDOWN TỔNG HỢP
 
-Tạo 1 file Markdown duy nhất và **bắt buộc lưu trực tiếp vào thư mục con tương ứng của folder `practices/testcases/` dựa theo tên folder chứa tài liệu requirements** (ví dụ: nếu tài liệu requirements được đọc từ `practices/requirements/cardoctor/` -> file Test Cases bắt buộc phải lưu vào `practices/testcases/cardoctor/TC_[MODULE].md`).
+Tạo 1 file Markdown duy nhất và **bắt buộc lưu vào thư mục con `ui/` bên trong folder tương ứng của `practices/testcases/`, dựa theo tên folder chứa tài liệu requirements** (ví dụ: nếu tài liệu requirements được đọc từ `practices/requirements/cardoctor/` -> file Test Cases bắt buộc phải lưu vào `practices/testcases/cardoctor/ui/TC_[MODULE].md`). TC UI luôn nằm trong `ui/`, tách biệt khỏi TC API (`api/`) cùng feature — xem rule ở mục rẽ nhánh Scope phía trên.
 
 > ⚠️ **QUY TẮC PHIÊN BẢN (VERSION CONTROL):**
 >
@@ -449,15 +463,22 @@ File Markdown phải chứa TOÀN BỘ các thông tin sau:
 
 #### BƯỚC 2: CONVERT SANG EXCEL (TỰ ĐỘNG BẰNG SCRIPT)
 
-Ngay sau khi sinh và lưu xong file Markdown ở Bước 1 vào thư mục `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/` tương ứng, bạn (AI Agent) **BẮT BUỘC** phải tự động chạy lệnh Terminal trong Workspace để convert file Markdown đó sang file Excel (.xlsx) nằm trong cùng thư mục đó.
+Ngay sau khi sinh và lưu xong file Markdown ở Bước 1 vào thư mục `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/` tương ứng, bạn (AI Agent) **BẮT BUỘC** phải tự động chạy lệnh Terminal trong Workspace để convert file Markdown đó sang file Excel (.xlsx) nằm trong cùng thư mục đó.
 
 - Lệnh chạy: `node scripts/convert_excel/md_to_xlsx.js <đường_dẫn_tuyệt_đối_tới_file_markdown>`
   *(Lưu ý: Không tự xuất file CSV. File Excel sẽ do script này tự động tạo ra dựa trên các bảng Test Cases trong file Markdown. Hãy ghi rõ đường dẫn file Excel được tạo ra để người dùng dễ dàng truy cập).*
 
+#### BƯỚC 3: VALIDATE TRƯỚC KHI BÁO HOÀN THÀNH (BẮT BUỘC)
+
+- Chạy `python3 scripts/validate_testcases/validate_tc.py <đường_dẫn_file_markdown>` — script kiểm tra: TC ID tuần tự không trùng/thiếu, số cột mỗi dòng khớp header, "Tổng số TC" khai báo khớp số dòng thật, bảng Risk Level/Priority summary khớp đếm thật, mọi TC ID được trích dẫn trong văn xuôi (mục Q&A...) trỏ tới dòng thật đang tồn tại.
+- Nếu script báo lỗi (exit code khác 0) → sửa file, chạy lại script, lặp tới khi sạch — **KHÔNG báo hoàn thành với user khi script còn lỗi**.
+- Nếu môi trường không có Python/script này (dự án khác chưa copy script) → tự thực hiện thủ công đủ 5 kiểm tra tương đương liệt kê ở Bước 5 mục 6, và nói rõ với user là đã kiểm tra thủ công do thiếu tooling.
+- Một **PostToolUse hook** (`.claude/settings.json`) tự động chạy lại script này mỗi khi file khớp `practices/testcases/**/TC_*.md` được Write/Edit — hook là lưới an toàn cuối, không thay thế cho việc agent tự chủ động chạy validate trước.
+
 **Output:**
 
-- Bảng Test Cases Markdown hoàn chỉnh được lưu tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/TC_[MODULE].md`.
-- File Excel (.xlsx) đã được tự động convert thành công tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/TC_[MODULE].xlsx`.
+- Bảng Test Cases Markdown hoàn chỉnh được lưu tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/TC_[MODULE].md`.
+- File Excel (.xlsx) đã được tự động convert thành công tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/TC_[MODULE].xlsx`.
 
 ---
 

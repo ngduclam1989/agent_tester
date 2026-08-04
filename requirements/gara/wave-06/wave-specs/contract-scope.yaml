@@ -1,0 +1,54 @@
+# W06 — Contract scope cho EP-INVENTORY-ACCOUNTING-PERIOD (nhóm PRC) + EP-INVENTORY-STOCK-V2
+#
+# Filled 2026-07-31 (main agent, per CR-20260731-01 GAP-W06-AGG-02 resolution — user sonhoang).
+# 6 contract file / 8 (consumer, contract) pair xác định qua đọc trực tiếp PKG-W06 v7 §2.2 +
+# §3 Entry Criteria (danh sách artifact đã ✅ ACCEPTED) + Architecture/integrations/*.md liên quan.
+#
+# Brownfield ACTIVE-only — không lifecycle DRAFT/RATIFY. Toàn bộ 6 file dưới status DESIGN
+# (per Architecture doc frontmatter) — chờ SA merge chính thức flip ACTIVE trước /dev-start.
+# Append-only — sửa entry sau khi wave start chỉ qua decision entry trong _decisions.md (PROTOCOL §DEV W1).
+
+wave: W06
+contracts:
+  - path: Architecture/api/gf-accounting-api.md
+    producer: boundaries/gf-accounting
+    consumers:
+      - bff-experiences/agg-garage-graph
+    kind: api
+    note: "§5 PRC — Tính giá xuất kho PWA (v24, 6 endpoint W06-1..6: search/detail-polling/create-202/recalc/delete/lookup-items-for-cogs) + §6.2/§6.3 Naming Registry (PriceCalcRun + PriceCalcRunItem canonical field BE↔BFF↔FE↔Mobile). `gf-accounting` là boundary MỚI trong W06 (PRC master, chưa từng có DEV cycle Inventory V2 trước). BFF `agg-garage-graph §3f` passthrough thuần, không aggregate."
+
+  - path: Architecture/api/gf-inventory-api.md
+    producer: boundaries/gf-inventory
+    consumers:
+      - bff-experiences/agg-garage-graph
+      - boundaries/gf-accounting
+    kind: api
+    note: "§3f PRC-facing S2S subsystem (v72, W06-P1..P5 — x-api-key protected, consumer = `gf-accounting` cho 3/5-phase engine BQGQ: SnapshotPull + BulkFillCost/BulkInheritCost + BulkRecomputeLedger) + §3g Stock V2 Reports (W06-STK-Q1..Q3 read + EX1..EX3 export — consumer = `agg-garage-graph` BFF passthrough §3j). v67 R8 flip GET→POST+`/search` cho 3 report endpoint (transport-only, response shape unchanged)."
+
+  - path: Architecture/api/agg-garage-graph-graphql.md
+    producer: bff-experiences/agg-garage-graph
+    consumers:
+      - web-experiences/garage-web
+      - mobile-experiences/garage-mobile
+    kind: graphql
+    note: "§3f PRC (v7.81, 6 op — Web GMS 6/6 SUPPORTED, Mobile KHÔNG SUPPORTED — PRC web-only per FEAT-PRC-* Platform scope) + §3j Stock V2 Reports (6 op — Web 6/6, Mobile CHỈ `stockLedgerAtDate`/W06-STK-Q1 per FEAT-STK-LIST-V2 mobile scope, hub tile 'Tồn kho' FEAT-INV-MOBILE-MENU flip HIDDEN→VISIBLE). 12 op W06 total = 9 Query + 3 Mutation."
+
+  - path: Architecture/data/gf-accounting-data-model.md
+    producer: boundaries/gf-accounting
+    consumers: []
+    kind: integration
+    note: "§2quater — 2 entity mới `price_calc_run` + `price_calc_run_item` (partial unique index `uidx_prc_active_lock` cho concurrency guard Layer 3). `ddl-auto=update` (KHÔNG Flyway migration file — Common Gotcha #5). Internal schema — producer self-sign baseline, không cross-boundary consumer trực tiếp (REST field shape đã cover ở gf-accounting-api.md §6.2/§6.3 entry riêng)."
+
+  - path: Architecture/integrations/INTEG-EXT-gf-accounting-gf-inventory.md
+    producer: boundaries/gf-accounting
+    consumers:
+      - boundaries/gf-inventory
+    kind: integration
+    note: "BE↔BE narrative W06 PRC cross-boundary (v2) — `gf-accounting` caller (PRC PWA engine owner per ADR-027) ↔ `gf-inventory` provider (stock ledger SoT + slip SoT). Naming pattern 'external to gf-accounting perspective, target gf-inventory' (mirror `INTEG-EXT-gf-inventory-worker.md`) — file authored/owned từ phía gf-accounting, `gf-inventory` là consumer cần đồng thuận 5 protected endpoint đang expose đúng shape cho caller này. Reverse direction (gf-inventory→gf-accounting period-lock-check) đã cover ở `INTEG-EXT-gf-accounting.md §6` (W04, không đổi trong W06 — không lặp entry)."
+
+  - path: Architecture/integrations/INTEG-FE-garage-web-agg-garage-graph.md
+    producer: bff-experiences/agg-garage-graph
+    consumers:
+      - web-experiences/garage-web
+    kind: integration
+    note: "§3.6d Inventory V2 PRC + Stock V2 Reports UI mapping (v22, Round 8) — 8 W06 FEAT → 12 GraphQL op → REST downstream traceability cho FE dev orientation (route convention `/inventory/price-calc-runs*` + `/inventory-stock/reports/*`, CREATE modal foundational lookup `searchAccountingPeriods`/`searchWarehouses`, error-code UX `ERR-INV-024`/`ERR-INV-029`). Explicit cited trong PKG-W06 §3 Entry Criteria ratified-list — load-bearing cho FE dev, khác pattern minimal-core W03-W05 (không tách FE INTEG riêng) vì đây là artifact PKG coi là gate."

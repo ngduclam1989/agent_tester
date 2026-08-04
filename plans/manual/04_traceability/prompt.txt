@@ -39,18 +39,19 @@ Kiểm tra chéo (Cross-check) xem có bất kỳ thông tin nào trong tài li�
 
 Liệt kê các kịch bản kiểm thử ở **cấp độ High-Level** cho từng Module.
 
-Mỗi kịch bản chỉ cần **1 câu mô tả cốt lõi ngắn gọn**, tập trung vào:
+Mỗi kịch bản chỉ cần **1 câu mô tả cốt lõi ngắn gọn**, nhưng **BẮT BUỘC dùng đúng 5 nhóm risk category giống hệt Bước 5** (không dùng taxonomy khác — lệch taxonomy giữa Bước 4/5 là nguyên nhân phổ biến gây sót nhóm):
 
-[Gợi ý trọng tâm (tùy chỉnh theo dự án):
-- **Security / Phân quyền:** Ai được phép làm gì?
-- **UI Validation:** Trường bắt buộc, format dữ liệu, giới hạn ký tự
-- **Business Logic:** Quy tắc tính toán, trạng thái chuyển đổi
-- **Data Integrity:** Dữ liệu có nhất quán giữa các module?
-- **Error Handling:** Hệ thống xử lý lỗi thế nào?]
+1. **Function** (High) — Happy path + Unhappy path theo từng luồng đã phân rã
+2. **Validate** (Medium) — field-level cho từng field nhập liệu/filter cụ thể; nếu module không có field nào thì ghi "N/A — không có field cần validate"
+3. **UI & Behavior** (Medium) — label/placeholder đúng verbatim nguồn thiết kế, tab order, hover, focus, resize
+4. **Phân quyền** (High) — có ít nhất 1 REQ/scenario riêng cho MỖI module/sub-module, kể cả hành động phụ lồng trong màn khác
+5. **Ảnh hưởng chức năng liên quan** (High) — dữ liệu List/Detail liên quan sau khi ghi thành công, logic kế thừa ngầm định, tác động sang feature khác (kể cả ngoài phạm vi wave hiện tại)
+
+**Self-check bắt buộc trước khi xuất kết quả**: với mỗi Module, xác nhận đã có ≥1 REQ thuộc cả 5 nhóm trên (hoặc "N/A" có lý do). Module nào thiếu nhóm nào thì tự bổ sung trước khi đưa cho user — không để user phải tự phát hiện.
 
 Trình bày dạng:
-| REQ ID | Module | Scenario ID | Mô tả Scenario |
-|--------|--------|-------------|-----------------|
+| REQ ID | Module | Scenario ID | Nhóm risk | Mô tả Scenario |
+|--------|--------|-------------|-----------|-----------------|
 
 ---
 

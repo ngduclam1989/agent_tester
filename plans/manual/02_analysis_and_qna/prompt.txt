@@ -48,10 +48,12 @@ Phát hiện và liệt kê các điểm:
 ### 3. Đặt câu hỏi (Q&A)
 
 Đặt ra danh sách câu hỏi **có đánh số thứ tự** để tôi hoặc PO/BA có thể giải đáp.
-Mỗi câu hỏi cần:
-- Đánh số rõ ràng (Q1, Q2, Q3...)
-- Nêu rõ ngữ cảnh tại sao cần hỏi
-- Đề xuất giả định (assumption) nếu không được trả lời
+**BẮT BUỘC mỗi câu hỏi phải trình bày đủ 5 phần sau, không được viết cụt lủn:**
+1. **Nguồn trích dẫn:** đường dẫn file + số dòng cụ thể (`path/to/file.md:line`) + trích nguyên văn đoạn liên quan. Đọc trực tiếp file để lấy đúng số dòng thật, không suy đoán.
+2. **Bối cảnh nghiệp vụ:** feature/luồng nào, mục đích nghiệp vụ của phần liên quan.
+3. **Vấn đề cụ thể:** điểm mờ/thiếu sót/mâu thuẫn là gì — chỉ rõ 2 cách hiểu khác nhau hoặc thông tin còn thiếu.
+4. **Ảnh hưởng nếu không giải quyết:** hậu quả cụ thể tới việc sinh/thực thi test case.
+5. **Đề xuất giải quyết:** giả định/phương án QA sẽ áp dụng nếu không có phản hồi — cụ thể, khả thi, không mơ hồ.
 
 ---
 

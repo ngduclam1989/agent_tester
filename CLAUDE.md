@@ -141,6 +141,7 @@ Agent phải tham chiếu quy tắc chi tiết trong `.claude/rules/`:
 - [Quy tắc Playwright](.claude/rules/playwright_rules.md) — Browser setup, locator semantic, wait strategy
 - [Quy tắc Selenium](.claude/rules/selenium_rules.md) — WebDriverWait, TestNG structure
 - [Quy tắc Appium](.claude/rules/appium_rules.md) — Mobile locator, scroll, permission
+- [Quy tắc Chất Lượng Manual Test Case](.claude/rules/manual_testcase_quality_rules.md) — Traceability Coverage Audit, chống rớt REQ/scenario khi sinh TC hàng loạt, bắt buộc chạy `scripts/validate_testcases/validate_tc.py` trước khi báo hoàn thành
 
 ## 5. Tham Chiếu Skills
 

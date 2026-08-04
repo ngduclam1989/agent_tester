@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 950" width="1180" height="950">
+<!--
+  Diagram: Bao cao ton kho V2 (Module Stock V2 Reports)
+  Type: Activity Diagram
+  Wave: W06
+  Related findings: N/A
+  Related FEAT: FEAT-STK-LIST-V2, FEAT-IP-VIEW-V2, FEAT-STK-DETAIL-V2
+  Related BR: BR-STKV2-001..016
+  Related ADR: ADR-020
+  Style: style-1-flat-icon
+  Generated: 2026-08-04T00:00:00+07:00
+  Generator: fireworks-tech-graph skill
+-->
+<style>text { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }</style>
+<defs>
+  <marker id="arrow-blue" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#2563eb"/></marker>
+  <marker id="arrow-red" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#dc2626"/></marker>
+  <marker id="arrow-green" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#16a34a"/></marker>
+  <marker id="arrow-gray" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#6b7280"/></marker>
+</defs>
+<rect x="0" y="0" width="1180" height="950" fill="#ffffff"/>
+<text x="590" y="24" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Activity Diagram - Bao cao ton kho V2 (Module Stock V2 Reports, Wave 06)</text>
+<text x="590" y="40" text-anchor="middle" font-size="10.5" fill="#6b7280">Ghi chu: Mobile App Garage chi co nhanh STK-LIST-V2 - khong co Xem lich su / Xuat file / IP-VIEW-V2</text>
+<rect x="0" y="50" width="620" height="750" fill="#f9fafb"/>
+<rect x="620" y="50" width="560" height="750" fill="#ffffff"/>
+<line x1="620" y1="50" x2="620" y2="800" stroke="#e5e7eb" stroke-width="1"/>
+<circle cx="590" cy="80" r="14" fill="#111827"/>
+<polyline points="590,94 590,100" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="470" y="100" width="240" height="45" rx="8" ry="8" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1.5"/>
+<text x="590.0" y="126.5" text-anchor="middle" font-size="12" fill="#111827">
+  <tspan x="590.0" dy="0">Mo module Ton kho</tspan>
+</text>
+<polyline points="590,145 590,152" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<polygon points="590,155 685,195 590,235 495,195" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+<text x="590" y="199" text-anchor="middle" font-size="11.5" fill="#7c2d12">
+  <tspan x="590" dy="0">Chon bao cao</tspan>
+</text>
+<polyline points="495,195 350,195 350,195" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="373.5" y="173" width="93.0" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="420" y="185" text-anchor="middle" font-size="10.5" fill="#2563eb">Bao cao ton kho</text>
+<polyline points="685,195 900,195 900,195" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="765.9" y="173" width="68.2" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="800" y="185" text-anchor="middle" font-size="10.5" fill="#2563eb">Bao cao NXT</text>
+<rect x="20" y="230" width="220" height="24" rx="6" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+<text x="130" y="246" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1e40af">(1) STK-LIST-V2 (Web+Mobile)</text>
+<polyline points="350,195 350,270" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="220" y="270" width="260" height="55" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="350.0" y="294.5" text-anchor="middle" font-size="12" fill="#111827">
+  <tspan x="350.0" dy="0">Bang ton kho (8 cot) + Tong.</tspan>
+  <tspan x="350.0" dy="14">Filter: search / kho / ngay</tspan>
+</text>
+<polyline points="350,325 350,353" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<polygon points="350,353 445,395 350,437 255,395" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+<text x="350" y="392" text-anchor="middle" font-size="11.5" fill="#7c2d12">
+  <tspan x="350" dy="0">Nguoi dung</tspan>
+  <tspan x="350" dy="14">thao tac?</tspan>
+</text>
+<polyline points="255,395 180,395 180,297 220,297" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="149.0" y="336" width="62.0" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="180" y="348" text-anchor="middle" font-size="10.5" fill="#2563eb">Doi filter</text>
+<polyline points="445,395 468,395" fill="none" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrow-green)"/>
+<rect x="462.1" y="373" width="55.800000000000004" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="490" y="385" text-anchor="middle" font-size="10.5" fill="#16a34a">Xuat file</text>
+<rect x="470" y="370" width="180" height="50" rx="8" ry="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+<text x="560.0" y="392.0" text-anchor="middle" font-size="11" fill="#111827">
+  <tspan x="560.0" dy="0">Tai Bao cao</tspan>
+  <tspan x="560.0" dy="14">ton kho.xlsx</tspan>
+</text>
+<rect x="20" y="450" width="230" height="24" rx="6" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+<text x="135" y="466" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1e40af">(3) STK-DETAIL-V2 (The kho, Web only)</text>
+<polyline points="350,437 360,490" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="265.9" y="453" width="68.2" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="300" y="465" text-anchor="middle" font-size="10.5" fill="#2563eb">Xem lich su</text>
+<rect x="220" y="490" width="280" height="55" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="360.0" y="514.5" text-anchor="middle" font-size="12" fill="#111827">
+  <tspan x="360.0" dy="0">Mo full-page (The kho)</tspan>
+  <tspan x="360.0" dy="14">auto-fill khoang ngay = thang hien tai</tspan>
+</text>
+<polyline points="360,545 360,558" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<polygon points="360,558 455,600 360,642 265,600" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+<text x="360" y="597" text-anchor="middle" font-size="11.5" fill="#7c2d12">
+  <tspan x="360" dy="0">Nguoi dung</tspan>
+  <tspan x="360" dy="14">thao tac?</tspan>
+</text>
+<polyline points="265,600 180,600 180,517 220,517" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="133.5" y="548" width="93.0" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="180" y="560" text-anchor="middle" font-size="10.5" fill="#2563eb">Doi khoang ngay</text>
+<polyline points="455,600 478,600" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="456.6" y="578" width="86.8" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="500" y="590" text-anchor="middle" font-size="10.5" fill="#2563eb">Click So phieu</text>
+<rect x="480" y="573" width="280" height="55" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="620.0" y="597.5" text-anchor="middle" font-size="12" fill="#111827">
+  <tspan x="620.0" dy="0">Dieu huong chi tiet phieu</tspan>
+  <tspan x="620.0" dy="14">nhap / xuat (theo slipType)</tspan>
+</text>
+<polyline points="345,642 345,660 350,680" fill="none" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrow-green)"/>
+<rect x="257.1" y="645" width="55.800000000000004" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="285" y="657" text-anchor="middle" font-size="10.5" fill="#16a34a">Xuat file</text>
+<rect x="220" y="680" width="260" height="45" rx="8" ry="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+<text x="350.0" y="699.5" text-anchor="middle" font-size="11" fill="#111827">
+  <tspan x="350.0" dy="0">Tai Bao cao</tspan>
+  <tspan x="350.0" dy="14">the kho.xlsx</tspan>
+</text>
+<polyline points="375,642 375,712 350,735" fill="none" stroke="#6b7280" stroke-width="1.6" marker-end="url(#arrow-gray)"/>
+<rect x="385.0" y="690" width="30" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="400" y="702" text-anchor="middle" font-size="10.5" fill="#6b7280">Dong</text>
+<rect x="220" y="735" width="260" height="40" rx="8" ry="8" fill="#f3f4f6" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="350.0" y="759.0" text-anchor="middle" font-size="11" fill="#111827">
+  <tspan x="350.0" dy="0">Quay lai STK-LIST-V2</tspan>
+</text>
+<rect x="650" y="230" width="220" height="24" rx="6" fill="#eff6ff" stroke="#bfdbfe" stroke-width="1"/>
+<text x="760" y="246" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1e40af">(2) IP-VIEW-V2 (Web only)</text>
+<polyline points="900,195 900,270" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="760" y="270" width="280" height="60" rx="8" ry="8" fill="#ffffff" stroke="#d1d5db" stroke-width="1.5"/>
+<text x="900.0" y="297.0" text-anchor="middle" font-size="12" fill="#111827">
+  <tspan x="900.0" dy="0">Bang NXT (13 cot, header 2 tang) + Tong.</tspan>
+  <tspan x="900.0" dy="14">Filter mac dinh = thang hien tai</tspan>
+</text>
+<polyline points="900,330 900,343" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<polygon points="900,343 995,385 900,427 805,385" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+<text x="900" y="382" text-anchor="middle" font-size="11.5" fill="#7c2d12">
+  <tspan x="900" dy="0">Nguoi dung</tspan>
+  <tspan x="900" dy="14">thao tac?</tspan>
+</text>
+<polyline points="805,385 700,385 700,300 760,300" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="669.0" y="333" width="62.0" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="700" y="345" text-anchor="middle" font-size="10.5" fill="#2563eb">Doi filter</text>
+<polyline points="995,385 1018,385" fill="none" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrow-green)"/>
+<rect x="972.1" y="363" width="55.800000000000004" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="1000" y="375" text-anchor="middle" font-size="10.5" fill="#16a34a">Xuat file</text>
+<rect x="1020" y="360" width="150" height="50" rx="8" ry="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+<text x="1095.0" y="382.0" text-anchor="middle" font-size="10.5" fill="#111827">
+  <tspan x="1095.0" dy="0">Tai Bao cao</tspan>
+  <tspan x="1095.0" dy="14">NXT.xlsx</tspan>
+</text>
+<polyline points="900,427 900,448" fill="none" stroke="#2563eb" stroke-width="1.6" marker-end="url(#arrow-blue)"/>
+<rect x="874.2" y="430" width="111.60000000000001" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="930" y="442" text-anchor="middle" font-size="10.5" fill="#2563eb">Click Ma SP noi bo</text>
+<polygon points="900,450 990,490 900,530 810,490" fill="#fff7ed" stroke="#fed7aa" stroke-width="1.5"/>
+<text x="900" y="487" text-anchor="middle" font-size="11.5" fill="#7c2d12">
+  <tspan x="900" dy="0">productId co</tspan>
+  <tspan x="900" dy="14">gia tri?</tspan>
+</text>
+<polyline points="810,490 785,490" fill="none" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arrow-green)"/>
+<rect x="780.0" y="468" width="30" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="795" y="480" text-anchor="middle" font-size="10.5" fill="#16a34a">Co</text>
+<rect x="630" y="465" width="155" height="50" rx="8" ry="8" fill="#f0fdf4" stroke="#bbf7d0" stroke-width="1.5"/>
+<text x="707.5" y="487.0" text-anchor="middle" font-size="10.5" fill="#111827">
+  <tspan x="707.5" dy="0">Dieu huong trang chi</tspan>
+  <tspan x="707.5" dy="14">tiet SP noi bo</tspan>
+</text>
+<polyline points="990,490 1013,490" fill="none" stroke="#dc2626" stroke-width="1.6" marker-end="url(#arrow-red)"/>
+<rect x="941.1" y="468" width="117.8" height="15" fill="#ffffff" opacity="0.95"/>
+<text x="1000" y="480" text-anchor="middle" font-size="10.5" fill="#dc2626">Null (BE chua xong)</text>
+<rect x="1015" y="460" width="160" height="60" rx="8" ry="8" fill="#fef2f2" stroke="#fecaca" stroke-width="1.5"/>
+<text x="1095.0" y="487.0" text-anchor="middle" font-size="10.5" fill="#111827">
+  <tspan x="1095.0" dy="0">Hien text thuong -</tspan>
+  <tspan x="1095.0" dy="14">khong render link</tspan>
+</text>
+<rect x="20" y="850" width="1140" height="45" rx="6" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1"/>
+<line x1="35" y1="873" x2="63" y2="873" stroke="#2563eb" stroke-width="2" marker-end="url(#arrow-blue)"/>
+<text x="69" y="877" font-size="11.5" fill="#374151">Luong chinh / dieu huong</text>
+<line x1="260" y1="873" x2="288" y2="873" stroke="#16a34a" stroke-width="2" marker-end="url(#arrow-green)"/>
+<text x="294" y="877" font-size="11.5" fill="#374151">Xuat file / thanh cong</text>
+<line x1="470" y1="873" x2="498" y2="873" stroke="#dc2626" stroke-width="2" marker-end="url(#arrow-red)"/>
+<text x="504" y="877" font-size="11.5" fill="#374151">Truong hop du lieu chua san sang</text>
+<line x1="760" y1="873" x2="788" y2="873" stroke="#6b7280" stroke-width="2" marker-end="url(#arrow-gray)"/>
+<text x="794" y="877" font-size="11.5" fill="#374151">Ket thuc - quay lai man khac</text>
+</svg>

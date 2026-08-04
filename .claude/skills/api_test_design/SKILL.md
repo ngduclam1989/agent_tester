@@ -1,13 +1,13 @@
 ---
 name: api_test_design
-description: Sinh Test Design (Markmap) cho API theo phương pháp 4-phase (Method&Header → Schema → Business/Cross-Logic/DB → Response) từ tài liệu PTTK/RSD/DB — dùng khi KHÔNG có Swagger/OpenAPI spec. Sau khi Test Design được user confirm, sinh tiếp Manual Test Case chi tiết (TSV 19 cột, sẵn sàng chạy automation) theo cơ chế Node Registry coverage 100%. Được rbt_manual_testing gọi tới khi Bước 5 phát hiện scope có API.
+description: Sinh Test Design (Markmap) cho API theo phương pháp 4-phase (Method&Header → Schema → Business/Cross-Logic/DB → Response) từ tài liệu PTTK/RSD/DB — dùng khi KHÔNG có Swagger/OpenAPI spec. Sau khi Test Design được user confirm, sinh tiếp Manual Test Case chi tiết (schema 19 cột, sẵn sàng chạy automation, bàn giao dạng .md+.xlsx) theo cơ chế Node Registry coverage 100%. Được rbt_manual_testing gọi tới khi Bước 5 phát hiện scope có API.
 ---
 
 # API Test Design (4-Phase Method)
 
 ## Description
 
-Skill sinh **Test Design** — danh sách Test Condition dạng Markmap, độ phủ cực chi tiết theo chuẩn ISTQB Advanced — cho 1 API cụ thể, dựa trên tài liệu kỹ thuật thông thường (không phải file Swagger/OpenAPI máy đọc được). Sau khi Test Design được user review & confirm, skill chạy tiếp bước sinh **Manual Test Case** chi tiết đến mức chạy automation được ngay, output dạng TSV 19 cột, đảm bảo phủ 100% mọi Test Condition qua cơ chế Node Registry.
+Skill sinh **Test Design** — danh sách Test Condition dạng Markmap, độ phủ cực chi tiết theo chuẩn ISTQB Advanced — cho 1 API cụ thể, dựa trên tài liệu kỹ thuật thông thường (không phải file Swagger/OpenAPI máy đọc được). Sau khi Test Design được user review & confirm, skill chạy tiếp bước sinh **Manual Test Case** chi tiết đến mức chạy automation được ngay, schema 19 cột, đảm bảo phủ 100% mọi Test Condition qua cơ chế Node Registry. Bản giao cuối là `.md` + `.xlsx` (TSV chỉ là định dạng sinh trung gian, xóa sau khi convert — xem mục "Lưu trữ").
 
 ## Khi nào dùng skill này
 
@@ -27,6 +27,8 @@ Skill sinh **Test Design** — danh sách Test Condition dạng Markmap, độ p
 - **DB Design** (tùy chọn) — cấu trúc bảng, ERD, ràng buộc dữ liệu tầng DB. Nếu không có: ghi `[ASSUMPTION: Không có tài liệu DB — bỏ qua mọi assertion tầng Database]`
 
 **Nguyên tắc scope:** Mỗi lượt chạy skill này **chỉ sinh Test Design cho 1 API** (1 method + 1 endpoint) được xác nhận trước khi bắt đầu — không trộn nhiều API trong cùng 1 lượt.
+
+**Nguyên tắc REST vs BFF:** Nếu 1 API nghiệp vụ có cả bản REST gốc (backend service) và bản BFF (GraphQL passthrough qua `agg-garage-graph` hoặc tương đương) trỏ tới cùng REST đó, **chỉ sinh Test Design + Test Case cho bản REST** — **KHÔNG** sinh thêm bộ TC riêng cho bản BFF passthrough (tránh trùng lặp coverage khi BFF chỉ forward request/response, không có logic nghiệp vụ riêng). Chỉ sinh TC riêng cho BFF khi BFF có logic khác biệt thật sự so với REST gốc (ví dụ: enrich thêm field qua DataLoader, cache riêng ở tầng BFF, đổi shape response, hoặc tồn tại độc lập không map tới REST nào).
 
 ## Quy trình 5 bước
 
@@ -58,10 +60,12 @@ Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1
 - Không dùng từ chung chung ("như trên", "tương tự", "valid data"); MaxLength phải ghi chuỗi ký tự thật đúng độ dài, không viết tắt.
 - Mọi TC đều phải có bước Verify; Test Steps chỉ ghi hành động kiểm tra, không giải thích business rule (giả định thì đưa vào Test Case Summary).
 
-**Output — TSV 19 cột (Contract cố định, copy chính xác header):**
+**Output — schema 19 cột (Contract cố định, copy chính xác header):**
 ```
 "Test Case ID"	"Function"	"Group Tests"	"Scenario Outline"	"Test Case Summary"	"Pre-conditions"	"Test Data"	"Test Steps"	"Expected result"	"Environment"	"Priority"	"Regression"	"Automation"	"Manual Test Results Round 1"	"Manual Test Results Round 2"	"Automation Test Results"	"Actual result"	"BugID"	"Notes"
 ```
+
+**Định dạng file cuối cùng bàn giao là `.md` + `.xlsx`, KHÔNG phải `.tsv`.** TSV chỉ dùng làm **định dạng sinh trung gian tạm thời** (dễ escape/parse đúng 19 cột khi model viết tuần tự) — xem chi tiết quy trình convert + xóa TSV ở mục "Lưu trữ" bên dưới.
 
 **Các điểm mapping quan trọng** (chi tiết đầy đủ nằm trong file reference, mục V–VII):
 - **Test Case ID**: `<TD_ID>_TC_<NNN>` (VD: `TD_P1_005_TC_003`) — `<NNN>` là bộ đếm **riêng theo từng nhóm** TD_P1/P2/P3/P4, **reset về 001** mỗi khi chuyển nhóm.
@@ -84,12 +88,14 @@ Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1
 
 ## Lưu trữ
 
-Lưu file TSV vào `practices/testcases/[folder]/TC_[MODULE]_API.tsv` (hậu tố `_API` để phân biệt với TC UI cùng module khi feature là mixed UI+API), không ghi đè file cũ — tự tăng version nếu đã tồn tại. File TSV này paste thẳng được vào Excel/Google Sheets, không cần chạy thêm script convert.
+1. Ghi tạm nội dung TC ra `practices/testcases/[folder]/api/TC_[MODULE]_API.tsv` (thư mục con `api/` riêng, tách biệt khỏi TC UI cùng feature khi feature là mixed UI+API — xem rule cấu trúc thư mục chung ở mục "Lưu trữ" của skill `rbt_manual_testing`), không ghi đè file cũ — tự tăng version nếu đã tồn tại.
+2. **Bắt buộc convert ngay sang bản giao cuối:** chạy `node scripts/convert_excel/api_tsv_to_md_xlsx.js practices/testcases/[folder]/api/TC_[MODULE]_API.tsv` để sinh `TC_[MODULE]_API.md` + `TC_[MODULE]_API.xlsx` trong cùng thư mục `api/`.
+3. Sau khi xác nhận `.md` + `.xlsx` đã sinh đúng (đúng số TC, coverage seal khớp) → **xóa file `.tsv` trung gian**. **File `.tsv` KHÔNG được coi là bản giao cuối** — chỉ `.md` + `.xlsx` mới là output chính thức lưu lại trong `practices/testcases/`.
 
 ## Cross-reference
 
 - Không có Swagger → dùng skill này (`api_test_design`), 2 bước: sinh Test Design (5 sub-step) → sinh TC (theo `API-Gen-TC-From-TD-v4.txt`)
-- Có Swagger → dùng `qa_automation_engineer` (`/generate_api_tests_from_swagger`) — schema TC khác (bảng Markdown, không phải TSV 19 cột), có thể tự sinh automation script luôn
+- Có Swagger → dùng `qa_automation_engineer` (`/generate_api_tests_from_swagger`) — schema TC khác (bảng Markdown, không phải schema 19 cột này), có thể tự sinh automation script luôn
 
 ## Rules References
 

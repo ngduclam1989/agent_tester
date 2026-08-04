@@ -1,0 +1,4 @@
+interface:
+  display_name: "Fireworks Tech Graph"
+  short_description: "Tạo sơ đồ kỹ thuật dạng SVG và PNG đẹp mắt"
+  default_prompt: "Chuyển đổi mô tả hệ thống hoặc luồng công việc của người dùng thành sơ đồ SVG đẹp mắt và xuất ra file PNG."
