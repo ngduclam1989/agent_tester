@@ -1,0 +1,31 @@
+{
+  "templates": {
+    "default": {
+      "file": "Bản_mẫu_testcase.xlsx",
+      "type": "xlsx",
+      "description": "Mẫu testcase mặc định (Kiểm thử chức năng)",
+      "columns": [
+        {"index": 0, "key": "case_id", "name": "Mã testcase", "required": true, "example": "TC_001"},
+        {"index": 1, "key": "module", "name": "Phân hệ/Module", "required": true, "example": "Module Đăng nhập"},
+        {"index": 2, "key": "case_name", "name": "Tiêu đề testcase", "required": true, "example": "Đăng nhập thành công bình thường"},
+        {"index": 3, "key": "case_type", "name": "Loại testcase", "required": true, "example": "Kiểm thử chức năng"},
+        {"index": 4, "key": "priority", "name": "Độ ưu tiên", "required": true, "example": "P0"},
+        {"index": 5, "key": "precondition", "name": "Điều kiện tiên quyết", "required": true, "example": "Người dùng đã đăng ký tài khoản"},
+        {"index": 6, "key": "test_steps", "name": "Các bước thực hiện", "required": true, "example": "1. Nhập tên đăng nhập\\n2. Nhập mật khẩu\\n3. Click Đăng nhập"},
+        {"index": 7, "key": "expected_result", "name": "Kết quả mong muốn", "required": true, "example": "1. Ô nhập hiển thị nội dung tương ứng\\n2. Mật khẩu hiển thị dạng ***\\n3. Đăng nhập thành công, chuyển hướng trang chủ"},
+        {"index": 8, "key": "remark", "name": "Ghi chú", "required": false, "example": ""}
+      ]
+    }
+  },
+  "default_template": "default",
+  "case_type_options": ["Kiểm thử chức năng", "Kiểm thử biên", "Kiểm thử ngoại lệ", "Kiểm thử phân quyền", "Kiểm thử mạng yếu/ngoại lệ", "Kiểm thử đồng thời", "Kiểm thử kịch bản"],
+  "priority_options": ["P0", "P1", "P2"],
+  "case_filter_keywords": {
+    "exclude_reverse": ["không lấy ngoại lệ", "không lấy tiêu cực", "không có phản ví dụ", "không testcase tiêu cực"],
+    "exclude_boundary": ["không lấy biên", "không lấy giá trị biên", "không testcase biên"],
+    "exclude_permission": ["không test phân quyền", "không lấy phân quyền"],
+    "exclude_network": ["không test mạng", "không lấy mạng yếu", "không test mạng yếu"],
+    "exclude_concurrency": ["không lấy đồng thời", "không test đồng thời", "không test concurrency"],
+    "dashboard_mode": ["dashboard", "trang chủ", "dạng hiển thị", "không có ngoại lệ"]
+  }
+}

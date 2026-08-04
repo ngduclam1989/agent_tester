@@ -26,6 +26,10 @@ Trình bày dạng bảng:
 | REQ ID | Module | Mô tả Yêu cầu |
 |--------|--------|----------------|
 
+> [!TIP]
+> Bạn có thể sử dụng skill `xlsx` để xây dựng và lưu trữ **Ma trận Truy xuất Yêu cầu (Traceability Matrix)** này trực tiếp dưới dạng tệp Excel `.xlsx` để dễ dàng quản lý và cập nhật lâu dài.
+
+
 ### 2. Gap Analysis (Kiểm tra thiếu sót)
 
 Kiểm tra chéo (Cross-check) xem có bất kỳ thông tin nào trong tài liệu gốc bị **thiếu** trong danh sách phân rã:

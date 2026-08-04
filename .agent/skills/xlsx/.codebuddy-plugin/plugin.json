@@ -1,0 +1,12 @@
+{
+  "name": "xlsx",
+  "description": "Công cụ toàn diện để tạo, chỉnh sửa và phân tích bảng tính, hỗ trợ công thức, định dạng, phân tích dữ liệu và trực quan hóa. Phù hợp để xử lý các tệp bảng tính như .xlsx, .xlsm, .csv, .tsv.",
+  "description_en": "Sử dụng kỹ năng này bất cứ khi nào tệp bảng tính là đầu vào hoặc đầu ra chính — mở, đọc, chỉnh sửa, tạo các tệp .xlsx/.xlsm/.csv/.tsv, tính toán công thức, định dạng, vẽ biểu đồ và làm sạch dữ liệu lộn xộn.",
+  "author": {
+    "name": "",
+    "email": ""
+  },
+  "repository": "https://github.com/anthropics/skills",
+  "homepage": "https://github.com/anthropics/skills",
+  "license": "Proprietary"
+}

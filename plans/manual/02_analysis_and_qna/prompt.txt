@@ -30,7 +30,16 @@ Liệt kê đầy đủ các luồng:
 - Thao tác đồng thời (concurrent access)
 - ...]
 
-### 2. Phát hiện điểm mờ (Ambiguity Detection)
+### 2. Vẽ sơ đồ nghiệp vụ (Diagram Mapping)
+
+Để hỗ trợ phân tích trực quan và làm rõ logic rẽ nhánh phức tạp:
+- Hãy sử dụng skill `fireworks-tech-graph` vẽ **State Machine Diagram (Sơ đồ trạng thái)** cho các thực thể có vòng đời chuyển trạng thái nhiều bước.
+- Vẽ **Sequence Diagram (Sơ đồ tuần tự API)** thể hiện các touchpoint từ client (Web/Mobile) -> BFF -> Backend Services -> DB.
+- Vẽ **Flowchart (Lưu đồ quy trình)** để phân tích các nhánh điều kiện logic (conditional logic).
+- Lưu các file sơ đồ SVG và xuất ảnh PNG vào thư mục dự án tương ứng để sử dụng làm minh họa.
+
+
+### 3. Phát hiện điểm mờ (Ambiguity Detection)
 
 Phát hiện và liệt kê các điểm:
 - **Thiếu sót:** Thông tin chưa được đề cập trong tài liệu
@@ -45,7 +54,7 @@ Phát hiện và liệt kê các điểm:
 - Định dạng dữ liệu đầu vào (email, SĐT, ngày tháng)
 - ...]
 
-### 3. Đặt câu hỏi (Q&A)
+### 4. Đặt câu hỏi (Q&A)
 
 Đặt ra danh sách câu hỏi **có đánh số thứ tự** để tôi hoặc PO/BA có thể giải đáp.
 Mỗi câu hỏi cần:

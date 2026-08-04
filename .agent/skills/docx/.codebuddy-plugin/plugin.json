@@ -1,0 +1,12 @@
+{
+  "name": "docx",
+  "description": "Công cụ toàn diện để tạo, chỉnh sửa và phân tích tài liệu Word, hỗ trợ theo dõi thay đổi (tracked changes), bình luận (comments), giữ nguyên định dạng và trích xuất văn bản. Phù hợp để xử lý các tài liệu Word chuyên nghiệp (.docx)",
+  "description_en": "Sử dụng kỹ năng này bất cứ khi nào người dùng muốn tạo, đọc, chỉnh sửa hoặc thao tác với tài liệu Word (tệp .docx). Hỗ trợ theo dõi thay đổi, bình luận, giữ nguyên định dạng và trích xuất văn bản.",
+  "author": {
+    "name": "",
+    "email": ""
+  },
+  "repository": "https://github.com/anthropics/skills",
+  "homepage": "https://github.com/anthropics/skills",
+  "license": "Proprietary"
+}

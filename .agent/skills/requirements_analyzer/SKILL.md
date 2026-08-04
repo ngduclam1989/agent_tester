@@ -1,5 +1,5 @@
 ---
-name: requirements_analyzer
+name: Requirements Analyzer
 description: Kỹ năng phân tích trang web/module và sinh ra tài liệu Yêu cầu (Requirements Document/User Stories) chuẩn mực.
 ---
 

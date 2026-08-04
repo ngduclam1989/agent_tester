@@ -40,10 +40,14 @@ Chú ý đặc biệt đến:
 ## Tài liệu yêu cầu đính kèm
 
 [Dán nội dung tài liệu yêu cầu vào đây, hoặc upload file:
-- Nội dung Requirements / User Stories
+- Nội dung Requirements / User Stories (sử dụng skill `pdf` hoặc `docx` nếu tài liệu có định dạng `.pdf` hoặc `.docx` để trích xuất văn bản/bảng biểu thông minh)
 - Link Figma
 - File PDF từ BA/PO
 - Screenshot giao diện]
+
+> [!TIP]
+> Nếu tài liệu yêu cầu thiếu các sơ đồ kiến trúc cần thiết để biểu diễn bối cảnh, hãy sử dụng skill `fireworks-tech-graph` để vẽ nháp sơ đồ kiến trúc (Architecture Diagram) dạng SVG/PNG mô tả các component/services liên quan của module.
+
 
 ---
 

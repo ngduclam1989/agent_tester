@@ -34,7 +34,6 @@ This skill is designed for modern QA workflows and automation development.
 - Flaky investigation belongs to `flaky_test_analyzer`.
 - Framework scaffold belongs to `framework_architect`.
 - Test data generation belongs to `test_data_generator`.
-- Jira/Xray integration belongs to `jira_integration`.
 - Requirement extraction from a running website belongs to `requirements_analyzer`.
 - Before doing complex automation work, read `references/AUTOTEST_HANDOFF_CONTRACT.md`.
 - To choose detailed Playwright/Selenium/API/a11y/regression references, read `references/AUTOTEST_REFERENCE_MAP.md`.
@@ -48,14 +47,16 @@ Use this skill when the user asks about:
 - Test automation
 - Manual testing
 - Automation frameworks
+
+- Test automation
+- Manual testing
+- Automation frameworks
 - API testing
 - UI testing
 - Test data generation
 - Flaky test debugging
 - Locator generation
 - Requirements analysis from website
-- Jira integration (fetch requirements, push test results)
-- Xray test management
 
 Typical prompts include:
 
@@ -315,36 +316,10 @@ Use workflow: `analyze_requirement_document`
 Triggers when user asks:
 
 - phân tích requirement document
-- review yêu cầu / analyze this ticket
-- phân tích Jira ticket / requirement
+- review yêu cầu / analyze requirement
+- phân tích tài liệu yêu cầu / requirement
 - tìm điểm mơ hồ trong requirement
 - analyze requirement / review requirement document
-
----
-
-### Fetch requirements from Jira
-
-Use workflow: `fetch_jira_requirements`
-
-Triggers when user asks:
-
-- fetch jira requirements
-- lấy requirement từ jira
-- get jira ticket
-- import user stories from jira
-
----
-
-### Import test results to Xray
-
-Use workflow: `import_test_results_xray`
-
-Triggers when user asks:
-
-- push test results to xray
-- đẩy kết quả test lên xray
-- import test execution to jira
-- upload playwright results to xray
 
 ---
 

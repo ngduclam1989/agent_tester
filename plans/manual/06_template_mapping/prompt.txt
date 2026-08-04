@@ -42,10 +42,17 @@ Ví dụ: `TC_LOGIN_001`, `TC_REG_001`...]
 
 ---
 
-## Output
+## Output & Chuyển đổi Excel (Bắt buộc)
 
-Xuất kết quả dưới dạng **Artifact** (file `.md`) để tôi có thể:
-- Copy trực tiếp bảng vào Excel/Google Sheets
-- Import vào Jira/TestRail/Xray
+1. Xuất kết quả dưới dạng **file Markdown** (`.md`) lưu tại thư mục tương ứng trong `practices/testcases/`.
+2. Sử dụng skill `xlsx` để tự động hóa việc xuất bảng Test Cases ra file Excel `.xlsx` tương ứng:
+   - Sử dụng phông chữ chuyên nghiệp, nhất quán (ví dụ: Arial, Times New Roman).
+   - Áp dụng mã hóa màu sắc tiêu chuẩn ngành (xanh cho input dữ liệu thô, đen cho công thức).
+   - Bảo toàn các bản mẫu định dạng Excel sẵn có của dự án.
+3. Chạy công cụ xác thực để tính toán lại công thức và quét lỗi công thức Excel:
+   ```bash
+   python .agent/skills/xlsx/scripts/recalc.py <excel_file>
+   ```
+   Nếu phát hiện lỗi công thức (`#REF!`, `#DIV/0!`, `#VALUE!`), bạn bắt buộc phải sửa lỗi trước khi bàn giao file Excel hoàn chỉnh cho người dùng.
 
-Nếu tổng số Test Cases > 30, hãy chia artifact thành nhiều phần và hỏi tôi "Tiếp tục Part X?" trước khi sinh tiếp.
+Nếu tổng số Test Cases > 30, hãy chia file thành nhiều phần hợp lý và hỏi tôi "Tiếp tục Part X?" trước khi sinh tiếp.
