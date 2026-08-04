@@ -1,0 +1,536 @@
+# Knowledge Graph — gf-hrms
+
+boundary: "gf-hrms"
+version: 2
+last_updated: "2026-05-18"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý hồ sơ nhân viên theo tenant, lifecycle trạng thái làm việc, lifecycle SSO qua Kafka tenant-user, lịch sử đổi trạng thái/vai trò, validation province/ward bằng cache MDM và migration dữ liệu nhân viên từ tenant/IAM."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Kafka ", data_store: "PostgreSQL + Redis" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/integrations/INTEG-BFF-hrms.md"
+  integration_consumers: []
+
+apis:
+  # Public — EmployeeController (class-level @FeatureOn HRM_KEY — toàn bộ endpoint public đều gate HRM_KEY)
+  - name: "employee-create"
+    path: "/api/v1/employees"
+    method: POST
+    purpose: "Create employee"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+        first_name: string
+        last_name: string
+        role: string
+        branch_id: long
+    response:
+      schema:
+        id: long
+        code: string
+
+  - name: "employee-list"
+    path: "/api/v1/employees"
+    method: GET
+    purpose: "List employees"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        pagination: object
+    response:
+      schema:
+        items: array
+
+  - name: "employee-get"
+    path: "/api/v1/employees/{id}"
+    method: GET
+    purpose: "Get employee by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        employee: object
+
+  - name: "employee-update"
+    path: "/api/v1/employees/{id}"
+    method: PUT
+    purpose: "Update employee personal info and role"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        employee: object
+    response:
+      schema:
+        employee: object
+
+  - name: "employee-detail-by-code"
+    path: "/api/v1/employees/detail/{code}"
+    method: GET
+    purpose: "Get detail by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        employee: object
+
+  - name: "employee-provision-sso"
+    path: "/api/v1/employees/{id}/provision-sso"
+    method: POST
+    purpose: "Send TenantUserProvisionRequested to IAM"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        ssoRole: string
+    response:
+      schema:
+        sso_status: string
+
+  - name: "employee-disable-sso"
+    path: "/api/v1/employees/{id}/disable-sso"
+    method: POST
+    purpose: "Send TenantUserDisableRequested to IAM"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        sso_status: string
+
+  - name: "employee-enable-sso"
+    path: "/api/v1/employees/{id}/enable-sso"
+    method: POST
+    purpose: "Send TenantUserEnableRequested to IAM"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        sso_status: string
+
+  - name: "employee-terminate"
+    path: "/api/v1/employees/{id}/terminate"
+    method: POST
+    purpose: "Terminate employee (EmployeeTerminated event DISABLED — cố ý không gửi)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        status: string
+
+  - name: "employee-suspend"
+    path: "/api/v1/employees/{id}/suspend"
+    method: POST
+    purpose: "Suspend employee"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        status: string
+
+  - name: "employee-reactivate"
+    path: "/api/v1/employees/{id}/reactivate"
+    method: POST
+    purpose: "Reactivate suspended employee"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        status: string
+
+  - name: "employee-change-role"
+    path: "/api/v1/employees/{id}/role"
+    method: PUT
+    purpose: "Change role — emit EmployeeRoleChanged"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        role: string
+    response:
+      schema:
+        status: string
+
+  # Internal — ProtectedEmployeeController (x-api-key, class-level @FeatureOn HRM_KEY)
+  - name: "internal-employee-get"
+    path: "/protected/v1/employees/{tenantId}/{id}"
+    method: GET
+    purpose: "SVC-to-SVC employee fetch"
+    status: internal-only
+    active_callers: ["gf-sales", "gf-notification"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        id: long
+    response:
+      schema:
+        employee: object
+
+  - name: "internal-migrate-employee"
+    path: "/protected/v1/employees/migrate-employee-from-tenant"
+    method: POST
+    purpose: "One-shot bulk import from ct-saas-tenant"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        imported: integer
+
+  - name: "internal-migrate-user-iam"
+    path: "/protected/v1/employees/migrate-user-to-iam"
+    method: POST
+    purpose: "Bulk role migration to IAM"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        migrated: integer
+
+  # Internal — ValidationCacheController (x-api-key, no feature flag)
+  - name: "validation-cache-evict"
+    path: "/protected/v1/validation-cache/evict"
+    method: POST
+    purpose: "Evict PROVINCE/WARD validation cache"
+    status: unused  #  (admin-only)
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "validation-cache-reload"
+    path: "/protected/v1/validation-cache/reload"
+    method: POST
+    purpose: "Reload validation cache from gf-erp-mdm"
+    status: unused  # (admin-only)
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        reloaded: boolean
+
+  - name: "validation-cache-info"
+    path: "/protected/v1/validation-cache/info"
+    method: GET
+    purpose: "Cache stats"
+    status: unused  # (admin-only)
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        info: object
+
+events:
+  produces:
+    - topic: "AC-DEV-TENANT-USER-PROVISION-REQUESTS"
+      payload:
+        tenant_id: long
+        employee_id: long
+        employee_code: string
+        role: string
+      meaning: "TenantUserProvisionRequestedEvent — sent by EmployeeService.provisionSso() / create() to IAM via outbox"
+
+    - topic: "AC-DEV-TENANT-USER-DISABLE-REQUESTS"
+      payload:
+        tenant_id: long
+        employee_id: long
+      meaning: "TenantUserDisableRequestedEvent — sent by EmployeeService.disableSso()"
+
+    - topic: "AC-DEV-TENANT-USER-ENABLE-REQUESTS"
+      payload:
+        tenant_id: long
+        employee_id: long
+      meaning: "TenantUserEnableRequestedEvent — sent by EmployeeService.enableSso()"
+
+    - topic: "AC-DEV-EMPLOYEE-TERMINATED"
+      payload:
+        tenant_id: long
+        employee_id: long
+        reason: string
+      meaning: "DISABLED — publishTerminatedEvent method tồn tại nhưng commented out trong terminate(). Cố ý không gửi để giữ tài khoản tenant_user active trên SSO."
+
+    - topic: "AC-DEV-EMPLOYEE-ROLE-CHANGED"
+      payload:
+        tenant_id: long
+        employee_id: long
+        from_role: string
+        to_role: string
+      meaning: "EmployeeRoleChangedEvent — sent by EmployeeService.changeRole()"
+
+    - topic: "AC-DEV-EMPLOYEE-BRANCH-CHANGED"
+      payload:
+        tenant_id: long
+        employee_id: long
+        from_branch_id: long
+        to_branch_id: long
+      meaning: "NOT YET WIRED — publishBranchChangedEvent method tồn tại trong EmployeeOutboxPublisher nhưng không được gọi từ service. update() không detect branch change."
+
+  consumes:
+    - topic: "AC-DEV-TENANT-USER-CREATED-RESULTS"
+      payload:
+        tenant_id: long
+        tenant_type: string
+        keycloak_user_id: string
+        iam_user_id: string
+      action: "TenantUserCreatedConsumer.handleTenantUserCreated() — filter tenantType=GARAGE, idempotent via inbox_event"
+
+    - topic: "AC-DEV-TENANT-USER-PROVISION-RESULTS"
+      payload:
+        tenant_id: long
+        employee_id: long
+        success: boolean
+        error: string
+      action: "TenantUserProvisionedConsumer — handle Provisioned/Failed results, update sso_status"
+
+    - topic: "AC-DEV-TENANT-USER-DISABLE-RESULTS"
+      payload:
+        tenant_id: long
+        employee_id: long
+      action: "TenantUserDisabledConsumer.handleTenantUserDisabled()"
+
+    - topic: "AC-DEV-TENANT-USER-ENABLE-RESULTS"
+      payload:
+        tenant_id: long
+        employee_id: long
+      action: "TenantUserEnabledConsumer.handleTenantUserEnabled()"
+
+entities:
+  - name: "Employee"
+    type: "aggregate_root"
+    description: "Hồ sơ nhân viên thuộc tenant, gồm thông tin cá nhân, vai trò chính, chi nhánh, trạng thái làm việc và trạng thái liên kết SSO/IAM."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "employee_code", type: "VARCHAR(50)", required: true, constraints: ["unique toàn bảng"] }
+      - { name: "first_name", type: "VARCHAR(100)", required: true }
+      - { name: "last_name", type: "VARCHAR(100)", required: true }
+      - { name: "email", type: "VARCHAR(255)", required: false }
+      - { name: "phone", type: "VARCHAR(20)", required: true }
+      - { name: "national_id", type: "VARCHAR(50)", required: false }
+      - { name: "province", type: "VARCHAR(100)", required: false }
+      - { name: "ward", type: "VARCHAR(100)", required: false }
+      - { name: "address", type: "TEXT", required: false }
+      - { name: "profile_image_url", type: "VARCHAR(500)", required: false }
+      - { name: "primary_role", type: "EmployeeRole", required: true, constraints: ["MECHANIC | SERVICE_ADVISOR | ACCOUNTANT | INVENTORY_CONTROLLER | EXPRESS | MARKETER | CS | HR_MANAGER | OWNER"] }
+      - { name: "branch_id", type: "BIGINT", required: false }
+      - { name: "employment_status", type: "EmploymentStatus", required: true, constraints: ["ACTIVE | SUSPENDED | TERMINATED"] }
+      - { name: "hired_at", type: "TIMESTAMP", required: false }
+      - { name: "terminated_at", type: "TIMESTAMP", required: false }
+      - { name: "termination_reason", type: "TEXT", required: false }
+      - { name: "keycloak_user_id", type: "VARCHAR(255)", required: false }
+      - { name: "iam_user_id", type: "VARCHAR(255)", required: false }
+      - { name: "sso_status", type: "SsoStatus", required: true, constraints: ["NONE | PROVISIONING | ACTIVE | DISABLED | FAILED"] }
+      - { name: "sso_provisioned_at", type: "TIMESTAMP", required: false }
+      - { name: "birth_date", type: "DATE", required: false }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "created_by", type: "VARCHAR(100)", required: true }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "EmployeeStatusHistory", type: "one_to_many_logical", description: "Một employee có nhiều bản ghi lịch sử trạng thái qua employee_id." }
+      - { target: "EmployeeRoleHistory", type: "one_to_many_logical", description: "Một employee có nhiều bản ghi lịch sử vai trò qua employee_id." }
+      - { target: "OutboxEvent", type: "logical_reference", description: "aggregate_type EMPLOYEE-GARAGE và aggregate_id là Employee.id khi phát event." }
+    invariants:
+      - "Mọi public read/write phải scope theo tenantId lấy từ SecurityUtils và repository tenant-scoped."
+      - "Phone được service kiểm tra trùng theo tenant_id + phone trước khi tạo; DB hiện chỉ index phone, không unique theo tenant."
+      - "employee_code sinh dạng EMP-{tenantId}-{sequence} từ sequence EMPLOYEE-{tenantId}; DB unique toàn bảng."
+      - "Chỉ employee ACTIVE mới được update thông tin và provision/enable SSO."
+      - "EmploymentStatus chỉ chuyển theo enum: ACTIVE sang SUSPENDED/TERMINATED, SUSPENDED sang ACTIVE/TERMINATED, TERMINATED sang ACTIVE."
+      - "SsoStatus chỉ provision từ NONE hoặc FAILED; disable từ ACTIVE; enable từ DISABLED."
+
+  - name: "EmployeeStatusHistory"
+    type: "entity"
+    description: "Lịch sử thay đổi trạng thái làm việc của nhân viên."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "employee_id", type: "BIGINT", required: true }
+      - { name: "from_status", type: "VARCHAR(20)", required: false }
+      - { name: "to_status", type: "VARCHAR(20)", required: true }
+      - { name: "changed_by", type: "VARCHAR(100)", required: true }
+      - { name: "reason", type: "TEXT", required: false }
+      - { name: "changed_at", type: "TIMESTAMPTZ", required: true }
+    relationships:
+      - { target: "Employee", type: "logical_reference", description: "employee_id tham chiếu logic tới employees.id; migration không khai báo FK vật lý." }
+    invariants:
+      - "Tạo employee, suspend, reactivate và terminate đều append EmployeeStatusHistory."
+
+  - name: "EmployeeRoleHistory"
+    type: "entity"
+    description: "Lịch sử thay đổi vai trò chính của nhân viên."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "employee_id", type: "BIGINT", required: true }
+      - { name: "from_role", type: "VARCHAR(50)", required: false }
+      - { name: "to_role", type: "VARCHAR(50)", required: true }
+      - { name: "changed_by", type: "VARCHAR(100)", required: true }
+      - { name: "reason", type: "TEXT", required: false }
+      - { name: "changed_at", type: "TIMESTAMPTZ", required: true }
+    relationships:
+      - { target: "Employee", type: "logical_reference", description: "employee_id tham chiếu logic tới employees.id; migration không khai báo FK vật lý." }
+    invariants:
+      - "Update employee có đổi primaryRole và API changeRole đều append EmployeeRoleHistory."
+
+  - name: "OutboxEvent"
+    type: "aggregate_root"
+    description: "Outbox phát Kafka events cho yêu cầu SSO và thay đổi vai trò nhân viên sau khi transaction commit."
+    attributes:
+      - { name: "id", type: "UUID", required: true }
+      - { name: "aggregate_type", type: "VARCHAR(100)", required: true }
+      - { name: "aggregate_id", type: "VARCHAR(100)", required: true }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "payload", type: "TEXT", required: true }
+      - { name: "topic", type: "VARCHAR(200)", required: true }
+      - { name: "status", type: "OutboxStatus", required: true, constraints: ["PENDING | SENT | FAILED"] }
+      - { name: "retry_count", type: "INT", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "error_message", type: "VARCHAR(1000)", required: false }
+    relationships: []
+    invariants:
+      - "EmployeeOutboxPublisher luôn tạo outbox với aggregate_type EMPLOYEE-GARAGE và publish OutboxEventCreatedEvent."
+      - "OutboxEventListener publish sau commit; OutboxProcessor scheduled retry các event PENDING dưới outbox.max-retries."
+      - "markAsFailed tăng retry_count và chuyển FAILED khi retry_count >= 3."
+      - "outbox_event không có tenant_id; tenant nằm trong payload."
+
+  - name: "InboxEvent"
+    type: "aggregate_root"
+    description: "Inbox idempotency cho Kafka tenant-user result events nhận từ service bên ngoài."
+    attributes:
+      - { name: "event_id", type: "VARCHAR(100)", required: true, constraints: ["primary key"] }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: true }
+    relationships: []
+    invariants:
+      - "event_id là khóa chính để duplicate inbound event ném DataIntegrityViolationException và được acknowledge bỏ qua."
+      - "inbox_event không có tenant_id; idempotency global theo event_id."
+
+  - name: "Sequence"
+    type: "entity"
+    description: "Bảng sequence tự quản và function get_next_number dùng cấp mã nhân viên theo tenant."
+    attributes:
+      - { name: "sequence_name", type: "VARCHAR(100)", required: true, constraints: ["primary key"] }
+      - { name: "current_value", type: "BIGINT", required: true }
+      - { name: "increment_by", type: "INTEGER", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+    relationships: []
+    invariants:
+      - "SequenceUtils gọi function get_next_number trong default_schema với transaction REQUIRES_NEW."
+      - "Tên sequence HRMS đang dùng là EMPLOYEE-{tenantId}."
+
+business_rules:
+  - { id: "BR-GF-HRMS-001", description: "Employee phải được tạo trong tenant hiện tại và phone không được trùng trong cùng tenant.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.create + EmployeeRepository.findByPhone" }
+  - { id: "BR-GF-HRMS-002", description: "Mã nhân viên được sinh dạng EMP-{tenantId}-{seq} từ sequence EMPLOYEE-{tenantId}.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.create + EmployeeMigrationServiceImpl.createEmployee + EmployeeRepositoryImpl.generateNextSequence" }
+  - { id: "BR-GF-HRMS-003", description: "Public employee APIs lấy tenantId từ SecurityUtils và repository luôn query theo tenantId + id/code/search filters.", cornerstone: true, enforcement_point: "EmployeeController + EmployeeRepositoryImpl + EmployeeSpecifications" }
+  - { id: "BR-GF-HRMS-004", description: "Chỉ nhân viên ACTIVE mới được cập nhật thông tin (update), provision SSO và enable SSO. changeRole() và disableSso() KHÔNG yêu cầu ACTIVE — employee suspended/terminated vẫn đổi role và disable SSO được.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.update + provisionSso + enableSso (có check) vs changeRole + disableSso (không check)" }
+  - { id: "BR-GF-HRMS-005", description: "Trạng thái làm việc chỉ được chuyển theo EmploymentStatus.validateTransition.", cornerstone: true, enforcement_point: "Employee.suspend + reactivate + terminate + EmploymentStatus" }
+  - { id: "BR-GF-HRMS-006", description: "Ngày nghỉ việc không được nhỏ hơn ngày vào làm.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.terminate" }
+  - { id: "BR-GF-HRMS-007", description: "Tạo employee luôn ghi lịch sử ACTIVE ban đầu; suspend/reactivate/terminate ghi lịch sử trạng thái.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.create + suspend + reactivate + terminate" }
+  - { id: "BR-GF-HRMS-008", description: "Provision SSO chỉ bắt đầu từ NONE hoặc FAILED; thành công/thất bại được cập nhật bằng TenantUserProvisionedEvent hoặc TenantUserProvisionFailedEvent.", cornerstone: true, enforcement_point: "Employee.startSsoProvisioning + EmployeeServiceImpl.handleTenantUserProvisioned + handleTenantUserProvisionFailed" }
+  - { id: "BR-GF-HRMS-009", description: "Disable SSO chỉ check ssoStatus ACTIVE (KHÔNG check employmentStatus — có thể disable SSO cho employee terminated/suspended). Enable SSO yêu cầu ssoStatus DISABLED VÀ employmentStatus ACTIVE. Trạng thái SSO local chỉ đổi sau result event.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.disableSso + enableSso + handleTenantUserDisabled + handleTenantUserEnabled" }
+  - { id: "BR-GF-HRMS-010", description: "Đổi vai trò qua update() (khi đổi primaryRole) VÀ changeRole() đều ghi EmployeeRoleHistory; cả hai chỉ publish EmployeeRoleChangedEvent khi employee có tài khoản SSO active (hasSsoAccount = iamUserId != null && ssoStatus ACTIVE).", cornerstone: true, enforcement_point: "EmployeeServiceImpl.update + changeRole + Employee.hasSsoAccount" }
+  - { id: "BR-GF-HRMS-011", description: "Inbound tenant-user result events chỉ xử lý tenantType GARAGE và ghi InboxEvent trước khi gọi service handler.", cornerstone: true, enforcement_point: "TenantUser*Consumer.processMessage" }
+  - { id: "BR-GF-HRMS-012", description: "Outbound Kafka events phải đi qua OutboxEvent, publish sau commit và có scheduled retry.", cornerstone: true, enforcement_point: "EmployeeOutboxPublisher + OutboxEventListener + OutboxProcessor" }
+  - { id: "BR-GF-HRMS-013", description: "Province và ward trong create/update được validate bằng Redis cache nạp từ gf-erp-mdm; null hoặc rỗng được bỏ qua validation.", cornerstone: false, enforcement_point: "CreateEmployeeRequest + UpdateEmployeeRequest + CityValidator + WardValidator + ValidationCacheServiceImpl" }
+  - { id: "BR-GF-HRMS-014", description: "Migration từ tenant bỏ qua bản ghi status rỗng hoặc phone đã tồn tại trong tenant; role/status tenant được map sang HRMS theo map nội bộ.", cornerstone: false, enforcement_point: "EmployeeMigrationServiceImpl.createEmployee" }
+  - { id: "BR-GF-HRMS-015", description: "create() với provisionSso=true set ssoStatus thẳng sang PROVISIONING (bỏ qua Employee.startSsoProvisioning) và publish TenantUserProvisionRequestedEvent qua outbox ngay khi tạo.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.create + EmployeeOutboxPublisher.publishProvisionSsoEvent" }
+  - { id: "BR-GF-HRMS-016", description: "Inbound TenantUserCreatedEvent tự động tạo employee: bỏ qua nếu status blank hoặc phone trùng trong tenant; map role GARAGE_OWNER→OWNER, CA→ACCOUNTANT; map status ACTIVE→ACTIVE, INACTIVE→TERMINATED; set ssoStatus ACTIVE nếu tenant status ACTIVE, ngược lại DISABLED.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.handleTenantUserCreated + TenantUserCreatedConsumer" }
+  - { id: "BR-GF-HRMS-017", description: "terminate() và suspend() cố ý KHÔNG publish SSO disable/terminated event — employment status tách biệt khỏi SSO status để giữ tài khoản tenant_user active trên SSO.", cornerstone: true, enforcement_point: "EmployeeServiceImpl.terminate + suspend (commented out publish code)" }
+
+workflows: []
+
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-notification"
+      purpose: "Employee search for CARDOCTOR-broadcast notification recipient"
+    - type: API
+      source: "agg-garage-graph"
+      purpose: "BFF employee queries"
+    - type: EVENT
+      source: "External IAM / tenant pipeline"
+      purpose: "TenantUser{Created,Provisioned,Disabled,Enabled}Result topics"
+
+  outbound:
+    - type: API
+      target: "gf-erp-mdm"
+      purpose: "Validate province/ward catalog — /protected/catalog/v1/{verify-existed,inquiry}"
+    - type: API
+      target: "sec-iam-service"
+      purpose: "Bulk role migration — PUT /protected/users/batch/role"
+    - type: API
+      target: "ct-saas-tenant"
+      purpose: "Fetch user list for migration — GET /protected/v1/saas-tenant/all-users"
+    - type: EVENT
+      target: "Kafka — 6 outbound topics"
+      purpose: "Publish provision/disable/enable requests + employee terminate/role/branch events via outbox"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho employees, employee histories, outbox_event, inbox_event và sequences trong schema gf_hrms.", config_ref: "spring.datasource.*, DB_SCHEMA" }
+  - { name: "Redis", type: "cache", purpose: "Cache validation city/ward từ gf-erp-mdm và cache mặc định của ứng dụng.", config_ref: "REDIS_HOST, REDIS_PORT, app.cache.*" }
+  - { name: "Kafka", type: "broker", purpose: "Publish SSO/employee role request events qua outbox và consume tenant-user result events bằng manual ack.", config_ref: "KAFKA_BOOTSTRAP_SERVERS, KAFKA_CONSUMER_GROUP, kafka.topics.*" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Cung cấp tenant/user context cho public APIs và auditor JPA; protected APIs dùng apiKey theo OpenAPI annotation/source config.", config_ref: "common spring-security-starter, SecurityUtils" }
+  - { name: "spring-feature-flag-starter", type: "feature_flag", purpose: "Gate EmployeeController và ProtectedEmployeeController bằng feature HRM:HRMV01.", config_ref: "feature-flag.*, FeatureFlagConfig.HRM_KEY" }
+
+change_log:
+  - { date: "2026-05-18", summary: "BR review fix: sửa BR-004 (changeRole/disableSso không check isActive), BR-009 (asymmetry disable vs enable SSO), BR-010 (2 entry points đổi role); thêm BR-015 (create SSO provision), BR-016 (handleTenantUserCreated auto-create), BR-017 (terminate/suspend SSO isolation); fix events EmployeeTerminated=DISABLED, EmployeeBranchChanged=NOT_YET_WIRED; fix API employee-update/terminate purpose, provision-sso thêm ssoRole param.", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-14", summary: "RULE-08 wiring: thêm status/active_callers/replaced_by cho 18 API. 12 public Employee CRUD/lifecycle/SSO → agg-garage-graph (employees.resolver.ts). 1 internal-employee-get → gf-sales (HrmsClient) + gf-notification (HrmClient broadcast). 5 endpoint (2 migrate + 3 validation-cache) không có SVC caller → mark unused + TODO admin-only.", author: "Architecture Authority — RULE-08 audit 2026-05-14" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Swap section order workflows ↔ business_rules để khớp canonical (BR trước workflows).", author: "Architecture Authority" }

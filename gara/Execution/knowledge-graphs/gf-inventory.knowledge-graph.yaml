@@ -1,0 +1,2287 @@
+# Knowledge Graph — gf-inventory
+
+boundary: "gf-inventory"
+version: 4
+last_updated: "2026-07-07"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý danh mục product line/product variant, phiếu nhập kho (receipt), phiếu xuất kho (delivery), tồn kho (stock) với negative stock và optimistic locking, reservation TTL, period stock closure (WAC/COGS), warehouse lifecycle, event-driven via outbox/inbox pattern. Orchestration async qua gf-inventory-worker Temporal workflows. W03 (EP-INVENTORY-CATALOG): catalog V2 — material_group adjacency-list + internal_product với SKU mapping + UoM conversion + import/export."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA", data_store: "PostgreSQL" }
+  epics: ["EP-INVENTORY-CATALOG"]
+  features:
+    - "FEAT-CAT-GRP-LIST"
+    - "FEAT-CAT-GRP-CREATE"
+    - "FEAT-CAT-GRP-DETAIL"
+    - "FEAT-CAT-GRP-EDIT"
+    - "FEAT-CAT-GRP-DELETE"
+    - "FEAT-CAT-PROD-LIST"
+    - "FEAT-CAT-PROD-CREATE"
+    - "FEAT-CAT-PROD-DETAIL"
+    - "FEAT-CAT-PROD-EDIT"
+    - "FEAT-CAT-PROD-DELETE"
+    - "FEAT-CAT-PROD-IMPORT"
+    - "FEAT-CAT-PROD-EXPORT"
+  integration_ref: "Architecture/integrations/INTEG-BFF-gf-inventory.md"
+  integration_consumers: []
+
+apis:
+  # Public — WarehouseController (no class-level feature flag)
+  - name: "warehouse-search"
+    path: "/api/v1/warehouses"
+    method: GET
+    purpose: "Search warehouses (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "warehouse-get-by-id"
+    path: "/api/v1/warehouses/{id}"
+    method: GET
+    purpose: "Get warehouse by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        warehouse: object
+
+  - name: "warehouse-get-by-code"
+    path: "/api/v1/warehouses/code/{warehouseCode}"
+    method: GET
+    purpose: "Get warehouse by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        warehouseCode: string
+    response:
+      schema:
+        warehouse: object
+
+  # Public — ProductController (no class-level feature flag)
+  - name: "product-search"
+    path: "/api/v2/products/search"
+    method: GET
+    purpose: "Search products (paginated, tenant-scoped)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "product-search-grouped"
+    path: "/api/v2/products/search-grouped"
+    method: GET
+    purpose: "Search products grouped by ProductLine"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "product-quick-create"
+    path: "/api/v2/products"
+    method: POST
+    purpose: "Quick-create product (segment TIER1–TIER5 fan-out via ProductLine)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        productLine: object
+    response:
+      schema:
+        id: long
+
+  - name: "product-cost-price-by-skus"
+    path: "/api/v2/products/stock/cost-price"
+    method: POST
+    purpose: "Batch cost price lookup by skus"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        skus: array
+    response:
+      schema:
+        costPrices: array
+
+  - name: "product-total-stock-by-skus"
+    path: "/api/v2/products/stock/total-by-skus"
+    method: POST
+    purpose: "Batch total stock lookup by skus"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        skus: array
+    response:
+      schema:
+        totals: array
+
+  # Public — InventoryDeliveryController (class-level @FeatureOn INVENTORY_STOCK)
+  - name: "delivery-search"
+    path: "/api/v2/deliveries/search"
+    method: POST
+    purpose: "Search deliveries (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+        pagination: object
+    response:
+      schema:
+        items: array
+
+  - name: "delivery-search-mobile"
+    path: "/api/v2/deliveries/mobile/search"
+    method: POST
+    purpose: "Mobile delivery list (lightweight payload)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "delivery-search-products"
+    path: "/api/v2/deliveries/products/search"
+    method: POST
+    purpose: "Search delivery items grouped by product"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "delivery-get-by-code-mobile"
+    path: "/api/v2/deliveries/mobile/{code}"
+    method: GET
+    purpose: "Mobile delivery detail by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        delivery: object
+
+  - name: "delivery-get-by-code"
+    path: "/api/v2/deliveries/{code}"
+    method: GET
+    purpose: "Delivery detail by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        delivery: object
+
+  - name: "delivery-get-items"
+    path: "/api/v2/deliveries/{id}/items"
+    method: GET
+    purpose: "Delivery line items by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        items: array
+
+  - name: "delivery-create"
+    path: "/api/v2/deliveries"
+    method: POST
+    purpose: "Create inventory delivery (source SO/SVO/DIRECT)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        delivery: object
+    response:
+      schema:
+        id: long
+
+  - name: "delivery-update"
+    path: "/api/v2/deliveries/{id}"
+    method: PUT
+    purpose: "Update delivery (only when status allows)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        delivery: object
+    response:
+      schema:
+        delivery: object
+
+  - name: "delivery-complete"
+    path: "/api/v2/deliveries/{id}/complete"
+    method: POST
+    purpose: "Complete delivery — emits DeliveryCompleted via outbox"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        status: string
+
+  - name: "delivery-cancel"
+    path: "/api/v2/deliveries/{id}/cancel"
+    method: POST
+    purpose: "Cancel delivery"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        status: string
+
+  - name: "delivery-export-pdf"
+    path: "/api/v2/deliveries/{id}/export-pdf"
+    method: GET
+    purpose: "Export delivery slip as PDF"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        pdf: binary
+
+  - name: "delivery-reverse"
+    path: "/api/v2/deliveries/{id}/reverse"
+    method: POST
+    purpose: "Reverse a completed delivery to undo stock changes (currently disabled/commented-out)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        data: object
+
+  # Public — MdmPartController (no class-level feature flag)
+  - name: "mdm-part-list"
+    path: "/api/v1/mdm-parts"
+    method: GET
+    purpose: "List MDM spare parts (forwarded from gf-erp-mdm catalog)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "mdm-part-google-images"
+    path: "/api/v1/mdm-parts/google-images"
+    method: GET
+    purpose: "Google Custom Search image lookup for spare part"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        query: string
+    response:
+      schema:
+        items: array
+
+  # Public — GarageServiceController (class-level @FeatureOn INVENTORY_STOCK)
+  - name: "garage-service-search"
+    path: "/api/v1/services"
+    method: GET
+    purpose: "Search garage services"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "garage-service-get-by-id"
+    path: "/api/v1/services/{id}"
+    method: GET
+    purpose: "Get garage service by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        service: object
+
+  - name: "garage-service-create"
+    path: "/api/v1/services"
+    method: POST
+    purpose: "Create garage service"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        service: object
+    response:
+      schema:
+        id: long
+
+  - name: "garage-service-update"
+    path: "/api/v1/services/{id}"
+    method: PUT
+    purpose: "Update garage service"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        service: object
+    response:
+      schema:
+        service: object
+
+  # Public — InventoryStockController (class-level @FeatureOn INVENTORY_STOCK)
+  - name: "stock-search"
+    path: "/api/v2/stocks"
+    method: GET
+    purpose: "Search inventory stock (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "stock-search-mobile"
+    path: "/api/v2/stocks/mobile"
+    method: GET
+    purpose: "Mobile stock search (lightweight payload)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "stock-get-by-id"
+    path: "/api/v2/stocks/{id}"
+    method: GET
+    purpose: "Get stock detail by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        stock: object
+
+  - name: "stock-get-by-id-mobile"
+    path: "/api/v2/stocks/mobile/{id}"
+    method: GET
+    purpose: "Mobile stock detail by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        stock: object
+
+  - name: "stock-adjust"
+    path: "/api/v2/stocks/adjust"
+    method: PUT
+    purpose: "Adjust stock quantity (manual delta + reason)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        sku: string
+        warehouse_code: string
+        delta: decimal
+        reason: string
+    response:
+      schema:
+        stock: object
+
+  - name: "stock-update-prices"
+    path: "/api/v2/stocks/prices"
+    method: PUT
+    purpose: "Batch update stock sale price"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        items: array
+    response:
+      schema:
+        updated: integer
+
+  - name: "stock-history"
+    path: "/api/v2/stocks/history"
+    method: GET
+    purpose: "Stock movement history"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  # Public — InventoryPeriodStockController (class-level @FeatureOn INVENTORY_STOCK)
+  - name: "period-stock-search"
+    path: "/api/v2/period-stocks"
+    method: GET
+    purpose: "Search period stock snapshots"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        period_code: string
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "period-stock-search-mobile"
+    path: "/api/v2/period-stocks/mobile/list"
+    method: GET
+    purpose: "Mobile period-stock list"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "period-stock-detail-mobile"
+    path: "/api/v2/period-stocks/mobile/detail"
+    method: GET
+    purpose: "Mobile period-stock detail"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        periodCode: "String (query)"
+        sku: "String (query)"
+        warehouseCode: "String (query)"
+    response:
+      schema:
+        detail: object
+
+  - name: "period-stock-get-by-id"
+    path: "/api/v2/period-stocks/{id}"
+    method: GET
+    purpose: "Period stock detail by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        stock: object
+
+  - name: "period-stock-stats-current"
+    path: "/api/v2/period-stocks/stats/current"
+    method: GET
+    purpose: "Stats for the current open period"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        stats: object
+
+  - name: "period-stock-filter-products"
+    path: "/api/v2/period-stocks/filters/products"
+    method: GET
+    purpose: "Available product filter values for period stock"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        keyword: "String (query, optional)"
+    response:
+      schema:
+        items: array
+
+  - name: "period-stock-filter-periods"
+    path: "/api/v2/period-stocks/filters/periods"
+    method: GET
+    purpose: "Available period filter values"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        items: array
+
+  # Public — InventoryReceiptController (class-level @FeatureOn INVENTORY_STOCK)
+  - name: "receipt-search"
+    path: "/api/v2/receipts"
+    method: GET
+    purpose: "Search receipts (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "receipt-search-mobile"
+    path: "/api/v2/receipts/mobile/search"
+    method: GET
+    purpose: "Mobile receipt list"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "receipt-get-by-code-mobile"
+    path: "/api/v2/receipts/mobile/{code}"
+    method: GET
+    purpose: "Mobile receipt detail by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        receipt: object
+
+  - name: "receipt-get-by-code"
+    path: "/api/v2/receipts/{code}"
+    method: GET
+    purpose: "Receipt detail by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        receipt: object
+
+  - name: "receipt-create"
+    path: "/api/v2/receipts"
+    method: POST
+    purpose: "Create inventory receipt (source PO/GRN)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        receipt: object
+    response:
+      schema:
+        id: long
+
+  - name: "receipt-update"
+    path: "/api/v2/receipts/{id}"
+    method: PUT
+    purpose: "Update receipt (only when status allows)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        receipt: object
+    response:
+      schema:
+        receipt: object
+
+  - name: "receipt-complete"
+    path: "/api/v2/receipts/{id}/complete"
+    method: POST
+    purpose: "Complete receipt — emits ReceiptCompleted via outbox"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        status: string
+
+  - name: "receipt-cancel"
+    path: "/api/v2/receipts/{id}/cancel"
+    method: POST
+    purpose: "Cancel receipt"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        status: string
+
+  - name: "receipt-export-pdf"
+    path: "/api/v2/receipts/{id}/export-pdf"
+    method: GET
+    purpose: "Export receipt as PDF"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        pdf: binary
+
+  - name: "receipt-reverse"
+    path: "/api/v2/receipts/{id}/reverse"
+    method: POST
+    purpose: "Reverse a completed receipt and decrease stock (currently disabled/commented-out)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        data: object
+
+  # Internal — ProtectedDeliveryController (x-api-key, no class feature flag — worker-callable)
+  - name: "internal-delivery-create"
+    path: "/protected/deliveries"
+    method: POST
+    purpose: "Worker-callable delivery create"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        delivery: object
+    response:
+      schema:
+        id: long
+
+  - name: "internal-delivery-complete"
+    path: "/protected/deliveries/complete"
+    method: POST
+    purpose: "Worker-callable delivery complete (deliveryCode in body, no path id)"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        deliveryCode: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-delivery-cancel"
+    path: "/protected/deliveries/cancel"
+    method: POST
+    purpose: "Worker-callable delivery cancel"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        deliveryCode: string
+        reason: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-delivery-status"
+    path: "/protected/deliveries/{code}/status"
+    method: GET
+    purpose: "Worker query delivery status by code"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-delivery-update-cost-prices"
+    path: "/protected/deliveries/items/update-cost-prices"
+    method: POST
+    purpose: "Worker batch update cost prices on delivery items"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        items: array
+    response:
+      schema:
+        updated: integer
+
+  # Internal — ProtectedPeriodClosureController (x-api-key, class-level @FeatureOn INVENTORY_STOCK — 14 worker step endpoints)
+  # NOTE: tất cả params đều là @RequestParam (query params, kể cả POST). Response bọc ApiResponse<T>.
+  - name: "internal-period-init-history"
+    path: "/protected/v2/period-closure/init-history"
+    method: POST
+    purpose: "Phase 1: Bulk insert tất cả active warehouses vào history table với status PENDING"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        periodCode: "String (required, YYYYMM)"
+        workflowId: "String (required — Temporal workflow ID)"
+    response:
+      schema:
+        count: "Integer — tổng số warehouse được khởi tạo"
+
+  - name: "internal-period-pending-warehouses"
+    path: "/protected/v2/period-closure/pending-warehouses"
+    method: GET
+    purpose: "Phase 2: Lấy trang tiếp theo của PENDING warehouses từ history table"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        periodCode: "String (required)"
+        page: "Integer (required, 0-indexed)"
+        size: "Integer (required)"
+    response:
+      schema:
+        warehouses: "array[{tenantId: Long, warehouseCode: String}]"
+        hasNext: boolean
+
+  - name: "internal-period-close-warehouse"
+    path: "/protected/v2/period-closure/close-warehouse"
+    method: POST
+    purpose: "Execute Native SQL để close period cho một warehouse (legacy, prefer atomic-close)"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        tenantId: "Long (required)"
+        warehouseCode: "String (required)"
+        periodCode: "String (required, YYYYMM)"
+    response:
+      schema:
+        recordsClosed: integer
+
+  - name: "internal-period-close-warehouse-batch"
+    path: "/protected/v2/period-closure/close-warehouse-batch"
+    method: POST
+    purpose: "Close period cho một warehouse theo trang (pagination để tránh timeout); gọi lặp với page++ cho đến khi hasMore=false"
+    status: unused  # TODO: confirm dead code (defined in InventoryClient nhưng không activity gọi)
+    active_callers: []
+    replaced_by: null
+    request:
+      query_params:
+        tenantId: "Long (required)"
+        warehouseCode: "String (required)"
+        periodCode: "String (required, YYYYMM)"
+        page: "Integer (required, default 0)"
+        batchSize: "Integer (required, default 1000 — số SKUs per call)"
+    response:
+      schema:
+        recordsInserted: integer
+        hasMore: boolean
+        currentPage: integer
+
+  - name: "internal-period-create-next-period"
+    path: "/protected/v2/period-closure/create-next-period"
+    method: POST
+    purpose: "Carry forward closing data của current period làm opening data cho next period"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        tenantId: "Long (required)"
+        warehouseCode: "String (required)"
+        currentPeriod: "String (required, YYYYMM)"
+        nextPeriod: "String (required, YYYYMM)"
+    response:
+      schema:
+        recordsCreated: integer
+
+  - name: "internal-period-retry-warehouses"
+    path: "/protected/v2/period-closure/retry-warehouses"
+    method: GET
+    purpose: "Lấy danh sách warehouses có status PENDING_RETRY cho cron job retry — không filter theo periodCode, trả global candidates"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        limit: "Integer (default 10)"
+        maxRetryAttempts: "Integer (default 5)"
+    response:
+      schema:
+        warehouses: "array[{tenantId: Long, warehouseCode: String, periodCode: String, retryCount: Integer}]"
+
+  - name: "internal-period-update-status"
+    path: "/protected/v2/period-closure/update-status"
+    method: POST
+    purpose: "Update closure status (RUNNING/SUCCESS/FAILED) trong history table cho một warehouse"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        tenantId: "Long (required)"
+        warehouseCode: "String (required)"
+        periodCode: "String (required)"
+        status: "ClosureStatus enum (required — RUNNING|SUCCESS|FAILED|PENDING_RETRY)"
+        errorMessage: "String (optional, khi FAILED)"
+    response:
+      schema:
+        void: "no data returned"
+
+  - name: "internal-period-stats"
+    path: "/protected/v2/period-closure/stats"
+    method: GET
+    purpose: "Lấy detailed statistics cho một period (success/failed counts, timing)"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        periodCode: "String (required, YYYYMM)"
+    response:
+      schema:
+        stats: "DetailedStats object (totalWarehouses, successCount, failedCount, pendingCount, runningCount, pendingRetryCount, avgDurationMs, totalRecordsClosed, totalRecordsCreated)"
+
+  - name: "internal-period-mark-retry"
+    path: "/protected/v2/period-closure/mark-retry"
+    method: POST
+    purpose: "Mark một FAILED warehouse cụ thể thành PENDING_RETRY"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        tenantId: "Long (required)"
+        warehouseCode: "String (required)"
+        periodCode: "String (required, YYYYMM)"
+    response:
+      schema:
+        success: "Boolean — false nếu warehouse không tìm thấy hoặc không ở status FAILED"
+
+  - name: "internal-period-mark-all-failed-retry"
+    path: "/protected/v2/period-closure/mark-all-failed-retry"
+    method: POST
+    purpose: "Bulk update tất cả FAILED warehouses của period thành PENDING_RETRY"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        periodCode: "String (required, YYYYMM)"
+    response:
+      schema:
+        count: "Integer — số warehouse được mark"
+
+  - name: "internal-period-atomic-close"
+    path: "/protected/v2/period-closure/atomic-close"
+    method: POST
+    purpose: "Atomic close + create next period trong một transaction với idempotency guarantee (recommended endpoint)"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        tenantId: "Long (required)"
+        warehouseCode: "String (required)"
+        periodCode: "String (required, YYYYMM — current period)"
+        nextPeriod: "String (required, YYYYMM — next period)"
+        idempotencyKey: "String (required — dạng closure-{period}-{tenantId}-{warehouseCode}-{workflowId})"
+    response:
+      schema:
+        recordsClosed: integer
+        recordsCreated: integer
+        success: boolean
+        message: string
+
+  - name: "internal-period-rollback"
+    path: "/protected/v2/period-closure/rollback"
+    method: POST
+    purpose: "Rollback (xóa) period stock records của một warehouse — saga compensation khi activity fail"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        tenantId: "Long (required)"
+        warehouseCode: "String (required)"
+        periodCode: "String (required)"
+        nextPeriodCode: "String (optional)"
+        idempotencyKey: "String (optional — invalidate để cho phép re-execute)"
+    response:
+      schema:
+        recordsDeleted: integer
+        success: boolean
+        message: string
+
+  - name: "internal-period-check-idempotency"
+    path: "/protected/v2/period-closure/check-idempotency"
+    method: GET
+    purpose: "Check xem operation với idempotencyKey này đã thực thi chưa"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        idempotencyKey: "String (required — KHÔNG phải period_code/warehouse_code)"
+    response:
+      schema:
+        alreadyCompleted: boolean
+        recordsClosed: "Integer (nullable — từ cached result)"
+        recordsCreated: "Integer (nullable — từ cached result)"
+
+  - name: "internal-period-increment-retry-count"
+    path: "/protected/v2/period-closure/increment-retry-count"
+    method: POST
+    purpose: "Tăng retry_count và cập nhật last_retry_at cho một warehouse khi bắt đầu retry"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      query_params:
+        tenantId: "Long (required)"
+        warehouseCode: "String (required)"
+        periodCode: "String (required)"
+    response:
+      schema:
+        success: "Boolean (KHÔNG trả retryCount)"
+
+  # Internal — ProtectedReceiptController (x-api-key, no class feature flag)
+  - name: "internal-receipt-create"
+    path: "/protected/receipts"
+    method: POST
+    purpose: "Worker-callable receipt create"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        receipt: object
+    response:
+      schema:
+        id: long
+
+  - name: "internal-receipt-complete"
+    path: "/protected/receipts/complete"
+    method: POST
+    purpose: "Worker-callable receipt complete (receiptCode in body, no path id)"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        receiptCode: string
+        userId: long
+    response:
+      schema:
+        status: string
+
+  - name: "internal-receipt-cancel"
+    path: "/protected/receipts/cancel"
+    method: POST
+    purpose: "Worker-callable receipt cancel"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        receiptCode: string
+        userId: long
+        reason: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-receipt-status"
+    path: "/protected/receipts/{code}/status"
+    method: GET
+    purpose: "Worker query receipt status by code"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        status: string
+
+  # Internal — InternalInventoryController (x-api-key)
+  - name: "internal-iostock-issuance"
+    path: "/protected/v1/iostock-issuance"
+    method: POST
+    purpose: "Legacy IO stock issuance create (warehouse receipt / delivery note)"
+    status: unused  # TODO: confirm dead code
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        issuance: object
+    response:
+      schema:
+        id: long
+
+  # Internal — ProtectedReservationController (x-api-key — workflow signals)
+  - name: "internal-reservation-expire"
+    path: "/protected/reservations/{code}/expire"
+    method: POST
+    purpose: "Expire reservation (worker timer callback — TTL hết, releases reserved stock)"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      path_params:
+        code: "String — reservation code"
+      query_params:
+        tenantId: "Long (required)"
+    response:
+      schema:
+        success: boolean
+
+  - name: "internal-reservation-release"
+    path: "/protected/reservations/{code}/release"
+    method: POST
+    purpose: "Release reservation manually (worker signal — gf-inventory-worker calls đây để release stock)"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      path_params:
+        code: "String — reservation code"
+      query_params:
+        tenantId: "Long (required)"
+        userId: "String (required)"
+        reason: "String (required)"
+    response:
+      schema:
+        success: boolean
+
+  # Internal — InternalLocationController (x-api-key, called from gf-erp-agent)
+  - name: "internal-location-create"
+    path: "/protected/v1/locations"
+    method: POST
+    purpose: "Create default location/warehouse on tenant activation"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        tenant_id: long
+        location: object
+    response:
+      schema:
+        id: long
+
+  # Internal — InternalPimInfoController (x-api-key, called from gf-erp-mdm)
+  - name: "internal-pim-info"
+    path: "/protected/v1/pim-info"
+    method: POST
+    purpose: "PIM info ingestion (PIMInfoMessageHandler forward)"
+    status: internal-only
+    active_callers: ["gf-erp-mdm"]
+    replaced_by: null
+    request:
+      schema:
+        pim: object
+    response:
+      schema:
+        ack: boolean
+
+  # Internal — ProtectedInternalController (x-api-key, class-level @FeatureOn INVENTORY_STOCK)
+  - name: "internal-delivery-items-update-cost-prices"
+    path: "/protected/internal/delivery-items/update-cost-prices"
+    method: POST
+    purpose: "Internal recalc cost prices on delivery items"
+    status: internal-only
+    active_callers: ["gf-inventory-worker"]
+    replaced_by: null
+    request:
+      schema:
+        items: array
+    response:
+      schema:
+        updated: integer
+
+  # Internal — InternalProductController (x-api-key, multi-consumer: gf-purchase, gf-sales)
+  - name: "internal-product-get-id"
+    path: "/protected/v1/product/productId"
+    method: POST
+    purpose: "Resolve product id by name+segment+productType"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        name: string
+        segment: string
+        productType: string
+    response:
+      schema:
+        productId: long
+
+  - name: "internal-po-summary"
+    path: "/protected/v1/product/po-summary"
+    method: GET
+    purpose: "Receipt summary aggregation cho một PO code (for gf-purchase). Query params; not batch."
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: "Long (query, required)"
+        purchaseOrderCode: "String (query, required) — single PO code"
+    response:
+      schema:
+        data: "POReceiptSummaryResponse"
+
+  - name: "internal-so-summary"
+    path: "/protected/v1/product/so-summary"
+    method: GET
+    purpose: "Delivery summary aggregation for a single SO code (for gf-sales). Query params; not batch."
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: "Long (query, required)"
+        serviceOrderCode: "String (query, required) — single SO code"
+    response:
+      schema:
+        data: "SODeliverySummaryResponse"
+
+  - name: "internal-product-detail"
+    path: "/protected/v1/product/{productId}"
+    method: GET
+    purpose: "Product detail by id"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        productId: long
+    response:
+      schema:
+        product: object
+
+  - name: "internal-product-batch"
+    path: "/protected/v1/product/batch"
+    method: POST
+    purpose: "Batch fetch products by ids"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        ids: array
+    response:
+      schema:
+        items: array
+
+  - name: "internal-product-line-create"
+    path: "/protected/v1/product/product-lines"
+    method: POST
+    purpose: "Create-and-save product line (gf-purchase fan-out)"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        productLineCodes: array
+    response:
+      schema:
+        items: array
+
+  # Internal — ApiKeyController (x-api-key, manage internal API keys)
+  - name: "internal-api-key-create"
+    path: "/protected/v1/keys"
+    method: POST
+    purpose: "Create new API key"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        name: string
+    response:
+      schema:
+        key: string
+
+  - name: "internal-api-key-delete"
+    path: "/protected/v1/keys/{key}"
+    method: DELETE
+    purpose: "Delete API key"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        key: string
+    response:
+      schema:
+        deleted: boolean
+
+  - name: "internal-api-key-list"
+    path: "/protected/v1/keys"
+    method: GET
+    purpose: "List all API keys"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        items: array
+
+  - name: "internal-api-key-validate"
+    path: "/protected/v1/keys/{key}/validate"
+    method: GET
+    purpose: "Validate API key"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        key: string
+    response:
+      schema:
+        valid: boolean
+
+  - name: "internal-api-key-disable"
+    path: "/protected/v1/keys/{key}/disable"
+    method: POST
+    purpose: "Disable API key"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        key: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-api-key-enable"
+    path: "/protected/v1/keys/{key}/enable"
+    method: POST
+    purpose: "Enable API key"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        key: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-api-key-status"
+    path: "/protected/v1/keys/{key}/status"
+    method: GET
+    purpose: "Get API key status"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        key: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-api-key-status-all"
+    path: "/protected/v1/keys/status/all"
+    method: GET
+    purpose: "Get all API key statuses"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        items: array
+
+  - name: "internal-api-key-reset"
+    path: "/protected/v1/keys/{key}/reset"
+    method: POST
+    purpose: "Reset API key counters"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        key: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-api-key-test"
+    path: "/protected/v1/keys/test/{key}"
+    method: GET
+    purpose: "Test API key (smoke test endpoint)"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        key: string
+    response:
+      schema:
+        ok: boolean
+
+  # ====================================================================
+  # W03 — EP-INVENTORY-CATALOG (catalog V2) — planned design
+  # Source-of-truth: Execution/work-packages/PKG-W03-inventory-catalog.md §2.2.1
+  # Path prefix /api/v2/, scope authenticated, tenant từ JWT (no {tenantId} in path)
+  # ====================================================================
+
+  - name: "material-group-search"
+    path: "/api/v2/material-groups/search"
+    method: POST
+    purpose: "V2-1: search material groups — 2-branch dispatch (v4 rewire 2026-07-06 pm): CHỈ `keyword` mới trigger push-down flat; status/parentId luôn qua DFS full-load — vì BFF `agg-garage-graph` gửi status=ACTIVE default trong mọi browse khiến v2/v3 mất tree structure (user report: cháu đứng trước con đứng trước ông). (A) BROWSE FULL TREE — mặc định + khi filter chỉ có status/parentId (không keyword): full-load tenant qua `findAllByTenantIdOrderByParentIdAscDisplayOrderAscIdAsc`, DFS preorder trong Java, sau đó áp filter row-level strict (không auto-pull ancestor). **Sort key riêng theo cấp (v3 2026-07-06)**: root (parentId=NULL) sort `createdAt DESC, id ASC` (record mới nhất lên đầu); non-root (con/cháu/…) sort `displayOrder ASC, id ASC` — con mới tạo KHÔNG nhảy lên đầu list con, bám thứ tự user set qua displayOrder. Contract cũ (siblings mọi cấp sort createdAt DESC) đã đổi vì gây "loạn" cây con mỗi khi có node mới. Mỗi node xuất hiện rồi TOÀN BỘ subtree, không chèn qua cụm root khác. Orphan (parentId trỏ id không tồn tại) surface as root. childCount lấy từ `byParent` in-memory map (0 query mới), productCount batch 1 GROUP BY. (B) PUSH-DOWN — CHỈ khi request có keyword: 1 JPQL `findSearchPage(tenantId, statusFilter, status, keywordFilter, keyword, parentIdProvided, parentId, Pageable)` đẩy filter + `ORDER BY created_at DESC, id ASC` + LIMIT/OFFSET xuống DB. Order KHÔNG DFS (contract nới lỏng khi filter — UX search box). status=null → statusFilter=false (BUG-W03-032 hold: trả cả ACTIVE + INACTIVE). keyword ở service = escape LIKE metacharacters (`\`, `%`, `_`) → lower → wrap `%kw%` (parity Java `.contains()` gốc — user gõ literal `%`/`_` không bị treated là wildcard); JPQL so `LOWER(m.name) LIKE :kw ESCAPE '\'` OR `LOWER(m.code) LIKE :kw ESCAPE '\'`. `ORDER BY m.createdAt DESC NULLS LAST, m.id ASC` — parity DFS Java comparator (null createdAt sort xuống cuối, không nổi lên đầu như Postgres default DESC). parentIdProvided=true+parentId có giá trị → direct children của X (KHÔNG subtree, giữ contract cũ); parentIdProvided=true+parentId=null → chỉ root. Enrich page slice bằng 3 batch: parentName (`findByTenantIdAndIdIn`), childCount grouped (`countChildrenGroupedByParentId`), productCount grouped. Cost: nhánh A O(tenantSize) như trước, nhánh B O(page.size) tại DB + 3 batch enrich. Composite indexes: `idx_material_group_tenant_parent_created (tenant_id, parent_id, created_at DESC, id)` + `idx_material_group_tenant_status_created (tenant_id, status, created_at DESC, id)`."
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+        pagination: object
+    response:
+      schema:
+        items: array  # TODO post-impl detail
+
+  - name: "material-group-tree"
+    path: "/api/v2/material-groups/tree"
+    method: GET
+    purpose: "V2-2: recursive CTE tree + cap 1000 nodes (ERR-INV-027) (R3 F10)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        tree: array  # TODO post-impl detail
+
+  - name: "material-group-get-by-id"
+    path: "/api/v2/material-groups/{id}"
+    method: GET
+    purpose: "V2-3: detail + audit"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        materialGroup: object  # TODO post-impl detail
+
+  - name: "material-group-create"
+    path: "/api/v2/material-groups"
+    method: POST
+    purpose: "V2-4: create material group (ERR-INV-001 code regex / ERR-INV-002 unique / ERR-INV-016 description ≤255)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+        name: string
+        description: string
+        parentId: long
+        status: string  # MaterialGroupStatus
+    response:
+      schema:
+        id: long
+
+  - name: "material-group-update"
+    path: "/api/v2/material-groups/{id}"
+    method: PUT
+    purpose: "V2-5: update + circular check BFS + cascade INACTIVE xuống children (BR-CAT-GRP-007)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        body: object  # TODO post-impl detail
+    response:
+      schema:
+        materialGroup: object
+
+  - name: "material-group-delete"
+    path: "/api/v2/material-groups/{id}"
+    method: DELETE
+    purpose: "V2-6: delete with guards (ERR-INV-004 has children / ERR-INV-005 has products)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        ok: boolean
+
+  - name: "internal-product-search"
+    path: "/api/v2/internal-products/search"
+    method: POST
+    purpose: "V2-7: search internal products — 3-col keyword code/name/SKU (R10). status filter omitted/null → trả cả ACTIVE + INACTIVE (BUG-W03-032 fix 2026-07-01); status=ACTIVE|INACTIVE tường minh mới filter. (V2-22 export search — InternalProductExportService — vẫn giữ default status=ACTIVE khi omitted, KHÔNG thuộc scope fix này.)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+        pagination: object
+    response:
+      schema:
+        items: array  # TODO post-impl detail
+
+  - name: "internal-product-get-by-id"
+    path: "/api/v2/internal-products/{id}"
+    method: GET
+    purpose: "V2-8: detail"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        internalProduct: object  # TODO post-impl detail
+
+  # V2-9 removed (HLD §catalog-v2 R10 — no history audit, standard audit cols sufficient)
+
+  - name: "internal-product-create"
+    path: "/api/v2/internal-products"
+    method: POST
+    purpose: "V2-10: create (validate mainUnitCode + originCode R18 + nature English keys + brand free-text R18). status (optional, default ACTIVE) + attachments[] inline-tại-create (R31 2026-07-01) — item shape fileUrl/fileName/fileType/fileSizeBytes/attachmentKind, TRÙNG shape V2-18 AttachmentRequest kể từ R35 2026-07-01 (trước đó khác: fileName/fileType/sizeBytes/storageUrl/kind); validate + persist tái dùng chung helper persistAttachment() với addAttachment() (V2-18) — cap 5 file/product, ≤30MB (BR-CAT-PROD-015 v17), MIME PDF/JPG/PNG. pricingMethod (optional, default PWA, R32 2026-07-01) — field đã có ở V2-11 update() từ trước nhưng thiếu ở V2-10 create() khiến client gửi pricingMethod bị Jackson reject; nay đồng bộ, respect giá trị client gửi giống update()."
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+        name: string
+        mainUnitCode: string
+        materialGroupId: long
+        nature: string  # ProductNature English keys
+        brand: string
+        originCode: string
+        productSpec: string
+        technicalSpec: string
+        description: string
+        notes: string
+        imageUrl: string
+        status: string  # ACTIVE|INACTIVE, optional, default ACTIVE (R31)
+        attachments: array  # optional, inline AttachmentCreateRequest[] (R31), max 5, ≤30MB, PDF/JPG/PNG
+        pricingMethod: string  # PWA|SI|FIFO|MA, optional, default PWA (R32) — SI/FIFO/MA hiện là placeholder chưa tiêu thụ
+    response:
+      schema:
+        id: long
+
+  - name: "internal-product-update"
+    path: "/api/v2/internal-products/{id}"
+    method: PUT
+    purpose: "V2-11: update scalars + bulk-sync 3 child collections (initialProducts / initialConversionUnits / attachments) theo diff-by-id — item có id = update, không id = insert, DB row không có trong payload = delete. Toàn bộ trong 1 @Transactional; guard delete theo BR-CAT-PROD-012/014 reject cả request nếu row cần xóa đã phát sinh giao dịch."
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        body:
+          name: string?
+          nature: enum?
+          materialGroupId: long?
+          brand: string?
+          originCode: string?
+          productSpec: string?
+          technicalSpec: string?
+          imageUrl: string?
+          description: string?
+          notes: string?
+          status: enum?
+          pricingMethod: enum?
+          mainUnitCode: string?  # immutable sau khi có giao dịch (BR-CAT-PROD-006)
+          initialProducts: "List<SkuMappingUpsertRequest>? | null=giữ nguyên, []=xóa hết"
+          initialConversionUnits: "List<ConversionUnitUpsertRequest>? | id present=update rate (unitCode immutable, BR-CAT-PROD-011/012)"
+          attachments: "List<AttachmentUpsertRequest>? | id present=update fileName/attachmentKind (nội dung file immutable per R31, BR-CAT-PROD-015)"
+    response:
+      schema:
+        internalProduct: object  # full detail như V2-8 sau khi reconcile
+
+  - name: "internal-product-delete"
+    path: "/api/v2/internal-products/{id}"
+    method: DELETE
+    purpose: "V2-12: delete (ERR-INV-008 has transactions)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        ok: boolean
+
+  - name: "internal-product-sku-mapping-create"
+    path: "/api/v2/internal-products/{productId}/sku-mappings"
+    method: POST
+    purpose: "V2-13: gắn SKU (R9 path arg productId) — unique global ERR-INV-015"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        productId: long
+        skuId: long
+    response:
+      schema:
+        id: long
+
+  - name: "internal-product-sku-mapping-delete"
+    path: "/api/v2/internal-products/{productId}/sku-mappings/{mappingId}"
+    method: DELETE
+    purpose: "V2-14: unmap SKU"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        productId: long
+        mappingId: long
+    response:
+      schema:
+        ok: boolean
+
+  - name: "internal-product-conversion-unit-create"
+    path: "/api/v2/internal-products/{id}/conversion-units"
+    method: POST
+    purpose: "V2-15: add conversion unit (R8 D-E rename; rate>0 ERR-INV-013; scale ≤6 ERR-INV-047 R29 BR-CAT-PROD-011 v15)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        uomId: long
+        conversionRate: decimal
+    response:
+      schema:
+        id: long
+
+  - name: "internal-product-conversion-unit-update"
+    path: "/api/v2/internal-products/{id}/conversion-units/{unitId}"
+    method: PUT
+    purpose: "V2-16: update conversion unit + immutability khi đã có giao dịch (BR-CAT-PROD-012)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        unitId: long
+        conversionRate: decimal
+    response:
+      schema:
+        conversionUnit: object
+
+  - name: "internal-product-conversion-unit-delete"
+    path: "/api/v2/internal-products/{id}/conversion-units/{unitId}"
+    method: DELETE
+    purpose: "V2-17: delete conversion unit + main-unit guard"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        unitId: long
+    response:
+      schema:
+        ok: boolean
+
+  - name: "internal-product-attachment-create"
+    path: "/api/v2/internal-products/{id}/attachments"
+    method: POST
+    purpose: "V2-18: attach file metadata (AttachmentInput per ADR-016 — metadata only, ct-file-storage object key)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        fileUrl: string
+        fileName: string
+        fileSize: long
+        mimeType: string
+        attachmentKind: string  # IMAGE | DOC
+    response:
+      schema:
+        id: long
+
+  - name: "internal-product-attachment-delete"
+    path: "/api/v2/internal-products/{id}/attachments/{attachmentId}"
+    method: DELETE
+    purpose: "V2-19: delete attachment metadata"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        attachmentId: long
+    response:
+      schema:
+        ok: boolean
+
+  - name: "internal-product-verify-import"
+    path: "/api/v2/internal-products/verify-import"
+    method: POST
+    purpose: "V2-20: POI parser .xlsx + cap 500 rows (ERR-INV-041 R28) + originCode validation (ERR-INV-044 R28 BR-CAT-PROD-023)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        file: binary
+    response:
+      schema:
+        validRows: array  # ImportRowResult { rowIndex, item: ImportRowDto, errors[] }
+        errorRows: array  # same shape as validRows
+        # ImportRowDto post-validateRow(): mainUnitCode/originCode overwritten with resolved MDM
+        # code (was FE display-name on input); mainUnitName/originDisplayName/materialGroupName
+        # added — resolved code+name pair for FE preview, only populated when resolve succeeds.
+
+  - name: "internal-product-import"
+    path: "/api/v2/internal-products/import"
+    method: POST
+    purpose: "V2-21: commit import (verify-then-commit pattern)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        verifyToken: string
+        rows: array
+    response:
+      schema:
+        imported: integer
+        skipped: integer
+
+  - name: "internal-product-export"
+    path: "/api/v2/internal-products/export"
+    method: POST
+    purpose: "V2-22: export — R22 single-call binary stream + cap 1000 rows (ERR-INV-045 R23)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        file: binary  # application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+  - name: "sku-search"
+    path: "/api/v2/skus/search"
+    method: GET
+    purpose: "V2-23: search SKU từ legacy product (unmapped=true filter để chọn SKU chưa gắn internal product)"
+    status: planned-W03
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        keyword: string
+        unmapped: boolean
+        pagination: object
+    response:
+      schema:
+        items: array
+
+events:
+  produces:
+    - topic: "AC-DEV-BRANCH-LIFECYCLE"
+      payload:
+        message_group: "BRANCH-LIFECYCLE"
+        message_step: "WAREHOUSE_CREATED.1"
+        tenant_id: long
+        warehouse_code: string
+        branch_code: string
+      meaning: "WarehouseCreated — WarehouseEventService.publishWarehouseCreated() saves outbox row; OutboxScheduler → OutboxEventPublisher → EventPublishingService → BranchLifecyclePublisher publishes to ${kafka.topics.branch-lifecycle}. Shared topic with gf-system BranchCreated step BRANCH_CREATED.1."
+  # Note: OutboxEventType enum also defines INVENTORY_RECEIPT_COMPLETED/REVERSED, INVENTORY_DELIVERY_COMPLETED/REVERSED,
+  # INVENTORY_RESERVATION_EXPIRED/RELEASED/FULFILLED, INVENTORY_STOCK_CHANGED.
+  # PeriodStockAdjusted: được publish bởi PeriodStockAdjustmentTriggerService.publishPeriodStockAdjustedEvent
+  # và PeriodStockActivityImpl.publishPeriodStockAdjustedEvent; eventType là raw string "PeriodStockAdjusted",
+  # KHÔNG được khai báo trong OutboxEventType enum (legacy raw insert vào outbox_event).
+  # These are SAVED to outbox_event table (legacy raw payload) but EventPublishingService.publishEvent() only routes
+  # WAREHOUSE_CREATED to BranchLifecyclePublisher — other event types never reach Kafka (no publisher route).
+  # Per source-of-truth policy: not listed as produces topic until publisher route exists.
+
+  consumes:
+    - topic: "AC-DEV-BRANCH-LIFECYCLE"
+      payload:
+        message_group: string
+        message_step: string
+        tenant_id: long
+        branch_code: string
+      action: "BranchCreatedEventListener — route by MessageGroup=BRANCH_LIFECYCLE + MessageStep=BRANCH_CREATED → create default warehouse; idempotent via processed_events"
+
+    - topic: "AC-DEV-TENANT-PROVISIONING"
+      payload:
+        tenant_id: long
+        subscription_plan: string
+        features: object
+      action: "TenantSubscriptionCacheListener — cache subscription quota in Redis"
+
+entities:
+  - name: "ProductLine"
+    type: "aggregate_root"
+    description: "Dòng sản phẩm theo tenant, chứa tên, đơn vị tính và loại sản phẩm; là aggregate root trong domain model hiện tại."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(255)", required: false }
+      - { name: "name", type: "VARCHAR(255)", required: true }
+      - { name: "unit", type: "VARCHAR(255)", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "type", type: "ProductTypeEnum", required: true, constraints: ["SPARE_PART | SPA | CARE | OTHER"] }
+      - { name: "is_deleted", type: "BOOLEAN", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "Product", type: "one_to_many", description: "Product.product_line_id tham chiếu logic tới ProductLine.id; source không khai báo FK vật lý." }
+    invariants:
+      - "Tạo product line bỏ qua item đã tồn tại theo name, tenantId và productType."
+      - "Khi tạo product line mới, service tạo một Product cho từng Segment TIER1 đến TIER5."
+      - "Xóa product line là soft delete bằng isDeleted=true, không hard delete qua service hiện tại."
+
+  - name: "Product"
+    type: "entity"
+    description: "Biến thể sản phẩm theo segment và tenant, gắn logic với ProductLine qua product_line_id."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "sku", type: "VARCHAR(255)", required: false }
+      - { name: "genuine_code", type: "VARCHAR(255)", required: false }
+      - { name: "product_alias_name", type: "VARCHAR(255)", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "product_line_id", type: "BIGINT", required: false, constraints: ["legacy — be going to remove in the future"] }
+      - { name: "name", type: "VARCHAR(255)", required: false }
+      - { name: "unit", type: "VARCHAR(255)", required: false }
+      - { name: "segment", type: "Segment", required: false, constraints: ["TIER1 | TIER2 | TIER3 | TIER4 | TIER5"] }
+      - { name: "is_deleted", type: "BOOLEAN", required: false }
+      - { name: "origin", type: "VARCHAR(100)", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "ProductLine", type: "logical_reference", description: "product_line_id trỏ logic tới product_line.id (legacy, kế hoạch remove)." }
+      - { target: "Inventory", type: "one_to_many", description: "Inventory.product_id tham chiếu logic tới Product.id." }
+      - { target: "IOStockProduct", type: "one_to_many", description: "IOStockProduct.product_id tham chiếu logic tới Product.id." }
+    invariants:
+      - "Product có cột tenant_id riêng và unique constraint vật lý uk_product_tenant_sku trên (tenant_id, sku); có index idx_product_tenant_sku trên (tenant_id, sku)."
+      - "Tra cứu product id dùng name, unit, segment, tenantId, productType và genuineCode (xem JpaProductRepository.findProductIdByNameAndUnitAndSegmentAndTenantIdAndProductTypeEnumAndGenuineCode)."
+
+  - name: "Inventory"
+    type: "entity"
+    description: "Bản ghi tồn kho legacy theo product và tenant với số lượng tồn hiện tại."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "product_id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "stock_quantity", type: "NUMERIC", required: true }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "Product", type: "logical_reference", description: "product_id trỏ logic tới product.id; source không khai báo FK vật lý." }
+    invariants:
+      - "stock_quantity là BigDecimal precision=15 scale=2, nullable=false; entity có @Version Long cho optimistic locking."
+      - "Source hiện chỉ có repository interface rỗng cho Inventory legacy, chưa thấy use case mutate stock (khác với InventoryStock — entity riêng có service đầy đủ)."
+
+  - name: "IOStockIssuance"
+    type: "entity"
+    description: "Phiếu xuất nhập kho legacy, gồm mã phiếu, tenant, loại phiếu, thủ kho và trạng thái."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "issue_code", type: "VARCHAR(255)", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "issue_type", type: "IOStockEnum", required: true, constraints: ["WAREHOUSE_RECEIPT | DELIVERY_NOTE"] }
+      - { name: "stock_keeper_name", type: "VARCHAR(255)", required: false }
+      - { name: "status", type: "IOIssuanceStatus", required: true, constraints: ["OPEN | APPROVED | CANCELLED"] }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "IOStockProduct", type: "one_to_many", description: "IOStockProduct.issue_id tham chiếu logic tới IOStockIssuance.id." }
+    invariants:
+      - "issue_type và status lưu bằng EnumType.STRING."
+      - "@Id không có @GeneratedValue — caller phải tự gán id khi insert."
+      - "Source hiện chỉ có repository interface rỗng cho IOStockIssuance, chưa thấy use case tạo/duyệt/hủy phiếu."
+
+  - name: "IOStockProduct"
+    type: "entity"
+    description: "Dòng hàng trong phiếu xuất nhập kho legacy, tham chiếu product và tùy chọn SO/PO liên quan."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "issue_id", type: "BIGINT", required: true }
+      - { name: "product_id", type: "BIGINT", required: true }
+      - { name: "quantity", type: "NUMERIC(15,2)", required: true }
+      - { name: "so_id", type: "BIGINT", required: false }
+      - { name: "po_id", type: "BIGINT", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "IOStockIssuance", type: "logical_reference", description: "issue_id trỏ logic tới iostock_issuance.id." }
+      - { target: "Product", type: "logical_reference", description: "product_id trỏ logic tới product.id." }
+    invariants:
+      - "quantity là BigDecimal precision=15 scale=2, nullable=false theo JPA."
+      - "so_id và po_id chỉ là tham chiếu id logic; source không có client hoặc FK sang gf-sales/gf-purchase."
+
+  # ====================================================================
+  # W03 — EP-INVENTORY-CATALOG (catalog V2) — planned design
+  # Source-of-truth: Execution/work-packages/PKG-W03-inventory-catalog.md §2.2.1
+  # Convention: id BIGINT auto-increment (gf-inventory style, KHÔNG UUID); FK scalar only per ADR-009.
+  # ====================================================================
+
+  - name: "MaterialGroup"
+    type: "aggregate_root"
+    description: "Nhóm hàng hóa catalog V2 (adjacency-list, self-referential) per ADR-017. Tree cap 1000 nodes (ERR-INV-027); cascade INACTIVE xuống children (BR-CAT-GRP-007)."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true, constraints: ["PK auto-increment"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["regex không chứa ~!@#$%^&* (ERR-INV-001)"] }
+      - { name: "name", type: "VARCHAR(255)", required: true }
+      - { name: "description", type: "VARCHAR(255)", required: false, constraints: ["≤255 ERR-INV-016"] }
+      - { name: "parent_id", type: "BIGINT", required: false, constraints: ["FK scalar self-ref (ADR-009 — KHÔNG @ManyToOne)"] }
+      - { name: "status", type: "MaterialGroupStatus", required: true, constraints: ["ACTIVE | INACTIVE; cascade INACTIVE xuống children BR-CAT-GRP-007"] }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "MaterialGroup", type: "logical_reference", description: "parent_id self-ref (FK scalar). Tree thao tác qua recursive CTE." }
+      - { target: "InternalProduct", type: "one_to_many", description: "InternalProduct.material_group_id trỏ logic tới MaterialGroup.id." }
+    invariants:
+      - "Unique (tenant_id, code) — ERR-INV-002."
+      - "Tree cap 1000 nodes per tenant — ERR-INV-027 (V2-2 recursive CTE bảo vệ)."
+      - "Circular check BFS khi update parent_id (V2-5)."
+      - "Delete guards: ERR-INV-004 (has children) / ERR-INV-005 (has products)."
+    business_rules: ["BR-CAT-GRP-001", "BR-CAT-GRP-002", "BR-CAT-GRP-003", "BR-CAT-GRP-004", "BR-CAT-GRP-005", "BR-CAT-GRP-006", "BR-CAT-GRP-007", "BR-CAT-GRP-008", "BR-CAT-GRP-009", "BR-CAT-GRP-010", "BR-CAT-GRP-011", "BR-CAT-GRP-012", "BR-CAT-GRP-013"]
+
+  - name: "InternalProduct"
+    type: "aggregate_root"
+    description: "Mã hàng nội bộ catalog V2 — chuẩn hóa SKU legacy về 1 mã nội bộ với UoM conversion, group hierarchy, attachment. PricingMethod locked PWA (R13 + BR-CAT-PROD-010)."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true, constraints: ["PK auto-increment"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["regex ERR-INV-006"] }
+      - { name: "name", type: "VARCHAR(255)", required: true }
+      - { name: "main_unit_code", type: "VARCHAR(50)", required: true, constraints: ["FK scalar tới gf-erp-mdm directory=UNIT (R8 D-A/E rename primary_uom_id → main_unit_code); immutable khi đã có giao dịch BR-CAT-PROD-006"] }
+      - { name: "material_group_id", type: "BIGINT", required: true, constraints: ["FK scalar tới material_group.id"] }
+      - { name: "status", type: "InternalProductStatus", required: true, constraints: ["ACTIVE | INACTIVE; INACTIVE chặn dùng trong phiếu mới BR-CAT-PROD-008"] }
+      - { name: "nature", type: "ProductNature", required: true, constraints: ["default GOODS; English keys (R8 D-B) BR-CAT-PROD-019"] }
+      - { name: "pricing_method", type: "PricingMethod", required: true, constraints: ["default PWA, locked (R13 + BR-CAT-PROD-010)"] }
+      - { name: "brand", type: "VARCHAR(255)", required: false, constraints: ["free-text (R18 revert R8 D-C — KHÔNG validate catalog)"] }
+      - { name: "origin_code", type: "VARCHAR(20)", required: false, constraints: ["codified (R18); validate vs gf-erp-mdm directory=COUNTRY ISO 3166-1 alpha-3"] }
+      - { name: "image_url", type: "VARCHAR(500)", required: false, constraints: ["opaque URL (R25 OQ10 — KHÔNG quản lý S3)"] }
+      - { name: "product_spec", type: "TEXT", required: false }
+      - { name: "technical_spec", type: "TEXT", required: false }
+      - { name: "description", type: "VARCHAR(500)", required: false, constraints: ["label 'Mô tả' (R26 OQ13)"] }
+      - { name: "notes", type: "VARCHAR(500)", required: false, constraints: ["label 'Ghi chú' (R26 OQ13)"] }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "MaterialGroup", type: "logical_reference", description: "material_group_id trỏ logic tới material_group.id (FK scalar ADR-009)." }
+      - { target: "InternalProductSkuMapping", type: "one_to_many", description: "1 internal product có nhiều SKU mapping; mỗi SKU tối đa thuộc 1 internal product." }
+      - { target: "InternalProductConversionUnit", type: "one_to_many", description: "Conversion ratio từ main_unit_code sang các UoM khác." }
+      - { target: "InternalProductAttachment", type: "one_to_many", description: "Đính kèm tài liệu / ảnh (max 5)." }
+    invariants:
+      - "Unique (tenant_id, code) — ERR-INV-007."
+      - "main_unit_code immutable khi đã có giao dịch — BR-CAT-PROD-006."
+      - "pricing_method default PWA, locked — chỉ PWA active hiện tại (R13)."
+      - "Delete chặn khi đã có giao dịch — ERR-INV-008."
+    business_rules: ["BR-CAT-PROD-001", "BR-CAT-PROD-002", "BR-CAT-PROD-003", "BR-CAT-PROD-004", "BR-CAT-PROD-005", "BR-CAT-PROD-006", "BR-CAT-PROD-007", "BR-CAT-PROD-008", "BR-CAT-PROD-009", "BR-CAT-PROD-010", "BR-CAT-PROD-019"]
+
+  - name: "InternalProductSkuMapping"
+    type: "entity"
+    description: "Bảng nối mã nội bộ ↔ SKU legacy (gf-inventory.product). Mỗi SKU thuộc tối đa 1 internal product (unique global per tenant)."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true, constraints: ["PK auto-increment"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "internal_product_id", type: "BIGINT", required: true, constraints: ["FK scalar tới internal_product.id (ADR-009)"] }
+      - { name: "sku_id", type: "BIGINT", required: true, constraints: ["FK scalar tới legacy product.id (R9 cột tường minh product_id)"] }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+    relationships:
+      - { target: "InternalProduct", type: "logical_reference", description: "internal_product_id trỏ logic tới internal_product.id." }
+      - { target: "Product", type: "logical_reference", description: "sku_id trỏ logic tới legacy product.id." }
+    invariants:
+      - "Unique (tenant_id, sku_id) — 1 SKU thuộc tối đa 1 mã nội bộ (ERR-INV-015 BR-CAT-PROD-013)."
+    business_rules: ["BR-CAT-PROD-013", "BR-CAT-PROD-014"]
+
+  - name: "InternalProductConversionUnit"
+    type: "entity"
+    description: "Quy đổi đơn vị (R8 D-E rename từ internal_product_uom_conversion). Quy đổi từ main_unit_code sang UoM khác trong gf-erp-mdm directory=UNIT."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true, constraints: ["PK auto-increment"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "internal_product_id", type: "BIGINT", required: true, constraints: ["FK scalar (ADR-009)"] }
+      - { name: "uom_id", type: "BIGINT", required: true, constraints: ["FK scalar tới gf-erp-mdm directory=UNIT"] }
+      - { name: "conversion_rate", type: "NUMERIC(18,6)", required: true, constraints: ["> 0 ERR-INV-013; app-layer scale guard ≤6 → ERR-INV-047 (R29 BR-CAT-PROD-011 v15)"] }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "InternalProduct", type: "logical_reference", description: "internal_product_id trỏ logic tới internal_product.id." }
+    invariants:
+      - "Unique (internal_product_id, uom_id) — ERR-INV-014."
+      - "Immutable khi đã có giao dịch — BR-CAT-PROD-012."
+      - "conversion_rate > 0 (ERR-INV-013); scale ≤6 (ERR-INV-047)."
+    business_rules: ["BR-CAT-PROD-011", "BR-CAT-PROD-012"]
+
+  - name: "InternalProductAttachment"
+    type: "entity"
+    description: "Tệp đính kèm internal product — metadata-only (file lưu ct-file-storage, KHÔNG quản lý binary trong gf-inventory). Max 5 file/product."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true, constraints: ["PK auto-increment"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "internal_product_id", type: "BIGINT", required: true, constraints: ["FK scalar (ADR-009)"] }
+      - { name: "file_url", type: "VARCHAR(500)", required: true, constraints: ["ct-file-storage object key"] }
+      - { name: "file_name", type: "VARCHAR(255)", required: true }
+      - { name: "file_size", type: "BIGINT", required: true, constraints: ["≤30MB ERR-CMN-004 (align BR-CAT-PROD-015 v17/v18 canonical)"] }
+      - { name: "mime_type", type: "VARCHAR(100)", required: true, constraints: ["PDF | JPG | PNG (ERR-CMN-005)"] }
+      - { name: "attachment_kind", type: "VARCHAR(20)", required: true, constraints: ["IMAGE | DOC"] }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+    relationships:
+      - { target: "InternalProduct", type: "logical_reference", description: "internal_product_id trỏ logic tới internal_product.id." }
+    invariants:
+      - "Tối đa 5 file / internal product — BR-CAT-PROD-015."
+      - "file_size ≤30MB (ERR-CMN-004); mime_type ∈ {PDF, JPG, PNG} (ERR-CMN-005)."
+    business_rules: ["BR-CAT-PROD-015"]
+
+business_rules:
+  - { id: "BR-GF-INVENTORY-001", description: "Tạo product line chỉ tạo item chưa tồn tại theo name, tenantId và productType; nếu tất cả đã tồn tại thì trả null response.", cornerstone: true, enforcement_point: "ProductApplicationService.createAndSaveProduct + existsProductLine" }
+  - { id: "BR-GF-INVENTORY-002", description: "Mỗi product line mới tạo sẽ sinh đủ Product cho toàn bộ Segment TIER1, TIER2, TIER3, TIER4, TIER5.", cornerstone: true, enforcement_point: "ProductApplicationService.createAndSaveProductList" }
+  - { id: "BR-GF-INVENTORY-003", description: "Xóa product line là soft delete bằng isDeleted=true và chỉ áp dụng cho product line tìm thấy chưa bị xóa.", cornerstone: true, enforcement_point: "ProductApplicationService.deleteProductLine + ProductLineRepositoryImpl.findAllById" }
+  - { id: "BR-GF-INVENTORY-004", description: "Tra cứu product id theo product name, unit, segment, tenantId, productType và genuineCode bằng join Product với ProductLine; không tìm thấy thì ném ResourceNotFoundException.", cornerstone: true, enforcement_point: "JpaProductRepository.findProductIdByNameAndUnitAndSegmentAndTenantIdAndProductTypeEnumAndGenuineCode + ProductApplicationService.getProductId" }
+  - { id: "BR-GF-INVENTORY-005", description: "ProductLine lookup theo name, unit, tenantId, type và genuineCode là điều kiện nghiệp vụ; source không khai báo unique constraint vật lý trên product_line (lưu ý: unique constraint uk_product_tenant_sku thuộc Product, không phải ProductLine).", cornerstone: false, enforcement_point: "JpaProductLineRepository.findProductLineEntityByNameAndUnitAndTenantIdAndTypeAndGenuineCode + ProductLineEntity" }
+  - { id: "BR-GF-INVENTORY-006", description: "Cập nhật product line hiện chỉ đổi name và unit của product line đã tồn tại.", cornerstone: false, enforcement_point: "ProductApplicationService.updateProductLine" }
+  - { id: "BR-GF-INVENTORY-007", description: "Schema PostgreSQL được quản lý bằng Flyway migrations (src/main/resources/db/migration/, 13 files V1.0.1 → V20260423100000) chạy song song với Hibernate ddl-auto=update; Product có unique constraint uk_product_tenant_sku(tenant_id, sku) và index idx_product_tenant_sku.", cornerstone: true, enforcement_point: "Flyway migrations + JPA entity annotations" }
+  # === Receipt Domain ===
+  - { id: "BR-GF-INVENTORY-008", description: "Receipt status: PENDING→COMPLETED/CANCELLED.  cần purchaseOrderCode; cho phép edit product fields (quantity, unit price). Only PENDING receipts editable. Items list phải non-empty để complete.", cornerstone: true, enforcement_point: "InventoryReceipt aggregate + InventoryReceiptService.complete/cancel/reverse" }
+  - { id: "BR-GF-INVENTORY-009", description: "Receipt completion increase stock per item (quantity + costPrice update). Receipt reversal decrease stock back + trigger period stock adjustment nếu period đã CLOSED.", cornerstone: true, enforcement_point: "InventoryReceiptService.complete + reverse + InventoryStockService + PeriodStockAdjustmentTriggerService" }
+  - { id: "BR-GF-INVENTORY-010", description: "Receipt code generated via sequence table INVENTORY_RECEIPT, unique per tenant (UK tenant_id + receipt_code).", cornerstone: true, enforcement_point: "SequenceService + inventory_receipt UK constraint" }
+  # === Delivery Domain ===
+  - { id: "BR-GF-INVENTORY-011", description: "Delivery status: PENDING→COMPLETED/CANCELLED. Protected API creates delivery + reservation simultaneously khi source DIRECT.", cornerstone: true, enforcement_point: "InventoryDelivery aggregate + ProtectedDeliveryController.createDelivery + InventoryDeliveryService" }
+  - { id: "BR-GF-INVENTORY-012", description: "Delivery completion validates against Service Order (AC-8): SO must exist + not cancelled + items match (SKU + quantity). Returns 200 with mismatch flag (NOT 400) khi validation fail. Completion decreases stock.", cornerstone: true, enforcement_point: "DeliveryServiceOrderValidationService + InventoryDeliveryService.complete" }
+  - { id: "BR-GF-INVENTORY-013", description: "Delivery reversal increases stock back + triggers period stock adjustment nếu period đã CLOSED.", cornerstone: true, enforcement_point: "InventoryDeliveryService.reverse + PeriodStockAdjustmentTriggerService" }
+  # === Stock Domain ===
+  - { id: "BR-GF-INVENTORY-014", description: "Negative stock ALLOWED (business requirement). Reserved quantity là tracking marker ONLY — KHÔNG deducted from available (availableQuantity = quantity, not quantity - reservedQuantity). Optimistic locking via @Version.", cornerstone: true, enforcement_point: "InventoryStock aggregate + StockLevel value object + @Version" }
+  - { id: "BR-GF-INVENTORY-015", description: "Stock adjustment (Set Stock / Kiểm kê) directly modifies quantity, creates ADJUSTMENT transaction, triggers period stock adjustment nếu period đã CLOSED.", cornerstone: true, enforcement_point: "InventoryStockService.adjustQuantity + PeriodStockAdjustmentTriggerService" }
+  # === Reservation Domain ===
+  - { id: "BR-GF-INVENTORY-016", description: "Reservation TTL 30 phút (ecommerce) / 3 phút (direct). Status: ACTIVE→FULFILLED/EXPIRED/CANCELLED/RELEASED. Auto-expire via gf-inventory-worker Temporal ReservationExpiryWorkflow. Created simultaneously với delivery qua protected API.", cornerstone: true, enforcement_point: "InventoryReservationService + WorkerClient.startReservationExpiry + ProtectedReservationController" }
+  # === PeriodStock Domain ===
+  - { id: "BR-GF-INVENTORY-017", description: "Period closure tính WAC: closingCostPrice = (openingCost + receivedCost) / (openingQty + receivedQty). COGS = deliveredQty × closingCostPrice. ClosingQty = openingQty + received - delivered.", cornerstone: true, enforcement_point: "NativePeriodClosureService native SQL calculations" }
+  - { id: "BR-GF-INVENTORY-018", description: "Period status: OPEN→CLOSED→ADJUSTED. Atomic close + create next period via idempotency key. Native SQL cho scale (100M+ SKUs). Retry với saga compensation rollback. Delivery item cost_price backfill từ period_stock.closing_cost_price sau closure.", cornerstone: true, enforcement_point: "NativePeriodClosureService + ProtectedPeriodClosureController + ProtectedDeliveryController.updateDeliveryItemCostPrices" }
+  # === Warehouse/Event Domain ===
+  - { id: "BR-GF-INVENTORY-019", description: "BranchCreatedEvent Kafka consumer auto-creates default warehouse cho branch + publishes WAREHOUSE_CREATED event. Inbox idempotency via ProcessedEventEntity.", cornerstone: true, enforcement_point: "BranchCreatedEventListener + WarehouseService + OutboxEventPublisher" }
+
+
+workflows:
+  - name: "ReservationExpiryWorkflow"
+    type: TEMPORAL
+    description: "Reservation TTL workflow — workflow interface defined here, execution chạy ở gf-inventory-worker. Workflow ID reservation-expiry-{tenantId}-{deliveryCode}; timeout = TTL + 5m buffer"
+    steps:
+      - step: 1
+        service: "gf-inventory"
+        action: "Started bởi WorkflowStarterService.startReservationExpiryWorkflow qua Temporal SDK WorkflowClient.start(workflow::execute, input) trực tiếp (task-queue gf-inventory-worker). Không gọi HTTP."
+      - step: 2
+        service: "gf-inventory-worker"
+        action: "Workflow.await(ttlMinutes) — chờ signal release / fulfill hoặc hết TTL (chi tiết xem gf-inventory-worker KG)"
+      - step: 3
+        service: "gf-inventory"
+        action: "gf-inventory gửi signals qua WorkerClient HTTP (KHÔNG phải Temporal SDK): release → POST /protected/workflows/reservation-expiry/{deliveryCode}/release; fulfill → POST /protected/workflows/reservation-expiry/{deliveryCode}/fulfill. Worker nhận signal và close workflow. Riêng khi TTL hết: worker gọi ReservationActivity.expireReservation → POST /protected/reservations/{code}/expire (với tenantId query param)"
+
+  - name: "PeriodStockAdjustmentWorkflow"
+    type: TEMPORAL
+    description: "Workflow interface declared here cho trường hợp reverse receipt/delivery rơi vào closed period. Hiện tại PeriodStockAdjustmentTriggerService KHÔNG start Temporal workflow — chỉ apply adjustment đồng bộ (applyAdjustmentDirectly) và publish PeriodStockAdjusted outbox event. Temporal workflow implementation tồn tại nhưng chưa có entry point nào trigger nó từ gf-inventory."
+    steps:
+      - step: 1
+        service: "gf-inventory"
+        action: "PeriodStockAdjustmentTriggerService.applyAdjustmentDirectly — apply adjustment đồng bộ + ghi PeriodStockAdjusted vào outbox_event (eventType raw string). Không start Temporal workflow."
+
+  - name: "ReceiptFulfillmentWorkflow"
+    type: TEMPORAL
+    description: "Minimal interface declared here; trigger + execution sống ở gf-inventory-worker (xem gf-inventory-worker KG để biết chi tiết)"
+    steps:
+      - step: 1
+        service: "gf-inventory-worker"
+        action: "Triggered by Kafka purchase-order-events DELIVERED.2 (gated Inventory:InventoryStockV01) — workflow interface khai báo ở gf-inventory, execution chạy ở gf-inventory-worker"
+      - step: 2
+        service: "gf-inventory-worker"
+        action: "Signals complete(userId) / cancel(userId, reason)"
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-erp-agent"
+      purpose: "Inventory queries / catalog sync"
+    - type: API
+      source: "gf-erp-mdm"
+      purpose: "PIM info ingestion — POST /protected/v1/pim-info"
+    - type: API
+      source: "gf-purchase"
+      purpose: "Receipt summary + product info"
+    - type: API
+      source: "gf-sales"
+      purpose: "Stock check + reservation queries"
+    - type: API
+      source: "gf-inventory-worker"
+      purpose: "Activity-driven receipt/delivery/reservation operations via /protected/{receipts,deliveries,reservations}"
+    - type: API
+      source: "agg-garage-graph"
+      purpose: "BFF stock + product queries"
+    - type: EVENT
+      source: "gf-system"
+      purpose: "BranchLifecycleChanged + TenantProvisioned events"
+
+  outbound:
+    - type: API
+      target: "gf-erp-mdm"
+      purpose: "Catalog (units, vehicle hierarchy) for printing — POST /protected/catalog/v1/inquiry"
+    - type: API
+      target: "gf-purchase"
+      purpose: "Validate receipt vs PO — GET /protected/v1/purchase-orders/{code}/items, /code/{code}"
+    - type: API
+      target: "gf-sales"
+      purpose: "Validate delivery vs SO — GET /protected/v1/service-orders/{tenantId}/detail/{code}"
+    - type: API
+      target: "gf-inventory-worker"
+      purpose: "Reservation signal via WorkerClient HTTP — POST /protected/workflows/reservation-expiry/{deliveryCode}/{release,fulfill}. Lưu ý: workflow START dùng Temporal SDK trực tiếp (WorkflowStarterService), KHÔNG gọi HTTP /start"
+    - type: API
+      target: "gf-notification"
+      purpose: "Notification dispatch"
+    - type: API
+      target: "ct-saas-tenant"
+      purpose: "Tenant lookup"
+    - type: API
+      target: "Google Custom Search"
+      purpose: "Vehicle search in catalog building"
+    - type: EVENT
+      target: "Kafka — outbox-driven"
+      purpose: "Publish warehouse / receipt / delivery / reservation / period-stock events via poll-based outbox"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "Lưu product_line, product, inventory, iostock_issuance và iostock_products trong schema gf-inventory.", config_ref: "spring.datasource.*, spring.jpa.properties.hibernate.default_schema, DB_SCHEMA" }
+  - { name: "Flyway", type: "database_migration", purpose: "Quản lý schema migrations (src/main/resources/db/migration/) chạy song song với Hibernate ddl-auto=update.", config_ref: "spring.flyway.*" }
+  - { name: "Kafka", type: "messaging", purpose: "Consume AC-DEV-BRANCH-LIFECYCLE + AC-DEV-TENANT-PROVISIONING; publish outbox events qua BranchLifecyclePublisher (poll-based OutboxScheduler → OutboxEventPublisher → EventPublishingService).", config_ref: "spring.kafka.*, kafka.topics.branch-lifecycle" }
+  - { name: "Redis", type: "cache", purpose: "Cache tenant subscription quota qua TenantSubscriptionCacheService (consumer của AC-DEV-TENANT-PROVISIONING).", config_ref: "spring.data.redis.*" }
+  - { name: "Temporal", type: "workflow_engine", purpose: "WorkflowClient + WorkflowServiceStubs cho ReservationExpiryWorkflow (start trực tiếp qua SDK). Workflow execution chạy ở gf-inventory-worker (task-queue gf-inventory-worker).", config_ref: "spring.temporal.*" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Cung cấp SecurityUtils cho JPA auditing created_by/updated_by; nếu không resolve được user thì fallback system.", config_ref: "com.actechx.common:spring-security-starter, JpaConfig.SpringSecurityAuditorAware" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho REST controller của service.", config_ref: "springdoc-openapi-starter-webmvc-ui, OpenApiConfig" }
+
+# ====================================================================
+# W03 — EP-INVENTORY-CATALOG enums (catalog V2 planned design)
+# ====================================================================
+enums:
+  ProductNature:
+    values: ["GOODS", "TOOL", "SERVICE", "OTHER"]
+    default: "GOODS"
+    ref: "BR-CAT-PROD-019, R8 D-B English keys"
+  PricingMethod:
+    values: ["PWA", "SI", "FIFO", "MA"]
+    default: "PWA"
+    active_only: ["PWA"]
+    ref: "BR-CAT-PROD-010, R13"
+  MaterialGroupStatus:
+    values: ["ACTIVE", "INACTIVE"]
+    cascade_rule: "INACTIVE cascade xuống children — BR-CAT-GRP-007"
+  InternalProductStatus:
+    values: ["ACTIVE", "INACTIVE"]
+    rule: "INACTIVE chặn dùng trong phiếu mới — BR-CAT-PROD-008"
+
+# ====================================================================
+# W03 — EP-INVENTORY-CATALOG error codes (catalog V2 planned design)
+# Existing ERR-INV-* codes (001..016) defined trong source code; codes dưới đây bổ sung mới cho W03 scope.
+# ====================================================================
+error_codes:
+  - { code: "ERR-INV-027", name: "MATERIAL_GROUP_TREE_OVERSIZE", http: 413, ref: "V2-2 tree cap 1000 nodes" }
+  - { code: "ERR-INV-041", name: "IMPORT_ROW_CAP_EXCEEDED", http: 400, ref: "V2-20/V2-21 cap 500 rows (R28)" }
+  - { code: "ERR-INV-043", name: "IMPORT_GROUP_CODE_INVALID", http: 400, ref: "V2-20/V2-21 row materialGroupCode not found or INACTIVE (BR-CAT-PROD-022)" }
+  - { code: "ERR-INV-044", name: "IMPORT_ORIGIN_CODE_INVALID", http: 400, ref: "V2-20/V2-21 row originCode invalid (R28 BR-CAT-PROD-023)" }
+  - { code: "ERR-INV-045", name: "EXPORT_ROW_CAP_EXCEEDED", http: 400, ref: "V2-22 cap 1000 rows (R23)" }
+  - { code: "ERR-INV-047", name: "CONVERSION_RATE_PRECISION_EXCEEDED", http: 400, ref: "V2-10/V2-15/V2-16 scale ≤6 (R29 BR-CAT-PROD-011 v15)" }
+
+change_log:
+  - { date: "2026-07-07", summary: "FEATURE (theo yêu cầu trực tiếp user cuongnguyen_ac 2026-07-07 — cột 'Phân khúc' cho popup Gắn mã SKU + danh sách SKU đã gắn trong màn Danh mục sản phẩm > Chỉnh sửa/Chi tiết): additive-only — bổ sung field `segment` (enum `Segment` TIER1..TIER5, đã có sẵn ở `ProductEntity.segment` cột `product.segment` từ trước, KHÔNG cần migration DB, KHÔNG cần query mới vì Hibernate load full entity qua `productRepository.findAllByTenantIdAndIdInAndIsDeletedFalse` đã sẵn nạp cột này) vào 2 response DTO của layer catalog: (1) `SkuSearchResultItem` (endpoint V2-23 `sku-search` — popup Gắn mã SKU), mapper `SkuSearchService.toItem()` set `.segment(p.getSegment())`; (2) `SkuMappingResponse` (V2-8 `internalProduct.skuMappings[]` + V2-13 response 201 — danh sách SKU đã gắn), mapper `InternalProductService.toMapping()` set `.segment(product == null ? null : product.getSegment())` null-safe theo pattern R37 (FK treo/product bị soft-delete → trả null thay vì throw). KHÔNG đổi API path, KHÔNG đổi field cũ, giữ 100% backward-compat contract cho client cũ. Cascade doc: `docs/Architecture/api/gf-inventory-api.md` cần bump R40 (v33→v34) — 2 example JSON body (V2-8 `skuMappings[]` item + V2-13 response 201 + V2-23 items[]) thêm field `\"segment\": \"TIER2\"`; BFF `agg-garage-graph` GraphQL SDL `inventory-catalog.schema.ts` cần thêm `segment: String` (nullable — tier có thể chưa gán) vào `type InternalProductSkuMapping` + type kết quả `sku-search` — CR raise riêng cho BFF (chưa raise trong session này, out of scope backend). Test `InternalProductServiceTest`: bổ sung assertion `.segment` vào 3 test có sẵn (`get_populatesSkuAndNameFromProductTable` set TIER2 + assert TIER2, `get_leavesSkuAndNameNull_whenProductNotFound` assert isNull(), `mapSku_populatesSkuAndNameFromProductTable` set TIER3 + assert TIER3) — không thêm test file mới, không đổi tên test. `SkuSearchService` chưa có unit test riêng từ trước (module-level gap có sẵn), lần này không bổ sung — follow-up riêng nếu Product yêu cầu coverage cho V2-23. Contract giá trị: raw enum name `\"TIER1\".. \"TIER5\"` (không label VN) — FE tự map sang \"Phân khúc 1..5\" theo convention hiện có với các nơi khác dùng Segment enum (tồn tại từ trước, không phát sinh mới). GOTCHA: đây là lần thứ 3 tăng field cho `SkuMappingResponse` (R36 rename id, R37 populate sku+name, R38 rename name→productName, nay R40 add segment) — mọi lần đều share `toMapping()` static mapper qua 2 call site (V2-8 detail list qua `toMappings()` batch + V2-13 single mapping); pattern add-field an toàn nếu KHÔNG đổi shape các field cũ; nếu sau này cần field từ nguồn khác (không phải `product` table, ví dụ dữ liệu do user gán khi mapping) → cần thêm cột trên `internal_product_sku_mapping` + refactor mapper (out of scope).", author: "Main agent — segment field trên SkuSearchResultItem + SkuMappingResponse 2026-07-07" }
+  - { date: "2026-07-07", summary: "BUSINESS-RULE-CHANGE (user request cuongnguyen_ac 2026-07-07 qua CR-20260707-01, đảo lại lần 2 quyết định BR-CAT-GRP-009): **BR-CAT-GRP-009 đảo ngược lần thứ 2 (v20 → v21)** — rule 2026-07-02 khóa `parentId` immutable ở Edit nay lại cho phép đổi tự do, khôi phục 3 guard nghiệp vụ: (a) self-reference (`id == parentId`) → `ERR-INV-003`; (b) chọn hậu duệ làm cha (recursive CTE `findDescendantIds`) → `ERR-INV-003`; (c) parent mới phải ACTIVE (subsume BR-CAT-GRP-008) → `ERR-INV-003`; cho phép cả set `null` (chuyển về root) và đổi từ `null` → non-null. Fix `MaterialGroupService.update()`: bỏ guard immutable `!Objects.equals(request.getParentId(), entity.getParentId())` → throw; thay bằng khối `if (!Objects.equals(newParentId, entity.getParentId()))` chạy 3 guard rồi `entity.setParentId(newParentId)`. Đồng bộ `FEAT-CAT-GRP-EDIT.md` v2→v3 (§3 AC-4 rewrite từ 'immutable' → '3 guard cycle-check + parent ACTIVE', §4.1 BR-CAT-GRP-009 wording đảo lại, §9 test point + §10 test scope table cập nhật, §13 Change Log row mới). Design repo (chưa touch trong session này, cần agent-arch/BA sync sau): `BR-GF-INVENTORY-CATALOG.md` v20 → v21 (BR-CAT-GRP-009 wording đảo lại), `Tracking/CHANGE-REQUESTS.md` v11 → v12 (append CR-20260707-01 PENDING_APPROVAL). Test `MaterialGroupServiceTest`: bỏ 2 test đã thêm 2026-07-02 (`update_rejectsAnyParentChange_evenNonCyclicTarget`, `update_allowsUnchangedParentId`); giữ 2 test đã có (`update_rejectsSelfAsParent`, `update_rejectsDescendantAsParent`) — semantic vẫn đúng với v21 (self/descendant reject); thêm 3 test mới cho semantic v21: `update_rejectsInactiveParent`, `update_allowsValidParentChange`, `update_allowsMoveToRoot_whenParentIdSetToNull`. Cross-boundary out-of-scope trong lần sửa này: FE (garage-web) + Mobile (garage-mobile) gỡ disable trường 'Thuộc nhóm' trên màn Edit Material Group — user thực thi độc lập sau khi BE merge. GOTCHA: rule bị đảo 2 lần trong 5 ngày (2026-07-02 v19→v20 immutable; 2026-07-07 v20→v21 editable lại) — activity_log này pin đủ context cho lần 3 nếu BA đổi ý; chú ý tên test `update_rejectsCycleViaDescendant` (v19) đã được đổi thành `update_rejectsDescendantAsParent` ở lần đảo trước và giữ nguyên tên đó qua lần đảo này để không thay đổi test file lịch sử không cần thiết. CR status: PENDING_APPROVAL (BA/PO cần xác nhận lý do unlock trước khi BE merge lên main); code + doc đã sửa sẵn để merge ngay khi CR APPROVED.", author: "Main agent — BR-CAT-GRP-009 reversal round-2 (v20 → v21 editable) qua CR-20260707-01 2026-07-07" }
+  - { date: "2026-07-06", summary: "FEATURE (theo yêu cầu trực tiếp user \"độ rộng của từng cột phải dựa trên row có nội dung lớn nhất\", thay thế fixed-width lấy từ file mẫu BA đã làm trước đó): `InternalProductExportService` (V2-22 export .xlsx) đổi từ **fixed column width** (hằng số `COLUMN_WIDTHS` copy cứng từ file mẫu `cat-prod-export-template.xlsx`) sang **auto-size dựa trên nội dung thực tế** — gọi `sheet.autoSizeColumn(i)` (Apache POI, dùng `java.awt.font` metrics) cho từng cột SAU KHI đã ghi xong header + toàn bộ data row (thứ tự bắt buộc: autoSizeColumn cần dữ liệu đã có mặt trong cell mới đo được độ rộng cần thiết). Xoá hẳn `COLUMN_WIDTHS` (double[12]) và toàn bộ complexity `WRAP_TEXT_HEADER_COLUMNS`/`headerWrapStyle` (wrap-text chỉ cần khi cột bị ép fixed-width hẹp hơn nội dung header — auto-size khiến premise đó không còn đúng, giữ lại wrap sẽ là dead logic vì cột luôn tự nới đủ rộng để không cần wrap). THÊM MỚI static initializer `System.setProperty(\"java.awt.headless\", \"true\")` — `autoSizeColumn` đo text qua `java.awt.Font`/`FontRenderContext`, trên server/container không có display sẽ throw `HeadlessException` nếu JVM không tự nhận diện headless; set property tường minh để an toàn bất kể môi trường deploy có `DISPLAY` hay không. GOTCHA quan trọng: `sheet.autoSizeColumn(col)` mặc định (`useMergedCells=false`) **bỏ qua cell nằm trong merged region** khi đo độ rộng — nghĩa là title row (merged A1:L1, text dài ~18 ký tự) KHÔNG ảnh hưởng đến độ rộng cột A dù cell A1 chứa toàn bộ text title; nếu lỡ gọi overload `autoSizeColumn(col, true)` (useMergedCells=true) thì POI sẽ tính luôn merged cell content vào cột neo (cột đầu tiên của vùng merge) → cột A sẽ bị auto-size theo TOÀN BỘ text title 18 ký tự thay vì theo header/data thực tế — SAI, phải luôn dùng overload 1-tham-số (mặc định false) cho trường hợp có title row merge full-width. Font \"Times New Roman\" có thể không cài trên server Linux (không có MS fonts) — `autoSizeColumn` khi đó fallback sang font logic mặc định của JVM để đo, kết quả vẫn tỷ lệ thuận với độ dài text (đủ để test 'longer content → wider column' pass) nhưng độ rộng tuyệt đối có thể lệch nhẹ so với khi mở bằng Excel thật trên máy có cài Times New Roman — chấp nhận được vì yêu cầu là 'dựa trên nội dung', không yêu cầu pixel-perfect. Test: xoá 2 test cũ (`export_setsColumnWidths_perColumn` assert fixed width theo file mẫu, `export_wrapsTextOnDvtAndPricingMethodHeaderColumns_notOtherColumns` assert wrap — cả 2 không còn áp dụng), thêm 2 test mới `export_autoSizesColumnWidth_basedOnLongestContentInColumn` (export 2 lần — 1 lần tên sản phẩm ngắn, 1 lần tên rất dài — assert cột \"Tên sản phẩm\" ở lần dài PHẢI rộng hơn lần ngắn, chứng minh width theo nội dung thực chứ không phải hardcode) + `export_autoSizesColumnWidth_skipsMergedTitleRow` (assert cột STT KHÔNG bị auto-size phình to theo text title merged, pin đúng gotcha useMergedCells=false). 10/10 test PASS.", author: "Main agent — export column width switched to content-based autoSizeColumn 2026-07-06" }
+  - { date: "2026-07-06", summary: "FEATURE (theo yêu cầu trực tiếp user, deviate khỏi file mẫu BA sau khi user tự confirm qua AskUserQuestion): `InternalProductExportService` (V2-22 export .xlsx) đổi màu nền header từ `#8DB4E2` (đúng file mẫu `cat-prod-export-template.xlsx`) sang **`#C5D9F1`** (nhạt hơn) — user báo \"màu title cần nhạt hơn\" nhưng làm rõ lại qua câu hỏi xác nhận là ý muốn nói **màu nền header**, không phải màu chữ title (title A1 vẫn giữ nguyên chữ đen mặc định, không đổi). Chỉ đổi 1 hằng số `HEADER_FILL_ARGB` từ `{FF,8D,B4,E2}` sang `{FF,C5,D9,F1}`. GOTCHA: từ đây header background KHÔNG còn khớp 100% file mẫu BA nữa — là thay đổi có chủ đích theo yêu cầu trực tiếp user (không phải lỗi), nếu sau này cần đối chiếu lại BA/file mẫu thì phải note rõ điểm lệch này. Test: cập nhật assertion RGB trong `export_writesHeaderRow_boldSize12LightBlueBackground_tallerThanDataRow` từ `{0x8D,0xB4,0xE2}` sang `{0xC5,0xD9,0xF1}`. 10/10 test PASS.", author: "Main agent — header fill lightened to #C5D9F1 per user request 2026-07-06" }
+  - { date: "2026-07-06", summary: "BUGFIX (user báo \"làm sai hết giao diện rồi\", đối chiếu lại với file mẫu BA `docs/Product/ux/assets/cat-prod-export-template.xlsx` bằng openpyxl để lấy đúng style — style tự chọn ở 2 lần sửa trước (dark-blue header, row height 32/22, không set column width) SAI so với file mẫu thật): `InternalProductExportService` (V2-22 export .xlsx) sửa lại style cho khớp CHÍNH XÁC file mẫu. (1) Header background đổi từ `IndexedColors.DARK_BLUE` sang RGB **8DB4E2** (xanh nhạt, ARGB `FF8DB4E2` — phải dùng `XSSFColor(byte[4]{FF,8D,B4,E2}, null)` qua cast `(XSSFCellStyle) style` vì `CellStyle.setFillForegroundColor(short)` chỉ nhận indexed palette, không nhận custom RGB; LƯU Ý ban đầu quên byte alpha (chỉ truyền 3 byte RGB) → XSSFColor lưu ARGB=`00000000`-prefix (alpha 00 = có thể render sai/trong suốt trên 1 số reader) — phải truyền đủ 4 byte ARGB với alpha=`FF` mới khớp file mẫu, verify bằng cách export thử 1 file thật rồi đọc lại bằng `openpyxl` xem `fill.fgColor.rgb`). (2) Header font color đổi từ trắng sang **đen** (`IndexedColors.BLACK`, file mẫu index=8 nghĩa là đen tường minh, không phải mặc định). (3) Row height sửa cho khớp file mẫu: title 32f→**24.6f**, header 22f→**26.4f** (`TITLE_ROW_HEIGHT`/`HEADER_ROW_HEIGHT`). (4) Title bỏ `VerticalAlignment.CENTER` (file mẫu không set vertical cho A1, giữ default). (5) Data cell font trước chỉ đổi tên (Times New Roman) chưa đổi size — thêm `DATA_FONT_SIZE=12` khớp file mẫu (font size 12 cho toàn bộ data row, không phải mặc định 11). (6) THÊM MỚI hoàn toàn 2 thứ chưa từng làm ở 2 lần sửa trước: **column width per-column** (`COLUMN_WIDTHS` double[12] lấy từ file mẫu qua openpyxl `column_dimensions[col].width`, áp bằng `sheet.setColumnWidth(i, (int) Math.round(width*256))` — công thức quy đổi chuẩn character-width→POI 1/256-unit) và **wrap text có chọn lọc** cho đúng 2 cột header `ĐVT` (index 3) + `Phương pháp tính giá` (index 10) — file mẫu chỉ 2 cột này wrap, các cột khác không; implementation dùng `WRAP_TEXT_HEADER_COLUMNS = Set.of(3, 10)` + `headerWrapStyle` clone từ `headerStyle` (`style.cloneStyleFrom()`) rồi `setWrapText(true)`, chọn style theo cột trong loop header. Method luận rút ra: KHÔNG tự suy đoán style theo cảm tính khi có file mẫu BA đính kèm — phải mở file mẫu bằng script (đọc trực tiếp `openpyxl`, dump toàn bộ font/fill/border/alignment/column-width/row-height mọi cell liên quan) TRƯỚC khi code, thay vì đoán màu/size/height theo trực giác rồi để user phải phát hiện sai. Test: cập nhật 2 test cũ (header giờ assert `IndexedColors.BLACK` + custom RGB `getFillForegroundXSSFColor().getRGB()` thay vì DARK_BLUE; thêm exact row-height assertion 24.6f/26.4f), thêm 2 test mới `export_setsColumnWidths_perColumn` (assert đúng 12 width) + `export_wrapsTextOnDvtAndPricingMethodHeaderColumns_notOtherColumns` (assert wrap=true đúng cột 3/10, false cột khác). Verify thêm bằng cách export 1 file thật (test tạm rồi xoá) đọc lại qua `openpyxl` so khớp từng field với file mẫu gốc — khớp 100% (row height/column width/fill ARGB/font). 10/10 test PASS.", author: "Main agent — export style corrected to match cat-prod-export-template.xlsx 2026-07-06" }
+  - { date: "2026-07-06", summary: "FEATURE (theo yêu cầu trực tiếp user \"có thể sử dụng font Times New Roman được không?\"): `InternalProductExportService` (V2-22 export .xlsx) đổi font toàn bộ 3 loại cell style (title/header/data) sang **Times New Roman** — thêm hằng số `FONT_NAME = \"Times New Roman\"` (tránh hardcode lặp string literal ở 3 nơi, đúng theo yêu cầu \"không hardcode\" của lần sửa trước). `createTitleStyle()`/`createHeaderStyle()` gọi thêm `font.setFontName(FONT_NAME)` trên `Font` đã tạo sẵn cho bold+size; `createDataStyle()` trước đây KHÔNG có `Font` riêng (chỉ có border) — nay phải `wb.createFont()` + `setFontName()` + `style.setFont(font)` mới áp được font cho data row (data cell trước dùng font mặc định workbook, không có style font riêng). Test: thêm assertion `font.getFontName()).isEqualTo(\"Times New Roman\")` vào 2 test có sẵn (`export_writesTitleRow_...`, `export_writesHeaderRow_...`) + 1 assertion mới cho data row font trong cùng test header (không tách test riêng vì cùng đối tượng workbook/style setup). 8/8 test PASS.", author: "Main agent — export Times New Roman font 2026-07-06" }
+  - { date: "2026-07-06", summary: "CLEANUP (theo yêu cầu trực tiếp user \"loại bỏ hàm không dùng + không hardcode\", follow-up ngay sau feature style title/header): rà soát `InternalProductExportService` — không tìm thấy hàm/hằng số nào unused (mọi private method + constant đều có ≥1 call site ngoài declaration, verify bằng grep count). Fix duy nhất: `wb.createSheet(\"Danh sách sản phẩm\")` đang hardcode lại y hệt literal của hằng số `TITLE_TEXT` (dùng cho title cell) — 2 nguồn cùng 1 giá trị dễ drift nếu sau này đổi tên 1 chỗ quên chỗ kia; đổi thành `wb.createSheet(TITLE_TEXT)` để sheet name + title cell luôn đồng bộ 1 nguồn. Test: không đổi (không assert sheet name theo literal). 8/8 test PASS.", author: "Main agent — export sheet-name dedupe to TITLE_TEXT 2026-07-06" }
+  - { date: "2026-07-06", summary: "FEATURE (theo yêu cầu trực tiếp user, styling cho export .xlsx): `InternalProductExportService` (V2-22) thêm title row + style header + border toàn bảng. (1) Row 0 mới: title `\"Danh sách sản phẩm\"` merge ngang toàn bộ 12 cột (`sheet.addMergedRegion(CellRangeAddress(0,0,0,lastCol))`), font bold size 20, căn giữa (`HorizontalAlignment.CENTER`/`VerticalAlignment.CENTER`), row height 32pt (`TITLE_ROW_HEIGHT`) — KHÔNG border (title là heading, không phải data cell). (2) Header (dịch xuống row 1, trước là row 0): bold size 12, chữ trắng (`IndexedColors.WHITE`) trên nền `IndexedColors.DARK_BLUE` (`FillPatternType.SOLID_FOREGROUND`), row height 22pt (`HEADER_ROW_HEIGHT`) — cao hơn data row (giữ default ~15pt, không set height). (3) Toàn bộ cell header + data đều border 4 cạnh `BorderStyle.THIN` (helper `applyThinBorder(CellStyle)`) — style tạo 1 lần/loại (`titleStyle`/`headerStyle`/`dataStyle`) rồi share cho mọi cell cùng loại (không tạo CellStyle per-cell — XSSFWorkbook giới hạn ~64000 style/file, tạo lặp trong loop N row sẽ vượt cap với data lớn). Data row bắt đầu dịch từ `r=1` sang `r=2` (do chèn thêm title row 0 + header dịch xuống row 1). Implementation: thêm helper `setCell(Row, int, String|int, CellStyle)` overload (thay cho `row.createCell(i).setCellValue(...)` cũ không chain được `setCellStyle` vì `Cell.setCellValue()` trả `void`) để gán value + style 1 dòng cho từng cell — giảm lặp code khi mọi cell đều cần set border style. GOTCHA: XSSFWorkbook có giới hạn cứng ~64000 CellStyle — nếu sau này thêm style theo điều kiện per-row (vd: alternating row color), PHẢI tạo style 1 lần ngoài loop rồi cache theo key, không tạo `wb.createCellStyle()` mới trong vòng lặp row. Test: `InternalProductExportServiceTest` — 5 test cũ dịch lại row index (header `getRow(0)`→`getRow(1)`, data `getRow(i+1)`→`getRow(i+2)`); thêm 3 test mới `export_writesTitleRow_mergedCenteredBoldSize20` (assert cell value + font bold/size20 + alignment CENTER + merged region đúng 0..0/0..11), `export_writesHeaderRow_boldSize12DarkBlueBackground_tallerThanDataRow` (assert font bold/size12 + fill DARK_BLUE SOLID_FOREGROUND + header row height > data row height), `export_bordersAllTableCells_headerAndDataRows` (loop toàn bộ 12 cột header + data row, assert border THIN cả 4 cạnh mỗi cell). 8/8 test PASS.", author: "Main agent — export title/header style + full table border 2026-07-06" }
+  - { date: "2026-07-06", summary: "REMOVE (theo yêu cầu trực tiếp user, revert lại tính năng thêm ngày 2026-07-03): `InternalProductExportService` (V2-22 export .xlsx) bỏ hẳn 3 sheet reference `Xuất xứ`/`Tính chất`/`ĐVT` — workbook giờ chỉ còn đúng 1 sheet `danh-muc`. Xóa `writeCodeNameSheet()`, `writeNatureReferenceSheet()`, 2 lệnh gọi trong `generate()`, 3 hằng số `ORIGIN_SHEET_HEADERS`/`NATURE_SHEET_HEADERS`/`UNIT_SHEET_HEADERS`, 2 hằng số offset `REFERENCE_SHEET_ROW_OFFSET`/`REFERENCE_SHEET_COL_OFFSET`, import `java.util.ArrayList` (không còn dùng). GIỮ NGUYÊN `unitNameMap`/`countryNameMap` (`fetchDirectoryNames(DIRECTORY_UNIT|COUNTRY, ...)`) — vẫn cần để resolve cột ĐVT/Xuất xứ trên sheet chính `danh-muc` (cột hiển thị NAME, không đổi). Test: xóa 3 test tương ứng trong `InternalProductExportServiceTest` (`export_writesOriginReferenceSheet_fromMdmCountryDirectory_sortedByCode`, `export_writesNatureReferenceSheet_withFourHardcodedRows`, `export_writesUnitReferenceSheet_fromMdmUnitDirectory_sortedByCode`); 8 test còn lại PASS nguyên trạng (không đụng sheet chính). Doc `FEAT-CAT-PROD-EXPORT.md`/`BR-CAT-PROD-018` từ đầu đã mô tả export 1 sheet nên không cần sửa — 3 sheet reference vốn ngoài phạm vi tài liệu BA (thêm theo yêu cầu miệng user 2026-07-03), removal đưa code khớp lại doc gốc.", author: "Main agent — remove export reference sheets Xuất xứ/Tính chất/ĐVT 2026-07-06" }
+  - { date: "2026-07-03", summary: "PERFORMANCE (round-3 follow-up cho V2-1 material-groups/search sau khi user yêu cầu review perf): sau khi ship DFS multi-level ở round-2, phát hiện N+1 nghiêm trọng còn tồn tại ở phase build response — `MaterialGroupService.toResponse()` gọi 2 count query per row (`repository.countByTenantIdAndParentId` + `productRepository.countByTenantIdAndMaterialGroupId`); loop trên `pageRows` (max page.size=100) → worst-case 201 query/request. N+1 này có từ trước round-1 (BR pattern per-row), không do fix ordering gây ra. Fix: (A) childCount lấy trực tiếp từ `byParent` in-memory map (`byParent.getOrDefault(e.getId(), List.of()).size()`) — 0 query mới, tận dụng tree đã load full ở phase DFS; đúng số vì mọi child hợp lệ của e đều có parentId=e.id và e ở trong byId. (B) productCount BATCH bằng 1 GROUP BY query: thêm `JpaInternalProductRepository.countByTenantIdAndMaterialGroupIdInGrouped(tenantId, ids)` return `List<Object[]>` (mỗi element `[materialGroupId, count]`, nhóm không có sản phẩm không xuất hiện → caller default 0 qua getOrDefault); `search()` sau slice pageRows gọi 1 lần với `pageIds`, build `Map<Long, Long>`, `toResponse` overload mới (5-arg) nhận count đã tính sẵn. Overload 3-arg cũ giữ cho `get()`/`create()`/`update()` (1 row, không N+1) — internally delegate sang overload 5-arg sau khi query 2 count cho 1 row đó. Ids rỗng short-circuit `Map.of()` để tránh SQL `IN ()` invalid. Kết quả: tổng query/request từ **201 → 2** (1 load tree + 1 batch product count), latency giảm ~90-95% trên hot path (default list, no filter, page 20-100 rows). Test: thêm 2 test mới — `search_batchesProductCountInSingleQuery_notPerRow` (3 group trên page → verify `countByTenantIdAndMaterialGroupIdInGrouped` gọi đúng 1 lần với captor set {1,2,3}, single-count method `countByTenantIdAndMaterialGroupId` KHÔNG được gọi; nhóm không xuất hiện trong batch result → response productCount=0 default), `search_populatesChildCountFromInMemoryTree_notPerRowQuery` (R có 3 children → response R.childCount=3, leaves childCount=0, `countByTenantIdAndParentId` KHÔNG được gọi ở search path). 5 test search cũ round-2 giữ xanh — Mockito default return empty List cho `countByTenantIdAndMaterialGroupIdInGrouped` un-stubbed nên không cần thêm stub. Out-of-scope note: `search()` vẫn không enforce cap 1000 như `tree()` (`tree()` throw 413 nếu >1000 qua countByTenantId trước khi build; `search()` load thẳng) — với data drift, tenant vượt cap sẽ load nhiều rows silent; follow-up riêng nếu cần enforce/native CTE cho tenant lớn. GOTCHA: khi build endpoint list trả DTO có aggregate count qua N sub-resource (childCount/productCount/...), MẶC ĐỊNH pattern per-row là N+1 ngầm — phải batch qua GROUP BY (return List<Object[]> với PK+count) hoặc `SELECT ... FROM ... GROUP BY` returning `Tuple`/interface projection ngay từ round-1 endpoint, đừng để nợ perf tích tụ.", author: "Main agent — V2-1 material-groups/search N+1 batch productCount + in-memory childCount 2026-07-03 v3" }
+  - { date: "2026-07-03", summary: "BUGFIX (round-2 follow-up cho fix ordering V2-1 material-groups/search dưới cùng ngày, theo user báo \"miss trường hợp sắp xếp con của con\"): approach round-1 dùng `LEFT JOIN` self + `COALESCE(p.createdAt, g.createdAt) DESC` + `CASE parentId NULL 0/1` tiebreaker CHỈ đúng với cây 2 tầng (root + children). Với ≥3 tầng, LEFT JOIN chỉ lookup 1 hop → group key của grandchild G = `p.createdAt` (createdAt của C, cha trực tiếp), không phải createdAt của root ancestor R. Ví dụ bug: R (T1=2026-06-01), C con R (T2=2026-01-01), G con C (T3=2026-03-01), R2 root khác (T2.5=2026-02-01, T2<T2.5<T1) → query cũ trả `R, C, R2, G` — G bị chèn giữa R2, tách khỏi ancestor chain. Đúng ra phải DFS preorder: `R, C, G, R2`. Fix: REVERT query `LEFT JOIN + COALESCE + countQuery` khỏi `JpaMaterialGroupRepository.search()` (xoá method hoàn toàn — không consumer nào khác dùng, dọn cho sạch); REWRITE `MaterialGroupService.search()` sang **service-side DFS**: load full tenant tree bằng `findAllByTenantIdOrderByParentIdAscDisplayOrderAscIdAsc` (đã có sẵn từ tree()), build `byId` map + `byParent` map, sort roots + mọi list children theo `Comparator.comparing(createdAt).reversed().thenComparing(id)`, DFS stack-based preorder (push children ngược để pop đúng thứ tự DESC) với `visited` set defensive chống stack-overflow nếu cycle data-drift, áp filter row-level SAU DFS (giữ semantic strict: status/keyword/parentIdProvided), slice pagination trên list đã sort. Loại N+1 parentLookup cũ vì `byId` map đã có sẵn parent entity. Orphan (parentId trỏ id không tồn tại) surface as root cùng roots hợp lệ (giống tree()). Contract API GIỮ NGUYÊN — `Page<MaterialGroupResponse>` với `page.totalElements` = tổng row (không phải tổng cha), `content` là subarray đã DFS-sort. Test rewrite hoàn toàn: xoá 3 test wiring cũ (`search_passesNullStatusToRepository_whenStatusOmitted`/`search_filtersByExplicitActiveStatus`/`search_filtersByExplicitInactiveStatus` — service không còn pass status xuống repository.search, đổi assertion sang test HÀNH VI: kết quả filter đúng theo status), xoá 2 test round-1 (`search_preservesRepositoryOrdering_parentClustered`/`search_keepsParentBeforeChild_evenWhenChildIsNewerThanParent` — vì service không còn preserve repo order mà tự sort), thêm 8 test mới với helper `mg(id, code, parentId, createdAt, status?)` set createdAt qua `AuditableEntity.setCreatedAt()`: `search_returnsBothActiveAndInactive_whenStatusOmitted` (BUG-W03-032), `search_filtersByExplicitActiveStatus`/`search_filtersByExplicitInactiveStatus` (behavior-level), `search_ordersRootsDescAndClustersChildrenBelowEachRoot` (2 tầng basic C/C1/C2/B/B1/A/A1), `search_keepsParentBeforeChild_evenWhenChildIsNewerThanParent` (P2 > P1 nhưng C1 con P1 mới nhất DB → order P2/P1/C1), `search_ordersGrandchildImmediatelyAfterChild_notPushedAcrossRootBoundary` (**test pin bug round-2**: R/C/G/R2 với timestamp giao thoa), `search_siblingsAtEachLevelSortByCreatedAtDesc` (R có C_new/C_old, C_new có G_new/G_old → R/C_new/G_new/G_old/C_old), `search_paginatesFlatOrderedList_size3` (page 0 size 3 lấy đầu list, page 1 lấy giữa), `search_surfacesOrphanChildAsRoot_whenParentMissing`. Perf: chi phí bằng hoặc thấp hơn round-1 (bớt N+1 parentLookup), bounded MAX_TREE_NODES=1000 → < 10ms. GOTCHA cho search endpoint hierarchical tương lai: nếu cây > 2 tầng, KHÔNG dùng LEFT JOIN self + COALESCE 1 hop — cần recursive CTE hoặc service-side DFS load full tree; với domain có cap kích thước tree, service-side đơn giản hơn + tiện loại N+1 parent lookup + nhất quán pattern với endpoint tree() sẵn có.", author: "Main agent — V2-1 material-groups/search DFS multi-level rewrite 2026-07-03 v2" }
+  - { date: "2026-07-03", summary: "FEATURE (theo yêu cầu trực tiếp user cho V2-1 `POST /api/v2/material-groups/search`, không phải BR-sourced): đổi ordering từ **flat** (`parentId ASC NULLS FIRST, displayOrder, id`) sang **parent-clustered** — nhóm cha (parentId=NULL) sắp theo `createdAt DESC` (mới nhất lên đầu), nhóm con luôn hiển thị **ngay bên dưới cha tương ứng**, không xen sang cụm cha khác. Implementation ở `JpaMaterialGroupRepository.search()`: thêm `LEFT JOIN MaterialGroupEntity p ON g.parentId = p.id AND p.tenantId = :tenantId`, đổi `ORDER BY COALESCE(p.createdAt, g.createdAt) DESC, CASE WHEN g.parentId IS NULL THEN 0 ELSE 1 END ASC, g.displayOrder ASC, g.id ASC` — với hàng cha COALESCE lấy chính `g.createdAt` = với `p.createdAt` của các con dưới cụm nên toàn cụm chia sẻ cùng group key; CASE tiebreaker ép cha lên trước con. `p.tenantId = :tenantId` trong ON không leak parent xuyên tenant. Thêm `countQuery` tách riêng (không JOIN, không ORDER BY — filter không đụng cột từ `p`) để Spring Data JPA sinh count đúng + tiết kiệm chi phí. Service layer `MaterialGroupService.search()` KHÔNG đổi — vẫn nhận `Page<MaterialGroupEntity>` rồi build `parentLookup` để trả `parentName` (N+1 hiện hữu ≤ page.size distinct parentIds — không do fix này gây ra, gạch cho refactor riêng nếu muốn dùng chính `p` từ JOIN). Decision với user: **pagination row-level giữ nguyên** (page.size = tổng cha + con) → children của cùng 1 cha có thể chia trang khi vượt size; FE có thể tăng size (max 100) nếu cần cụm trọn 1 trang. **Filter (keyword/status/parentId) áp strict row-level** — không tự kéo cha context về nếu chỉ con match, giữ hành vi cũ. Edge case orphan child (parentId trỏ nhóm không tồn tại): `LEFT JOIN` → `p` NULL → COALESCE dùng `g.createdAt` chính con; con nổi theo createdAt của chính nó (giống `tree()` xử lý orphan). Test: `MaterialGroupServiceTest.search_preservesRepositoryOrdering_parentClustered` — mock repository trả C/C1/B/B1/A/A1 theo thứ tự mới, verify service preserve nguyên thứ tự + `parentName` đúng cha ngay trên con. 3 test search cũ (`search_passesNullStatusToRepository_whenStatusOmitted`/`search_filtersByExplicitActiveStatus`/`search_filtersByExplicitInactiveStatus`) vẫn xanh (không đổi contract repository method). Perf: LEFT JOIN self trên `p.id` (PK) → 1 statement, 1 in-memory sort ≤ 1000 rows (`MAX_TREE_NODES` cap của domain — [MaterialGroupService.java:47]); tận dụng `idx_material_group_parent` sẵn có; không cần index mới. GOTCHA cho search endpoint tương lai muốn parent-clustered: pattern `LEFT JOIN self ON parentId + COALESCE(p.timeCol, g.timeCol)` + tiebreaker `CASE parentId NULL` là cách clean nhất giữ cha+con cùng cụm trong 1 statement, hơn CTE recursive; Spring Data JPA yêu cầu `countQuery` tách riêng khi @Query có JOIN + ORDER BY expression.", author: "Main agent — V2-1 material-groups search parent-clustered ordering 2026-07-03" }
+  - { date: "2026-07-03", summary: "REFACTOR (theo yêu cầu user, không đổi behavior): tách `CatalogDtos.java` (570 dòng, 28 inner static class) thành 28 top-level `.java` riêng, gom vào 2 subpackage `com.actechx.gf.app.dto.catalog.request` (15 class DTO client gửi lên) + `com.actechx.gf.app.dto.catalog.response` (13 class DTO backend trả về). Xóa outer wrapper `CatalogDtos.java`. 14 consumer file update import: 11 file dùng wildcard đổi `import com.actechx.gf.app.dto.catalog.CatalogDtos.*` → 2 dòng `import ...request.*` + `import ...response.*`; 3 file cụ thể (`InternalProductExportService`/`InternalProductExportServiceTest` cho `InternalProductSearchRequest`, `SkuSearchController`/`SkuSearchService` cho `SkuSearchResultItem`) đổi FQCN sang subpackage. Không đổi tên class, tên field, validation annotation — JSON contract giữ nguyên nên FE/BFF/agg-garage-graph không bị ảnh hưởng. Sync 2 mirror `garage-agentic-design/services/gf-inventory/...` (design repo có full 435 Java source mirror). Test suite PASS toàn bộ.", author: "Main agent — CatalogDtos split by request/response 2026-07-03" }
+  - { date: "2026-07-03", summary: "FEATURE (theo yêu cầu trực tiếp user): API `PUT /api/v2/internal-products/{id}` (V2-11) mở rộng nhận thêm 3 collection trong body — `initialProducts` (SKU mappings), `initialConversionUnits` (conv unit list), `attachments` — mỗi item áp diff-by-id: có `id` khớp DB = update tại chỗ; không `id` = insert mới; DB row không xuất hiện trong payload = delete. Semantic phân biệt `null` payload (giữ nguyên collection) vs `[]` (xóa hết). Toàn bộ chạy trong 1 `@Transactional` — nếu bất kỳ item cần xóa mà đã phát sinh giao dịch → throw `CatalogException(PRODUCT_HAS_TRANSACTIONS)` rollback tất cả (BR-CAT-PROD-012 conv unit + BR-CAT-PROD-014 SKU mapping). SKU delete guard resolve SKU string từ `product` table qua `productRepository.findAllByTenantIdAndIdInAndIsDeletedFalse` rồi check `inventoryTransactionRepository.existsByTenantIdAndSkuIn`; conv unit dùng `hasActivity(tenantId, internalProductId)` sẵn có làm proxy (BR-CAT-PROD-012) vì `inventory_transaction` key theo SKU string, không lưu `unit_code`. Update conv unit chỉ set `conversionRate` (unitCode immutable); update attachment chỉ set `fileName` + `attachmentKind` (nội dung file immutable per R31 — reject nếu client cố đổi `fileUrl`/`fileType`/`fileSizeBytes`). Ordering delete→flush→insert để tránh vi phạm unique `(tenant_id, internal_product_id, unit_code)` khi user vừa xóa vừa thêm cùng `unitCode`. Reuse `persistAttachment()` cho insert (giữ nguyên cap 5 file / 30MB / MIME whitelist). Reuse `addConversionUnit(entity, req, seenUnits)` cho conv unit insert (giữ nguyên rate>0 + precision≤6). Reuse `mapSku(entity, productId)` cho SKU insert (giữ nguyên guard sku-already-mapped). DTO: `InternalProductUpdateRequest` (CatalogDtos.java) thêm 3 field + 3 upsert class mới (`SkuMappingUpsertRequest`/`ConversionUnitUpsertRequest`/`AttachmentUpsertRequest`) — mỗi upsert có `id` nullable + payload fields; validation `@NotBlank`/`@NotNull` giống Create DTO. KHÔNG đụng schema DB, KHÔNG đụng 6 sub-resource endpoint hiện có (V2-13..V2-19 vẫn hoạt động song song cho import flow + FE cũ). Test: `InternalProductServiceTest` thêm 15 test mới cho 3 collection × 4 scenario (insert/update/delete/no-touch) + cross-cutting (delete guard SKU-has-tx / conv-unit-product-has-activity / unit-code-change-rejected / attachment-content-change-rejected / unknown-id → 404). GOTCHA: nếu tenant-level unique `(tenant_id, product_id)` bị vi phạm khi user delete SKU-A rồi insert SKU-A cùng request, flush cần chèn giữa 2 phase (đã làm cho cả 3 helper). GOTCHA-2: `hasActivity()` là product-level proxy → conv unit delete-guard sẽ TỪ CHỐI delete conv unit khi product có bất kỳ giao dịch nào, dù giao dịch đó không dùng conv unit cụ thể; đây là trade-off an toàn (conservative). Nếu Product yêu cầu granular hơn (chỉ block conv unit đã trực tiếp dùng), cần bổ sung `inventory_transaction.unit_code` hoặc query linking sku↔unit — follow-up riêng. Cascade: `Architecture/api/gf-inventory-api.md` bump v32 → v33 R39 (V2-11 §3a.2 subsection append `R39 — Bulk sync 3 child collection (diff-by-id)` block + top-of-changelog row 2026-07-03/v33) đồng bộ 2 mirror `docs/Architecture/api/` (working) + `garage-agentic-design/Architecture/api/` (design source, byte-identical). BFF `agg-garage-graph` cần CR riêng để mở rộng mutation `updateInternalProduct` input với 3 collection field mới — chưa raise (out of scope W03 backend).", author: "Main agent — V2-11 bulk collection sync (diff-by-id) 2026-07-03" }
+  - { date: "2026-07-03", summary: "CORRECTION (theo user feedback ngay sau lần sửa whitelist bên dưới — KHÔNG tự định nghĩa message dài): 3 error message dài tự viết ở lần trước (`\"Mã ... chỉ chấp nhận A-Z, a-z, 0-9, - _ . / ( ) và khoảng trắng ở giữa\"` cho MaterialGroup/InternalProduct + biến thể tương tự cho ImportService) đảo về wording chuẩn theo AC-2 spec: `\"Mã nhóm không hợp lệ\"` / `\"Mã sản phẩm không hợp lệ\"` — mã lỗi (`ERR-INV-001`/`ERR-INV-006`) + BR tham chiếu (`BR-CAT-GRP-002`/`BR-CAT-PROD-002`) đã được carry qua `CatalogException(CatalogErrorCode.GROUP_CODE_INVALID|PRODUCT_CODE_INVALID, ...)`, không cần lặp lại trong message string. Không đổi regex/behavior — chỉ đảo message. Test không cần sửa (existing test không assert nội dung message string, chỉ assert error code). GOTCHA: khi triển spec business, LUÔN đọc AC-2 chi tiết \"báo lỗi <text ngắn> (<ERR-CODE>, theo <BR-ID>)\" — parenthetical (ERR-CODE + BR-ID) là meta cho engineer, KHÔNG phải part của message hiển thị user; text ngắn trước ngoặc chính là canonical message. Đừng expand text ngắn thành spec quy tắc đầy đủ trong message (spec đã ở BR file + AC-2).", author: "Main agent — catalog code error message revert to AC-2 canonical wording 2026-07-03" }
+  - { date: "2026-07-03", summary: "FEATURE (theo yêu cầu trực tiếp user, đóng nốt gap blacklist→whitelist còn tồn tại sau khi đã trim ở lần sửa dưới): 3 chỗ validate mã (`MaterialGroupService.CODE_PATTERN`, `InternalProductService.CODE_PATTERN`, `InternalProductImportService.CODE_PATTERN`) chuyển từ **blacklist** `^[^~!@#$%^&*]+$` sang **whitelist** `^[A-Za-z0-9._/() -]+$` — chấp nhận: chữ Latin không dấu (A-Z, a-z), chữ số (0-9), gạch ngang (-), gạch dưới (_), chấm (.), gạch chéo (/), ngoặc đơn ( ), khoảng trắng ở giữa; reject: tiếng Việt có dấu (`SẢN`, `NHÓM`, ...), 9 ký tự đặc biệt `~!@#$%^&*`, emoji (U+1F000+), mọi ký tự Unicode ngoài whitelist. Auto-trim đầu/cuối đã có ở lần sửa trước (`trimCode()` cho MaterialGroup/InternalProduct create; `item.setCode(code.trim())` cho import) chạy TRƯỚC khi match regex. Regex Java string chọn form `\"^[A-Za-z0-9._/() -]+$\"` (hyphen đặt cuối char class, không escape; space nằm trong class; các meta `.` `/` `(` `)` không cần escape trong `[]`). Error message: 2/3 service (MaterialGroup + InternalProduct) đổi từ \"Mã ... chứa ký tự đặc biệt không hợp lệ\" (wording blacklist) sang \"Mã ... chỉ chấp nhận A-Z, a-z, 0-9, - _ . / ( ) và khoảng trắng ở giữa\" (wording whitelist tường minh); import service đổi từ \"Mã sản phẩm không hợp lệ\" (cụt) sang cùng wording để user biết vi phạm rule gì mà không cần lookup mã lỗi. Test bổ sung cho 3 service (4 test/service × 3 = 12 test mới): `*_rejectsCodeWithVietnameseDiacritics` (input `SẢN-01`/`NHÓM-01`), `*_rejectsCodeWithBlacklistedSpecials` (loop 9 ký tự `~!@#$%^&*` — trước đây blacklist đã reject nên PASS, nay whitelist cũng reject → verify không hồi quy), `*_rejectsCodeWithEmoji` (input `SP-🚀`/`GRP-🚀`), `*_acceptsCodeWithAllWhitelistedChars` (input `SP-1_2.3/4 (a)`/`GRP-1_2.3/4 (a)` — case đủ 10 ký tự whitelist). Test cũ (`SP@@@`/`GRP@@@`) vẫn PASS vì `@` là ký tự Unicode ngoài whitelist. GAP CÒN LẠI (user chưa yêu cầu đồng bộ, theo audit trước): (1) BR-GF-INVENTORY-CATALOG.md v20 line 38 (BR-CAT-GRP-002) + line 56 (BR-CAT-PROD-002) vẫn wording blacklist \"không chứa ký tự đặc biệt (`~!@#$%^&*`)\", chưa bump v21; (2) FEAT-CAT-PROD-IMPORT.md line 140/219/244 vẫn cite blacklist \"không chứa `~!@#$%^&*`\"; (3) FEAT-CAT-GRP-CREATE.md §5 line 114 + FEAT-CAT-PROD-CREATE.md §5 line 166 rule ref cụt \"không chứa ký tự đặc biệt\" (AC-2 tường minh whitelist nhưng §5 chưa refresh); (4) knowledge-graph.yaml line 1958 column constraint text \"regex không chứa ~!@#$%^&* (ERR-INV-001)\" — 4 gap doc/KG này vẫn tồn tại, user sẽ quyết sau. (5) `@Size(max=50)` trên DTO chạy trên raw input (trước trim) — chuỗi có leading/trailing space + 50 ký tự hợp lệ sẽ bị Bean Validation reject sai; chưa fix.", author: "Main agent — catalog code blacklist→whitelist + reject Vietnamese/emoji/~!@#$%^&* (đồng bộ FEAT-CAT-GRP-CREATE v5 / FEAT-CAT-PROD-CREATE v13 AC-2) 2026-07-03" }
+  - { date: "2026-07-03", summary: "PARTIAL-SYNC (theo yêu cầu trực tiếp user — chỉ đồng bộ TRIM, KHÔNG đụng blacklist→whitelist regex/max-50-after-trim/error-message theo FEAT-CAT-GRP-CREATE v5 + FEAT-CAT-PROD-CREATE v13 AC-2; các gap còn lại + BR-GF-INVENTORY-CATALOG v20 line 38/56 blacklist wording + FEAT-CAT-PROD-IMPORT.md line 140/219/244 blacklist wording + KG line 1958 constraint text + coverage gap tiếng-Việt-có-dấu/emoji/50-sau-trim tất cả vẫn TỒN TẠI, user sẽ quyết định sau): 3 chỗ validate mã (`MaterialGroupService.create()`/`update()` — code immutable so sánh với entity, `InternalProductService.create()` — code immutable trên `update()` nên không đụng, `InternalProductImportService.validateRow()`) nay `.trim()` giá trị input trước khi (a) regex-validate, (b) `existsByTenantIdAndCode`, (c) so sánh dedup `seenCodes` (import), (d) ghi vào entity.code / item.setCode. Implementation: `MaterialGroupService` + `InternalProductService` thêm helper `private static String trimCode(String)` (null-safe: null → null); dùng biến local `String code = trimCode(request.getCode())` ở đầu `create()`, truyền xuống `validateCode(code)`/`existsByTenantIdAndCode(tenantId, code)`/`.code(code)` builder. `MaterialGroupService.update()` (BR-CAT-GRP-004 code immutable) so sánh `!trimCode(request.getCode()).equals(entity.getCode())` — cho phép client resubmit \"  GRP-1  \" so với stored \"GRP-1\" mà không bị reject false-positive. `InternalProductImportService.validateRow()`: trim `item.getCode()` rồi `item.setCode(code)` để commit + echo response cùng dùng giá trị đã trim (theo pattern mutate ImportRowDto đã dùng trong file cho `mainUnitCode`/`originCode`); thêm guard `code.isEmpty()` sau trim (chuỗi toàn khoảng trắng → error) — pattern regex hiện tại `^[^~!@#$%^&*]+$` yêu cầu `+` nên empty tự fail, nhưng thêm cho tường minh + error message ổn định. GOTCHA: nếu dữ liệu HIỆN CÓ trong DB có mã lưu kèm space đầu/cuối (do CHƯA có trim trước fix này), thì client resubmit code đã trim sẽ MIS-MATCH stored code khi so update() → false-positive \"Mã nhóm không được phép thay đổi\" — cần audit + normalize existing rows nếu phát hiện case này, HOẶC trim entity.getCode() phía so sánh (chưa làm vì hiếm case). Test: `MaterialGroupServiceTest.create_trimsLeadingAndTrailingWhitespaceFromCode` + `InternalProductServiceTest.create_trimsLeadingAndTrailingWhitespaceFromCode` (input `\"  GRP-1  \"`/`\"  SP-1  \"` → verify `existsByTenantIdAndCode(tenantId, \"GRP-1\"|\"SP-1\")` gọi với giá trị đã trim + `save` argThat entity.code == đã trim); `InternalProductImportServiceTest.verify_trimsLeadingAndTrailingWhitespaceFromCode` (verify report.validRows[0].item.code == đã trim). 3 test PASS, 74 test catalog suite PASS toàn bộ, không hồi quy.", author: "Main agent — catalog code auto-trim (đồng bộ 1 phần FEAT-CAT-GRP-CREATE v5 / FEAT-CAT-PROD-CREATE v13 AC-2) 2026-07-03" }
+  - { date: "2026-07-03", summary: "LAYOUT (theo yêu cầu trực tiếp user, không phải BR-sourced): 3 sheet reference `Xuất xứ`/`Tính chất`/`ĐVT` trong export .xlsx (`InternalProductExportService`) chèn thêm **1 row trống trên cùng + 1 column trống bên trái** — header dịch từ ô A1 xuống B2 (row index 0→1, cell index 0→1), toàn bộ data row dịch tương ứng. Implementation: thêm 2 hằng số `REFERENCE_SHEET_ROW_OFFSET=1` + `REFERENCE_SHEET_COL_OFFSET=1` (đặt cạnh 2 helper, KHÔNG áp cho sheet chính `danh-muc` — giữ layout gốc A1); `writeCodeNameSheet()` (dùng chung Xuất xứ + ĐVT) và `writeNatureReferenceSheet()` cùng đọc 2 offset này khi createRow/createCell — dịch offset ở 1 chỗ nếu sau này BA đổi khoảng cách. Sheet chính `danh-muc` KHÔNG đổi (không có yêu cầu). Test: 3 test reference sheet cập nhật assertion — header `getRow(1).getCell(1..3)` thay `getRow(0).getCell(0..2)`, data row dịch từ `getRow(1..)` → `getRow(2..)`, thêm assertion `getRow(0)` null + `getRow(1).getCell(0)` null để pin layout offset. GOTCHA: khi 1 sheet cần layout \"cách trên N row + cách trái N column\", KHÔNG đặt magic number thẳng vào loop createRow/createCell — dùng 2 hằng số OFFSET (row + col) và tính relative, để tránh phải sửa index rải rác nếu BA đổi khoảng cách; Apache POI cho phép skip row hoàn toàn (`getRow(0)` sẽ trả null, KHÔNG phải row rỗng) — assertion phải là `isNull()` chứ không phải `getRow(0).getCell(0) == null`.", author: "Main agent — internal-product export reference sheets top+left offset 2026-07-03" }
+  - { date: "2026-07-03", summary: "CORRECTION + SIMPLIFY (follow-up ngay sau lần thêm 3 sheet reference bên dưới, theo yêu cầu user đồng bộ với BA doc): sheet reference `Tính chất` của `InternalProductExportService` (V2-22 export .xlsx) đổi nhãn TOOL từ \"CCDC\" (lần thêm trước hardcode ngắn theo yêu cầu miệng) sang **\"CCDC (Công cụ dụng cụ)\"** — khớp `natureLabel()` (BR-CAT-PROD-019) đang dùng ở sheet chính `danh-muc`. Đồng thời XOÁ hằng số `NATURE_REFERENCE String[][]` (4 row hardcode song song với `natureLabel()`) — root cause của drift vừa xảy ra là 2 nguồn label rời cùng file; refactor `writeNatureReferenceSheet()` iterate thẳng `ProductNature.values()` + gọi `natureLabel(v)` cho cột \"Tên\", cột \"Mã\" dùng `values[i].name()`. Enum `ProductNature` đã định nghĩa đúng thứ tự GOODS/TOOL/SERVICE/OTHER (khớp yêu cầu user cho sheet), thứ tự sheet giữ nguyên. Từ nay BR-CAT-PROD-019 đổi label chỉ cần sửa `natureLabel()` — main sheet + reference sheet auto đồng bộ. Test: `export_writesNatureReferenceSheet_withFourHardcodedRows` đổi assertion TOOL=\"CCDC\" → \"CCDC (Công cụ dụng cụ)\", các assertion khác giữ nguyên (label ổn định vì mọi nhánh trong `natureLabel()` đã match yêu cầu user). GOTCHA cho lần sau: khi thêm 1 reference sheet map enum → nhãn tiếng Việt, LUÔN iterate `enum.values()` + gọi mapper có sẵn (`natureLabel()`/`statusLabel()`/`pricingMethodLabel()`) thay vì hardcode array song song — mọi thay đổi BR sau đó chỉ 1 chỗ.", author: "Main agent — internal-product export nature reference sheet sync + dedupe 2026-07-03" }
+  - { date: "2026-07-03", summary: "FEATURE (theo yêu cầu trực tiếp user, không phải BR-sourced): `InternalProductExportService` (V2-22 export .xlsx) thêm **3 sheet reference** vào cùng workbook — chèn liền sau sheet chính `danh-muc` theo thứ tự `Xuất xứ` → `Tính chất` → `ĐVT`, mục đích cho user tra CODE khi dùng file export làm template re-import (main sheet chỉ hiển thị NAME cho Xuất xứ/ĐVT). (1) Sheet `Xuất xứ` (3 cột STT/Mã/Tên xuất xứ) và sheet `ĐVT` (3 cột STT/Mã/Tên ĐVT) DÙNG LẠI `countryNameMap`/`unitNameMap` đã fetch từ `fetchDirectoryNames(DIRECTORY_COUNTRY|UNIT, ...)` — KHÔNG thêm remote call mới nào, giữ nguyên cap tối đa 2 `inquiryCatalog`/export request; row sort alphabetical theo code (`Map.Entry.comparingByKey()`) để output ổn định cho test/regression. (2) Sheet `Tính chất` (3 cột STT/Mã/Tên) hardcode 4 row từ enum `ProductNature` — GOODS→\"Vật tư hàng hóa\", TOOL→\"CCDC\", SERVICE→\"Dịch vụ\", OTHER→\"Khác\" — LƯU Ý MISMATCH: main sheet `danh-muc` cột \"Tính chất\" (via `natureLabel()`) map TOOL→\"CCDC (Công cụ dụng cụ)\" (có ngoặc), sheet reference bỏ ngoặc theo yêu cầu tường minh user; giữ 2 chỗ khác nhau, chưa hợp nhất — cần xác nhận riêng nếu muốn đồng bộ. Implementation: 3 hằng số array `ORIGIN_SHEET_HEADERS`/`NATURE_SHEET_HEADERS`/`UNIT_SHEET_HEADERS` + `NATURE_REFERENCE` (String[][]) đặt cạnh `HEADERS`; 2 helper `writeCodeNameSheet(Workbook, String, String[], Map<String,String>)` (dùng chung cho Xuất xứ + ĐVT) và `writeNatureReferenceSheet(Workbook)` (riêng vì data hardcode); gọi 3 lần trong `generate()` ngay sau vòng lặp fill main sheet, TRƯỚC `wb.write(out)`. Thêm import `java.util.ArrayList`. GOTCHA: `fetchDirectoryNames` khi MDM lỗi VÀ chưa có cache-hit trả về `Map.of()` (immutable rỗng) — 2 sheet reference sẽ chỉ có header + 0 row (không throw), khớp policy fail-open đã có của export path. Test: InternalProductExportServiceTest thêm 3 test — `export_writesOriginReferenceSheet_fromMdmCountryDirectory_sortedByCode` (3 country VN/CN/JP, verify header + assert 3 row sort ABC: CN,JP,VN), `export_writesNatureReferenceSheet_withFourHardcodedRows` (đủ 4 row đúng thứ tự GOODS/TOOL/SERVICE/OTHER, chú ý TOOL=\"CCDC\" không có ngoặc), `export_writesUnitReferenceSheet_fromMdmUnitDirectory_sortedByCode` (2 unit UNIT_CAI/UNIT_CHIEC). Full test suite `InternalProductExportServiceTest` (5 test cũ + 3 test mới = 8) PASS.", author: "Main agent — internal-product export reference sheets Xuất xứ/Tính chất/ĐVT 2026-07-03" }
+  - { date: "2026-07-02", summary: "PERFORMANCE (theo yêu cầu trực tiếp user, phát hiện ngay sau lần thêm `materialGroupName` ở trên): `InternalProductImportService` sửa N+1 query khi resolve `materialGroupCode` — trước đó `validateRow()` gọi `groupRepository.findByTenantIdAndCode(tenantId, code)` **1 lần/row** (tối đa 500 query/request theo `MAX_ROWS`), và `commit()` gọi LẠI y hệt **1 lần/row nữa** để lấy `materialGroupId` (tổng tối đa ~1000 query/request cho cùng 1 bảng `material_group`) — trong khi 2 lookup UNIT/COUNTRY cạnh đó đã đúng pattern batch-1-lần/request từ trước (`fetchNameToCode`). Fix: thêm `JpaMaterialGroupRepository.findByTenantIdAndCodeIn(Long tenantId, Collection<String> codes)` (derived query mới); `InternalProductImportService` thêm `fetchMaterialGroupsByCode(tenantId, items)` — gom `distinct materialGroupCode` non-blank trong toàn batch, gọi `findByTenantIdAndCodeIn` **đúng 1 lần** (0 lần nếu không row nào có `materialGroupCode`), build `Map<code, MaterialGroupEntity>`; `doValidate()` fetch map này 1 lần rồi truyền xuống cả `validateRow()` (thay `Optional<MaterialGroupEntity> group = groupRepository.findByTenantIdAndCode(...)` bằng `materialGroupByCode.get(code)`) LẪN `ValidatedBatch` (field mới `materialGroupByCode`) để `commit()` tái dùng map đã fetch thay vì query lại — loại bỏ hoàn toàn N+1 ở cả 2 method, còn đúng 1 query duy nhất/request bất kể số dòng. GOTCHA: khi thêm 1 lookup theo code mới vào 1 loop per-row đã có sẵn (như `materialGroupName` ở lần sửa trước), PHẢI kiểm tra xem lookup đó có bị gọi lại lần 2 ở method khác dùng chung `ImportRowResult`/`item` không (ở đây `commit()` đọc lại `item.getMaterialGroupCode()` độc lập với `validateRow()`) — nếu có, batch 1 lần rồi truyền map qua thay vì để browser/service gọi lại theo pattern cũ. Test: `InternalProductImportServiceTest` đổi 3 chỗ stub `groupRepository.findByTenantIdAndCode(...)` → `findByTenantIdAndCodeIn(tenantId, Set.of(code))`, thêm test mới `verify_fetchesMaterialGroupsInSingleBatchQuery_notPerRow` (5 rows cùng `materialGroupCode` → verify `findByTenantIdAndCodeIn` gọi đúng 1 lần, `findByTenantIdAndCode` không bao giờ được gọi).", author: "Main agent — verify-import materialGroupCode N+1 fix 2026-07-02" }
+  - { date: "2026-07-02", summary: "FEATURE (theo yêu cầu trực tiếp user — FE cần hiển thị cặp code+tên trong bảng preview verify-import, thay vì tự suy luận `item.mainUnitCode`/`item.originCode` thực chất đang là tên hiển thị): `InternalProductImportService.validateRow()` (V2-20 verify-import) mutate trực tiếp `ImportRowDto item` (cùng object reference được echo lại trong `ImportRowResult.item`) khi resolve MDM thành công — trước khi ghi đè, lưu tên hiển thị gốc FE gửi vào field mới `item.mainUnitName`/`item.originDisplayName`, rồi ghi đè `item.mainUnitCode`/`item.originCode` bằng CODE thật đã resolve (trước đó code resolve chỉ nằm ở 2 field rời `ImportRowResult.resolvedMainUnitCode`/`resolvedOriginCode`, không có tên hiển thị nào được trả về). Nhánh `materialGroupCode` (đã fetch sẵn `MaterialGroupEntity` để validate ACTIVE) nay set thêm `item.materialGroupName = group.getName()` khi hợp lệ — trước đó entity bị fetch rồi bỏ, không map ra name. Khi resolve THẤT BẠI, `mainUnitCode`/`originCode` GIỮ NGUYÊN giá trị gốc (tên hiển thị lỗi) để error row vẫn hiển thị đúng input gây lỗi cho FE — `mainUnitName`/`originDisplayName`/`materialGroupName` để `null`. `CatalogDtos.java`: `ImportRowDto` thêm 3 field mới (`mainUnitName`, `originDisplayName`, `materialGroupName`); `ImportRowResult` XOÁ 2 field `resolvedMainUnitCode`/`resolvedOriginCode` (thêm cùng ngày ở lần sửa trước, chưa có consumer khác ngoài `InternalProductImportService`/test của nó — xoá an toàn, thay bằng đọc trực tiếp `item.getMainUnitCode()`/`item.getOriginCode()` vì item đã mang code thật sau `validateRow()`). `commit()` đổi `row.getResolvedMainUnitCode()`/`getResolvedOriginCode()` → `row.getItem().getMainUnitCode()`/`getItem().getOriginCode()`. GOTCHA: field DTO dùng chung cho cả request (input echo) VÀ response (kết quả resolve) — mutate object reference sau validate là cách hợp lệ để 'nâng cấp' echo thành kết quả đã resolve mà không cần field rời; nhưng phải cẩn thận thứ tự set (đọc giá trị gốc TRƯỚC khi ghi đè cùng field) để không mất display-name gốc. Test: `InternalProductImportServiceTest` đổi assertion `result.getResolvedMainUnitCode()`/`getResolvedOriginCode()` → `result.getItem().getMainUnitCode()`/`getItem().getOriginCode()`, thêm assertion `mainUnitName`/`originDisplayName`/`materialGroupName` vào test verify thành công hiện có, thêm 3 test mới: `verify_leavesMaterialGroupNameNull_whenMaterialGroupCodeAbsent`, `verify_keepsRawDisplayNameOnMainUnitCode_whenUnitInvalid`, `verify_keepsRawDisplayNameOnOriginCode_whenOriginInvalid`.", author: "Main agent — verify-import response mainUnitName/materialGroupName/originDisplayName 2026-07-02" }
+  - { date: "2026-07-02", summary: "BUSINESS-RULE-CHANGE + BUGFIX (user rà soát trực tiếp quy tắc đặt mã sản phẩm/nhóm VTHH, cung cấp bảng rule chốt): (1) **BR-CAT-GRP-009 đảo ngược** — rule cũ (BR-GF-INVENTORY-CATALOG v19) cho phép đổi nhóm cha (\"Thuộc nhóm\") tự do ở Edit, chỉ chặn vòng lặp phân cấp (self/descendant); nay đổi thành **immutable** — nhóm cha chỉ chọn 1 lần lúc tạo (FEAT-CAT-GRP-CREATE), khóa hoàn toàn ở Edit. Fix `MaterialGroupService.update()`: bỏ nhánh cho phép đổi `parentId` kèm cycle-check + validate `parentId` mới phải ACTIVE (3 guard cũ: self-reference/descendant-cycle/parent-status), thay bằng 1 guard duy nhất — reject nếu `request.getParentId() != null && !Objects.equals(request.getParentId(), entity.getParentId())` → `ERR-INV-003` (\"Nhóm cha không được phép thay đổi sau khi tạo\"); bỏ luôn `entity.setParentId(newParent)`. Guard cycle-detection cũ (self/descendant) vẫn là subset của guard mới (mọi thay đổi bị chặn nên cycle tự động bị chặn theo), không cần giữ code riêng. Đồng bộ `BR-GF-INVENTORY-CATALOG.md` (v19→v20) + `FEAT-CAT-GRP-EDIT.md` (§3 AC-4, §4.1, §9, error-code mapping, test scope) + `MaterialGroupServiceTest` (đổi tên `update_rejectsCycleViaDescendant`→`update_rejectsDescendantAsParent`, thêm `update_rejectsAnyParentChange_evenNonCyclicTarget` + `update_allowsUnchangedParentId`). (2) **BUGFIX BR-CAT-PROD-022 (import validate nhóm VTHH) — gap giữa doc đã đúng từ trước (v12 2026-06-24) và code chưa implement đủ**: `InternalProductImportService.validateRow()` trước đây chỉ check `materialGroupCode` **tồn tại** (`groupRepository.findByTenantIdAndCode(...).isEmpty()`), BỎ SÓT check `status=ACTIVE`, và dùng string lỗi generic `\"ERR-CMN-validation — Nhóm VTHH không tồn tại\"` thay vì mã lỗi domain-specific đã được BA chốt từ trước (`ERR-INV-043`, vốn CHƯA từng được khai báo trong `CatalogErrorCode.java` — hằng số bị thiếu hoàn toàn dù đã có trong BR doc + ERROR-CODE-REGISTRY). Fix: thêm `CatalogErrorCode.IMPORT_GROUP_INVALID = \"ERR-INV-043\"`; `validateRow()` đổi thành check `group.isEmpty() || group.get().getStatus() != CatalogStatus.ACTIVE` → dùng `IMPORT_GROUP_INVALID`. Đồng bộ `FEAT-CAT-PROD-IMPORT.md` §3 AC-5 row 6 (ERR-CMN-validation → ERR-INV-043) + `error_codes` registry dưới đây + `InternalProductImportServiceTest` (thêm `verify_flagsMissingMaterialGroup_whenCodeNotFound`, `verify_flagsInactiveMaterialGroup`, `verify_acceptsActiveMaterialGroup` — trước đó KHÔNG có test nào cho nhánh materialGroupCode dù đã có code từ trước). GOTCHA: khi 1 BR đã được document đúng ở master BR file nhưng error-code hằng số liên quan lại thiếu trong `CatalogErrorCode.java`, đó là tín hiệu code chưa bao giờ được implement đủ theo doc — luôn cross-check `CatalogErrorCode.java` có đủ hằng số cho MỌI mã lỗi được cite trong BR-GF-INVENTORY-CATALOG.md trước khi kết luận 1 rule \"đã implement đúng\".", author: "Main agent — BR-CAT-GRP-009 reversal + BR-CAT-PROD-022 gap fix 2026-07-02" }
+  - { date: "2026-07-02", summary: "BUGFIX+FEATURE: `InternalProductImportService.validateRow()` validate sai `originCode` (Xuất xứ) — tự áp regex `^[A-Z]{3}$` (giả định ISO 3166-1 alpha-3, KHÔNG có trong BR-CAT-PROD-023) khiến `mdmValidationService.isValidOriginCode(...)` bị Java `||` short-circuit, KHÔNG BAO GIỜ được gọi khi mã không khớp regex — mọi mã 2 ký tự hợp lệ trong master (vd \"VN\"/\"US\") bị chặn nhầm trước khi kịp query gf-erp-mdm. Root cause thật sự sâu hơn: user xác nhận **FE gửi lên NAME (tên hiển thị dropdown), không phải CODE**, cho cả `mainUnitCode` VÀ `originCode` trong import — nên toàn bộ cách validate cũ (so giá trị FE gửi với tập CODE) sai về bản chất input, không chỉ riêng regex. Fix (PHẠM VI: chỉ import, KHÔNG đụng `InternalProductService.create()/update()` — vẫn coi giá trị FE gửi là code theo quyết định user): `InternalProductImportService` bỏ dependency `CatalogMdmValidationService` (không còn dùng ở đâu khác trong file), thêm `GfErpMdmClient` + cache in-process 5 phút CÔ LẬP riêng (`AtomicReference<CachedDirectoryCodes>`, record `nameToCode: Map<String,String>` — đảo chiều so với cache `codeToName` bên `InternalProductExportService`, cùng pattern isolated-cache đã áp dụng cho export) — fetch `UNIT`+`COUNTRY` directory 1 lần/request (đặt SAU check `MAX_ROWS=500` để tránh phí remote call khi request bị reject sớm), build `Map<name,code>`, dùng trực tiếp `Map.get(displayName)` để vừa validate tồn tại vừa resolve code — bỏ hẳn regex format check. Khác export (fail-open trả rỗng vì là read/display path), import là write-path gate nên fail-closed đúng convention `CatalogMdmValidationService.fetchDirectory()`: còn cache cũ → fail-open trả cache cũ; KHÔNG cache + MDM down → throw `ERR-CMN-mdm-unavailable` (503), chặn import. `ImportRowResult` (CatalogDtos.java) thêm 2 field additive `resolvedMainUnitCode`/`resolvedOriginCode` mang code đã resolve từ `validateRow()` sang `commit()` — entity vẫn lưu CODE (không lưu name) theo quyết định user, `commit()` đổi `.mainUnitCode(item.getMainUnitCode())`/`.originCode(item.getOriginCode())` → `.mainUnitCode(row.getResolvedMainUnitCode())`/`.originCode(row.getResolvedOriginCode())`. Test: InternalProductImportServiceTest viết lại toàn bộ 5 test (input đổi từ code giả sang tên hiển thị thực tế \"Cái\"→PCS, \"Nhật Bản\"→JPN qua `@Mock GfErpMdmClient` + helper `mockDirectory()`) + thêm test mới `commit_persistsResolvedUnitAndOriginCode_notRawDisplayName`. GOTCHA: khi 1 field REST DTO đổi ý nghĩa nội dung (code↔name) do thay đổi phía FE, PHẢI rà soát TẤT CẢ nơi field đó được validate/dùng (không chỉ nơi phát hiện bug report ban đầu) — ở đây `mainUnitCode`/`originCode` còn được dùng ở `InternalProductService.create()/update()` (qua `mdmValidationService.validateUnitCode()`/`validateOriginCodeIfPresent()`, vẫn coi là code) — CHƯA đồng bộ theo yêu cầu user (ngoài phạm vi lần sửa này, cần xác nhận riêng nếu FE cũng đổi format ở luồng create/update).", author: "Main agent — internal-product import name→code MDM resolution fix 2026-07-02" }
+  - { date: "2026-07-02", summary: "FEATURE (đóng gap hiển thị + cross-boundary read call mới tới gf-erp-mdm, theo yêu cầu trực tiếp user, chú trọng performance): `InternalProductExportService` (V2-22 export .xlsx) resolve cột **ĐVT** (`mainUnitCode`) và **Xuất xứ** (`originCode`) từ raw code sang tên tiếng Việt qua gf-erp-mdm `POST /protected/catalog/v1/inquiry` (`GfErpMdmClient.inquiryCatalog`, directory `UNIT`/`COUNTRY`); cột **Tính chất** (`nature`) đổi từ raw enum name sang nhãn tiếng Việt theo BR-CAT-PROD-019 (GOODS→\"Vật tư hàng hóa\", TOOL→\"CCDC (Công cụ dụng cụ)\", SERVICE→\"Dịch vụ\", OTHER→\"Khác\", helper `natureLabel()` cùng style `pricingMethodLabel()`/`statusLabel()` có sẵn). Performance: thêm cache in-process 5 phút RIÊNG cho export (`AtomicReference<CachedDirectoryNames>` + record `codeToName: Map<String,String>`, TTL `CACHE_TTL=5min`, theo đúng mandate kiến trúc `INTEG-EXT-gf-inventory.md` §13a) — gọi `inquiryCatalog` tối đa **2 lần/export request** (1 lần/directory UNIT+COUNTRY, cache-hit thì 0 lần), KHÔNG theo từng dòng/từng mã (tránh N+1 remote call trên cap 1.000 dòng BR-CAT-PROD-024) — mirror pattern `InventoryDocPrintService.resolveUnitNames()` (fetch-toàn-directory-1-lần) cộng thêm TTL cache. Quyết định: cache CÔ LẬP, KHÔNG tái dùng/sửa `CatalogMdmValidationService` (service validate dùng chung cho create/update/import) — tránh đụng logic validate đang chạy ổn định, đổi lại có 2 cache độc lập cùng cache UNIT/COUNTRY song song trong hệ thống (biết trước, chấp nhận theo quyết định user). Bonus fix: phát hiện `CatalogInquiryRequest` (DTO gọi gf-erp-mdm) thiếu field `page`/`size` → server mặc định `BaseSearchRequest` trả 20 dòng đầu directory, mã ngoài top-20 không resolve được — thêm field `size` (Integer, additive) vào `CatalogInquiryRequest`, set `DIRECTORY_FETCH_SIZE=1000` CHỈ ở call site export mới; theo quyết định user, KHÔNG sửa 2 call site cũ (`CatalogMdmValidationService.fetchDirectory`, `InventoryDocPrintService.resolveUnitNames`) — bug top-20 truncation vẫn còn tồn tại ở 2 nơi đó, cần follow-up riêng nếu muốn đồng bộ. Fallback khi mã không resolve được (MDM lỗi hoặc mã không có trong directory): để trống (không fallback về raw code) — null-guard riêng cho `mainUnitCode`/`originCode` null (tránh NPE vì `Map.of()` fallback rỗng không chấp nhận `getOrDefault(null,...)`). Test: InternalProductExportServiceTest thêm 3 test (export_resolvesUnitAndCountryNames_viaMdmDirectoryLookup — verify inquiryCatalog gọi đúng 2 lần dù 5 rows/4 mã phân biệt; export_leavesUnitAndCountryBlank_whenCodeNotInMdmDirectory; export_writesNatureColumn_withVietnameseLabels) + thêm `@Mock GfErpMdmClient` + helper `mockDirectory()`.", author: "Main agent — internal-product export UNIT/COUNTRY name resolution + nature label 2026-07-02" }
+  - { date: "2026-07-02", summary: "CORRECTION (theo bảng mapping tường minh user cung cấp, sửa lại quyết định vị trí cột của lần sửa trước): `InternalProductExportService` (V2-22 export .xlsx) di chuyển cột **\"Phương pháp tính giá\"** từ vị trí chèn giữa (sau ĐVT, trước Thương hiệu — suy luận theo thứ tự liệt kê text BR-CAT-PROD-018) sang **append cuối cùng** (sau Thông số kỹ thuật, trước Trạng thái). Thứ tự cột cuối cùng (12 cột, đã xác nhận đúng qua mapping user): STT, Mã nội bộ, Tên sản phẩm, ĐVT, Thương hiệu, Xuất xứ, Tính chất, Nhóm vật tư/hàng hóa, Quy cách sản phẩm, Thông số kỹ thuật, Phương pháp tính giá, Trạng thái. Implementation: đổi lại index `row.createCell(4..10)` trong `generate()` cho khớp — cell 4-9 = brand/originCode/nature/materialGroupCode/productSpec/technicalSpec (dịch lùi 1 so với lần trước), cell 10 = `pricingMethodLabel(...)` (chuyển từ cell 4 xuống cuối), cell 11 = `statusLabel(...)` (giữ nguyên). 2 helper method `pricingMethodLabel()`/`statusLabel()` không đổi logic. Test: InternalProductExportServiceTest.export_writesPricingMethodAndStatusColumns_withVietnameseLabels đổi assertion `getCell(4)` → `getCell(10)` cho header + data row cột pricingMethod. GOTCHA: khi suy luận thứ tự cột từ text mô tả business rule dạng liệt kê tự do (không phải bảng có số thứ tự tường minh), nên xác nhận lại với user/BA thay vì tự suy diễn thứ tự chèn giữa — thứ tự thực tế mong muốn có thể khác thứ tự liệt kê trong câu văn.", author: "Main agent — internal-product export column order correction 2026-07-02" }
+  - { date: "2026-07-02", summary: "FEATURE (đóng gap doc-vs-code tồn tại từ trước, theo yêu cầu trực tiếp user): `InternalProductExportService` (V2-22 export .xlsx) thêm 2 cột còn thiếu so với BR-CAT-PROD-018 — **\"Phương pháp tính giá\"** và **\"Trạng thái\"** — BR-CAT-PROD-018 đã liệt kê đủ 11 cột nghiệp vụ từ trước (mã nội bộ, tên sản phẩm, ĐVT, phương pháp tính giá, thương hiệu, xuất xứ, tính chất, nhóm vật tư/hàng hóa, quy cách sản phẩm, thông số kỹ thuật, trạng thái) nhưng code chỉ implement 9 cột, thiếu 2 cột export-only này. Thứ tự cột cuối cùng (12 cột kể cả STT): STT, Mã nội bộ, Tên sản phẩm, ĐVT, Phương pháp tính giá, Thương hiệu, Xuất xứ, Tính chất, Nhóm vật tư/hàng hóa, Quy cách sản phẩm, Thông số kỹ thuật, Trạng thái. Implementation: thêm 2 private helper `pricingMethodLabel(PricingMethod)` (PWA→\"Bình quân cuối kỳ\", SI→\"Đích danh\", FIFO→\"Nhập trước xuất trước\", MA→\"Bình quân tức thời\") và `statusLabel(CatalogStatus)` (ACTIVE→\"Đang hoạt động\", INACTIVE→\"Ngừng hoạt động\", theo đúng BR-CAT-PROD-007) — cả 2 mapping đặt cục bộ trong `InternalProductExportService`, KHÔNG đụng domain enum `PricingMethod`/`CatalogStatus` dùng chung (theo quyết định user: giữ thay đổi tối thiểu, không mở rộng phạm vi ra domain layer). Header HEADERS array đã được đổi sang nhãn tiếng Việt cho toàn bộ cột (thay đổi ngoài phiên làm việc trước đó, không phải do lần sửa STT/reorder) — 2 cột mới theo cùng style. Test: InternalProductExportServiceTest thêm export_writesPricingMethodAndStatusColumns_withVietnameseLabels + cập nhật lại header assertion cũ (\"code\"/\"name\" → \"Mã nội bộ\"/\"Tên sản phẩm\") cho khớp header tiếng Việt hiện tại.", author: "Main agent — internal-product export pricingMethod+status columns 2026-07-02" }
+  - { date: "2026-07-02", summary: "FEATURE (follow-up trực tiếp ngay sau khi thêm cột STT, theo yêu cầu user): `InternalProductExportService` (V2-22 export .xlsx) đổi thứ tự cột — di chuyển `brand` + `originCode` lên trước `nature` + `materialGroupCode`. Thứ tự cột mới: `STT, code, name, mainUnitCode, brand, originCode, nature, materialGroupCode, productSpec, technicalSpec` (trước đó: `STT, code, name, mainUnitCode, nature, materialGroupCode, brand, originCode, productSpec, technicalSpec`). Implementation: swap 2 khối trong `HEADERS` array + đổi thứ tự lệnh `row.createCell(4..7)` trong `generate()` tương ứng (cell 0-3 STT/code/name/mainUnitCode và cell 8-9 productSpec/technicalSpec không đổi). Thuần đổi vị trí hiển thị cột — KHÔNG đổi tập cột hay logic resolve `materialGroupCode` (`resolveGroupCode()` giữ nguyên). Không cần sửa `InternalProductExportServiceTest` — test hiện tại chỉ assert cell 0/1/2 (STT/code/name), không đụng cột bị dịch chuyển, vẫn pass nguyên trạng.", author: "Main agent — internal-product export column reorder 2026-07-02" }
+  - { date: "2026-07-02", summary: "FEATURE (theo yêu cầu trực tiếp user, không phải BA-sourced BR change): `InternalProductExportService` (V2-22 export .xlsx) thêm cột **STT** (số thứ tự dòng, 1..n) làm cột đầu tiên trong `HEADERS` — template export nay 10 cột thay vì 9 (`STT` + 9 cột cũ: `code, name, mainUnitCode, nature, materialGroupCode, brand, originCode, productSpec, technicalSpec`). Implementation: thêm counter `stt` trong loop ghi row (`generate()`), dịch toàn bộ `row.createCell(0..8)` cũ sang `row.createCell(1..9)`. Thuần tính năng UX hỗ trợ đối chiếu/đếm dòng khi mở file Excel — KHÔNG đổi business rule cột dữ liệu BR-CAT-PROD-018 (theo quyết định user: chỉ sửa code + KG, không động vào BR-GF-INVENTORY-CATALOG.md vì đó là tài liệu do Business Authority chốt). Test mới: InternalProductExportServiceTest (test class đầu tiên cho service này — trước đây chưa có coverage) — export_writesSttColumnFirst_withHeaderAndSequentialValues, đọc lại workbook qua Apache POI để assert header row + giá trị STT tăng dần đúng thứ tự.", author: "Main agent — internal-product export STT column 2026-07-02" }
+  - { date: "2026-07-01", summary: "FEATURE-SYNC (R38, đóng nốt flag còn lại từ R36/R37 theo yêu cầu trực tiếp của product): `SkuMappingResponse.name` (CatalogDtos.java) đổi tên → `productName`, khớp đúng BFF GraphQL SDL `agg-garage-graph/src/graphql/modules/inventory-catalog/inventory-catalog.schema.ts` — `type InternalProductSkuMapping { id: Int! productId: Int! sku: String! productName: String }` — type này KHÔNG có field `name`. R36/R37 đã phát hiện gap này nhưng chủ động để lại chưa sửa (severity thấp hơn vì `productName` nullable phía GraphQL, chỉ resolve null âm thầm chứ không crash) — nay đóng dứt điểm theo chỉ đạo trực tiếp. Fix: `InternalProductService.toMapping()` builder `.name(product == null ? null : product.getName())` → `.productName(...)` (hành vi null-safe giữ nguyên). KHÔNG thêm field `name` song song để backward-compat — DTO này đã có tiền lệ mọi field khác (`id`, `sku`, `productId`) đều đặt tên khớp 1:1 với GraphQL SDL, giữ 1 tên duy nhất nhất quán, tránh hack tương thích ngược không cần thiết. Doc: gf-inventory-api.md R38 (v31→v32) — V2-8 `skuMappings[]` example + V2-13 response 201 example `\"name\"` → `\"productName\"`. Test: InternalProductServiceTest 3 chỗ assertion (get_populatesSkuAndNameFromProductTable, get_leavesSkuAndNameNull_whenProductNotFound, mapSku_populatesSkuAndNameFromProductTable) đổi `getName()` → `getProductName()`.", author: "Main agent — SkuMappingResponse.name→productName rename R38 2026-07-01" }
+  - { date: "2026-07-01", summary: "BUGFIX (R37, đóng flag chưa xử lý để lại từ R36): `SkuMappingResponse.sku`/`.name` (V2-8 `skuMappings[]` + V2-13 response) luôn trả null — user phát hiện qua curl trực tiếp `GET /api/v2/internal-products/{id}` trên Swagger local. Root cause: `InternalProductService.toMapping()` chưa từng set 2 field này; `sku`/`name` là cột bảng legacy `product` (SKU master, ADR-017 Q2), CHỈ truy được qua FK `internal_product_sku_mapping.product_id` — thiếu hẳn bước lookup. Fix: `toMapping()` thêm tham số thứ 2 `ProductEntity product`, set `.sku(product == null ? null : product.getSku())` / `.name(product == null ? null : product.getName())` (null-safe — FK treo/product bị soft-delete thì trả null thay vì throw). Thêm private helper `toMappings(tenantId, List<InternalProductSkuMappingEntity>)` batch-resolve qua `JpaProductRepository.findAllByTenantIdAndIdInAndIsDeletedFalse` (method tenant-scoped đã có sẵn, tái dùng nguyên từ `hasActivity()`) — dùng chung cho cả 2 call site: `get()` (V2-8, list, batch tránh N+1) và `mapSku()` (V2-13, 1 mapping mới, gọi cùng helper với list 1 phần tử). Mức độ nghiêm trọng: KHÔNG chỉ cosmetic — GraphQL SDL khai báo `sku: String!` (non-nullable) trên `InternalProductSkuMapping`, nên null REST value sẽ crash resolver giống hệt lớp lỗi R33/R34/R36 ngay khi có client query field này. Test mới: InternalProductServiceTest (get_populatesSkuAndNameFromProductTable, get_leavesSkuAndNameNull_whenProductNotFound, mapSku_populatesSkuAndNameFromProductTable). Doc: gf-inventory-api.md R37 (v30→v31) — KHÔNG cần sửa example JSON (V2-8/V2-13 đã show sẵn giá trị sku/name hợp lý từ trước — doc đúng về mặt ý định, chỉ code sai). GOTCHA: khi thêm field mới vào 1 DTO nested-list được build qua static mapper method dùng chung ở nhiều call site (list-case + single-create-case), cân nhắc tách 1 private instance helper batch-fetch dùng chung thay vì lặp lại N+1 query ở từng nơi gọi — instance method mới truy cập được `productRepository` field, static method thuần (`toMapping`) chỉ nên nhận đủ dữ liệu làm tham số. Flag CHƯA xử lý (kế thừa từ R36, vẫn chưa đụng tới): `SkuMappingResponse.name` vs GraphQL SDL `productName` field-name mismatch — field nullable phía GraphQL nên chỉ resolve null âm thầm, không crash, chưa đủ ưu tiên để sửa lần này.", author: "Main agent — SkuMappingResponse sku/name populate fix R37 2026-07-01" }
+  - { date: "2026-07-01", summary: "BUGFIX (R36, proactively verified via BFF SDL trước khi ship, cùng root cause R33/R34): `SkuMappingResponse` (V2-8 `skuMappings[]` + V2-13 response, CatalogDtos.java) đổi tên field `internalProductId` → `id`, ĐỔI CẢ Ý NGHĨA GIÁ TRỊ: trước đây lấy `e.getInternalProductId()` (FK trỏ internal_product cha), nay lấy `e.getId()` (PK của chính row `internal_product_sku_mapping`). Root cause giống hệt R33 (ConversionUnitResponse.unitId→id): BFF `agg-garage-graph` GraphQL SDL `inventory-catalog.schema.ts` khai báo `type InternalProductSkuMapping { id: Int! productId: Int! sku: String! productName: String }` — `id` non-nullable, KHÔNG có field `internalProductId` (giống `InternalProductConversionUnit`/`InternalProductAttachment`, cả 2 đều không expose FK cha). Khác R33/R34 ở chỗ: lần này verify TRỰC TIẾP schema BFF trước khi sửa (không đợi incident report), và giá trị field phải đổi theo (không chỉ đổi tên) — vì nếu giữ nguyên giá trị FK cũ dưới tên `id` mới, mọi sku mapping của cùng 1 internal_product (constraint `uk_ipsm_internal_product(internal_product_id, product_id)` cho phép nhiều row cùng internal_product_id) sẽ có `id` TRÙNG NHAU → vỡ list-key/cache uniqueness phía GraphQL/FE. Fix: `InternalProductService.toMapping()` builder `.internalProductId(e.getInternalProductId())` → `.id(e.getId())`. Doc: gf-inventory-api.md R36 (v29→v30) — V2-8 `skuMappings[]` example thêm field `id` (trước đây thiếu hẳn); V2-13 response 201 example `internalProductId`→`id`. KHÔNG cần sửa `internal-product-sku-mapping-create` (V2-13) purpose/response schema trong KG — đã ghi `response.schema.id: long` sẵn từ trước (đã đúng, không phải do fix này). GOTCHA: khi rename field theo pattern R33/R34 (align với GraphQL `id`), PHẢI kiểm tra xem field cũ có đang mang GIÁ TRỊ của chính resource hay của resource KHÁC (FK) — nếu là FK thì rename kèm đổi nguồn giá trị, không chỉ đổi label, nếu không sẽ tạo ID trùng lặp giữa các item cùng list. Flag chưa xử lý (out of scope, phát hiện khi audit SDL): `SkuMappingResponse.name`/`.sku` chưa từng được `toMapping()` populate (pre-existing gap); GraphQL SDL kỳ vọng `productName` trong khi REST DTO có `name` — field nullable nên chỉ resolve null âm thầm, không crash, nhưng nên follow-up riêng.", author: "Main agent — SkuMappingResponse.internalProductId→id rename R36 2026-07-01" }
+  - { date: "2026-07-01", summary: "FEATURE-SYNC (R35, reverses R11/R34 \"unchanged\" decision per direct product instruction): `AttachmentRequest` (V2-18 request body, CatalogDtos.java) đổi tên 3 field cho khớp hoàn toàn với `AttachmentCreateRequest` (V2-10 inline)/`AttachmentResponse` — `sizeBytes`→`fileSizeBytes`, `storageUrl`→`fileUrl`, `kind`→`attachmentKind`. Trước đó (R11 2026-06-24, tái xác nhận ở R34 sáng nay) đây là quyết định CÓ CHỦ ĐÍCH giữ nguyên field cũ cho request — BA/product đã đổi quyết định trong cùng ngày. Fix: `InternalProductService.addAttachment()` getter calls `.getStorageUrl()/.getSizeBytes()/.getKind()` → `.getFileUrl()/.getFileSizeBytes()/.getAttachmentKind()`; `persistAttachment()` shared helper KHÔNG đổi (tên tham số local riêng, dùng chung với V2-10). Effect: 2 item shape attachments (V2-10 inline tại create vs V2-18 post-create) từ nay field-name-identical (`fileName/fileType/fileSizeBytes/fileUrl/attachmentKind`) — dù vẫn là 2 DTO/endpoint riêng, KHÔNG hợp nhất code. Cascade doc: gf-inventory-api.md R35 (v28→v29) — V2-18 request JSON example + field table đổi tên, bổ sung field `attachmentKind` trước đây có trong code nhưng chưa từng document (optional, default suy theo MIME — hành vi cũ, không phải logic mới); V2-10 `attachments[]` note đổi từ \"khác V2-18\" thành \"trùng V2-18\". Test: InternalProductServiceTest 3 chỗ builder `AttachmentRequest` (`addAttachment_rejectsOversizeAbove30MB`, `addAttachment_rejectsInvalidFileType`, `addAttachment_savesAttachment_onSuccess`) đổi builder method tương ứng. GOTCHA: khi 1 request DTO đã được product/BA xác nhận \"giữ nguyên by design\" trong 1 changelog entry, đừng coi đó là bất biến vĩnh viễn — quyết định có thể đảo ngược trong cùng phiên làm việc; luôn kiểm tra yêu cầu mới nhất của user thay vì tin vào doc lịch sử khi 2 nguồn xung đột.", author: "Main agent — AttachmentRequest field rename R35 2026-07-01" }
+  - { date: "2026-07-01", summary: "BUGFIX (follow-up của ConversionUnitResponse.unitId→id): `AttachmentResponse` (CatalogDtos.java) đổi tên 3 field cho khớp GraphQL BFF `agg-garage-graph` query `attachments { id fileUrl fileName fileType fileSizeBytes attachmentKind }` — `sizeBytes`→`fileSizeBytes`, `storageUrl`→`fileUrl`, `kind`→`attachmentKind` (`id`/`fileName`/`fileType` đã khớp sẵn). Cùng root cause với R33 (ConversionUnitResponse): field name lệch giữa REST response và GraphQL non-nullable resolver → risk null-reject y hệt lỗi conversionUnits[].id đã gặp, dù chưa report riêng cho attachments[]. Fix: `InternalProductService.toAttachment()` builder `.sizeBytes/.storageUrl/.kind` → `.fileSizeBytes/.fileUrl/.attachmentKind`. **KHÔNG đổi** `AttachmentRequest` (V2-18 request body — `fileName/fileType/sizeBytes/storageUrl`, thiết kế R11) — chỉ response DTO đổi, áp dụng mọi nơi trả `attachments[]` (V2-8/V2-10/V2-11 detail + V2-18 create response) vì dùng chung `toAttachment()`. Bonus: đóng gap tiềm ẩn — R31 changelog trước đó đã mô tả response V2-10 create trả attachments theo shape `fileUrl/fileSizeBytes/attachmentKind`, nhưng code thực tế chưa khớp cho tới fix này. Cascade doc: gf-inventory-api.md R34 (v27→v28) — V2-18 response example + V2-8 abbreviated example đổi tên field tương ứng. GOTCHA: khi share 1 response DTO (`toAttachment()`) qua nhiều endpoint (V2-8/10/11/18), đổi field name ảnh hưởng TẤT CẢ — phải grep toàn bộ call site trước khi rename, không chỉ 1 nơi report lỗi. Test mới: InternalProductServiceTest.get_mapsAttachmentEntityFieldsToResponse.", author: "Main agent — AttachmentResponse field rename R34 2026-07-01" }
+  - { date: "2026-07-01", summary: "BUGFIX: GraphQL `getInternalProduct` (agg-garage-graph BFF) 500 \"Cannot return null for non-nullable field InternalProductConversionUnit.id\" tại `data.conversionUnits[0].id`. Root cause: REST response DTO `ConversionUnitResponse` (CatalogDtos.java) đặt tên field định danh row là `unitId`, không phải `id` — backend value luôn correctly populated (`toConversionUnit()` map đúng `entity.getId()`), nhưng BFF GraphQL resolver `InternalProductConversionUnit.id` (non-nullable) đọc field `id` từ REST JSON, không match `unitId` → null → GraphQL reject. Fix (theo quyết định: sửa phía gf-inventory thay vì bắt BFF đổi theo) — rename `ConversionUnitResponse.unitId` → `id`; `InternalProductService.toConversionUnit()` builder `.unitId(...)` → `.id(...)`. Cascade doc: gf-inventory-api.md R33 (v26→v27) — 2 response JSON example (V2-8 `conversionUnits[]` item + V2-15 create response, V2-16 dùng chung shape) đổi `\"unitId\": 9001` → `\"id\": 9001`. **KHÔNG đổi** URL path param `{unitId}` trên V2-16/V2-17 (`/conversion-units/{unitId}`) — đây là convention riêng (R8 D-E path rename), khác concept với response body field, giữ nguyên. GOTCHA: khi 1 DTO có field vừa là surrogate-key-of-this-resource vừa dễ nhầm với FK-tới-resource-khác (ở đây field tên `unitId` nhưng thực chất là PK của chính conversion_unit row, không phải FK tới bảng UNIT master), nên đặt tên `id` sát REST/GraphQL convention chuẩn thay vì domain-prefixed để tránh lệch kỳ vọng phía BFF/GraphQL. Test mới: InternalProductServiceTest.get_mapsConversionUnitEntityIdToResponseId.", author: "Main agent — ConversionUnitResponse.unitId→id rename R33 2026-07-01" }
+  - { date: "2026-07-01", summary: "BUGFIX: POST /api/v2/internal-products (V2-10) reject 400 \"Unrecognized field pricingMethod\" khi client gửi `pricingMethod` lúc tạo mới. Root cause: `InternalProductUpdateRequest` (V2-11) đã có field `pricingMethod` từ trước và `InternalProductService.update()` respect giá trị client gửi không hề guard theo BR-CAT-PROD-010 (\"không cho phép sửa\"), nhưng `InternalProductCreateRequest` (V2-10) chưa từng có field này + `create()` hard-code `.pricingMethod(PricingMethod.PWA)` — Jackson reject field lạ (`FAIL_ON_UNKNOWN_PROPERTIES` mặc định) vì DTO không có chỗ nhận. Fix: thêm `pricingMethod` (optional, `PricingMethod` enum) vào `InternalProductCreateRequest` (CatalogDtos.java); `create()` đổi thành `request.getPricingMethod() == null ? PWA : request.getPricingMethod()` — cùng pattern optional-with-default đã dùng cho `status`, đồng nhất với `update()` đã có sẵn. Doc: `gf-inventory-api.md` R32 (v25→v26) thêm `pricingMethod` vào V2-10 request example + validation bullet (mirror V2-11 wording). `BR-GF-INVENTORY-CATALOG.md` BR-CAT-PROD-010 reword (v18→v19): bỏ \"không cho phép sửa\" (không còn khớp thực tế ở cả create lẫn update), giữ nguyên SI/FIFO/MA là placeholder roadmap kế toán chưa được business logic (WAC/COGS) nào tiêu thụ — xác nhận qua grep toàn repo. GOTCHA: khi thêm field enum mới support ở cả 2 DTO create/update của cùng aggregate, PHẢI thêm đồng thời cả 2 — lệch 1 bên sẽ khiến Jackson reject field lạ ở phía thiếu (FAIL_ON_UNKNOWN_PROPERTIES default true). Test mới: InternalProductServiceTest (create_respectsRequestedPricingMethod, create_defaultsPricingMethodPwaWhenOmitted).", author: "Main agent — V2-10 pricingMethod R32 sync 2026-07-01" }
+  - { date: "2026-07-01", summary: "FEATURE-SYNC: POST /api/v2/internal-products (V2-10) request DTO `InternalProductCreateRequest` (CatalogDtos.java) đồng bộ theo gf-inventory-api.md R31 (2026-07-01) — thêm 2 field: (a) `status` (optional enum ACTIVE|INACTIVE, default ACTIVE) — trước đây `InternalProductService.create()` hard-code `.status(CatalogStatus.ACTIVE)`, bỏ qua giá trị client gửi; (b) `attachments[]` inline-tại-create — item shape MỚI `fileUrl/fileName/fileType/fileSizeBytes/attachmentKind` (KHÁC shape V2-18 `AttachmentRequest`: `fileName/fileType/sizeBytes/storageUrl`), đảo pattern R11 (post-create-only via V2-18) theo yêu cầu Delivery Authority 2026-07-01. Implementation: extract validation+persist logic (cap 5 file/product, ≤30MB BR-CAT-PROD-015 v17, MIME PDF/JPG/PNG whitelist) từ `addAttachment()` (V2-18) thành private helper `persistAttachment()` dùng chung cho cả `create()` (V2-10) và `addAttachment()` (V2-18) — tránh duplicate rule đã sửa 2 lần (10MB→30MB). Doc fix kèm theo: sửa 1 chỗ \"≤10MB\" stale (dòng attachments[] validation V2-10, do R31 copy nhầm số cũ) thành \"≤30MB\" khớp BR-CAT-PROD-015 hiện hành — LƯU Ý: các mention \"10MB\" khác còn sót trong doc (V2-18 bullet riêng, bảng error-code ERR-CMN-004 toàn cục) là drift tiền-tồn-tại, KHÔNG thuộc scope sửa lần này. Flag chưa xử lý (kế thừa từ R31): `FEAT-CAT-PROD-CREATE.md` AC-13 vẫn ghi \"KHÔNG inline tại create\" — lệch với thay đổi này, cần follow-up riêng ở Product tier. Test mới: InternalProductServiceTest (create_respectsRequestedStatus, create_defaultsStatusActiveWhenOmitted, create_persistsInlineAttachments, create_rejectsWhenAttachmentsExceedFive, create_rejectsInvalidAttachmentMimeType, create_rejectsOversizedAttachment).", author: "Main agent — V2-10 status+attachments R31 sync 2026-07-01" }
+  - { date: "2026-07-01", summary: "BUGFIX (P2): POST /api/v2/material-groups/search (V2-1) và POST /api/v2/internal-products/search (V2-7) trả sai khi client không truyền `status` (null/omitted) — service default sai thành `CatalogStatus.ACTIVE` (MaterialGroupService.search line 57, InternalProductService.search line 72), che mất record INACTIVE dù repository JPQL guard `(:status IS NULL OR x.status = :status)` (JpaMaterialGroupRepository.search / JpaInternalProductRepository.search) đã hỗ trợ null = không filter đúng theo business spec (status omitted phải trả CẢ ACTIVE + INACTIVE). Fix: bỏ default `status == null ? ACTIVE : status`, pass `request.getStatus()` (có thể null) thẳng xuống repository. KHÔNG đổi `InternalProductExportService` (V2-22 export, endpoint khác, ngoài scope theo yêu cầu — vẫn default ACTIVE khi omitted, cần xác nhận riêng nếu muốn đồng bộ). GOTCHA: khi thêm search endpoint catalog mới có filter status kiểu enum, KHÔNG default null → ACTIVE ở app.service nếu spec yêu cầu \"omitted = tất cả trạng thái\" — chỉ default khi spec xác nhận rõ. Regression test thêm ở InternalProductServiceTest/MaterialGroupServiceTest (search_passesNullStatusToRepository_whenStatusOmitted, search_filtersByExplicitActiveStatus, search_filtersByExplicitInactiveStatus) — verify FAIL trên code cũ (PotentialStubbingProblem vì repository stub null không được gọi khi service tự ý default ACTIVE), PASS sau fix.", author: "agent-fix-gf-inventory — BUG-W03-032 status-default hotfix" }
+  - { date: "2026-07-01", summary: "BUGFIX (P1): PUT /api/v2/material-groups/{id} crash với `ERROR: relation \"material_group\" does not exist` tại MaterialGroupService.update() → JpaMaterialGroupRepository.findDescendantIds (native @Query WITH RECURSIVE). Bảng thật sự tồn tại đúng schema `dev_gf_inventory` (Hibernate ddl-auto: update tạo đúng chỗ); root cause là `hibernate.default_schema` chỉ auto-qualify schema cho SQL sinh từ JPQL/Criteria, KHÔNG rewrite chuỗi SQL thô của `@Query(nativeQuery = true)` — native query resolve tên bảng theo `search_path` runtime của DB role (mặc định `\"$user\", public`, không chứa `dev_gf_inventory`). Xác nhận qua psql PREPARE/EXECUTE: FROM material_group (không qualify) → tái hiện đúng lỗi; FROM dev_gf_inventory.material_group → OK. Fix: thêm token Hibernate `{h-schema}` trước 2 occurrence `material_group` trong findDescendantIds, theo đúng pattern proven-safe đã có ở JpaInventoryDeliveryItemRepository.updateCostPricesFromPeriodStock. GOTCHA: mọi @Query(nativeQuery = true) mới trong gf-inventory PHẢI dùng `{h-schema}` prefix trước table reference — không dựa vào search_path runtime của DB connection.", author: "agent-fix-gf-inventory — BUG-W03-031 native-query-schema hotfix" }
+  - { date: "2026-07-01", summary: "BUGFIX (P1): POST /api/v2/internal-products/search + /api/v2/material-groups search luôn crash với `ERROR: function lower(bytea) does not exist` khi backed bởi PostgreSQL. Root cause: JPQL idiom `(:keyword IS NULL OR LOWER(col) LIKE LOWER(CONCAT('%', :keyword, '%')))` khiến Hibernate 6.6.15 suy luận JDBC type của tham số `:keyword` thành bytea thay vì varchar, do tham số vừa xuất hiện untyped trong `IS NULL` vừa nested trong CONCAT/LOWER — xác nhận qua psql PREPARE/EXECUTE trực tiếp trên schema `dev_gf_inventory.internal_product` (cột code/name xác nhận là character varying, không phải bytea). Fix: build `%keyword%` pattern đã lowercase ở tầng Java (`toKeywordPattern` trong InternalProductService/InternalProductExportService/MaterialGroupService), JPQL đổi thành `LOWER(col) LIKE :keyword` (bỏ CONCAT), theo đúng pattern an toàn đã dùng ở InventoryPeriodStockSpecification/SchemaHolder/InventoryStockSpecification (Criteria API build wildcard string trong Java). GOTCHA cho search endpoint mới trong tương lai: KHÔNG dùng `LOWER(CONCAT('%', :param, '%'))` trong JPQL khi `:param` cũng xuất hiện trong `:param IS NULL OR ...` guard trên PostgreSQL — luôn build wildcard string ở Java trước khi bind.", author: "agent-fix-gf-inventory — BUG-W03 lower(bytea) hotfix" }
+  - { date: "2026-06-30", summary: "W03 EP-INVENTORY-CATALOG planned design (v3→v4): metadata epics+12 features; +23 V2 endpoints (V2-1..V2-23, V2-9 removed per HLD R10) cho material-group/internal-product/sku-mapping/conversion-unit/attachment/import-export/sku-search; +5 entities (MaterialGroup adjacency-list ADR-017, InternalProduct với main_unit_code R8 D-A + nature English R8 D-B + brand free-text R18 + originCode codified R18 + image_url opaque R25, InternalProductSkuMapping unique global, InternalProductConversionUnit R8 D-E rename + scale guard R29, InternalProductAttachment metadata-only ADR-016 max 5 file BR-CAT-PROD-015); +enums (ProductNature/PricingMethod/MaterialGroupStatus/InternalProductStatus); +error codes (ERR-INV-027/041/044/045/047). Source-of-truth: PKG-W03-inventory-catalog.md §2.2.1. Additive only — không sửa entity/api/business_rule cũ.", author: "Main agent (user-override planned-design per W03 prep)" }
+  - { date: "2026-05-18", summary: "BR review fix: thêm 12 BRs mới cho 6 core domains thiếu — Receipt (BR-008/009/010: status machine, stock increase/decrease, code gen), Delivery (BR-011/012/013: SO validation AC-8, mismatch flag, reversal), Stock (BR-014/015: negative stock allowed, reserved=marker only, adjustment), Reservation (BR-016: TTL auto-expire, worker integration), PeriodStock (BR-017/018: WAC/COGS formula, atomic closure, idempotency, native SQL scale), Warehouse (BR-019: branch event auto-create + WAREHOUSE_CREATED). Sửa metadata purpose từ legacy-only sang full inventory scope.", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-14", summary: "RULE-08 wiring: thêm status/active_callers/replaced_by cho 95 API. 50 public (warehouse/product/delivery/receipt/stock/period-stock/mdm-part/service) đều active → agg-garage-graph. Internal: gf-inventory-worker gọi 23 endpoint (5 delivery + 4 receipt + 13 period-closure + 2 reservation + 1 internal-delivery-items-update-cost-prices); gf-purchase gọi 5 product endpoint; gf-sales gọi internal-so-summary; gf-erp-agent gọi internal-location-create; gf-erp-mdm gọi internal-pim-info. 12 endpoint unused: 10 api-key (admin-only), internal-iostock-issuance + internal-period-close-warehouse-batch (defined nhưng không activity gọi).", author: "Architecture Authority — RULE-08 audit 2026-05-14" }
+  - { date: "2026-05-13", summary: "2026-05-13 — Audit source code toàn diện: (1) Fix 14 protected period-closure endpoint schemas — hầu hết thiếu tenantId, workflowId, nextPeriod, idempotencyKey, page, size; close-warehouse-batch đổi hoàn toàn cấu trúc (single warehouse + pagination, không phải warehouse_codes array); check-idempotency dùng idempotencyKey không phải period_code/warehouse_code; increment-retry-count trả Boolean không phải retryCount; update-status có thêm errorMessage; (2) Fix 2 reservation endpoints — expire thêm tenantId, release thêm tenantId/userId/reason (đều là query params); (3) Fix ReservationExpiryWorkflow steps — START via SDK không phải HTTP; release signal không gọi releaseReservation activity; step 4 (InventoryEventActivity) không tồn tại; (4) Fix integrations.outbound — /start không phải HTTP call.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Verified cấu trúc section khớp canonical template.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Sync với source: bổ sung fields cho Product/Inventory entities, sửa IOStockProduct.quantity (NUMERIC/BigDecimal), cập nhật BRs, xác nhận Flyway (13 files), làm rõ workflow triggers, thêm dependencies, tinh chỉnh 3 API schemas.", author: "Architecture Authority" }

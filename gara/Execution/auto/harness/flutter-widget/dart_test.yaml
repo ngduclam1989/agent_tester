@@ -1,0 +1,13 @@
+# dart_test.yaml — QC Widget Test Harness
+# Spec files resolve from specs/W{NN}/mobile-ui/
+# Bootstrap: flutter pub get (in this dir), then:
+#   flutter test ../../specs/W01/mobile-ui/<spec>_test.dart
+
+concurrency: 4
+timeout: 2m
+
+tags:
+  c1:
+    description: "C1 cluster: flutter_test headless, no emulator"
+  bloc:
+    description: "BLoC state machine tests (blocTest)"

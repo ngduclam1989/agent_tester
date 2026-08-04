@@ -1,0 +1,260 @@
+# =============================================================================
+# Knowledge Graph Template — CarDoctor GMS Web Frontend
+# =============================================================================
+# Usage:
+#   Copy this file to:
+#     Execution/knowledge-graphs/<web-boundary>.knowledge-graph.yaml
+#
+# Ownership model:
+#   - Top-level architecture sections are owned by Architecture Authority.
+#   - implementation is owned by the corresponding DEV agent and populated from
+#     the actual web source repo.
+#   - change_log is append-only, newest entry first.
+#
+# Do not include:
+#   - execution planning/history sections
+#   - backend-owned business state machines
+#   - direct browser calls to downstream gf-* services
+#   - invented GraphQL operation names not present in source or contracts
+# =============================================================================
+
+---
+metadata:
+  type: knowledge-graph
+  artifact_kind: knowledge-graph
+  status: ACTIVE
+  version: 1
+  tier: T1
+  owner_authority: Architecture Authority
+  project: CarDoctor GMS
+  boundary: "<web-boundary>"
+  service: "<source-web-repo-name>"
+  stack: frontend
+  owner: "agent-dev-<web-boundary>"
+  hld_ref: "Architecture/hld/<web-boundary>-HLD.md"
+  architecture_refs:
+    apis_produced: []
+    apis_consumed: []
+    events_produced: []
+    events_consumed: []
+    data_models: []
+
+# =============================================================================
+# ARCHITECTURE
+# =============================================================================
+
+entities: []
+
+business_rules: []
+
+permissions: []
+
+dependencies:
+  inbound: []
+  outbound: []
+
+integrations: []
+
+# =============================================================================
+# IMPLEMENTATION
+# Populate these sections from the real web source repo.
+# =============================================================================
+
+implementation:
+  # 1. TYPES — Client-side TypeScript types.
+  # Format:
+  #   TypeName:
+  #     source: "GraphQL -> OperationName" | "local"
+  #     fields:
+  #     - fieldName
+  #     source_file: src/path/to/file.ts
+  types: {}
+
+  # 2. PAGES — Route-level feature ownership and UI label inventory.
+  # Format:
+  #   feature_key:
+  #     route: /route
+  #     roles:
+  #     - actor_name
+  #     components:
+  #     - ComponentName
+  #     hooks:
+  #     - useHookName
+  #     services:
+  #     - graphql-domain
+  #     label_maps:
+  #     - screen_id: "<screen-id>"
+  #       route: "<route>"
+  #       label_map_ref: "Product/ui-label-field-maps/<screen-id>.label-map.md"
+  #       source_status: "<ACTIVE|GENERATED_CANDIDATE|TBD>"
+  #       graphql_operations:
+  #       - name: "<GraphQLOperationName>"
+  #         kind: "<query|mutation|subscription|unknown>"
+  #       labels:
+  #       - section: "<ui-section>"
+  #         ui_label: "<exact FE visible label>"
+  #         ui_element: "<title|label|input|select|table_column|button|toast|badge|option>"
+  #         label_kind: "<field_label|table_column|section_title|tab_label|placeholder|button_label|toast_title|toast_description|validation_message|empty_state|enum_option|runtime_template>"
+  #         source_kind: "<static_text|i18n|enum_helper|runtime_template|graphql_value>"
+  #         source_file: "src/path/to/source.tsx"
+  #         graphql:
+  #           operation: "<GraphQLOperationName>"
+  #           variable_path: "<input/filter path or null>"
+  #           response_path: "<response field path or null>"
+  #           enum_value_path: "<enum/status field path or null>"
+  #         product_note: "<BA-facing note or null>"
+  #       dynamic_label_sources:
+  #       - name: "<EnumOrHelperName>"
+  #         source_file: "src/path/to/constants.ts"
+  #         render_rule: "<helper(value) or mapping rule>"
+  #         values:
+  #         - value: "<runtime value>"
+  #           ui_label: "<exact FE visible label>"
+  #       gaps:
+  #       - "<known extraction or review gap>"
+  # Label inventory policy:
+  #   - Keep label_maps under the owning page/module only.
+  #   - Include static labels, dynamic labels, buttons, table columns, placeholders,
+  #     toasts, validation messages, and empty states visible in FE.
+  #   - Use graphql: null when a visible label is not backed by a specific GraphQL
+  #     variable or response field.
+  #   - Do not add service DTO fields or downstream service ownership fields here.
+  pages:
+    example_feature_key:
+      route: "<route>"
+      roles: []
+      components: []
+      hooks: []
+      services: []
+      label_maps:
+      - screen_id: "<screen-id>"
+        route: "<route>"
+        label_map_ref: "Product/ui-label-field-maps/<screen-id>.label-map.md"
+        source_status: "TBD"
+        graphql_operations: []
+        labels:
+        - section: "<ui-section>"
+          ui_label: "<exact FE visible label>"
+          ui_element: "<ui-element>"
+          label_kind: "<label-kind>"
+          source_kind: "<source-kind>"
+          source_file: "src/path/to/source.tsx"
+          graphql:
+            operation: "<GraphQLOperationName>"
+            variable_path: null
+            response_path: null
+            enum_value_path: null
+          product_note: null
+        dynamic_label_sources: []
+        gaps: []
+
+  # 3. SHARED COMPONENTS — Reusable components and UI primitives.
+  # Format:
+  #   component_key:
+  #     used_by:
+  #     - feature_key
+  #     props:
+  #     - propName
+  #     description: "..."
+  #     role_filter: true | false
+  shared_components: {}
+
+  # 4. NAVIGATION — Mirror source navigation constants.
+  # Format:
+  #   source_file: src/layouts/home/modules/constants.ts
+  #   route_constants_file: src/config/route.ts
+  #   model: MAIN_NAVIGATION
+  #   note: "Navigation visibility is UX gating only."
+  #   groups:
+  #   - label_key: header.group
+  #     children:
+  #     - label_key: header.child
+  #       route_key: ROUTE_KEY
+  #       route: /route
+  #       resource_type: RESOURCE_TYPE
+  #       feature_flag: FEATURE.FLAG
+  navigation:
+    source_file: ""
+    route_constants_file: ""
+    model: ""
+    note: ""
+    groups: []
+
+  # 5. API INTEGRATION — GraphQL/HTTP operations used by the web source.
+  # Format:
+  #   endpoint: "${VITE_GRAPHQL_URI} | ${VITE_GRAPHQL_SSO_URI}"
+  #   provider: "<graph-provider-name>"
+  #   auth_provider: cookie-session + bearer token helpers
+  #   queries:
+  #   - name: QueryDocumentName
+  #     input:
+  #       operation_name: backendFieldName
+  #       graphql_endpoint: "${VITE_GRAPHQL_URI}"
+  #       variables: object
+  #       request_envelope:
+  #         query: string
+  #         variables: object
+  #         operationName: QueryDocumentName
+  #     response:
+  #       return_type: ResponseTypeName
+  #       response_envelope:
+  #         data: object
+  #         errors: array
+  #       source_graphql_kg: Execution/knowledge-graphs/<graph>.knowledge-graph.yaml
+  api:
+    endpoint: ""
+    provider: ""
+    auth_provider: ""
+    queries: []
+    mutations: []
+    subscriptions: []
+
+  # 6. STORES — Zustand/client runtime state.
+  # Format:
+  #   store_key:
+  #     purpose: "..."
+  #     state:
+  #     - fieldName
+  #     actions:
+  #     - actionName
+  stores: {}
+
+  # 7. BUSINESS RULES — UI-enforcement layer.
+  # Format:
+  #   - id: BR-IMPL-001
+  #     rule: "..."
+  #     enforcement: "Hook/component enforcing the rule"
+  #     architecture_ref: BR-001
+  business_rules: []
+
+  # 8. USE CASES — Route/feature flows extracted from source.
+  # Format:
+  #   - id: UC-<BOUNDARY>-NN
+  #     name: "..."
+  #     actor: actor_name
+  #     routes:
+  #     - /route
+  #     source_files:
+  #     - src/features/...
+  #     operations:
+  #     - GraphQLOperationName
+  #     flow:
+  #     - "Step 1"
+  #     - "Step 2"
+  use_cases: []
+
+  # 9. DOMAIN GLOSSARY — frontend terminology.
+  # Format:
+  #   TermName: Explanation
+  domain_glossary: {}
+
+  # 10. PERMISSION MATRIX — action -> actors.
+  # Format:
+  #   action_name:
+  #   - actor_name
+  permission_matrix: {}
+
+change_log:
+- date: "YYYY-MM-DD"
+  author: "agent-dev-<web-boundary>"
+  summary: "Initial web knowledge graph from template."

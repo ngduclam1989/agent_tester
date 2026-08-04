@@ -1,0 +1,4 @@
+ code | service_order_code | settlement_type | discount_amount | final_amount | claim_reduction_value | depreciation_default_percent 
+------+--------------------+-----------------+-----------------+--------------+-----------------------+------------------------------
+(0 rows)
+

@@ -1,0 +1,6 @@
+ id | service_name |   payer   | unit_price | quantity | disc_amt | disc_pct | final_amount 
+----+--------------+-----------+------------+----------+----------+----------+--------------
+ 22 | Rửa xe       | CUSTOMER  |  500000.00 |        2 | 0        |     5.00 |   1045000.00
+ 23 | Thay dầu     | INSURANCE |  600000.00 |        2 | 0        |    10.00 |   1166400.00
+(2 rows)
+

@@ -1,0 +1,1822 @@
+# Knowledge Graph — gf-sales
+
+boundary: "gf-sales"
+version: 6
+last_updated: "2026-05-21"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý booking, service order, quotation handoff, settlement-facing state, dashboard realtime, printing/export, projection customer/vehicle và tích hợp Driver Plus cho garage."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Kafka + Temporal Java SDK", data_store: "PostgreSQL + Redis" }
+  epics: []
+  features: []
+  integration_ref: ""
+  integration_consumers: ["agg-garage-graph", "gf-accounting", "gf-customer", "gf-inventory", "gf-worker"]
+
+
+apis:
+  # --- bookings v2 ---
+  - name: "booking-create"
+    path: "/api/v2/bookings"
+    method: POST
+    purpose: "Create booking"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-create-v3"
+    request:
+      schema:
+        booking: object
+    response:
+      schema:
+        data: object
+
+  - name: "booking-get"
+    path: "/api/v2/bookings/{id}"
+    method: GET
+    purpose: "Get booking by id"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-get-v3"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "booking-update"
+    path: "/api/v2/bookings/{id}"
+    method: PUT
+    purpose: "Update booking"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-update-v3"
+    request:
+      schema:
+        id: long
+        booking: object
+    response:
+      schema:
+        data: object
+
+  - name: "booking-arrive"
+    path: "/api/v2/bookings/{id}/arrive"
+    method: PUT
+    purpose: "Mark booking arrived"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-arrive-v3"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "booking-cancel"
+    path: "/api/v2/bookings/{id}/cancel"
+    method: PUT
+    purpose: "Cancel booking"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-cancel-v3"
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        data: object
+
+  - name: "booking-confirm"
+    path: "/api/v2/bookings/{id}/confirm"
+    method: PUT
+    purpose: "Confirm booking"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-confirm-v3"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "booking-decline"
+    path: "/api/v2/bookings/{id}/decline"
+    method: PUT
+    purpose: "Decline booking"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-decline-v3"
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        data: object
+
+  - name: "booking-check-availability"
+    path: "/api/v2/bookings/check-availability"
+    method: GET
+    purpose: "Check booking timeslot availability"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-check-availability-v3"
+    request:
+      schema:
+        query: object
+    response:
+      schema:
+        data: object
+
+  - name: "booking-search"
+    path: "/api/v2/bookings/search"
+    method: POST
+    purpose: "Search bookings (paginated)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "booking-search-v3"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        data: array
+        page: object
+
+  # --- bookings v3 ---
+  - name: "booking-create-v3"
+    path: "/api/v3/bookings"
+    method: POST
+    purpose: "Create booking v3 (gated SALES_MANAGEMENT_FFLAG)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        booking: object
+    response:
+      schema:
+        data: object
+
+  - name: "booking-get-v3"
+    path: "/api/v3/bookings/{id}"
+    method: GET
+    purpose: "Get booking v3 by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "booking-update-v3"
+    path: "/api/v3/bookings/{id}"
+    method: PUT
+    purpose: "Update booking v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        booking: object
+    response:
+      schema:
+        data: object
+
+  - name: "booking-arrive-v3"
+    path: "/api/v3/bookings/{id}/arrive"
+    method: PUT
+    purpose: "Mark booking v3 arrived"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "booking-cancel-v3"
+    path: "/api/v3/bookings/{id}/cancel"
+    method: PUT
+    purpose: "Cancel booking v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        data: object
+
+  - name: "booking-confirm-v3"
+    path: "/api/v3/bookings/{id}/confirm"
+    method: PUT
+    purpose: "Confirm booking v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "booking-decline-v3"
+    path: "/api/v3/bookings/{id}/decline"
+    method: PUT
+    purpose: "Decline booking v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        data: object
+
+  - name: "booking-check-availability-v3"
+    path: "/api/v3/bookings/check-availability"
+    method: GET
+    purpose: "Check booking v3 timeslot availability"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        query: object
+    response:
+      schema:
+        data: object
+
+  - name: "booking-detail-by-code-v3"
+    path: "/api/v3/bookings/detail/{code}"
+    method: GET
+    purpose: "Get booking v3 detail by code"
+    status: unused  # TODO: confirm dead code and remove
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        data: object
+
+  - name: "booking-search-v3"
+    path: "/api/v3/bookings/search"
+    method: POST
+    purpose: "Search bookings v3 (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        data: array
+        page: object
+
+  # --- service-orders v2 ---
+  - name: "service-order-create"
+    path: "/api/v2/service-orders"
+    method: POST
+    purpose: "Create service-order (SO/SVO)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-create-v3"
+    request:
+      schema:
+        service_order: object
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-get"
+    path: "/api/v2/service-orders/{id}"
+    method: GET
+    purpose: "Get service-order by id"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-get-v3"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-update"
+    path: "/api/v2/service-orders/{id}"
+    method: PUT
+    purpose: "Update service-order"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-update-v3"
+    request:
+      schema:
+        id: long
+        service_order: object
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-cancel"
+    path: "/api/v2/service-orders/{id}/cancel"
+    method: PUT
+    purpose: "Cancel service-order"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-cancel-v3"
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-complete"
+    path: "/api/v2/service-orders/{id}/complete"
+    method: PUT
+    purpose: "Complete service-order"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-complete-v3"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-start"
+    path: "/api/v2/service-orders/{id}/start"
+    method: PUT
+    purpose: "Start service-order"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-start-v3"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-payments"
+    path: "/api/v2/service-orders/{id}/payments"
+    method: POST
+    purpose: "Record service-order payment"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-payments-v3"
+    request:
+      schema:
+        id: long
+        payment: object
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-print-preview"
+    path: "/api/v2/service-orders/{id}/print-preview"
+    method: GET
+    purpose: "HTML print preview for service-order"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: array
+
+  - name: "service-order-export-pdf"
+    path: "/api/v2/service-orders/{id}/export-pdf"
+    method: GET
+    purpose: "Export service-order as PDF"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        binary: stream
+
+  - name: "service-order-export-image"
+    path: "/api/v2/service-orders/{id}/export-image"
+    method: GET
+    purpose: "Export service-order as PNG"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        binary: stream
+
+  - name: "service-order-ocr-upload"
+    path: "/api/v2/service-orders/ocr/upload"
+    method: POST
+    purpose: "Upload registration card image for OCR"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-ocr-upload-v3"
+    request:
+      schema:
+        file: file
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-search"
+    path: "/api/v2/service-orders/search"
+    method: POST
+    purpose: "Search service-orders (paginated)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "service-order-search-v3"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        data: array
+        page: object
+
+  # --- service-orders v3 ---
+  - name: "service-order-create-v3"
+    path: "/api/v3/service-orders"
+    method: POST
+    purpose: "V3 service-order CRUD with status transitions (gated SALES_MANAGEMENT_FFLAG)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        service_order: object
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-get-v3"
+    path: "/api/v3/service-orders/{id}"
+    method: GET
+    purpose: "Get service-order v3 by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-update-v3"
+    path: "/api/v3/service-orders/{id}"
+    method: PUT
+    purpose: "Update service-order v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        service_order: object
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-cancel-v3"
+    path: "/api/v3/service-orders/{id}/cancel"
+    method: PUT
+    purpose: "Cancel service-order v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        reason: string
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-complete-v3"
+    path: "/api/v3/service-orders/{id}/complete"
+    method: PUT
+    purpose: "Complete service-order v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-confirm-v3"
+    path: "/api/v3/service-orders/{id}/confirm"
+    method: PUT
+    purpose: "Confirm service-order v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-start-v3"
+    path: "/api/v3/service-orders/{id}/start"
+    method: PUT
+    purpose: "Start service-order v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-payments-v3"
+    path: "/api/v3/service-orders/{id}/payments"
+    method: POST
+    purpose: "Record service-order v3 payment"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        payment: object
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-record-payments-by-code-v3"
+    path: "/api/v3/service-orders/{code}/record-payments"
+    method: POST
+    purpose: "Record service-order v3 payments by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+        payments: array
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-send-quotation-v3"
+    path: "/api/v3/service-orders/{id}/send-quotation"
+    method: POST
+    purpose: "Send quotation for service-order v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-for-delivery-v3"
+    path: "/api/v3/service-orders/code/{code}/for-delivery"
+    method: GET
+    purpose: "Get service-order v3 for delivery by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-detail-by-code-v3"
+    path: "/api/v3/service-orders/detail/{code}"
+    method: GET
+    purpose: "Get service-order v3 detail by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-vehicle-latest-v3"
+    path: "/api/v3/service-orders/vehicles/{vehicleId}/latest"
+    method: GET
+    purpose: "Get latest service-order v3 for vehicle. Method-level @FeatureOn(CUSTOMER_VEHICLE_MANAGEMENT_FFLAG) (ngoài class-level SALES_MANAGEMENT_FFLAG)."
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        vehicleId: long
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-completed-items-search-v3"
+    path: "/api/v3/service-orders/completed-items/search"
+    method: POST
+    purpose: "Search completed service-order items v3. Method-level @FeatureOn(CUSTOMER_VEHICLE_MANAGEMENT_FFLAG) (ngoài class-level SALES_MANAGEMENT_FFLAG)."
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        data: array
+
+  - name: "service-order-completed-parts-search-v3"
+    path: "/api/v3/service-orders/completed-parts/search"
+    method: POST
+    purpose: "Search completed service-order parts v3. Method-level @FeatureOn(CUSTOMER_VEHICLE_MANAGEMENT_FFLAG) (ngoài class-level SALES_MANAGEMENT_FFLAG)."
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        data: array
+
+  - name: "service-order-completed-vehicle-notes-search-v3"
+    path: "/api/v3/service-orders/completed-vehicle-notes/search"
+    method: POST
+    purpose: "Search completed service-order vehicle notes v3. Method-level @FeatureOn(CUSTOMER_VEHICLE_MANAGEMENT_FFLAG) (ngoài class-level SALES_MANAGEMENT_FFLAG)."
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        data: array
+
+  - name: "service-order-customer-info-v3"
+    path: "/api/v3/service-orders/customer-info"
+    method: POST
+    purpose: "Get customer info for service-orders v3"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        codes: array
+    response:
+      schema:
+        data: array
+
+  - name: "service-order-find-by-codes-v3"
+    path: "/api/v3/service-orders/find-by-codes"
+    method: POST
+    purpose: "Batch lookup service-orders by SO codes (used by gf-accounting for settlement search enrichment)"
+    status: active
+    active_callers: ["gf-accounting"]
+    replaced_by: null
+    request:
+      schema:
+        soCodes: "List<String> @NotEmpty"
+    response:
+      schema:
+        data: "List<ServiceOrderV3Response>"
+
+  - name: "service-order-ocr-upload-v3"
+    path: "/api/v3/service-orders/ocr/upload"
+    method: POST
+    purpose: "Upload registration card image for OCR (v3)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        file: file
+    response:
+      schema:
+        data: object
+
+  - name: "service-order-search-v3"
+    path: "/api/v3/service-orders/search"
+    method: POST
+    purpose: "Search service-orders v3 (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        data: array
+        page: object
+
+  # --- customers ---
+  - name: "customer-suggest"
+    path: "/api/v2/customers/suggest"
+    method: GET
+    purpose: "Suggest customers for autocomplete"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        query: object
+    response:
+      schema:
+        data: array
+
+  - name: "customer-suggest-by-name"
+    path: "/api/v2/customers/suggest-by-name"
+    method: GET
+    purpose: "Suggest customers by name"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        query: object
+    response:
+      schema:
+        data: array
+
+  # --- vehicles ---
+  - name: "vehicle-suggest"
+    path: "/api/v2/vehicles/suggest"
+    method: GET
+    purpose: "Suggest vehicles for autocomplete"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        query: object
+    response:
+      schema:
+        data: array
+
+  # --- quotation-asks ---
+  - name: "quotation-ask-create"
+    path: "/api/v2/quotation-asks"
+    method: POST
+    purpose: "Create quotation ask"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        quotation: object
+    response:
+      schema:
+        data: object
+
+  - name: "quotation-ask-linked-so-by-code"
+    path: "/api/v2/quotation-asks/by-code/{code}/linked-service-order"
+    method: GET
+    purpose: "Get linked service-order for quotation ask by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        data: object
+
+  - name: "quotation-ask-linked-so-by-id"
+    path: "/api/v2/quotation-asks/by-quotation-ask-id/{quotationAskId}/linked-service-order"
+    method: GET
+    purpose: "Get linked service-order for quotation ask by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        quotationAskId: long
+    response:
+      schema:
+        data: object
+
+  # --- dashboard (DashboardRealTimeController — class-level @FeatureOn(BASIC_DASHBOARD_KEY_FFLAG)) ---
+  - name: "dashboard-realtime-booking-arrived-without-so-count"
+    path: "/api/v2/dashboard/realtime/booking-arrived-without-so-count"
+    method: GET
+    purpose: "Real-time count of bookings arrived without SO"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "dashboard-realtime-so-in-progress-count"
+    path: "/api/v2/dashboard/realtime/so-in-progress-count"
+    method: GET
+    purpose: "Real-time count of service-orders in progress"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "dashboard-realtime-total-so-debt"
+    path: "/api/v2/dashboard/realtime/total-so-debt"
+    method: GET
+    purpose: "Real-time total service-order debt"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  # --- internal: bookings (InternalBookingController — x-api-key) ---
+  - name: "internal-bookings-auto-cancel"
+    path: "/protected/v1/bookings/auto-cancel"
+    method: POST
+    purpose: "Trigger BookingAutoCancelScheduler (caller gf-worker every 1m; x-api-key)"
+    status: internal-only
+    active_callers: ["gf-worker"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  # --- internal: dashboard cache invalidation (CacheController — x-api-key, 8 cache eviction endpoints) ---
+  - name: "internal-cache-dashboard-all-delete"
+    path: "/protected/v1/cache/dashboard-all"
+    method: DELETE
+    purpose: "Invalidate dashboard-all cache (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "internal-cache-dashboard-all-tenant-delete"
+    path: "/protected/v1/cache/dashboard-all/{tenantId}"
+    method: DELETE
+    purpose: "Invalidate dashboard-all cache for tenant (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        data: object
+
+  - name: "internal-cache-dashboard-booking-arrived-delete"
+    path: "/protected/v1/cache/dashboard-booking-arrived"
+    method: DELETE
+    purpose: "Invalidate dashboard-booking-arrived cache (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "internal-cache-dashboard-booking-arrived-tenant-delete"
+    path: "/protected/v1/cache/dashboard-booking-arrived/{tenantId}"
+    method: DELETE
+    purpose: "Invalidate dashboard-booking-arrived cache for tenant (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        data: object
+
+  - name: "internal-cache-dashboard-customer-debt-delete"
+    path: "/protected/v1/cache/dashboard-customer-debt"
+    method: DELETE
+    purpose: "Invalidate dashboard-customer-debt cache (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "internal-cache-dashboard-customer-debt-tenant-delete"
+    path: "/protected/v1/cache/dashboard-customer-debt/{tenantId}"
+    method: DELETE
+    purpose: "Invalidate dashboard-customer-debt cache for tenant (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        data: object
+
+  - name: "internal-cache-dashboard-so-in-progress-delete"
+    path: "/protected/v1/cache/dashboard-so-in-progress"
+    method: DELETE
+    purpose: "Invalidate dashboard-so-in-progress cache (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "internal-cache-dashboard-so-in-progress-tenant-delete"
+    path: "/protected/v1/cache/dashboard-so-in-progress/{tenantId}"
+    method: DELETE
+    purpose: "Invalidate dashboard-so-in-progress cache for tenant (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        data: object
+
+  # --- internal: printing cache invalidation (PrintingCacheController — x-api-key, 5 cache eviction endpoints) ---
+  - name: "internal-printing-cache-all-delete"
+    path: "/protected/v1/printing/cache/all"
+    method: DELETE
+    purpose: "Invalidate all printing caches (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "internal-printing-cache-car-hierarchy-delete"
+    path: "/protected/v1/printing/cache/car-hierarchy"
+    method: DELETE
+    purpose: "Invalidate printing car-hierarchy cache (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "internal-printing-cache-tenant-info-delete"
+    path: "/protected/v1/printing/cache/tenant-info"
+    method: DELETE
+    purpose: "Invalidate printing tenant-info cache (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  - name: "internal-printing-cache-tenant-info-tenant-delete"
+    path: "/protected/v1/printing/cache/tenant-info/{tenantId}"
+    method: DELETE
+    purpose: "Invalidate printing tenant-info cache for tenant (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        data: object
+
+  - name: "internal-printing-cache-unit-catalog-delete"
+    path: "/protected/v1/printing/cache/unit-catalog"
+    method: DELETE
+    purpose: "Invalidate printing unit-catalog cache (s2s)"
+    status: internal-only
+    active_callers: []  # TODO: verify caller from source code
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: object
+
+  # --- internal: service-orders (ProtectedServiceOrderController + ServiceOrderInternalController — x-api-key; per ServiceOrderInternalController javadoc "All endpoints require x-api-key authentication") ---
+  - name: "internal-service-order-detail"
+    path: "/protected/v1/service-orders/{tenantId}/detail/{code}"
+    method: GET
+    purpose: "Service-order detail (caller gf-inventory)"
+    status: internal-only
+    active_callers: ["gf-inventory"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        code: string
+    response:
+      schema:
+        data: object
+
+  - name: "internal-service-order-vehicle-summaries"
+    path: "/protected/v1/service-orders/{tenantId}/vehicle-summaries"
+    method: POST
+    purpose: "Aggregate vehicle summaries (caller gf-customer)"
+    status: internal-only
+    active_callers: ["gf-customer"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        vehicleIds: array
+    response:
+      schema:
+        data: array
+
+  - name: "internal-service-order-for-settlement"
+    path: "/protected/v1/service-orders/{tenantId}/{id}/for-settlement"
+    method: GET
+    purpose: "SO data for settlement (caller gf-accounting)"
+    status: internal-only
+    active_callers: ["gf-accounting"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        id: long
+    response:
+      schema:
+        data: object
+
+  - name: "internal-service-order-settle"
+    path: "/protected/v1/service-orders/{tenantId}/{code}/settle"
+    method: PUT
+    purpose: "Mark SO as settled (caller gf-accounting)"
+    status: internal-only
+    active_callers: ["gf-accounting"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        code: string
+    response:
+      schema:
+        data: object
+
+  - name: "internal-service-order-reopen"
+    path: "/protected/v1/service-orders/{tenantId}/{code}/reopen-from-settled"
+    method: PUT
+    purpose: "Reopen SO from settled (caller gf-accounting)"
+    status: internal-only
+    active_callers: ["gf-accounting"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        code: string
+    response:
+      schema:
+        data: object
+
+  - name: "internal-service-order-for-print"
+    path: "/protected/v1/service-orders/{tenantId}/{code}/for-print"
+    method: GET
+    purpose: "SO data for accounting printing"
+    status: internal-only
+    active_callers: ["gf-accounting"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        code: string
+    response:
+      schema:
+        data: object
+
+events:
+  produces:
+    - topic: "AC-DEV-BOOKING-EVENTS"
+      payload:
+        message_step: "BookingMessageStep — BOOKING.CHANGE.STATUS | BOOKING.CREATE.RESPONSE | BOOKING.UPDATE.RESPONSE"
+        tenant_id: long
+        booking_id: long
+        booking_code: string
+        status: string
+      meaning: |
+        Topic hai chiều (xem thêm consumes), source=GF_SALES, qua outbox pattern. Enum BookingMessageStep (com.actechx.gf.domain.model.enums.BookingMessageStep), 3 step outbound:
+          BOOKING.CHANGE.STATUS — BookingStatusChangedEvent: phát mỗi khi booking chuyển trạng thái bất kỳ; emitted by BookingStatusEventProducer.
+          BOOKING.CREATE.RESPONSE — BookingCreateResponseEvent: phản hồi Driver+ sau khi tạo booking thành công (AC-1 response), chứa full booking snapshot; emitted by BookingV3Service.publishBookingCreateResponse.
+          BOOKING.UPDATE.RESPONSE — BookingCreateResponseEvent: phản hồi Driver+ sau khi cập nhật booking, cùng event class với CREATE_RESPONSE, phân biệt bởi MessageStep header; emitted by BookingV3Service.publishBookingCreateResponse.
+
+    - topic: "AC-NONPROD-DEV-NOTIFICATION-REQUEST"
+      payload:
+        message_step: "SENT.NOTIFICATION (dùng chung wire value cho cả BookingMessageStep và ServiceOrderMessageStep)"
+        notification_type: string
+        channel: string
+        placeholders: object
+      meaning: |
+        Gửi notification qua outbox pattern; emitted by NotificationRequestProducer. MessageStep luôn là SENT.NOTIFICATION, MessageGroup header phân biệt nguồn BOOKING vs SERVICE_ORDER.
+          MessageGroup=BOOKING — BOOKING_CREATED, BOOKING_CANCELLED_BY_DRIVER, BOOKING_AUTO_CANCELLED_UNCONFIRMED, BOOKING_AUTO_CANCELLED_NO_SHOW.
+          MessageGroup=SERVICE_ORDER — QUOTATION_CONFIRMED_BY_DRIVER_PLUS, QUOTATION_DECLINED_BY_DRIVER_PLUS.
+
+    - topic: "AC-NONPROD-DEV-SERVICE-ORDER-EVENTS"
+      payload:
+        message_step: "'DELIVERED' (hardcoded string, không dùng enum ServiceOrderMessageStep)"
+        tenant_id: long
+        service_order_code: string
+        previous_status: string
+        current_status: string
+        items: "array (inventory parts: sku, quantity, sellingPrice)"
+      meaning: "ServiceOrderStatusChangedEvent — chuyên dùng cho luồng xuất kho inventory. Emitted by ServiceOrderEventPublisher.publishServiceOrderStatusChangedEvent chỉ khi SO thoả 4 điều kiện BR-GF-SALES-011 (feature flag bật, chưa gửi delivery event, trạng thái hợp lệ theo order type, có active part source=INVENTORY); consumed by gf-inventory-worker để tạo phiếu xuất kho. MessageStep hardcoded 'DELIVERED', không qua enum. Topic-drift-risk: worker default dev-inventory-service-order-events (alignment via env override)."
+
+    - topic: "AC-DEV-SERVICE-ORDER-SYNC"
+      payload:
+        message_step: "ServiceOrderMessageStep — SENT.1 | UPDATE.1 | IN_PROGRESS.1 | COMPLETED.1 | CONFIRMED.1 | DELIVERED.1"
+        source: "GF_SALES"
+        tenant_id: long
+        service_order_code: string
+      meaning: |
+        Topic hai chiều (xem thêm consumes), source=GF_SALES, qua outbox pattern. Enum ServiceOrderMessageStep (com.actechx.gf.domain.model.enums.ServiceOrderMessageStep), 6 step outbound:
+          SENT.1 — ServiceOrderSentEvent (AC-14): gửi báo giá lần đầu sang Driver+, chứa services/parts/totalAmount/quoteSentCount; emitted by ServiceOrderEventPublisher.publishServiceOrderSentEvent.
+          UPDATE.1 — ServiceOrderUpdatedEvent (AC-13): gửi lại báo giá sau khi cập nhật SO, cùng payload structure với SENT.1; emitted by ServiceOrderEventPublisher.publishServiceOrderUpdatedEvent.
+          IN_PROGRESS.1 — ServiceOrderSyncEvent: SO bắt đầu sửa chữa (start), source=START; emitted by ServiceOrderEventPublisher.publishServiceOrderSyncEvent.
+          COMPLETED.1 — ServiceOrderSyncEvent: SERVICE order hoàn thành (IN_PROGRESS → COMPLETED), source=BOOKING hoặc DIRECT tuỳ có booking hay không; emitted by ServiceOrderEventPublisher.publishServiceOrderSyncEvent.
+          CONFIRMED.1 — ServiceOrderSyncEvent: RETAIL order xác nhận báo giá (PRICING → CONFIRMED), source=QUOTE_CONFIRMED; emitted by ServiceOrderEventPublisher.publishServiceOrderSyncEvent.
+          DELIVERED.1 — ServiceOrderSyncEvent: đồng bộ trạng thái SO sang Driver+, RETAIL order giao hàng (CONFIRMED → DELIVERED), source=DELIVER; emitted by ServiceOrderEventPublisher.publishServiceOrderSyncEvent. Khác với event DELIVERED trên topic AC-NONPROD-DEV-SERVICE-ORDER-EVENTS (chuyên cho luồng xuất kho inventory).
+
+    - topic: "AC-DEV-BOOKING-COMPLETED-TOPIC"
+      payload:
+        message_step: "'COMPLETED' (hardcoded string, không dùng enum BookingMessageStep)"
+        tenant_id: long
+        booking_id: long
+        customer_id: long
+        service_type: string
+        completed_at: datetime
+      meaning: "BookingCompletedEvent — emitted by BookingV3Service.publishBookingCompletedEvent, gated bởi CRM_INITIAL_VERSION_FFLAG. MessageStep hardcoded 'COMPLETED', không qua enum. Consumed by gf-marketing cho triggered campaigns."
+
+  consumes:
+    - topic: "AC-DEV-BOOKING-EVENTS"
+      payload:
+        message_step: "BookingMessageStep — BOOKING.CREATE.REQUEST | BOOKING.CANCELLED"
+        tenant_id: long
+        booking_request: object
+      action: |
+        BookingDriverPlusConsumer, source=DRIVER_PLUS, idempotency qua InboxEvent unique constraint (eventId, eventType). Enum BookingMessageStep, 2 step inbound:
+          BOOKING.CREATE.REQUEST — processBookingCreation (AC-1): tạo Booking từ Driver+ → lưu → phát BOOKING.CREATE.RESPONSE (source=GF_SALES) lên cùng topic + phát notification BOOKING_CREATED lên notification-request.
+          BOOKING.CANCELLED — processBookingCancellation (AC-3): tìm Booking → cancel() → lưu → phát BOOKING.CHANGE.STATUS (source=GF_SALES) lên cùng topic + phát notification BOOKING_CANCELLED_BY_DRIVER lên notification-request. Yêu cầu OriginTenantId trong header.
+        Các step khác (BOOKING.CREATE.RESPONSE, BOOKING.UPDATE.RESPONSE, BOOKING.CHANGE.STATUS) là step do chính gf-sales produce — consumer acknowledge và bỏ qua.
+
+    - topic: "AC-DEV-SERVICE-ORDER-SYNC"
+      payload:
+        message_step: "ServiceOrderMessageStep — QUOTATION.CONFIRMED | QUOTATION.DECLINED"
+        source: string
+        tenant_id: long
+        service_order_code: string
+      action: |
+        ServiceOrderDriverPlusConsumer, source=DRIVER_PLUS, bỏ qua nếu source=GF_SALES (event do chính mình produce). Idempotency qua InboxEvent unique constraint (eventId, eventType). Yêu cầu OriginTenantId và MessageStep trong header. Enum ServiceOrderMessageStep, 2 step inbound:
+          QUOTATION.CONFIRMED (AC-16) — handleQuotationConfirmed: tìm SO theo code → kiểm tra status=PRICING (bỏ qua nếu đã xử lý) → SO.confirm() (PRICING→CONFIRMED) → lưu → phát notification QUOTATION_CONFIRMED_BY_DRIVER_PLUS lên notification-request.
+          QUOTATION.DECLINED (AC-16) — handleQuotationDeclined: tìm SO theo code → SO.decline() (→DECLINED) → lưu → phát notification QUOTATION_DECLINED_BY_DRIVER_PLUS lên notification-request.
+        Các step khác (SENT.1, UPDATE.1, IN_PROGRESS.1, COMPLETED.1, CONFIRMED.1, DELIVERED.1) là step do chính gf-sales produce — consumer log warn và bỏ qua.
+
+entities:
+  - name: "Booking"
+    type: "aggregate_root"
+    description: "Lịch hẹn sửa chữa/bảo dưỡng của garage, có snapshot customer/vehicle, trạng thái lifecycle, nguồn lead và lịch sử chuyển trạng thái."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "customer_id", type: "BIGINT", required: false }
+      - { name: "customer_code", type: "VARCHAR(50)", required: false }
+      - { name: "vehicle_id", type: "BIGINT", required: false }
+      - { name: "driver_id", type: "String trong entity / BIGINT trong migration", required: false }
+      - { name: "booked_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "status", type: "BookingStatus", required: true, constraints: ["BOOKING | BOOKED | ARRIVED | CHECKING | CHECKED | PRICING | CONFIRMED | DECLINED | READY | IN_PROGRESS | COMPLETED | CANCELLED | ABORTED | NO_SHOW"] }
+      - { name: "service_type", type: "ServiceType", required: false }
+      - { name: "lead_source", type: "LeadSource", required: false }
+      - { name: "lead_id", type: "VARCHAR(50)", required: false }
+      - { name: "arrived_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "notes", type: "VARCHAR(255)", required: false }
+      - { name: "status_transition_data", type: "JSONB List<StatusTransition>", required: false }
+    relationships:
+      - { target: "BookingDetails", type: "one_to_one", description: "Một booking có tối đa một snapshot chi tiết qua booking_id unique." }
+      - { target: "BookingStatusHistory", type: "one_to_many", description: "Một booking có nhiều bản ghi lịch sử trạng thái." }
+      - { target: "ServiceOrder", type: "one_to_many", description: "Booking có thể được link sang service order qua booking_id." }
+    invariants:
+      - "Chỉ cho phép chuyển trạng thái theo BookingStatus.canTransitionTo."
+      - "Booking từ Garage Care khởi tạo ở BOOKED; walk-in khởi tạo ở ARRIVED; nguồn khác khởi tạo ở BOOKING."
+      - "Booking chỉ editable khi trạng thái là BOOKING hoặc BOOKED."
+      - "API cancel hiện chặn nếu booking đã link service order và chỉ cho phép hủy từ BOOKED."
+
+  - name: "BookingDetails"
+    type: "entity"
+    description: "Snapshot customer, vehicle, ảnh xe, tình trạng xe và ghi chú tại thời điểm đặt lịch."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "booking_id", type: "BIGINT", required: true, constraints: ["unique"] }
+      - { name: "customer_name", type: "VARCHAR(255)", required: false }
+      - { name: "customer_phone", type: "VARCHAR(255)", required: false }
+      - { name: "customer_email", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_plate", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_brand", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_model", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_version", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_year", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_vin", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_odo", type: "INTEGER", required: false }
+      - { name: "vehicle_images", type: "JSONB List<VehicleImage>", required: false }
+      - { name: "vehicle_condition_description", type: "VARCHAR(1000)", required: false }
+      - { name: "customer_note", type: "VARCHAR(1000)", required: false }
+      - { name: "internal_note", type: "VARCHAR(1000)", required: false }
+    relationships: []
+    invariants:
+      - "booking_id là unique để giữ tối đa một details record cho mỗi booking."
+
+  - name: "BookingStatusHistory"
+    type: "entity"
+    description: "Dòng lịch sử trạng thái booking, gồm trạng thái trước/sau, lý do, actor và metadata hiển thị."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "booking_id", type: "BIGINT", required: true }
+      - { name: "from_status", type: "BookingStatus", required: false }
+      - { name: "to_status", type: "BookingStatus", required: true }
+      - { name: "reason", type: "TEXT", required: false }
+      - { name: "changed_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "changed_by", type: "VARCHAR(100)", required: false }
+      - { name: "metadata", type: "TEXT", required: false }
+    relationships: []
+    invariants:
+      - "Mỗi chuyển trạng thái booking append lịch sử để phục vụ audit và lifecycle display."
+
+  - name: "Timeslot"
+    type: "aggregate_root"
+    description: "Slot đặt lịch theo tenant, garage, ngày và khoảng thời gian."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "garage_id", type: "BIGINT", required: true }
+      - { name: "slot_date", type: "DATE", required: true }
+      - { name: "start_time", type: "TIME", required: true }
+      - { name: "end_time", type: "TIME", required: true }
+      - { name: "max_capacity", type: "INTEGER", required: true }
+      - { name: "booked_count", type: "INTEGER", required: true }
+      - { name: "is_available", type: "BOOLEAN", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: true }
+    relationships: []
+    invariants:
+      - "Unique theo garage_id, slot_date và start_time."
+
+  - name: "ServiceOrder"
+    type: "aggregate_root"
+    description: "Phiếu dịch vụ hoặc bán lẻ, sở hữu lifecycle sửa chữa/bán hàng, line item, part, payment, document, note, settlement-facing state và sync sang downstream."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(255)", required: true, constraints: ["unique"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "booking_id", type: "BIGINT", required: false }
+      - { name: "customer_type", type: "CustomerType", required: false, constraints: ["INDIVIDUAL | ORGANIZATION"] }
+      - { name: "customer_id", type: "BIGINT", required: false }
+      - { name: "customer_code", type: "VARCHAR(50)", required: false }
+      - { name: "customer_name", type: "VARCHAR(255)", required: false }
+      - { name: "customer_phone", type: "VARCHAR(255)", required: false }
+      - { name: "organization_phone", type: "VARCHAR(255)", required: false }
+      - { name: "organization_name", type: "VARCHAR(255)", required: false }
+      - { name: "organization_tax_code", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_id", type: "BIGINT", required: false }
+      - { name: "vehicle_plate", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_brand", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_model", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_version", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_year", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_color", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_vin", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_odo", type: "INTEGER", required: false }
+      - { name: "vehicle_fuel_level", type: "VARCHAR(255)", required: false }
+      - { name: "vehicle_images", type: "JSONB List<String>", required: false }
+      - { name: "status", type: "ServiceOrderStatus", required: true, constraints: ["CHECKED deprecated | PRICING | IN_PROGRESS | CONFIRMED | DECLINED | COMPLETED | DELIVERED | CANCELLED | SETTLED"] }
+      - { name: "total_service_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "total_parts_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "discount_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "tax_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "final_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "paid_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "debt_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "payment_status", type: "ServiceOrderPaymentStatus", required: false, constraints: ["UNPAID | PARTIAL | PAID"] }
+      - { name: "notes", type: "TEXT", required: false }
+      - { name: "started_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "completed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "has_insurance", type: "BOOLEAN", required: true }
+      - { name: "insurance_company", type: "VARCHAR(255)", required: false, description: "Mã công ty bảo hiểm (v.d. INS_BSH) — lưu code từ mdm_catalog (directory=INSURANCE), KHÔNG phải free-text" }
+      - { name: "creator_employee", type: "VARCHAR(255)", required: false }
+      - { name: "creator_employee_id", type: "BIGINT", required: false }
+      - { name: "insurance_policy_number", type: "VARCHAR(255)", required: false }
+      - { name: "insurance_expiry_date", type: "DATE", required: false }
+      - { name: "insurance_contact_phone", type: "VARCHAR(255)", required: false }
+      - { name: "service_type", type: "ServiceType", required: false }
+      - { name: "estimated_complete_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "order_type", type: "OrderType", required: false, constraints: ["SERVICE | RETAIL"] }
+      - { name: "is_walk_in_retail", type: "BOOLEAN", required: false }
+      - { name: "insurance_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "customer_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "settlement_code", type: "VARCHAR(50)", required: false }
+      - { name: "settled_by", type: "VARCHAR(255)", required: false }
+      - { name: "settled_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "assessor_name", type: "VARCHAR(255)", required: false }
+      - { name: "cancellation_reason", type: "TEXT", required: false }
+      - { name: "delivery_event_sent", type: "BOOLEAN", required: false }
+      - { name: "quote_sent_count", type: "INTEGER", required: false }
+    relationships:
+      - { target: "ServiceOrderItem", type: "one_to_many", description: "Một phiếu có nhiều dòng công/dịch vụ qua service_order_id." }
+      - { target: "ServiceOrderPart", type: "one_to_many", description: "Một phiếu có nhiều dòng phụ tùng qua service_order_id." }
+      - { target: "ServiceOrderPayment", type: "one_to_many", description: "Một phiếu có nhiều bản ghi thanh toán qua service_order_id." }
+      - { target: "ServiceOrderDocument", type: "one_to_many", description: "Một phiếu có nhiều tài liệu/ảnh/chứng từ qua service_order_id." }
+      - { target: "ServiceOrderNote", type: "one_to_many", description: "Một phiếu có nhiều ghi chú qua service_order_id." }
+      - { target: "QuotationAsk", type: "one_to_many", description: "Một phiếu có thể liên kết nhiều lần hỏi giá qua service_order_id." }
+      - { target: "OcrVehicleInfoHistory", type: "one_to_many", description: "Một phiếu có thể có nhiều bản ghi OCR qua service_order_id." }
+    invariants:
+      - "Chỉ cho phép chuyển trạng thái theo ServiceOrderStatus.canTransitionTo và OrderType."
+      - "SERVICE order chuyển COMPLETED rồi mới SETTLED; reopen từ SETTLED về COMPLETED."
+      - "RETAIL order chuyển DELIVERED rồi mới SETTLED; reopen từ SETTLED về DELIVERED."
+      - "Payment cập nhật paidAmount, debtAmount và paymentStatus; khi debt được clearing thì paymentStatus là PAID và debtAmount về 0."
+      - "delivery_event_sent dùng để chặn phát lại event xuất kho inventory cho cùng service order."
+      - "quote_sent_count tăng khi gửi hoặc gửi lại quotation sang Driver Plus."
+
+  - name: "ServiceOrderItem"
+    type: "entity"
+    description: "Dòng công/dịch vụ trong service order."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "service_order_id", type: "BIGINT", required: true }
+      - { name: "service_code", type: "VARCHAR(255)", required: false }
+      - { name: "service_name", type: "VARCHAR(255)", required: false }
+      - { name: "description", type: "TEXT", required: false }
+      - { name: "quantity", type: "INTEGER", required: true }
+      - { name: "unit_price", type: "NUMERIC(15,2)", required: true }
+      - { name: "unit", type: "VARCHAR(255)", required: false }
+      - { name: "discount_amount", type: "String trong entity", required: false }
+      - { name: "discount_percent", type: "NUMERIC(5,2)", required: false }
+      - { name: "amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "tax_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "final_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "tax_percent", type: "NUMERIC(5,2)", required: false }
+      - { name: "technician_id", type: "BIGINT", required: false }
+      - { name: "technician_name", type: "VARCHAR(255)", required: false }
+      - { name: "is_deleted", type: "BOOLEAN", required: true }
+      - { name: "payer", type: "Payer", required: false, constraints: ["CUSTOMER | INSURANCE"] }
+    relationships: []
+    invariants:
+      - "is_deleted là soft delete cho dòng công/dịch vụ."
+
+  - name: "ServiceOrderPart"
+    type: "entity"
+    description: "Dòng phụ tùng trong service order, có thể đến từ inventory hoặc quotation ask."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "service_order_id", type: "BIGINT", required: true }
+      - { name: "part_id", type: "BIGINT", required: false }
+      - { name: "sku", type: "VARCHAR(100)", required: false }
+      - { name: "genuine_code", type: "VARCHAR(100)", required: false }
+      - { name: "part_code", type: "VARCHAR(255)", required: false }
+      - { name: "part_name", type: "VARCHAR(255)", required: false }
+      - { name: "brand", type: "VARCHAR(100)", required: false }
+      - { name: "tier", type: "VARCHAR(20)", required: false }
+      - { name: "origin", type: "VARCHAR(100)", required: false }
+      - { name: "quantity", type: "NUMERIC(15,3) trong DB / BigDecimal scale 2 trong entity", required: true }
+      - { name: "unit_price", type: "NUMERIC(15,2)", required: true }
+      - { name: "discount_percent", type: "NUMERIC(5,2)", required: false }
+      - { name: "discount_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "unit", type: "VARCHAR(255)", required: false }
+      - { name: "tax_rate", type: "NUMERIC(5,2)", required: false }
+      - { name: "tax_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "final_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "source", type: "PartSource", required: false, constraints: ["INVENTORY | QUOTATION_ASK"] }
+      - { name: "technician_id", type: "BIGINT", required: false }
+      - { name: "technician_name", type: "VARCHAR(255)", required: false }
+      - { name: "quotation_ask_code", type: "VARCHAR(50)", required: false }
+      - { name: "is_deleted", type: "BOOLEAN", required: true }
+      - { name: "payer", type: "Payer", required: false, constraints: ["CUSTOMER | INSURANCE"] }
+    relationships:
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_code liên kết logical tới mã hỏi giá." }
+    invariants:
+      - "Chỉ part active có source INVENTORY mới được đưa vào event xuất kho inventory."
+      - "is_deleted là soft delete cho dòng phụ tùng."
+
+  - name: "ServiceOrderPayment"
+    type: "entity"
+    description: "Giao dịch thanh toán của service order."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "service_order_id", type: "BIGINT", required: true }
+      - { name: "amount", type: "NUMERIC(15,2)", required: true }
+      - { name: "payment_method", type: "PaymentMethod", required: false }
+      - { name: "reference_code", type: "VARCHAR(100)", required: false }
+      - { name: "settlement_code", type: "VARCHAR(100)", required: false }
+      - { name: "notes", type: "TEXT", required: false }
+      - { name: "paid_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "payment_status", type: "PaymentTransactionStatus", required: false, constraints: ["PENDING | COMPLETED | FAILED"] }
+    relationships: []
+    invariants:
+      - "ServiceOrderPayment.create mặc định paidAt là thời điểm hiện tại nếu request không truyền và paymentStatus là COMPLETED."
+
+  - name: "ServiceOrderDocument"
+    type: "entity"
+    description: "Tài liệu/ảnh/chứng từ gắn với service order."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "service_order_id", type: "BIGINT", required: true }
+      - { name: "document_type", type: "DocumentType", required: true }
+      - { name: "file_name", type: "VARCHAR(255)", required: true }
+      - { name: "file_url", type: "VARCHAR(500)", required: true }
+      - { name: "file_size", type: "BIGINT", required: false }
+      - { name: "mime_type", type: "VARCHAR(100)", required: false }
+      - { name: "description", type: "TEXT", required: false }
+      - { name: "is_deleted", type: "BOOLEAN", required: true }
+    relationships: []
+    invariants:
+      - "is_deleted là soft delete cho tài liệu service order."
+
+  - name: "ServiceOrderNote"
+    type: "entity"
+    description: "Ghi chú nghiệp vụ, kỹ thuật hoặc nội bộ trên service order."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "service_order_id", type: "BIGINT", required: true }
+      - { name: "note_type", type: "NoteType", required: true }
+      - { name: "priority", type: "NotePriority", required: false }
+      - { name: "content", type: "TEXT", required: true }
+      - { name: "author_id", type: "BIGINT", required: false }
+      - { name: "author_name", type: "VARCHAR(255)", required: false }
+    relationships: []
+    invariants: []
+
+  - name: "Customer"
+    type: "aggregate_root"
+    description: "Projection cục bộ của customer phục vụ booking/service order; source of truth nằm ngoài gf-sales."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "name", type: "VARCHAR(255)", required: true }
+      - { name: "customer_status", type: "CustomerStatus", required: true, constraints: ["ACTIVE | DEACTIVATED"] }
+      - { name: "contact_id", type: "BIGINT", required: false }
+    relationships:
+      - { target: "Contact", type: "logical_reference", description: "Customer projection có thể tham chiếu contact projection qua contact_id." }
+    invariants:
+      - "Customer là projection cục bộ; dữ liệu master thuộc gf-customer."
+
+  - name: "Contact"
+    type: "entity"
+    description: "Projection contact theo tenant và phone."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "phone", type: "VARCHAR(20)", required: true, constraints: ["unique per tenant"] }
+      - { name: "email", type: "VARCHAR(255)", required: false }
+      - { name: "latest_customer_id", type: "BIGINT", required: false }
+    relationships: []
+    invariants:
+      - "Một tenant không có hai contact cùng phone."
+
+  - name: "Vehicle"
+    type: "aggregate_root"
+    description: "Projection cục bộ của xe phục vụ booking/service order; source of truth nằm ngoài gf-sales."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "plate", type: "VARCHAR(255)", required: true }
+      - { name: "brand", type: "VARCHAR(255)", required: false }
+      - { name: "model", type: "VARCHAR(255)", required: false }
+      - { name: "version", type: "VARCHAR(255)", required: false }
+      - { name: "year", type: "VARCHAR(255)", required: false }
+      - { name: "vin", type: "VARCHAR(255)", required: false }
+      - { name: "odo", type: "INTEGER", required: false }
+      - { name: "images", type: "JSONB List<VehicleImage>", required: false }
+      - { name: "vehicle_status", type: "VehicleStatus", required: true, constraints: ["ACTIVE | DEACTIVATED"] }
+    relationships: []
+    invariants:
+      - "Vehicle là projection cục bộ; dữ liệu master thuộc gf-customer/vehicle boundary bên ngoài."
+
+  - name: "VehicleRegistration"
+    type: "entity"
+    description: "Projection biển số chuẩn hóa, liên kết latest vehicle và contact."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "plate", type: "VARCHAR(20)", required: true, constraints: ["unique per tenant"] }
+      - { name: "latest_vehicle_id", type: "BIGINT", required: false }
+      - { name: "contact_id", type: "BIGINT", required: false }
+    relationships:
+      - { target: "Vehicle", type: "logical_reference", description: "latest_vehicle_id trỏ tới projection xe mới nhất theo biển số." }
+      - { target: "Contact", type: "logical_reference", description: "contact_id liên kết contact theo biển số." }
+    invariants:
+      - "Một tenant không có hai vehicle_registration cùng plate."
+
+  - name: "QuotationAsk"
+    type: "aggregate_root"
+    description: "Link hỏi giá phụ tùng từ service order sang purchase quotation."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "service_order_id", type: "BIGINT", required: true }
+      - { name: "status", type: "VARCHAR(50)", required: false }
+      - { name: "requested_parts", type: "JSONB Map<String,Object>", required: false }
+      - { name: "quotation_ask_id", type: "BIGINT", required: false }
+    relationships:
+      - { target: "ServiceOrder", type: "logical_reference", description: "QuotationAsk thuộc một service order qua service_order_id." }
+    invariants:
+      - "code là mã hỏi giá unique trong storage hiện tại."
+
+  - name: "OcrVehicleInfoHistory"
+    type: "entity"
+    description: "Lịch sử gọi OCR thông tin đăng ký xe và raw response."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "service_order_id", type: "BIGINT", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "attachment_url", type: "TEXT", required: true }
+      - { name: "status_response", type: "VARCHAR(255)", required: false }
+      - { name: "json_response", type: "TEXT", required: true }
+    relationships:
+      - { target: "ServiceOrder", type: "logical_reference", description: "service_order_id liên kết kết quả OCR với phiếu dịch vụ nếu có." }
+    invariants:
+      - "OCR raw response chứa dữ liệu nhạy cảm nên cần policy retention/masking rõ ở vận hành."
+
+  - name: "OutboxEvent"
+    type: "aggregate_root"
+    description: "Bảng outbox đảm bảo publish Kafka bền vững cho booking, service order, inventory workflow và notification events."
+    attributes:
+      - { name: "id", type: "UUID", required: true }
+      - { name: "aggregate_type", type: "VARCHAR(100)", required: true }
+      - { name: "aggregate_id", type: "VARCHAR(100)", required: true }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "payload", type: "TEXT", required: true }
+      - { name: "topic", type: "VARCHAR(200)", required: true }
+      - { name: "status", type: "OutboxStatus", required: true, constraints: ["PENDING | PROCESSING | SENT | FAILED"] }
+      - { name: "retry_count", type: "INTEGER", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "error_message", type: "VARCHAR(1000)", required: false }
+      - { name: "headers", type: "TEXT", required: false }
+    relationships: []
+    invariants:
+      - "OutboxProcessor dùng RedisLockRegistry để chỉ một instance xử lý batch pending/stale tại một thời điểm."
+      - "OutboxEventCreatedEvent có thể publish ngay sau transaction; scheduled processor là fallback retry."
+      - "Quá max retries thì event chuyển FAILED."
+
+  - name: "InboxEvent"
+    type: "aggregate_root"
+    description: "Bảng inbox chống xử lý trùng inbound Driver Plus events."
+    attributes:
+      - { name: "event_id", type: "VARCHAR(100)", required: true, constraints: ["primary key"] }
+      - { name: "event_type", type: "VARCHAR(100)", required: false }
+      - { name: "source_service", type: "VARCHAR(100)", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "received_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "status", type: "VARCHAR(20)", required: false }
+    relationships: []
+    invariants:
+      - "event_id là khóa chính để phát hiện duplicate inbound Kafka event."
+
+  - name: "Sequence"
+    type: "entity"
+    description: "Bảng SQL sequences và function get_next_number dùng sinh mã nghiệp vụ theo schema."
+    attributes:
+      - { name: "sequence_name", type: "VARCHAR(100)", required: true, constraints: ["primary key"] }
+      - { name: "current_value", type: "BIGINT", required: true }
+      - { name: "increment_by", type: "INTEGER", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+    relationships: []
+    invariants:
+      - "DBUtils.getNextSequence gọi function get_next_number trong default_schema với transaction REQUIRES_NEW để tăng hoặc khởi tạo sequence."
+      - "Constant khai báo booking_code, service_order_code, customer_code, vehicle_code và settlement_code; source runtime hiện thấy gọi getNextSequence cho booking_code và service_order_code."
+
+business_rules:
+  - { id: "BR-GF-SALES-001", description: "Booking chỉ được chuyển trạng thái theo BookingStatus.canTransitionTo.", cornerstone: true, enforcement_point: "Booking aggregate + BookingStatus + BookingV3Service" }
+  - { id: "BR-GF-SALES-002", description: "Booking từ Garage Care auto-confirm ở BOOKED, walk-in ở ARRIVED, Driver Plus (BookingDriverPlusConsumer) và các nguồn còn lại ở BOOKING.", cornerstone: true, enforcement_point: "Booking.createFromGarageCare + Booking.createWalkIn + BookingV3Service.create + BookingDriverPlusConsumer.processBookingCreation" }
+  - { id: "BR-GF-SALES-003", description: "Booking không được hủy qua API nếu đã có service order liên kết; API cancel hiện chỉ cho BOOKED.", cornerstone: true, enforcement_point: "BookingV3Service.cancel" }
+  - { id: "BR-GF-SALES-004", description: "Booking quá hạn BOOKING hoặc BOOKED bị scheduler chuyển NO_SHOW, ghi history, publish BookingStatusChanged và notification.", cornerstone: true, enforcement_point: "BookingAutoCancelScheduler" }
+  - { id: "BR-GF-SALES-005", description: "Service order chỉ được chuyển trạng thái theo ServiceOrderStatus.canTransitionTo và OrderType SERVICE/RETAIL.", cornerstone: true, enforcement_point: "ServiceOrder aggregate + ServiceOrderStatus" }
+  - { id: "BR-GF-SALES-006", description: "SERVICE order settle từ COMPLETED sang SETTLED; RETAIL order settle từ DELIVERED sang SETTLED; reopen quay về trạng thái trước settlement theo OrderType.", cornerstone: true, enforcement_point: "ServiceOrder.settle + reopenFromSettled + ServiceOrderInternalService" }
+  - { id: "BR-GF-SALES-007", description: "Reopen service order từ SETTLED bị chặn nếu đã có ServiceOrderPayment.", cornerstone: true, enforcement_point: "ServiceOrderInternalService.reopenFromSettled" }
+  - { id: "BR-GF-SALES-008", description: "Payment ghi ServiceOrderPayment, cộng paidAmount, trừ debtAmount và cập nhật paymentStatus; paid đủ thì debtAmount về 0.", cornerstone: true, enforcement_point: "ServiceOrder.recordPayment + ServiceOrderV3Service.processRecordPayment" }
+  - { id: "BR-GF-SALES-009", description: "Gửi quotation bị chặn khi quoteSentCount > 0 hoặc không có active item/part để báo giá.", cornerstone: true, enforcement_point: "ServiceOrderV3Service.sendQuotation" }
+  - { id: "BR-GF-SALES-010", description: "Cập nhật service order sau khi đã gửi quotation phải tăng quoteSentCount và publish ServiceOrderUpdated.", cornerstone: true, enforcement_point: "ServiceOrderV3Service.handleResendQuotationIfNeeded" }
+  - { id: "BR-GF-SALES-011", description: "Event xuất kho inventory chỉ phát khi thoả đồng thời 4 điều kiện: (1) feature flag Inventory:InventoryStockV01 bật, (2) chưa gửi delivery event (isDeliveryEventSent = false), (3) trạng thái hợp lệ theo order type — RETAIL cho phép CONFIRMED/COMPLETED/DELIVERED/SETTLED, SERVICE cho phép IN_PROGRESS/COMPLETED/DELIVERED/SETTLED, order type khác bị từ chối, (4) có ít nhất 1 active part với source INVENTORY. Khi phát event, ghi status transition CHECKED→IN_PROGRESS với eventSource = BOOKING (có bookingId) hoặc DIRECT (không có bookingId), sau đó đánh dấu deliveryEventSent = true. Không phát khi: feature flag tắt, event đã gửi, order type không phải SERVICE/RETAIL, trạng thái ngoài danh sách cho phép, hoặc không có part INVENTORY.", cornerstone: true, enforcement_point: "ServiceOrderV3Service.publishStockExportEventIfNeeded + isEligibleForStockExportEvent + isStatusAllowedForStockExport + hasInventoryParts" }
+  - { id: "BR-GF-SALES-012", description: "Inbound Driver Plus events phải ghi InboxEvent trước khi xử lý; duplicate được acknowledge và bỏ qua.", cornerstone: true, enforcement_point: "BookingDriverPlusConsumer + ServiceOrderDriverPlusConsumer" }
+  - { id: "BR-GF-SALES-013", description: "Outbound Kafka events đang chạy phải đi qua OutboxEvent và OutboxProcessor/OutboxEventCreatedEvent để retry bền vững.", cornerstone: true, enforcement_point: "AbstractOutboxProducer + OutboxProcessor + OutboxEventListener" }
+  - { id: "BR-GF-SALES-014", description: "Customer, contact, vehicle và vehicle registration trong gf-sales là snapshot cục bộ; source of truth nằm ở boundary bên ngoài.", cornerstone: false, enforcement_point: "GfCustomerClient + projection repositories" }
+  - { id: "BR-GF-SALES-015", description: "paymentStatus chuyển UNPAID khi paidAmount = 0; PARTIAL khi paidAmount > 0 nhưng chưa cleared; PAID khi debt cleared (unpaidGap ≤ 0, hoặc finalAmount có phần thập phân < 0.5 và unpaidGap ≤ phần thập phân đó — rounding artifact). Khi PAID, debtAmount bị force về 0. Thanh toán vượt debtAmount bị chặn bởi BusinessException ST-01.", cornerstone: false, enforcement_point: "ServiceOrder.updatePaymentStatus + ServiceOrder.isDebtCleared + ServiceOrder.isRoundingArtifactUnderpayment" }
+  - { id: "BR-GF-SALES-016", description: "Tạo SERVICE order khi bookingId = null sẽ tự động sinh Booking walk-in với status ARRIVED, leadSource WALK_IN, arrivedAt = now; không áp dụng cho RETAIL order.", cornerstone: true, enforcement_point: "ServiceOrderV3Service.create + ServiceOrderV3Service.autoCreateBookingForServiceOrder + BookingV3Service.bookingCreatedFromServiceOrder + Booking.createWalkIn" }
+  - { id: "BR-GF-SALES-017", description: "Booking code sinh theo format LH-{yyyyMMdd}-{00000} qua DBUtils.getNextSequence('booking_code') gọi PostgreSQL function get_next_number trong transaction REQUIRES_NEW.", cornerstone: false, enforcement_point: "BookingV3Service.generateBookingCode + BookingService.generateBookingCode + DBUtils.getNextSequence + Constant.BOOKING_CODE_PREFIX" }
+  - { id: "BR-GF-SALES-018", description: "Service order code sinh theo format PDV-{yyyyMMdd}-{00000} qua DBUtils.getNextSequence('service_order_code') gọi PostgreSQL function get_next_number trong transaction REQUIRES_NEW.", cornerstone: false, enforcement_point: "ServiceOrderV3Service.generateServiceOrderCode + ServiceOrderService.generateServiceOrderCode + DBUtils.getNextSequence + Constant.SERVICE_ORDER_CODE_PREFIX" }
+  - { id: "BR-GF-SALES-019", description: "Outbox event có eventId = UUID.randomUUID; mỗi Message có messageId = UUID.randomUUID; Kafka message key = message.getMessageId(); partition key = tenantId.toString(). OutboxEventCreatedEvent trigger publish ngay sau commit, OutboxScheduler là fallback retry.", cornerstone: false, enforcement_point: "OutboxService.saveEvent + Message constructor + EventPublishingService.publishEvent + KafkaMessagePublisher" }
+
+
+workflows:
+  - name: "BookingWorkflow"
+    type: TEMPORAL
+    description: "Manage booking lifecycle from creation to completion — task queue GF-SALES-BOOKING-QUEUE; signals confirmBooking, cancelBooking, customerArrived, quotationConfirmed, quotationDeclined, serviceCompleted; query getStatus()"
+    steps:
+      - step: 1
+        service: "gf-sales"
+        action: "Started by gf-sales BookingV3Service.create via WorkflowClient.start (post-commit) khi Booking được persist — schedule confirmation timer (PT24H)"
+      - step: 2
+        service: "gf-sales"
+        action: "BookingActivities.validate / updateTimeslotCount — reserve slot"
+      - step: 3
+        service: "gf-sales"
+        action: "Wait for signal confirmBooking / cancelBooking / customerArrived"
+      - step: 4
+        service: "gf-sales"
+        action: "If no-show timer (PT30M) fires → BookingActivities.markNoShow + releaseTimeslot"
+      - step: 5
+        service: "gf-sales"
+        action: "On serviceCompleted signal → NotificationActivities + emit BookingCompletedEvent"
+
+  - name: "QuotationReminderWorkflow"
+    type: TEMPORAL
+    description: "Send quotation reminders at PT1H interval after quotation sent"
+    steps:
+      - step: 1
+        service: "gf-sales"
+        action: "Started by gf-sales ServiceOrderV3Service.sendQuotation via WorkflowClient.start sau khi quotation đã gửi (BR-GF-SALES-009)"
+      - step: 2
+        service: "gf-sales"
+        action: "Sleep PT1H, check status — if not confirmed/declined, NotificationActivities send reminder"
+      - step: 3
+        service: "gf-sales"
+        action: "Repeat until quotation confirmed/declined or max attempts"
+
+  - name: "NoShowCheckWorkflow"
+    type: TEMPORAL
+    description: "Check no-show after PT30M for BOOKED bookings"
+    steps:
+      - step: 1
+        service: "gf-sales"
+        action: "Started by gf-sales BookingV3Service via WorkflowClient.start khi Booking transition sang BOOKED (BR-GF-SALES-001)"
+      - step: 2
+        service: "gf-sales"
+        action: "Sleep PT30M"
+      - step: 3
+        service: "gf-sales"
+        action: "If not arrived: BookingActivities.markNoShow + NotificationActivities publish notification"
+
+  - name: "BookingAutoCancelScheduler"
+    type: CRON_BATCH_PROCESSOR
+    description: "Quét Booking quá hạn ở BOOKING/BOOKED, chuyển sang NO_SHOW, ghi history, publish BookingStatusChanged và notification (BR-GF-SALES-004). Service không tự schedule; tick đến từ gf-worker qua REST."
+    steps:
+      - step: 1
+        service: "gf-sales"
+        action: "Triggered by gf-worker cron HTTP every ~1m → POST /protected/v1/bookings/auto-cancel"
+      - step: 2
+        service: "gf-sales"
+        action: "BookingAutoCancelScheduler — query Booking quá hạn (BOOKING hoặc BOOKED hết SLA confirm)"
+      - step: 3
+        service: "gf-sales"
+        action: "Cho từng booking: transition sang NO_SHOW + ghi BookingHistory (BR-GF-SALES-001)"
+      - step: 4
+        service: "gf-sales → Kafka (booking-events) + gf-notification"
+        action: "Publish BookingStatusChanged qua OutboxEvent (BR-GF-SALES-013) + send notification BOOKING_AUTO_CANCELLED_UNCONFIRMED/NO_SHOW"
+
+integrations:
+  inbound:
+    - type: API
+      source: "agg-garage-graph"
+      purpose: "BFF SO/booking/customer/vehicle queries"
+    - type: API
+      source: "gf-customer"
+      purpose: "POST /protected/v1/service-orders/{tenantId}/vehicle-summaries — aggregate"
+    - type: API
+      source: "gf-inventory"
+      purpose: "GET /protected/v1/service-orders/{tenantId}/detail/{code} — validate delivery"
+    - type: API
+      source: "gf-accounting"
+      purpose: "GET /protected/v1/service-orders/.../for-settlement, PUT /settle, /reopen-from-settled, GET /for-print"
+    - type: API
+      source: "gf-worker"
+      purpose: "POST /protected/v1/bookings/auto-cancel — cron trigger"
+    - type: EVENT
+      source: "Driver+ external"
+      purpose: "Send booking-events, service-order-sync"
+
+  outbound:
+    - type: API
+      target: "gf-customer"
+      purpose: "Vehicle relay, booking-count/visit/spent tracking, interactions — /protected/v1/customers/..."
+    - type: API
+      target: "gf-inventory"
+      purpose: "Inventory part summary — GET /protected/v1/product/so-summary"
+    - type: API
+      target: "gf-erp-mdm"
+      purpose: "Vehicle hierarchy + unit catalog (printing) — /protected/catalog/v1/{get-hierarchy,inquiry}"
+    - type: API
+      target: "gf-hrms"
+      purpose: "Employee/technician info (printing)"
+    - type: API
+      target: "gf-purchase"
+      purpose: "Purchase order linkage"
+    - type: API
+      target: "ct-saas-tenant"
+      purpose: "Tenant/garage info"
+    - type: API
+      target: "OCR Vehicle Registration"
+      purpose: "OCR vehicle reg parsing (INTERNAL_TOKEN_OCR)"
+    - type: EVENT
+      target: "Kafka — booking-events / notification-request / service-order-events / service-order-sync / booking-completed"
+      purpose: "Publish lifecycle events via outbox (Redis-locked OutboxProcessor)"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho booking, service order, projection, quotation, OCR history, inbox/outbox và sequences.", config_ref: "spring.datasource.*, DB_SCHEMA" }
+  - { name: "Redis", type: "cache", purpose: "Cache domain/external lookup và RedisLockRegistry cho OutboxProcessor.", config_ref: "REDIS_HOST, REDIS_PORT, OUTBOX_LOCK_REGISTRY_KEY" }
+  - { name: "Kafka", type: "broker", purpose: "Publish/consume booking, service order sync, inventory worker và notification events.", config_ref: "KAFKA_BOOTSTRAP_SERVERS, kafka.topics.*" }
+  - { name: "Temporal", type: "workflow", purpose: "BookingWorkflow, NoShowCheckWorkflow và QuotationReminderWorkflow tồn tại trên task queue GF-SALES-BOOKING-QUEUE; worker mặc định tắt qua TEMPORAL_ENABLED=false; activity implementations tồn tại đầy đủ (BookingActivities, NotificationActivities, ConfigActivities với Temporal stubs) — để enable worker set TEMPORAL_ENABLED=true.", config_ref: "TEMPORAL_ENABLED, TEMPORAL_CONNECTION_TARGET, TEMPORAL_NAMESPACE" }
+  - { name: "common-printing", type: "printing", purpose: "Render preview/export PDF/image cho service order, repair order và retail order từ template HTML.", config_ref: "templates/serviceorder*, printing config" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Dual auth: /protected/* bằng x-api-key (ApiKeyAuthenticationFilter, INTERNAL_API_KEY), /api/* bằng JWT; SecurityUtils cho tenant/user context.", config_ref: "com.actechx.common:spring-security-starter, actechx.security.*" }
+  - { name: "spring-feature-flag-starter", type: "feature_flag", purpose: "Gate dashboard, CRM booking completed event, sales management, inventory stock và vehicle management.", config_ref: "feature-flag.*, feature-flags.json" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho REST controllers.", config_ref: "springdoc-openapi-starter-webmvc-ui:2.8.9" }
+
+change_log:
+  - { date: "2026-05-21", summary: "BR-GF-SALES-011: chi tiết hoá điều kiện phát event xuất kho — liệt kê 4 điều kiện đồng thời, ghi rõ trạng thái hợp lệ theo từng order type (RETAIL: CONFIRMED/COMPLETED/DELIVERED/SETTLED; SERVICE: IN_PROGRESS/COMPLETED/DELIVERED/SETTLED), mô tả cả trường hợp phát và không phát event, bổ sung enforcement_point helper methods (isEligibleForStockExportEvent, isStatusAllowedForStockExport, hasInventoryParts). Events produces: phân biệt rõ mục đích 2 event DELIVERED — topic AC-NONPROD-DEV-SERVICE-ORDER-EVENTS chuyên cho luồng xuất kho inventory (ref BR-GF-SALES-011), topic AC-DEV-SERVICE-ORDER-SYNC DELIVERED.1 chuyên đồng bộ trạng thái SO sang Driver+.", author: "Architecture Authority" }
+  - { date: "2026-05-20", summary: "Bổ sung đầy đủ MessageStep cho events produces/consumes: liệt kê 6 giá trị BookingMessageStep (3 outbound + 2 inbound + SENT_NOTIFICATION) và 9 giá trị ServiceOrderMessageStep (6 outbound + 2 inbound + SENT_NOTIFICATION), ghi rõ wire value, enum class, hướng, event class, producer/consumer, ý nghĩa nghiệp vụ. Bổ sung 2 hardcoded step (DELIVERED trên service-order-events, COMPLETED trên booking-completed). Bổ sung luồng consume cập nhật: mỗi inbound step ghi rõ chain xử lý (tạo/cập nhật entity → phát event phản hồi + notification). Ghi rõ step nào bị consumer bỏ qua vì là step do chính gf-sales produce.", author: "Architecture Authority" }
+  - { date: "2026-05-19", summary: "Cross-review với INTEG-EXT-gf-sales.md: sửa integration_ref sai (D2), thêm full integration_consumers (D2); xoá 2 EVENT inbound entries sai hướng — gf-inventory-worker và gf-marketing consume events FROM gf-sales, không phải send events TO gf-sales (D5); sửa spring-security-starter purpose dual auth (D3).", author: "Architecture Authority" }
+  - { date: "2026-05-18", summary: "BR-GF-SALES-017/018/019 (new): document logic sinh code Booking (LH-yyyyMMdd-00000), Service Order (PDV-yyyyMMdd-00000) qua DBUtils.getNextSequence + get_next_number, và outbox message ID generation (eventId/messageId = UUID, Kafka key = messageId). BR-GF-SALES-016 (new): tạo SERVICE order khi bookingId=null tự động sinh Booking walk-in (ARRIVED, WALK_IN); enforcement chain ServiceOrderV3Service → BookingV3Service → Booking.createWalkIn. BR-GF-SALES-002: bổ sung Driver Plus (BookingDriverPlusConsumer) vào mô tả và enforcement_point. BR-GF-SALES-015 (new): document logic chuyển trạng thái paymentStatus UNPAID/PARTIAL/PAID từ aggregate, bao gồm rounding artifact tolerance.", author: "Architecture Authority" }
+  - { date: "2026-05-13", summary: "Backfill status/active_callers/replaced_by cho tất cả 80 API entries (RULE-08/09): 56 active, 20 internal-only, 4 unused (booking-detail-by-code-v3, print-preview, export-pdf, export-image).", author: "Architecture Authority" }
+  - { date: "2026-05-12", summary: "Fix Temporal dependency: activity implementations đầy đủ (Booking/Notification/ConfigActivities); TEMPORAL_ENABLED=false chỉ disabled workers.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Chuẩn hoá trigger wording cho 3 workflows; thêm BookingAutoCancelScheduler (CRON_BATCH_PROCESSOR).", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Sync với source: bổ sung @FeatureOn notes (Dashboard/ServiceOrderV3), làm rõ x-api-key auth cho internal/protected controllers, thêm SpringDoc dep.", author: "Architecture Authority" }

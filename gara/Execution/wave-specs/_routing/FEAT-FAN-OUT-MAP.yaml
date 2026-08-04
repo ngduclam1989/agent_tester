@@ -1,0 +1,210 @@
+# FEAT-FAN-OUT-MAP.yaml — Mapping table cho agent-execution-spec-author per-tier fan-out.
+#
+# Mục đích:
+#   1 source FEAT ở Product/features/FEAT-*.md (BA viết) → up to 4 file output
+#   ở Execution/wave-specs/W{NN}/Product/features/{tier}/FEAT-*.md.
+#   Mỗi tier focus 1 góc nhìn:
+#     - be:     contract (schema, REST, BR enforcement)
+#     - bff:    GraphQL ops (resolver, batching, cache key)
+#     - fe-web: screen (component, state, routing, i18n)
+#     - mobile: screen (Flutter widgets, navigation, offline)
+#
+# Trigger (v2 — FEAT-FRONTMATTER-CONTRACT v2, 2026-06-16):
+#   Fan-out tier gate = `wave_tier_scope` (PKG-derived, inferred từ §1 "Boundaries affected" row
+#   trong PKG-W{NN}-*.md). NO per-FEAT touchpoint flags — BA chỉ declare `target_boundary`.
+#   `final_fanout(tier) = (tier ∈ wave_tier_scope)`.
+#
+#   Boundary → tier mapping (xem scripts/resolve-wave-tier-scope.py):
+#     gf-*         → backend
+#     agg-*        → bff
+#     garage-web   → fe-web
+#     garage-mobile → mobile
+#     External (ct-file-storage, …) → ignored
+#
+# Placeholder runtime resolution (resolve-fanout.py thay):
+#   {WAVE}: wave number padded 2 digits (vd "02")
+#   {ID}: feature ID (vd "FEAT-INS-DOSSIER-CREATE")
+#   {BOUNDARY}: target_boundary từ source FEAT (vd "gf-sales")
+#   {BFF}: target_bff (vd "agg-garage-graph")
+#   {EXPERIENCE_WEB}: target_experience_web (vd "garage-web")
+#   {EXPERIENCE_MOBILE}: target_experience_mobile (vd "garage-mobile")
+#
+# Audit trail:
+#   Mọi file output có frontmatter (author agent inject):
+#     - source: "gen-execution-spec"
+#     - source_feat_id: FEAT-{ID}
+#     - source_feat_sha: sha256 của source FEAT file
+#     - source_feat_version: int
+#     - generated_at: ISO8601 UTC
+#     - tier_role: backend | bff | fe-web | mobile
+#     - authoring_inputs.fanout_map_sha: sha256 của file YAML này (drift detection)
+#     - authoring_inputs.template_sha: sha256 của template được dùng
+#
+# Reviewer cross-check (items 15-18c):
+#   - source_feat_sha identical across all tier files của cùng FEAT-ID
+#   - paired_*_feats / consumes_*_feats consistent (item 15-17)
+#   - §0-§4 block SHA identical sau normalize whitespace (item 18c)
+#   - Denylist enforcement (item 18b)
+
+version: "1.0"
+schema: "garage-feat-fanout-v1"
+
+mappings:
+  # ============== TIER BE (fan-out iff backend ∈ wave_tier_scope) ==============
+  # Gate = wave_tier_scope (PKG-derived). No FEAT-level conditions per FEAT-FRONTMATTER-CONTRACT v2.
+  - tier: be
+    artifact_kind: feature
+    conditions: {}                                # No FEAT-level gate (wave_tier_scope is the gate)
+    targets:
+      - "Execution/wave-specs/W{WAVE}/Product/features/be/{ID}.md"
+    template: "Execution/wave-specs/_TEMPLATE-feature-be.md"
+    add_fields:
+      tier_role: "backend"
+      boundary: "{BOUNDARY}"
+      consumes_contracts: []                      # author fills: REST endpoints + Kafka topics
+      demo_signature: ""                          # AC-driven happy path one-liner
+      paired_bff_feats: []                        # author cross-link nếu has_bff_touchpoint=true
+      paired_fe_web_feats: []                     # author cross-link nếu has_ui_touchpoint=true
+      paired_mobile_feats: []                     # author cross-link nếu has_mobile_touchpoint=true
+    strip_fields:
+      - "target_boundary_hint"
+      - "target_bff_hint"
+      - "target_experience_web_hint"
+      - "target_experience_mobile_hint"
+
+  # ============== TIER BFF (fan-out iff bff ∈ wave_tier_scope) ==============
+  # Gate = wave_tier_scope (PKG-derived). No FEAT-level conditions per FEAT-FRONTMATTER-CONTRACT v2.
+  - tier: bff
+    artifact_kind: feature
+    conditions: {}                                # No FEAT-level gate
+    targets:
+      - "Execution/wave-specs/W{WAVE}/Product/features/bff/{ID}.md"
+    template: "Execution/wave-specs/_TEMPLATE-feature-bff.md"
+    add_fields:
+      tier_role: "bff"
+      bff: "{BFF}"
+      graphql_ops: []                             # mutation/query/subscription names
+      paired_backend_feats: ["{ID}"]              # luôn pair tới BE FEAT cùng id
+      paired_fe_web_feats: []
+      paired_mobile_feats: []
+    strip_fields:
+      - "target_boundary_hint"
+      - "target_bff_hint"
+      - "target_experience_web_hint"
+      - "target_experience_mobile_hint"
+
+  # ============== TIER FE-WEB (fan-out iff fe-web ∈ wave_tier_scope) ==============
+  # Gate = wave_tier_scope (PKG-derived). No FEAT-level conditions per FEAT-FRONTMATTER-CONTRACT v2.
+  - tier: fe-web
+    artifact_kind: feature
+    conditions: {}                                # No FEAT-level gate
+    targets:
+      - "Execution/wave-specs/W{WAVE}/Product/features/fe-web/{ID}.md"
+    template: "Execution/wave-specs/_TEMPLATE-feature-fe-web.md"
+    add_fields:
+      tier_role: "fe-web"
+      experience: "{EXPERIENCE_WEB}"
+      platform: "web"
+      consumes_backend_feats: ["{ID}"]
+      consumes_bff_feats: []                      # author fills khi has_bff_touchpoint=true
+      i18n_keys: []
+      screens_touched: []
+      figma_refs: []
+    strip_fields:
+      - "target_boundary_hint"
+      - "target_bff_hint"
+      - "target_experience_web_hint"
+      - "target_experience_mobile_hint"
+
+  # ============== TIER MOBILE (fan-out iff mobile ∈ wave_tier_scope) ==============
+  # Gate = wave_tier_scope (PKG-derived). No FEAT-level conditions per FEAT-FRONTMATTER-CONTRACT v2.
+  - tier: mobile
+    artifact_kind: feature
+    conditions: {}                                # No FEAT-level gate
+    targets:
+      - "Execution/wave-specs/W{WAVE}/Product/features/mobile/{ID}.md"
+    template: "Execution/wave-specs/_TEMPLATE-feature-mobile.md"
+    add_fields:
+      tier_role: "mobile"
+      experience: "{EXPERIENCE_MOBILE}"
+      platform: "mobile"
+      consumes_backend_feats: ["{ID}"]
+      consumes_bff_feats: []
+      screens_touched: []
+      flutter_packages: []                        # bloc, freezed, get_it, go_router, ...
+    strip_fields:
+      - "target_boundary_hint"
+      - "target_bff_hint"
+      - "target_experience_web_hint"
+      - "target_experience_mobile_hint"
+
+  # ============== EP / BR passthrough (single-file, không fan-out) ==============
+  - tier: cross
+    artifact_kind: epic
+    conditions: {}
+    targets:
+      - "Execution/wave-specs/W{WAVE}/Product/epics/{ID}.md"
+    template: "Execution/wave-specs/_TEMPLATE-epic.md"
+    add_fields: {}
+    strip_fields: []
+
+  - tier: cross
+    artifact_kind: business-rule
+    conditions: {}
+    targets:
+      - "Execution/wave-specs/W{WAVE}/Product/business-rules/{ID}.md"
+    template: "Execution/wave-specs/_TEMPLATE-business-rule.md"
+    add_fields: {}
+    strip_fields: []
+
+# ============== ALLOWLIST (per tier target — script enforce) ==============
+# Resolved {BOUNDARY} / {BFF} / {EXPERIENCE_*} phải thuộc allowlist tương ứng.
+# Khi inventory mở rộng (vd thêm BFF mới), update allowlist này.
+allowlists:
+  boundary:
+    - gf-system
+    - gf-hrms
+    - gf-erp-mdm
+    - gf-sales
+    - gf-purchase
+    - gf-inventory
+    - gf-inventory-worker
+    - gf-accounting
+    - gf-shipment
+    - gf-customer
+    - gf-marketing
+    - gf-notification
+    - gf-erp-agent
+    - gf-worker
+  bff:
+    - agg-garage-graph
+  experience_web:
+    - garage-web
+  experience_mobile:
+    - garage-mobile
+
+# ============== DENYLIST (path globs author không được ghi) ==============
+# agent-execution-spec-author MUST NOT write to any path matching these globs.
+# Reviewer item 18b enforce. Script check-fanout-consistency.py exit 1 nếu vi phạm.
+denylist:
+  - "Product/**"                                  # Source raw — Business Authority territory
+  - "Architecture/**"                             # Architecture Authority territory
+  - "Execution/knowledge-graphs/**"               # Auto-generated KG
+  - "Execution/SERVICE-BOUNDARY-MATRIX.md"
+  - "Execution/STATE.json"                        # Only via scripts/state.py
+  - "Execution/work-packages/**"                  # Delivery Authority territory
+  - "Plan/**"
+  - "Execution/wave-specs/_TEMPLATE-*.md"         # Templates (read-only)
+  - "Execution/wave-specs/_routing/**"            # This map itself (read-only)
+  - "services/**"                                 # Code repos
+  - "bffs/**"
+  - "frontend/**"
+  - "mobile/**"
+  - ".claude/**"
+  - "scripts/**"
+  - "ADLC.md"
+  - "CLAUDE.md"
+  - "AGENTS.md"
+  - "PRD.md"
+  - "ROADMAP.md"
+  - "DOC-DEPENDENCY-MAP.md"

@@ -1,0 +1,36 @@
+07-03 16:15:30.752 I/flutter (20137): [TIMING] START tapBounded[autoFixA19].pump#8 @ 2026-07-03T16:15:30.752903
+07-03 16:15:30.756 D/EGL_emulation(20137): app_time_stats: avg=315.47ms min=308.81ms max=320.14ms count=4
+07-03 16:15:31.070 I/flutter (20137): [TIMING] DONE  tapBounded[autoFixA19].pump#8 sau 317ms
+07-03 16:15:31.073 I/flutter (20137): [TIMING] START tapBounded[autoFixA19].pump#9 @ 2026-07-03T16:15:31.072741
+07-03 16:15:31.384 I/flutter (20137): [TIMING] DONE  tapBounded[autoFixA19].pump#9 sau 311ms
+07-03 16:15:31.909 I/flutter (20137):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+07-03 16:15:31.909 I/flutter (20137):   dart:core-patch/errors_patch.dart 67:4         _AssertionError._doThrowNew
+07-03 16:15:31.909 I/flutter (20137):   dart:core-patch/errors_patch.dart 49:5         _AssertionError._throwNew
+07-03 16:15:31.909 I/flutter (20137):   package:flutter_test/src/binding.dart 1911:9   TestWidgetsFlutterBinding._runTest.handleUncaughtError
+07-03 16:15:31.909 I/flutter (20137):   package:flutter_test/src/binding.dart 1920:13  TestWidgetsFlutterBinding._runTest.<fn>
+07-03 16:15:31.909 I/flutter (20137):   dart:async/zone.dart 482:14                    _Zone._processUncaughtError
+07-03 16:15:31.909 I/flutter (20137):   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 16:15:31.909 I/flutter (20137):   dart:async/future_impl.dart 886:24             Future._propagateToListeners
+07-03 16:15:31.909 I/flutter (20137):   dart:async/future_impl.dart 738:5              Future._completeErrorObject
+07-03 16:15:31.909 I/flutter (20137):   dart:async/future_impl.dart 742:5              Future._completeError
+07-03 16:15:31.909 I/flutter (20137):   
+07-03 16:15:31.942 D/BtGatt.ScanManager(12499): uid 10111 isForeground true scanMode -1
+07-03 16:15:31.942 D/BoundBrokerSvc( 1614): onBind: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+07-03 16:15:31.943 D/BoundBrokerSvc( 1614): Loading bound service for intent: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+07-03 16:15:31.963 D/BoundBrokerSvc( 1278): onBind: Intent { act=com.google.android.gms.presencemanager.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+07-03 16:15:31.963 D/BoundBrokerSvc( 1278): Loading bound service for intent: Intent { act=com.google.android.gms.presencemanager.service.START dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+07-03 16:15:31.966 D/BoundBrokerSvc( 1278): onBind: Intent { act=com.google.android.gms.presencemanager.service.INTERNAL_IDENTITY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+07-03 16:15:31.966 D/BoundBrokerSvc( 1278): Loading bound service for intent: Intent { act=com.google.android.gms.presencemanager.service.INTERNAL_IDENTITY dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+07-03 16:15:31.967 D/BoundBrokerSvc( 1278): onBind: Intent { act=com.google.android.gms.scheduler.ACTION_PROXY_SCHEDULE dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+07-03 16:15:31.967 D/BoundBrokerSvc( 1278): Loading bound service for intent: Intent { act=com.google.android.gms.scheduler.ACTION_PROXY_SCHEDULE dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+07-03 16:15:31.973 W/NetworkScheduler( 1278): Error inserting flex_time=0 job_id=-1 period=2000 source=16 requires_charging=0 preferred_network_type=1 target_class=com.google.android.gms.measurement.PackageMeasurementTaskService user_id=0 target_package=com.google.android.gms tag=Measurement.PackageMeasurementTaskService.UPLOAD_TASK_TAG task_type=0 required_idleness_state=0 service_kind=0 source_version=231818000 persistence_level=1 preferred_charging_state=1 required_network_type=0 runtime=1783070131970 retry_strategy={"maximum_backoff_seconds":{"3600":0},"initial_backoff_seconds":{"30":0},"retry_policy":{"0":0}} last_runtime=0 [CONTEXT service_id=218 ]
+07-03 16:15:31.973 W/NetworkScheduler( 1278): android.database.sqlite.SQLiteConstraintException: UNIQUE constraint failed: pending_ops.tag, pending_ops.target_class, pending_ops.target_package, pending_ops.user_id (code 2067 SQLITE_CONSTRAINT_UNIQUE)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteConnection.nativeExecuteForLastInsertedRowId(Native Method)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteConnection.executeForLastInsertedRowId(SQLiteConnection.java:961)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteSession.executeForLastInsertedRowId(SQLiteSession.java:790)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteStatement.executeInsert(SQLiteStatement.java:89)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteDatabase.insertWithOnConflict(SQLiteDatabase.java:1868)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteDatabase.insertOrThrow(SQLiteDatabase.java:1763)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at byui.f(:com.google.android.gms@231818044@23.18.18 (190400-535401451):59)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at bytb.n(:com.google.android.gms@231818044@23.18.18 (190400-535401451):3)
+07-03 16:15:31.973 W/NetworkScheduler( 1278): 	at bytb.u(:com.google.android.gms@231818044@23.18.18 (190400-535401451):20)

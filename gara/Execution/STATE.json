@@ -1,0 +1,735 @@
+{
+  "schema_version": 1,
+  "project": "GMS Garage",
+  "wave": "04",
+  "stage": "DEV",
+  "boundary_active": null,
+  "agent_active": null,
+  "owned_paths": [],
+  "forbidden_paths": [
+    ".agents/AGENT_*_TEMPLATE.md"
+  ],
+  "features_in_flight": [
+    "FEAT-AP-LIST",
+    "FEAT-AP-CREATE",
+    "FEAT-AP-DETAIL",
+    "FEAT-AP-EDIT",
+    "FEAT-AP-DELETE",
+    "FEAT-OB-LIST",
+    "FEAT-OB-IMPORT",
+    "FEAT-OB-EDIT",
+    "FEAT-OB-DELETE-LINES",
+    "FEAT-INV-MOBILE-MENU"
+  ],
+  "blockers": [],
+  "exit_criteria": [],
+  "qc": {
+    "signed_by": null,
+    "signed_at": null
+  },
+  "started_at": "2026-05-26T12:51:21+00:00",
+  "last_transition": "2026-07-09T01:46:59+00:00",
+  "non_negotiables": [
+    "Đọc Execution/STATE.json trước mọi tool call",
+    "Edit chỉ trong owned_paths của boundary_active",
+    "Không bypass test (--no-verify, skip)",
+    "Không hardcode secrets/credentials",
+    "Cross-boundary change phải qua REVIEW_GROUP + CR approved",
+    "Mọi quyết định non-trivial commit ngay vào artifact (ADR/CR/KG/MEMORY)",
+    "Boundary isolation: cross-boundary qua REST/Kafka events — KHÔNG direct DB",
+    "Outbox/inbox mandatory cho state-changing events (ADR-004)",
+    "KG-first authoring: Product docs chỉ dựa Knowledge Graph",
+    "Tenant isolation: TenantFilter + TenantContext + OriginTenantId integrity",
+    "JPA no @ManyToOne/@OneToMany cross-boundary (ADR-009)",
+    "Dual persona only: accountant + garage-owner",
+    "Projection not master: gf-sales giữ projection customer/vehicle read-only",
+    "Temporal workflow ID deterministic: {domain}-{tenantId}-{aggregate_code}",
+    "Versioning 3-in-1: version + last_reviewed + Change Log",
+    "AC structure: Tại/Khi/Thì, testable, tiếng Việt",
+    "Migration evolution: V{N+1} additive — KHÔNG rewrite migration cũ",
+    "KafkaMessageWrapper consumer filter headers.MessageGroup + MessageStep",
+    "Design repo NO-CODE: agents trong garage-agentic-design KHÔNG Write/Edit service code (services/{b}/, bffs/{b}/, frontend/, mobile/). Code do per-service agents phụ trách. Exception: docs/, .claude/, .harness/, CLAUDE/AGENTS/MEMORY qua sync script.",
+    "No force-push: KHÔNG git push --force/-f/--force-with-lease/--force-if-includes/+refspec/--all/--mirror trên mọi branch (kể cả qua $VAR). Exception: /cr-raise MINOR (feature branch) hoặc /cr-raise MAJOR (protected main/master/release/*). Hook check-bash-safety.sh enforce mechanical; agent tự refuse intent layer."
+  ],
+  "_non_negotiables_help": "20 ops items = 12 Critical Rules (ADLC §6.2 a-l) + 8 operational discipline expansions. Mapping (1-based index → ADLC §6.2 letter hoặc 'ops:<expansion-of>'): 1=ops:protocol-startup, 2=ops:scope-enforcement, 3=ops:test-discipline, 4=ops:secrets, 5=ops:cross-boundary-CR (expansion of a), 6=ops:artifact-commit (expansion of i), 7=a (Boundary isolation), 8=b (Outbox/inbox), 9=c (KG-first), 10=d (Tenant isolation), 11=e (JPA scalar-FK), 12=f (Dual persona), 13=g (Projection not master), 14=h (Temporal ID), 15=i (Versioning 3-in-1), 16=j (AC structure), 17=ops:migration-evolution (expansion of b for schema), 18=ops:kafka-filter (expansion of b consumer-side), 19=k (Design repo NO-CODE), 20=l (No force-push). Canonical rules ở ADLC.md §6.2; thay đổi rule phải edit ADLC trước, cascade xuống đây + CLAUDE.md §3.2.",
+  "memory_index": {
+    "last_audit": null,
+    "stale_after_days": 14
+  },
+  "ux_source": null,
+  "_ux_source_help": "null = auto-detect (Product/ux/design/ có files → 'design'; empty → 'figma'). Override với literal 'design' hoặc 'figma'.",
+  "wave_scope": {
+    "modify_allowlist": [
+      {
+        "file": ".claude/commands/spawn-dev.md",
+        "symbols": [
+          "BOUNDARY",
+          "CLAUDE_PROJECT_DIR",
+          "CWD",
+          "DESIGN_ROOT",
+          "Next",
+          "Parallel",
+          "Precondition",
+          "Read",
+          "Single",
+          "WAVE_NN",
+          "checklist",
+          "dir",
+          "find_design_root",
+          "fix",
+          "handoff",
+          "hook",
+          "hooks",
+          "inline",
+          "khác",
+          "md",
+          "missing",
+          "nhất",
+          "này",
+          "prep",
+          "prompt",
+          "repo",
+          "scripts",
+          "source",
+          "spawn",
+          "sống",
+          "thường",
+          "thực",
+          "tại",
+          "đó",
+          "định"
+        ],
+        "reason": "User request 2026-07-09: rewrite --inline semantic to 'sub-repo full authority + zero back-pointer to design repo' — 34 symbols in §Inline section touched",
+        "approved_by": "ninhnguyen@cardoctor.vn (interactive conversation)",
+        "approved_at": "2026-07-09T01:55:00Z",
+        "destructive": false
+      },
+      {
+        "file": ".claude/commands/spawn-dev.md",
+        "symbols": [
+          "boundary",
+          "description",
+          "song",
+          "subagent"
+        ],
+        "reason": "Frontmatter description sync với §Inline rewrite semantic (2026-07-09)",
+        "approved_by": "ninhnguyen@cardoctor.vn (interactive)",
+        "approved_at": "2026-07-09T02:00:00Z",
+        "destructive": false
+      },
+      {
+        "file": ".claude/commands/spawn-dev.md",
+        "symbols": [
+          "sh"
+        ],
+        "reason": "Append exception clause vào Discipline reminder (checklist tick allow) - old_string chứa .sh identifier",
+        "approved_by": "ninhnguyen@cardoctor.vn",
+        "approved_at": "2026-07-09T02:10:00Z",
+        "destructive": false
+      }
+    ],
+    "allow_components": []
+  },
+  "_wave_scope_help": "modify_allowlist[] records user-approved modifications to existing symbols (hook check-additive-edit.sh enforces). allow_components[] records orchestrator-approved NEW web components under gf-gms-web/src/components/** (hook check-web-new-component.sh enforces FM-018). Both auto-cleared on /wave-end. modify_allowlist entry: {file, symbols[], reason, approved_by, approved_at, destructive}. allow_components entry: {component, reason, approved_by, approved_at, destructive}.",
+  "_topology_help": "GMS Garage: 18 boundaries (14 BE Java + 2 BFF Node + 1 React web + 1 Flutter mobile). Per-boundary agents sống trong per-service repos (services/{b}/.claude/agents/, bffs/, frontend/, mobile/), KHÔNG trong design repo .agents/. Shared review/test agents nằm trong .agents/ + mirror tới .claude/agents/ via sync-agent-assets.sh.",
+  "kg_baseline_map": {
+    "gf-sales": "b25b23191b898652f65c64a40eb9a82515e7b0fe4ebcca5a54df4eee6b13881a",
+    "gf-accounting": "f2daaf21274cdd12cf7feac508207e8c2d0c0baa9237699861a0b796c895162d",
+    "agg-garage-graph": "6636ced71bf02d4197744214e0a379d570975bec29981f6025762e82467b0d99",
+    "garage-web": "8d34f7aa2d4f63dd288c937f6170d6c68647cf8a2b9d312a5279c969c6c6f70f",
+    "garage-mobile": "36f78b723030742cebdda004332f0c4e8ba5e245d397d592451b01840a538a28"
+  },
+  "kg_baseline_sha": "44d1a0a8c996aafe21363baab80b9baf071aef87bc01563ca751c66c4c4ae37a",
+  "kg_no_change": false,
+  "cr_log": [
+    {
+      "id": "CR-20260630-03",
+      "level": "MAJOR",
+      "resolved": true,
+      "title": "W03-WEB-DEV-HANDOFF-GATE-OVERRIDE",
+      "at": "2026-06-30"
+    },
+    {
+      "id": "CR-20260702-02",
+      "level": "MINOR",
+      "resolved": true
+    }
+  ],
+  "stage_history": [
+    {
+      "from": "BOOTSTRAP",
+      "to": "PLANNING",
+      "at": "2026-06-29T10:52:33+00:00"
+    },
+    {
+      "from": "PLANNING",
+      "to": "DEV",
+      "at": "2026-06-30T06:47:49+00:00"
+    },
+    {
+      "from": "DEV",
+      "to": "REVIEW",
+      "at": "2026-06-30T15:36:33+00:00"
+    },
+    {
+      "from": "DEV",
+      "to": "REVIEW",
+      "at": "2026-07-01T01:25:44+00:00"
+    },
+    {
+      "from": "REVIEW",
+      "to": "TEST_PLANNING",
+      "at": "2026-07-01T04:21:40+00:00"
+    },
+    {
+      "from": "TEST_PLANNING",
+      "to": "TEST_EXECUTION",
+      "at": "2026-07-02T06:31:53+00:00"
+    },
+    {
+      "from": "TEST_EXECUTION",
+      "to": "QC",
+      "at": "2026-07-07T02:37:31+00:00"
+    },
+    {
+      "from": "QC",
+      "to": "DONE",
+      "at": "2026-07-07T03:03:14+00:00"
+    },
+    {
+      "from": "DONE",
+      "to": "BOOTSTRAP",
+      "at": "2026-07-07T03:03:22+00:00"
+    },
+    {
+      "from": "BOOTSTRAP",
+      "to": "PLANNING",
+      "at": "2026-07-08T04:44:45+00:00"
+    },
+    {
+      "from": "PLANNING",
+      "to": "DEV",
+      "at": "2026-07-09T01:46:59+00:00"
+    }
+  ],
+  "wave_specs": {
+    "W03": {
+      "status": "ACTIVE",
+      "approved_at": "2026-06-30T05:54:00+00:00",
+      "reviewer_verdict": "APPROVED",
+      "_schema_version": "v2",
+      "verdict_json_path": "/tmp/reviewer-verdict-W03-pass3.json",
+      "artifacts": {
+        "epics": {
+          "EP-INVENTORY-CATALOG": {
+            "path": "Execution/wave-specs/W03/Product/epics/EP-INVENTORY-CATALOG.md",
+            "status": "ACTIVE",
+            "last_authored": "2026-06-29T15:32:53+00:00"
+          }
+        },
+        "features": {
+          "FEAT-CAT-GRP-CREATE": {
+            "source_feat_sha": "183a1fe01cd88978011c3bf7ca35033ca71dabdfd8d27137f69c761f83cd91d4",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-GRP-CREATE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-GRP-CREATE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-GRP-CREATE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": {
+              "path": "Execution/wave-specs/W03/Product/features/mobile/FEAT-CAT-GRP-CREATE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            }
+          },
+          "FEAT-CAT-GRP-DELETE": {
+            "source_feat_sha": "c54ba6ef6099250e80d50b065be504b42d360d0a27ebb6ac7ee5825da4c26277",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-GRP-DELETE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-GRP-DELETE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-GRP-DELETE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": {
+              "path": "Execution/wave-specs/W03/Product/features/mobile/FEAT-CAT-GRP-DELETE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            }
+          },
+          "FEAT-CAT-GRP-DETAIL": {
+            "source_feat_sha": "d6e7e690d8ce03cf0db4f8373b728e73de760fcf159963114d4472d1769767b2",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-GRP-DETAIL.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-GRP-DETAIL.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-GRP-DETAIL.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": {
+              "path": "Execution/wave-specs/W03/Product/features/mobile/FEAT-CAT-GRP-DETAIL.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            }
+          },
+          "FEAT-CAT-GRP-EDIT": {
+            "source_feat_sha": "87ac66157ba43be54853b388445e069debedbebc49da6e2ec41a27030a3ea436",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-GRP-EDIT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-GRP-EDIT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-GRP-EDIT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": {
+              "path": "Execution/wave-specs/W03/Product/features/mobile/FEAT-CAT-GRP-EDIT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            }
+          },
+          "FEAT-CAT-GRP-LIST": {
+            "source_feat_sha": "cad1316d66146a0d77200a0287efb5e4558beb6a0f4cb30b9ef72847100915ef",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-GRP-LIST.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-GRP-LIST.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-GRP-LIST.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": {
+              "path": "Execution/wave-specs/W03/Product/features/mobile/FEAT-CAT-GRP-LIST.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            }
+          },
+          "FEAT-CAT-PROD-CREATE": {
+            "source_feat_sha": "ea1840f182e9f1b7d399cf9f327e242d6fbe686ac5860c1e8049a986edbaaaab",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-PROD-CREATE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-PROD-CREATE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-PROD-CREATE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": null
+          },
+          "FEAT-CAT-PROD-DELETE": {
+            "source_feat_sha": "dccb7a05a1f14d3eac063775d25e624a1a4f42cfc1b7cc180ea43fe039c32246",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-PROD-DELETE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-PROD-DELETE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-PROD-DELETE.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": null
+          },
+          "FEAT-CAT-PROD-DETAIL": {
+            "source_feat_sha": "1a6b2a272a5fa92488f6e6cf97fa3268d0f597460a777d80ea1b6188f00da67d",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-PROD-DETAIL.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-PROD-DETAIL.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-PROD-DETAIL.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": {
+              "path": "Execution/wave-specs/W03/Product/features/mobile/FEAT-CAT-PROD-DETAIL.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            }
+          },
+          "FEAT-CAT-PROD-EDIT": {
+            "source_feat_sha": "e4531a39c8012b1c1c166f8490890d8f31fb7e9c7683282bfc6438e0a142b6dc",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-PROD-EDIT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-PROD-EDIT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-PROD-EDIT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": null
+          },
+          "FEAT-CAT-PROD-EXPORT": {
+            "source_feat_sha": "4d35cccec7e195db27778bc08ed6268365e192fa76d21838cea8eec6f4befc03",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-PROD-EXPORT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-PROD-EXPORT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-PROD-EXPORT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": null
+          },
+          "FEAT-CAT-PROD-IMPORT": {
+            "source_feat_sha": "2b1f55298f29c285d3c31615e9af8d488dc6539fd70956a95c1560ccd413cba4",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-PROD-IMPORT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-PROD-IMPORT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-PROD-IMPORT.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": null
+          },
+          "FEAT-CAT-PROD-LIST": {
+            "source_feat_sha": "d5f32d83fb3f2cba296abfedefc85cc9579dd56c9227ad61655f810cd37cf118",
+            "be": {
+              "path": "Execution/wave-specs/W03/Product/features/be/FEAT-CAT-PROD-LIST.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "bff": {
+              "path": "Execution/wave-specs/W03/Product/features/bff/FEAT-CAT-PROD-LIST.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "fe-web": {
+              "path": "Execution/wave-specs/W03/Product/features/fe-web/FEAT-CAT-PROD-LIST.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            },
+            "mobile": {
+              "path": "Execution/wave-specs/W03/Product/features/mobile/FEAT-CAT-PROD-LIST.md",
+              "status": "ACTIVE",
+              "last_authored": "2026-06-30T05:54:00+00:00",
+              "last_reviewed": "2026-06-30"
+            }
+          }
+        },
+        "business_rules": {
+          "BR-GF-INVENTORY-CATALOG": {
+            "path": "Execution/wave-specs/W03/Product/business-rules/BR-GF-INVENTORY-CATALOG.md",
+            "status": "ACTIVE",
+            "last_authored": "2026-06-29T15:32:53+00:00"
+          }
+        }
+      },
+      "prior_passes": [
+        {
+          "pass": 3,
+          "verdict": "APPROVED",
+          "review_date": "2026-06-30",
+          "verdict_json_path": "/tmp/reviewer-verdict-W03-pass3.json"
+        }
+      ]
+    },
+    "W04": {
+      "status": "ACTIVE",
+      "reviewer_verdict": "APPROVED",
+      "activated_at": "2026-07-08T08:47:32+00:00",
+      "_schema_version": "v2",
+      "artifact_count": 36,
+      "override_note": "User-authorized bump 2026-07-08 despite original reviewer REJECTED verdict. Blockers B1-B4 documented in _review-report.md; DEV agents to reconcile at implementation time (esp. NC-W04-EP-AP-001/002 endpoint/error-code drift + §1 desync + reciprocity).",
+      "report_path": "Execution/wave-specs/W04/_review-report.md",
+      "blocking_categories": [
+        "B1_section1_desync",
+        "B2_upstream_endpoint_naming",
+        "B3_upstream_migration_strategy",
+        "B4_frontmatter_reciprocity"
+      ]
+    }
+  },
+  "waves_planned": [
+    {
+      "id": "W01",
+      "title": "Insurance Foundation",
+      "phase": "Feature delivery — EP-INSURANCE-SETTLEMENT slice 1/3",
+      "duration_days": 5,
+      "features": [
+        "FEAT-INS-SO-ADJUSTMENT",
+        "FEAT-INS-STL-DETAIL"
+      ],
+      "boundaries": [
+        "gf-sales",
+        "gf-accounting",
+        "agg-garage-graph",
+        "garage-web",
+        "garage-mobile"
+      ],
+      "depends_on": [],
+      "pkg": "Execution/work-packages/PKG-W01-insurance-foundation.md",
+      "status": "DONE"
+    },
+    {
+      "id": "W02",
+      "title": "Settlement Adjustments + Insurance Dossier",
+      "phase": "Feature delivery — EP-INSURANCE-SETTLEMENT slice 2/3 (Phase A → Phase B)",
+      "duration_days": 6,
+      "features": [
+        "FEAT-INS-STL-CREATE",
+        "FEAT-INS-DOSSIER-CREATE",
+        "FEAT-INS-DOSSIER-VIEW"
+      ],
+      "boundaries": [
+        "gf-accounting",
+        "gf-sales",
+        "agg-garage-graph",
+        "garage-web",
+        "garage-mobile"
+      ],
+      "depends_on": [
+        "W01"
+      ],
+      "pkg": "Execution/work-packages/PKG-W02-insurance-dossier.md",
+      "status": "DONE"
+    },
+    {
+      "id": "W03",
+      "title": "Danh mục vật tư",
+      "phase": "Inventory V2 slice 1/4 — Foundation",
+      "duration_days": 5,
+      "features": [
+        "FEAT-CAT-GRP-LIST",
+        "FEAT-CAT-GRP-CREATE",
+        "FEAT-CAT-GRP-DETAIL",
+        "FEAT-CAT-GRP-EDIT",
+        "FEAT-CAT-GRP-DELETE",
+        "FEAT-CAT-PROD-LIST",
+        "FEAT-CAT-PROD-CREATE",
+        "FEAT-CAT-PROD-DETAIL",
+        "FEAT-CAT-PROD-EDIT",
+        "FEAT-CAT-PROD-DELETE",
+        "FEAT-CAT-PROD-IMPORT",
+        "FEAT-CAT-PROD-EXPORT"
+      ],
+      "boundaries": [
+        "gf-inventory",
+        "agg-garage-graph",
+        "garage-web",
+        "garage-mobile"
+      ],
+      "depends_on": [],
+      "pkg": "Execution/work-packages/PKG-W03-inventory-catalog.md",
+      "status": "DONE"
+    },
+    {
+      "id": "W04",
+      "title": "Khởi tạo kho: Kỳ kế toán + Tồn đầu kỳ",
+      "phase": "Inventory V2 slice 2/4 — Khởi tạo tồn + nền sổ tồn",
+      "duration_days": 5,
+      "features": [
+        "FEAT-AP-LIST",
+        "FEAT-AP-CREATE",
+        "FEAT-AP-DETAIL",
+        "FEAT-AP-EDIT",
+        "FEAT-AP-DELETE",
+        "FEAT-OB-LIST",
+        "FEAT-OB-IMPORT",
+        "FEAT-OB-EDIT",
+        "FEAT-OB-DELETE-LINES",
+        "FEAT-INV-MOBILE-MENU"
+      ],
+      "boundaries": [
+        "gf-inventory",
+        "agg-garage-graph",
+        "garage-web",
+        "garage-mobile"
+      ],
+      "depends_on": [
+        "W03"
+      ],
+      "pkg": "Execution/work-packages/PKG-W04-inventory-init.md",
+      "status": "IN_PROGRESS"
+    },
+    {
+      "id": "W05",
+      "title": "Giao dịch kho: Nhập + Xuất",
+      "phase": "Inventory V2 slice 3/4 — Giao dịch (wave dày nhất)",
+      "duration_days": 5,
+      "features": [
+        "FEAT-IR-LIST-V2",
+        "FEAT-IR-CREATE-V2",
+        "FEAT-IR-DETAIL-V2",
+        "FEAT-IR-EDIT-V2",
+        "FEAT-IR-DELETE",
+        "FEAT-IR-PRINT",
+        "FEAT-IR-EXPORT",
+        "FEAT-ID-LIST-V2",
+        "FEAT-ID-CREATE-V2",
+        "FEAT-ID-DETAIL-V2",
+        "FEAT-ID-EDIT-V2",
+        "FEAT-ID-DELETE",
+        "FEAT-ID-PRINT",
+        "FEAT-ID-EXPORT"
+      ],
+      "boundaries": [
+        "gf-inventory",
+        "agg-garage-graph",
+        "garage-web",
+        "garage-mobile"
+      ],
+      "depends_on": [
+        "W04"
+      ],
+      "pkg": "Execution/work-packages/PKG-W05-inventory-transactions.md",
+      "status": "PENDING"
+    },
+    {
+      "id": "W06",
+      "title": "Tính giá + Báo cáo",
+      "phase": "Inventory V2 slice 4/4 — Định giá + báo cáo",
+      "duration_days": 5,
+      "features": [
+        "FEAT-PRC-LIST",
+        "FEAT-PRC-CREATE",
+        "FEAT-PRC-DETAIL",
+        "FEAT-PRC-RECALC",
+        "FEAT-PRC-DELETE",
+        "FEAT-STK-LIST-V2",
+        "FEAT-IP-VIEW-V2",
+        "FEAT-STK-DETAIL-V2"
+      ],
+      "boundaries": [
+        "gf-inventory",
+        "agg-garage-graph",
+        "garage-web",
+        "garage-mobile"
+      ],
+      "depends_on": [
+        "W05"
+      ],
+      "pkg": "Execution/work-packages/PKG-W06-inventory-pricing-report.md",
+      "status": "PENDING"
+    }
+  ],
+  "carryover_items": [
+    {
+      "id": "DEBT-W03-UI-CROSSWAVE-01",
+      "type": "DEBT",
+      "from_wave": "W03",
+      "confirmed_at": "2026-07-08T04:45:39+00:00"
+    }
+  ]
+}

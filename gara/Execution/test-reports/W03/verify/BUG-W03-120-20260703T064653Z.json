@@ -1,0 +1,13 @@
+{
+  "bug_id": "BUG-W03-120",
+  "wave": "03",
+  "verdict": "PASS",
+  "per_type": {
+    "api": { "verdict": "PASS", "ran": 3, "failed": "" }
+  },
+  "total_tc": 3,
+  "duration_sec": 7,
+  "ran_at": "2026-07-03T06:47:00Z",
+  "dry_run": false
+}
+WARN: L1 row for BUG-W03-120 not matched in Tracking/WAVE03/BUGS.md

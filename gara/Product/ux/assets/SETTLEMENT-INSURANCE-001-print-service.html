@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phiếu dịch vụ có phân bổ bảo hiểm - SETTLEMENT-INSURANCE-001</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #eef1f5;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      line-height: 1.18;
+    }
+    .print-page {
+      width: 794px;
+      min-height: 1123px;
+      margin: 20px auto;
+      background: #fff;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .14);
+      overflow: hidden;
+    }
+    .voucher {
+      width: 606px;
+      margin: 58px auto 0;
+    }
+    .top-line {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      margin-bottom: 18px;
+    }
+    .garage-name {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .garage-address {
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .contact-block {
+      padding-top: 1px;
+      font-size: 11px;
+    }
+    .contact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-bottom: 4px;
+    }
+    .contact-row strong { font-weight: 800; }
+    .title {
+      margin: 0 0 5px;
+      text-align: center;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+    }
+    .doc-date {
+      text-align: center;
+      font-size: 12px;
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+    .doc-meta {
+      font-size: 12px;
+      margin-bottom: 5px;
+    }
+    .doc-meta div { margin-bottom: 3px; }
+    .section-caption {
+      font-size: 13px;
+      font-weight: 800;
+      margin: 10px 0 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    th,
+    td {
+      border: 1px solid #111;
+      padding: 3px 5px;
+      vertical-align: top;
+    }
+    th {
+      background: #e7e8ea;
+      font-weight: 800;
+      text-align: center;
+    }
+    .info-table th,
+    .info-table td {
+      height: 22px;
+      padding: 3px 5px;
+    }
+    .customer-cell {
+      width: 170px;
+      line-height: 1.55;
+    }
+    .garage-time {
+      text-align: center;
+      line-height: 1.3;
+    }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .items-table th,
+    .items-table td {
+      height: 24px;
+      padding: 3px 5px;
+    }
+    .items-table td {
+      text-align: center;
+    }
+    .items-table td.name {
+      text-align: left;
+    }
+    .summary-label {
+      border-left: 0;
+      border-right: 0;
+      text-align: right;
+    }
+    .summary-value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .summary-total {
+      font-weight: 800;
+    }
+    .vehicle-condition {
+      height: 24px;
+      border: 1px solid #111;
+      background: #fff;
+    }
+    .note-total {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      border-left: 1px solid #111;
+      border-right: 1px solid #111;
+      border-top: 1px solid #111;
+      min-height: 156px;
+      margin-top: 10px;
+    }
+    .note-box {
+      border-right: 1px solid #111;
+      padding: 7px 6px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .total-box {
+      padding: 6px 7px 5px 8px;
+      font-size: 11px;
+    }
+    .total-row {
+      display: grid;
+      grid-template-columns: 1fr 100px;
+      gap: 8px;
+      align-items: baseline;
+      min-height: 18px;
+    }
+    .total-row .label {
+      text-align: right;
+    }
+    .total-row .value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .allocation-heading {
+      margin: 4px 0 2px;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: right;
+    }
+    .allocation-split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 78px 78px;
+      gap: 0;
+      border-top: 1px solid #e2e2e2;
+      margin-top: 2px;
+      font-size: 10px;
+    }
+    .allocation-cell {
+      min-height: 17px;
+      padding: 2px 3px;
+      border-bottom: 1px solid #efefef;
+      font-variant-numeric: tabular-nums;
+    }
+    .allocation-cell.head {
+      background: #f1f1f3;
+      font-weight: 800;
+      text-align: right;
+    }
+    .allocation-cell.label {
+      text-align: left;
+    }
+    .allocation-cell.value {
+      text-align: right;
+      white-space: nowrap;
+    }
+    .allocation-cell.section {
+      grid-column: 1 / -1;
+      border-bottom: 0;
+      padding-top: 5px;
+      font-weight: 800;
+      text-align: left;
+    }
+    .total-row.final {
+      min-height: 20px;
+      margin-top: 2px;
+      font-weight: 800;
+    }
+    .amount-in-words {
+      border: 1px solid #111;
+      padding: 5px 7px;
+      text-align: left;
+      font-size: 12px;
+    }
+    .amount-in-words strong { font-weight: 800; }
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      min-height: 128px;
+      border-left: 1px solid #111;
+      border-right: 1px solid #111;
+      border-bottom: 1px solid #111;
+    }
+    .signature-box {
+      padding: 8px;
+      text-align: center;
+    }
+    .signature-box:first-child {
+      border-right: 1px solid #111;
+    }
+    .signature-title {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+    .signature-sub {
+      font-size: 12px;
+      font-style: italic;
+    }
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    @media print {
+      body { background: #fff; }
+      .print-page {
+        width: 100%;
+        min-height: 100vh;
+        margin: 0;
+        box-shadow: none;
+      }
+      .voucher {
+        margin-top: 58px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <section class="print-page" id="service-order-print">
+    <div class="voucher">
+      <div class="top-line">
+        <div>
+          <div class="garage-name">Ngọc Như</div>
+          <div class="garage-address">Tầng 10, Tòa nhà Keangnam Landmark 72</div>
+        </div>
+        <div class="contact-block">
+          <div class="contact-row">
+            <span><strong>Liên hệ:</strong> 0311110002 - nhu</span>
+          </div>
+          <div class="contact-row">
+            <span><strong>MST:</strong> tax12345</span>
+            <span><strong>Email:</strong> nhu1234@gmail.com</span>
+          </div>
+        </div>
+      </div>
+
+      <h1 class="title">PHIẾU DỊCH VỤ</h1>
+      <div class="doc-date">Ngày 09 tháng 06 năm 2026</div>
+
+      <div class="doc-meta">
+        <div>Mã phiếu dịch vụ: <strong>PDV-20260609-01077</strong></div>
+        <div>Loại dịch vụ: <strong>Sửa chữa</strong></div>
+      </div>
+
+      <table class="info-table">
+        <tr>
+          <th>Thông tin khách hàng</th>
+          <th colspan="4">Thông tin xe</th>
+        </tr>
+        <tr>
+          <td class="customer-cell" rowspan="5">
+            <strong>Tên KH:</strong> kiill kkk<br>
+            <strong>SĐT KH:</strong> 0987952222
+          </td>
+          <th>Biển số xe</th>
+          <th>Hãng xe</th>
+          <th>Dòng xe</th>
+          <th>Số km đã chạy</th>
+        </tr>
+        <tr>
+          <td class="text-center">35A99999</td>
+          <td class="text-center">Toyota</td>
+          <td class="text-center">Avalon</td>
+          <td class="text-center">5555</td>
+        </tr>
+        <tr>
+          <td class="garage-time" colspan="4">
+            Vào xưởng: <strong>16:01 09/06/2026</strong><br>
+            Ra xưởng: <strong>08:20 16/06/2026</strong>
+          </td>
+        </tr>
+        <tr>
+          <th>Số VIN</th>
+          <th>Năm sản xuất</th>
+          <th>Phiên bản</th>
+          <th>Mức nhiên liệu</th>
+        </tr>
+        <tr>
+          <td></td>
+          <td class="text-center">2010</td>
+          <td></td>
+          <td></td>
+        </tr>
+      </table>
+
+      <div class="section-caption">Mô tả tình trạng xe</div>
+      <div class="vehicle-condition"></div>
+
+      <div class="section-caption">Dịch vụ thực hiện</div>
+      <table class="items-table">
+        <colgroup>
+          <col style="width: 38px">
+          <col>
+          <col style="width: 68px">
+          <col style="width: 56px">
+          <col style="width: 74px">
+          <col style="width: 90px">
+          <col style="width: 78px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Tên dịch vụ</th>
+            <th>Số lượng</th>
+            <th>Đơn vị</th>
+            <th>Đơn giá</th>
+            <th>Kỹ thuật viên</th>
+            <th>Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td class="name">hh</td>
+            <td>1</td>
+            <td>Lần</td>
+            <td class="text-right">555.000</td>
+            <td></td>
+            <td class="text-right">555.000</td>
+          </tr>
+          <tr>
+            <td colspan="5" rowspan="3"></td>
+            <td class="summary-label">Tổng tiền thuế</td>
+            <td class="summary-value">0</td>
+          </tr>
+          <tr>
+            <td class="summary-label">Tổng chiết khấu</td>
+            <td class="summary-value">- 0</td>
+          </tr>
+          <tr>
+            <td class="summary-label summary-total">Tổng thành tiền</td>
+            <td class="summary-value summary-total">555.000</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="section-caption">Phụ tùng sử dụng</div>
+      <table class="items-table">
+        <colgroup>
+          <col style="width: 38px">
+          <col>
+          <col style="width: 78px">
+          <col style="width: 70px">
+          <col style="width: 56px">
+          <col style="width: 78px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Tên phụ tùng</th>
+            <th>Đơn giá</th>
+            <th>Số lượng</th>
+            <th>Đơn vị</th>
+            <th>Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td class="name">Săm</td>
+            <td class="text-right">200.000</td>
+            <td>1.00</td>
+            <td>Cái</td>
+            <td class="text-right">200.000</td>
+          </tr>
+          <tr>
+            <td colspan="4" rowspan="3"></td>
+            <td class="summary-label">Tổng tiền thuế</td>
+            <td class="summary-value">0</td>
+          </tr>
+          <tr>
+            <td class="summary-label">Tổng chiết khấu</td>
+            <td class="summary-value">- 20.000</td>
+          </tr>
+          <tr>
+            <td class="summary-label summary-total">Tổng thành tiền</td>
+            <td class="summary-value summary-total">180.000</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note-total">
+        <div class="note-box">Ghi chú</div>
+        <div class="total-box">
+          <div class="total-row">
+            <div class="label">Thành tiền dịch vụ:</div>
+            <div class="value">555.000</div>
+          </div>
+          <div class="total-row">
+            <div class="label">Thành tiền phụ tùng:</div>
+            <div class="value">180.000</div>
+          </div>
+          <div class="allocation-heading">Phân bổ bảo hiểm</div>
+          <div class="allocation-split">
+            <div class="allocation-cell head label">Khoản mục</div>
+            <div class="allocation-cell head">Bảo hiểm thanh toán</div>
+            <div class="allocation-cell head">Khách hàng thanh toán</div>
+            <div class="allocation-cell label">CK liên kết BH - Vật tư</div>
+            <div class="allocation-cell value">0</div>
+            <div class="allocation-cell value">0</div>
+            <div class="allocation-cell label">CK liên kết BH - Công dịch vụ</div>
+            <div class="allocation-cell value">-50.000</div>
+            <div class="allocation-cell value">0</div>
+            <div class="allocation-cell label">Giảm trừ bồi thường</div>
+            <div class="allocation-cell value">-50.000</div>
+            <div class="allocation-cell value">+50.000</div>
+            <div class="allocation-cell label">Khấu hao vật tư / thay mới</div>
+            <div class="allocation-cell value">-50.000</div>
+            <div class="allocation-cell value">+50.000</div>
+            <div class="allocation-cell label">Khấu trừ BH</div>
+            <div class="allocation-cell value">-50.000</div>
+            <div class="allocation-cell value">+50.000</div>
+            <div class="allocation-cell section">Cần thanh toán</div>
+          </div>
+          <div class="total-row">
+            <div class="label">Bảo hiểm thanh toán:</div>
+            <div class="value">585.000</div>
+          </div>
+          <div class="total-row">
+            <div class="label">Khách hàng thanh toán:</div>
+            <div class="value">867.000</div>
+          </div>
+          <div class="total-row final">
+            <div class="label">Tổng thanh toán:</div>
+            <div class="value">867.000</div>
+          </div>
+        </div>
+      </div>
+      <div class="amount-in-words">Tổng số tiền khách hàng thanh toán bằng chữ: <strong>Tám trăm sáu mươi bảy nghìn đồng</strong></div>
+      <div class="signature-grid">
+        <div class="signature-box">
+          <div class="signature-title">Đại diện khách hàng</div>
+          <div class="signature-sub">Ký / Ghi rõ họ tên</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-title">Cố vấn dịch vụ</div>
+          <div class="signature-sub">Ký / Ghi rõ họ tên</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

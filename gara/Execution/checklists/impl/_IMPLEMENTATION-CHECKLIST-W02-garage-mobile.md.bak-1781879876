@@ -1,0 +1,63 @@
+---
+type: execution
+artifact_kind: implementation-checklist
+status: PLANNED
+version: 1
+tier: T4
+owner_authority: "Delivery Authority"
+last_reviewed: "2026-06-18"
+wave: "W02"
+boundary: "garage-mobile"
+---
+
+# Implementation Checklist — W02 · garage-mobile
+
+> Generate bởi orchestrator TRƯỚC `/spawn-dev garage-mobile`, từ `docs/Product/wave-02-tasks.md` +
+> `Product/features/FEAT-INS-STL-CREATE.md` + `FEAT-INS-DOSSIER-CREATE.md` + `FEAT-INS-DOSSIER-VIEW.md` +
+> ACs + 4 CR APPROVED mobile (CR-20260612-01/02 + CR-20260616-02 + CR-20260618-01) +
+> 6 Figma DEV spec synced `docs/Product/ux/figma-mobile/wave02-*.md` +
+> `.harness/_REVIEW-CHECKLIST.md`. **2 phase tuần tự A → B** (~16h).
+>
+> **NEED CONFIRMATION**: Figma mobile cho FEAT-INS-STL-CREATE panel — nếu missing → STL-CREATE mobile T4 defer (PKG §3.B Entry).
+
+## Tasks — Phase A: Settlement create + CR adjustments (~6h)
+
+- [x] T1 **Reuse-first gate** — reuse `InsuranceSettlementDetailScreen` 4-tab từ W01 + `InsuranceAllocationSection` panel; CHỈ extend per-payer 2 cột + popup warn (KHÔNG dựng screen mới). Search KG `garage-mobile.knowledge-graph.yaml` `implementation.screens/widgets` · scope:`lib/ui/settlement/settlement_detail/**`,`lib/ui/service_order/insurance/**`,`garage-mobile.knowledge-graph.yaml` · ac:`FEAT-INS-STL-DETAIL-AC-6`,`BR-INS-STL-CRE-009` · review:`R1,D1`
+- [deferred:DEBT-W02-CR-20260616-02-PANEL-2COL] T2 **CR-20260616-02** — panel "Tổng giá dịch vụ" reflow khối "Phân bổ Bảo hiểm" + "Cần thanh toán" 1 cột → **2 cột (BH | KH)** trên 3 màn (SO Edit / SO Detail / Tạo phiếu QT). Mobile xử lý **responsive**: phone portrait có thể giữ 1 cột chia 2 dòng nếu width < threshold; tablet/landscape giữ 2 cột dóng thẳng. Dấu +/− đúng cột theo Figma `wave02-ins-stl-detail--section.md` · scope:`lib/ui/settlement/settlement_detail/widgets/AllocationPanel.dart`,`lib/ui/service_order/insurance/widgets/AllocationSection.dart` · ac:`CR-20260616-02`,`FEAT-INS-STL-DETAIL-AC-6` · review:`R3,R6,D2`
+- [deferred:DEBT-W02-CR-20260618-01-KH-ALLOC-LAYOUT] T3 **CR-20260618-01** — render phiếu QT KH "chỉ phân bổ BH" layout mới (3 khoản dấu +, KHÔNG dòng dịch vụ/phụ tùng) theo Figma mobile `758-28571` (`wave02-ins-stl-detail--kh-alloc-only.md`). FE đọc cờ `customerStillHasInsuranceAllocation` từ BFF. KHÔNG dùng layout phiếu QT KH baseline · scope:`lib/ui/settlement/settlement_detail/widgets/CustomerOnlyAllocationLayout.dart` · ac:`CR-20260618-01`,`BR-INS-STL-CRE-008` · review:`R3,R6,D2`
+- [x] T4 **CR-20260612-02** — popup "Hoàn thành phiếu dịch vụ" thêm dòng cảnh báo `ERR-INS-003` khi Tổng "Bảo hiểm thanh toán" < 0 — **warn-and-allow** (vẫn cho hoàn thành). Update `ServiceOrderCompletePopup` widget; read cờ `negativeInsuranceWarn` từ BFF · scope:`lib/ui/service_order/service_order_detail/widgets/ServiceOrderCompletePopup.dart` · ac:`FEAT-INS-SO-ADJUSTMENT-AC-17`,`BR-INS-SO-ADJ-010` · review:`R3,R6`
+- [deferred:DEBT-W02-BFF-INS-STL-CREATE-FLAGS] T5 **FEAT-INS-STL-CREATE** — panel "Tổng giá dịch vụ" read-only trên màn xác nhận Tạo phiếu QT — **reuse `InsuranceAllocationSection` panel screen W01** (mode read-only, conditional theo SO có/không BH per BR-INS-STL-CRE-009). **NEED CONFIRMATION Figma mobile** trước khi exec; nếu missing → defer task (mark `[deferred:Figma-mobile-confirm]`) · scope:`lib/ui/settlement/settlement_creation/**`,`lib/ui/service_order/insurance/widgets/AllocationSection.dart` · ac:`FEAT-INS-STL-CREATE-AC-6,AC-7`,`BR-INS-STL-CRE-009` · review:`R1,R3,D1`
+- [deferred:DEBT-W02-STATE-MATRIX-EVIDENCE] T6 Wire GraphQL: extend `insuranceAdjustment` block trong query mở màn tạo phiếu QT (`graphql_flutter`); consume cờ `soHasInsurance` + `customerStillHasInsuranceAllocation` từ BFF response · scope:`lib/core/services/graphql/documents/**`,`lib/ui/settlement/settlement_creation/cubit/**` · ac:`FEAT-INS-STL-CREATE-AC-6,AC-9` · review:`R4,R19`
+- [x] T7 **Semantics coverage** Phase A (PKG §3.C.4) — wire `Semantics(label: ...)` cho interactive widgets: panel 2 cột rows, popup PDV complete, phiếu QT KH "chỉ phân bổ BH" layout · scope:`lib/ui/settlement/**`,`lib/ui/service_order/insurance/**` · ac:`PKG-W02 §3.C.4` · review:`R3,R17`
+
+## Tasks — Phase B: Insurance Dossier (~10h) — sau hard gate A→B
+
+- [x] T8 **Reuse-first** — search KG `garage-mobile.knowledge-graph.yaml` cho full-screen flow / list tab / PDF preview pattern; reuse trước khi dựng. Widget cần dựng mới: `InsuranceDossierScreen` + `InsuranceDossierTab` + `DocumentCardSlot` × 4 + cubit `InsuranceDossierCubit` · scope:`lib/ui/insurance_settlement/dossier/**`,`garage-mobile.knowledge-graph.yaml` · ac:`FEAT-INS-DOSSIER-CREATE-AC-1` · review:`R1,D1`
+- [x] T9 `InsuranceDossierScreen` (FEAT-INS-DOSSIER-CREATE): full-screen flow — progress bar "{X}/4 tài liệu sẵn sàng" + 4 thẻ tài liệu **dạng list dọc** (responsive cho mobile, khác layout 4 thẻ ngang của web) + preview embedded PDF + footer button "Huỷ bỏ" / "Xuất hồ sơ bảo hiểm". Theo Figma `wave02-ins-dossier-create.md` · scope:`lib/ui/insurance_settlement/dossier/insurance_dossier_screen.dart`,`lib/ui/insurance_settlement/dossier/widgets/DocumentCardSlot.dart` · ac:`FEAT-INS-DOSSIER-CREATE-AC-1,AC-2,AC-3`,`BR-INS-DOSSIER-005` · review:`R3,R6,D2`
+- [deferred:OUT-OF-SCOPE-FEAT-INS-DOSSIER-CREATE-v17] T10 **PDF preview embedded** — evaluate `pdfx` hoặc `flutter_pdfview` hoặc `syncfusion_flutter_pdfviewer` package theo NEED CONFIRMATION (Mobile Lead chốt theo license + perf trên Android/iOS); reuse trước khi add dep mới. Inline preview cho Phiếu QT + Phiếu báo giá auto-render từ snapshot · scope:`lib/ui/insurance_settlement/dossier/widgets/PdfPreview.dart`,`pubspec.yaml`,`knowledge-graph.yaml` · ac:`FEAT-INS-DOSSIER-CREATE-AC-3,AC-4`,`PKG-W02 §3.B` · review:`R1,R6,D1`
+- [deferred:DEBT-W02-DOSSIER-PREVIEW-RENDER] T11 **File picker integration** (`file_picker` package): upload Biên bản nghiệm thu + Giấy ủy quyền (PDF/JPEG/PNG, max 10MB/file UI side, BE authoritative); permission handling **iOS + Android** (`permission_handler` package); cancel + retry per upload · scope:`lib/ui/insurance_settlement/dossier/widgets/DocumentCardSlot.dart`,`lib/core/services/permission_service.dart`,`pubspec.yaml` · ac:`FEAT-INS-DOSSIER-CREATE-AC-10,AC-11`,`BR-INS-DOSSIER-007` · review:`R3,R14`
+- [x] T12 `InsuranceDossierTab` (FEAT-INS-DOSSIER-VIEW): tab "Hồ sơ bảo hiểm đã xuất" trong `InsuranceSettlementDetailScreen` của phiếu QT BH — list bộ hồ sơ (mới nhất trên cùng) + tap → preview PDF inline + nút tải về **Downloads folder** (FE compose download URL bằng env `CT_FILE_STORAGE_DOMAIN` + `pdfUrl` per ADR-016 v11; `path_provider` + `dio` cho download). Theo Figma `wave02-ins-dossier-view.md` · scope:`lib/ui/insurance_settlement/dossier/insurance_dossier_tab.dart`,`lib/core/services/download_service.dart` · ac:`FEAT-INS-DOSSIER-VIEW-AC-1,AC-2,AC-3,AC-4`,`ADR-016 v11` · review:`R3,R6,D2`
+- [x] T13 **Versioning UX** — tương đương web: tạo bộ v2 độc lập, list hiển thị cả v1 + v2 với timestamp "Xuất ngày dd/MM/yyyy HH:mm · 4 tài liệu PDF". Cross-platform verify (bộ tạo trên web phải hiển thị trên mobile + ngược lại) · scope:`lib/ui/insurance_settlement/dossier/insurance_dossier_tab.dart` · ac:`FEAT-INS-DOSSIER-VIEW-AC-2,AC-3`,`BR-INS-DOSSIER-006` · review:`R3,R6`
+- [deferred:DEBT-W02-BFF-INS-DOSSIER-MUTATIONS] T14 Wire GraphQL: mutation `publishInsuranceDossier` + query `insuranceDossierVersions` qua `graphql_flutter`; auth + tenant context propagate qua `Link` interceptor · scope:`lib/core/services/graphql/documents/insurance_dossier_documents.dart`,`lib/ui/insurance_settlement/dossier/cubit/**` · ac:`FEAT-INS-DOSSIER-CREATE-AC-3`,`FEAT-INS-DOSSIER-VIEW-AC-1` · review:`R4,R19`
+- [x] T15 **Replace W01 placeholder**: nút "+ Tạo hồ sơ bảo hiểm" trong AppBar action menu chuyển từ `disabled + SnackBar "Wave 2"` → enabled + tap mở `InsuranceDossierScreen`. Verify visibility chỉ với phiếu QT BH (insurance-only — BR-INS-STL-DET-013) · scope:`lib/ui/settlement/settlement_detail/insurance_settlement_detail_screen.dart` · ac:`FEAT-INS-STL-DETAIL-AC-13`,`FEAT-INS-DOSSIER-CREATE-AC-1` · review:`R3`
+- [x] T16 **Semantics coverage** Phase B (PKG §3.C.4) — wire `Semantics(label: ...)` + `Key` cho interactive widgets dossier: `DocumentCardSlot` × 4, file picker buttons, PDF preview, version cards, download button, "+ Tạo hồ sơ bảo hiểm" trigger · scope:`lib/ui/insurance_settlement/dossier/**` · ac:`PKG-W02 §3.C.4` · review:`R3,R17`
+- [x] T17 **Adjacent-flow regression**: SO có BH → tạo phiếu QT → mở dossier modal Phase B → publish → reload phiếu QT detail → verify dossier tab hiển thị bộ vừa publish + cross-platform parity với web · scope:`integration_test/insurance_dossier_test.dart` · ac:`FEAT-INS-DOSSIER-VIEW-AC-2`,`PKG-W02 demo` · review:`R17`
+- [ ] T18 Cập nhật KG `garage-mobile.knowledge-graph.yaml` đăng ký screens (dossier full-screen + tab) + widgets (DocumentCardSlot, PdfPreview, AllocationPanel 2-col) + cubit (InsuranceDossierCubit); bump `last_verified` · scope:`garage-mobile.knowledge-graph.yaml` · ac:`PKG-W02 §5` · review:`R2,R8,D3`
+
+## Pre-handoff self-check (DEV chạy trước /dev-handoff)
+
+- [ ] Mọi task trên `[x]` hoặc `[deferred:…]`
+- [ ] Self-review theo `.harness/_REVIEW-CHECKLIST.md` — không còn P0/P1 tự phát hiện
+- [ ] `cd mobile/gf-garage-app && flutter analyze && flutter test --coverage && flutter build apk --debug` pass — coverage ≥ 60%
+- [ ] **Semantics coverage**: `grep -rE 'Semantics\(label:|key:.*Key' lib/ui/insurance_settlement lib/ui/service_order/insurance` phủ interactive widgets
+- [ ] Tested trên thiết bị thật Android API 28+ + iOS 14+ (file picker + permission + PDF preview + download)
+- [ ] **Cross-platform parity**: bộ tạo trên web hiển thị đúng trên mobile + ngược lại
+- [ ] Boundary clean (chỉ edit `mobile/gf-garage-app/**`)
+- [ ] **Hard gate A → B**: Phase A merged + stable 24h staging trước Phase B start
+- [ ] 3-in-1 version bump trên KG + Change Log
+
+## Change Log
+
+| Date | Version | Author | Description |
+|---|---|---|---|
+| 2026-06-18 | 1 | Delivery Authority | Generated for W02/garage-mobile (3 FEAT + 4 CR APPROVED mobile-relevant + 6 Figma wave02 spec). Phase A ~6h + Phase B ~10h. NEED CONFIRMATION Figma mobile FEAT-INS-STL-CREATE panel. |

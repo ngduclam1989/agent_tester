@@ -1,0 +1,182 @@
+# Knowledge Graph — {{boundary}}
+# Domain context cho agents working on this boundary.
+# Cập nhật khi entities, relationships, events, APIs hoặc integrations thay đổi.
+# Tier: T3. Owner: boundary owner agent.
+#
+# ────────────────────────────────────────────────
+# CANONICAL SECTION ORDER (giữ đúng order khi tạo KG mới)
+# ────────────────────────────────────────────────
+# boundary → version → last_updated → owner_authority → metadata →
+# apis → events → entities (hoặc `data` cho BFF) → business_rules →
+# workflows → integrations → dependencies → change_log
+#
+# Variants:
+# - BE microservice: dùng `entities:` (DB-backed aggregate / entity / value object)
+# - BFF aggregator:  dùng `data:` thay `entities:` (composition projection từ BE)
+# - Frontend / Mobile / Python service: có thể có section đặc thù (CLIENT_FLOW,
+#   synchronous_pipeline, runtime_events) — không bắt buộc theo template này.
+
+boundary: "{{boundary}}"
+version: 1
+last_updated: "{{YYYY-MM-DD}}"
+owner_authority: "{{Delivery Authority | Architecture Authority}}"
+
+# ────────────────────────────────────────────────
+# METADATA — boundary purpose + tech stack
+# ────────────────────────────────────────────────
+metadata:
+  purpose: "{{1-line purpose}}"
+  tech: { language: "{{Java 21 / Node.js 22 / React 19}}", framework: "{{Spring Boot 3.5.0 / Apollo Server 4 / Vite+React}}", data_store: "{{PostgreSQL / Redis / S3 / none}}" }
+  epics: []
+  features: []
+  # (BFF boundaries) integration spec với backends — single source-of-truth.
+  integration_ref: "Architecture/integrations/INTEG-BFF-{{boundary}}.md"  # ONLY nếu boundary là BFF
+  # (Backend boundaries reference bởi ≥1 BFF) — list BFF integration spec files.
+  integration_consumers: []  # e.g. ["Architecture/integrations/INTEG-BFF-{{bff-1}}.md", ...]
+
+# ────────────────────────────────────────────────
+# APIS — REST endpoints (BE) hoặc GraphQL resolvers (BFF)
+# ────────────────────────────────────────────────
+# BE: REST controllers — path là HTTP path, method là HTTP verb
+# BFF: GraphQL resolvers — path là operation name (Query.X / Mutation.Y),
+#      method để "GRAPHQL_QUERY" hoặc "GRAPHQL_MUTATION"
+#
+# API lifecycle status (RULE-08 — bắt buộc điền cho mọi entry):
+#   active        — đang được gọi thực tế; active_callers PHẢI có ít nhất 1 entry
+#   internal-only — chỉ gọi qua x-api-key bởi BE service khác, không qua graph
+#   deprecated    — có version mới thay thế; replaced_by PHẢI được điền
+#   unused        — không có caller nào; thêm comment: # TODO: confirm dead code
+#   draft         — endpoint đã document nhưng chưa implement / feature flag chưa bật
+#
+# Cách verify active_callers (RULE-08):
+#   1. Tìm trong agg-garage-graph KG: operations[*].downstream[service=THIS, path=PATH]
+#   2. Tìm trong integrations.inbound của KG này: source boundary + purpose text
+#   3. Nếu không xuất hiện ở bất kỳ đâu → status: unused
+apis:
+  - name: "{{endpoint-name}}"
+    path: "{{/protected/v1/resources | Query.searchResources}}"
+    method: "{{GET | POST | PUT | DELETE | GRAPHQL_QUERY | GRAPHQL_MUTATION}}"
+    purpose: "{{1-line purpose}}"
+    status: "{{active | internal-only | deprecated | unused | draft}}"   # RULE-08: bắt buộc
+    active_callers: ["{{caller-boundary}}"]  # Verify từ agg-garage-graph downstream hoặc integrations.inbound
+    replaced_by: "{{new-api-name}} | null"   # RULE-09: điền khi status=deprecated; null nếu không
+    request:
+      schema:
+        field_name: "type"  # replace với field thật
+    response:
+      schema:
+        field_name: "type"
+
+# ────────────────────────────────────────────────
+# EVENTS — Kafka / message broker (single dict: produces + consumes)
+# ────────────────────────────────────────────────
+events:
+  produces:
+    - topic: "{{topic-name}}"
+      payload:
+        field_name: "type"  # replace với field thật của payload
+      meaning: "{{trigger / when emitted / consumer hint}}"
+  consumes:
+    - topic: "{{topic-name}}"
+      payload:
+        field_name: "type"
+      meaning: "{{handler class + routing/filter logic}}"
+
+# ────────────────────────────────────────────────
+# ENTITIES — aggregate roots + related (BE)
+# ────────────────────────────────────────────────
+# Thay bằng `data:` nếu boundary là BFF (composition projection từ BE).
+# Cho stateless worker không own DB, dùng `note:` field để giải thích pattern.
+entities:
+  - name: "{{EntityName}}"
+    type: "aggregate_root"  # aggregate_root | entity | value_object
+    description: "{{Description}}"
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "{{attribute}}", type: "{{type}}", required: true, constraints: ["{{unique}}", "{{not_null}}"] }
+    relationships:
+      - { target: "{{OtherEntity}}", type: "one_to_many", description: "{{Description}}" }
+    invariants:
+      - "{{Business invariant this entity enforces}}"
+
+# (BFF variant — thay khối entities ở trên bằng:)
+# data:
+#   - name: "{{ProjectionName}}"
+#     description: "{{Composition projection từ BE — không own state}}"
+#     source_boundaries: ["{{be-1}}", "{{be-2}}"]
+
+# ────────────────────────────────────────────────
+# BUSINESS RULES — invariants enforced trong boundary
+# ────────────────────────────────────────────────
+# Mỗi rule: id format `BR-{SERVICE-PREFIX}-NNN`, cornerstone=true cho rule không bao giờ phá,
+# enforcement_point trỏ đến class/method/migration thực thi rule.
+# BFF có thể để rỗng `business_rules: []` vì logic sống ở BE.
+business_rules:
+  - { id: "BR-{{PREFIX}}-001", description: "{{Rule description}}", cornerstone: true, enforcement_point: "{{service.method | repository | migration}}" }
+
+# ────────────────────────────────────────────────
+# WORKFLOWS — every async worker MUST appear here
+# ────────────────────────────────────────────────
+# `workflows:` is the single source of truth cho mọi async worker trong service:
+# Temporal workflows, scheduled cron jobs, external-cron-driven batch processors.
+#
+# Type values:
+#   - TEMPORAL                — Temporal workflow (interface + execution / child / saga)
+#   - CRON_HTTP_JOB           — gf-worker scheduled HTTP outbound job
+#   - CRON_BATCH_PROCESSOR    — service nội bộ chạy batch theo cron (Spring @Scheduled
+#                                hoặc nhận tick từ gf-worker REST)
+#
+# KHÔNG đưa vào workflows:
+#   - Kafka @KafkaListener thuần — đã modeling ở `events.consumes` (field `meaning`).
+#     Kafka chỉ xuất hiện trong workflows khi nó là step 1 của một Temporal workflow.
+#   - Outbox relay scheduler (Spring @Scheduled poll OutboxEvent → publish Kafka) —
+#     pattern hạ tầng dùng chung, ghi ở `entities.invariants` của entity OutboxEvent.
+#
+# Step 1 phải mô tả trigger tường minh theo format:
+#   `[Trigger Type] [Source] [Schedule/Condition]`
+# Ví dụ:
+#   - "Triggered by Kafka <topic> <filter-condition>"
+#   - "Triggered by Temporal Schedule cron `<expr>` <timezone>"
+#   - "Triggered by gf-worker cron HTTP every <n>s → POST <path>"
+#   - "Triggered by Spring @Scheduled fixedDelay <n>s — scan <table> WHERE <cond>"
+#   - "Started by <Service>.<Method> via WorkflowClient.start khi <event>"
+#   - "Spawned by <ParentWorkflow> via Workflow.executeChildWorkflow"
+# Tránh wording mơ hồ như "Cron-driven start", "Started after X", "Scheduled when Y".
+workflows:
+  - name: "{{WorkflowName}}"
+    type: "{{TEMPORAL | CRON_HTTP_JOB | CRON_BATCH_PROCESSOR}}"
+    description: "{{What this workflow orchestrates — task queue, timeout, signals, retry policy}}"
+    steps:
+      - step: 1
+        service: "{{boundary}}"
+        action: "{{Trigger description theo format trên}}"
+      - step: 2
+        service: "{{boundary}}"
+        action: "{{Activity / processing step}}"
+
+# ────────────────────────────────────────────────
+# INTEGRATIONS — boundary ↔ boundary API/EVENT calls
+# ────────────────────────────────────────────────
+# Mô tả luồng API/EVENT vào (inbound) và ra (outbound) giữa boundary này và boundary khác.
+# Đây KHÔNG phải infra dependencies — infra (PostgreSQL/Kafka/Redis/etc) thuộc `dependencies:` bên dưới.
+integrations:
+  inbound:
+    - { type: "API", source: "{{caller-boundary}}", purpose: "{{Endpoints called + reason}}" }
+    - { type: "EVENT", source: "{{producer-boundary}}", purpose: "{{Topic + handler context}}" }
+  outbound:
+    - { type: "API", target: "{{callee-boundary}}", purpose: "{{Endpoints called + reason}}" }
+    - { type: "EVENT", target: "{{kafka-topic}}", purpose: "{{Topic + downstream consumers}}" }
+
+# ────────────────────────────────────────────────
+# DEPENDENCIES — infrastructure libs/services
+# ────────────────────────────────────────────────
+# Mô tả runtime infrastructure (database, broker, workflow engine, framework, auth, …).
+# Boundary-to-boundary API calls thuộc `integrations:` bên trên, KHÔNG để ở đây.
+dependencies:
+  - { name: "{{PostgreSQL / Redis / Kafka / Temporal / Spring Boot / spring-security-starter}}", type: "{{database | broker | workflow | framework | auth | api_client | api_documentation | cache | storage}}", purpose: "{{Why used}}", config_ref: "{{env var name / Spring property / class}}" }
+
+# ────────────────────────────────────────────────
+# CHANGE LOG — lịch sử thay đổi KG
+# ────────────────────────────────────────────────
+change_log:
+  - { date: "{{YYYY-MM-DD}}", summary: "{{Tóm tắt thay đổi}}", author: "{{author}}" }

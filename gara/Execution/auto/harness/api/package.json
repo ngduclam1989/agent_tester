@@ -1,0 +1,22 @@
+{
+  "name": "garage-api-test-harness",
+  "version": "1.0.0",
+  "description": "QC-owned API test harness for Garage — Jest + supertest + axios",
+  "private": true,
+  "scripts": {
+    "test": "jest --runInBand",
+    "test:w01": "jest --runInBand --testPathPattern='W01/api'",
+    "test:w02": "jest --runInBand --testPathPattern='W02/api'",
+    "smoke": "jest --runInBand --testPathPattern='probes/smoke'"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/supertest": "^6.0.2",
+    "axios": "^1.6.7",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}

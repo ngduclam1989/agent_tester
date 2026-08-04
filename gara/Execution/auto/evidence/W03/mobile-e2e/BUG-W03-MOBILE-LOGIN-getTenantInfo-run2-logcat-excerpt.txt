@@ -1,0 +1,190 @@
+07-03 10:30:38.099 14381 14381 I flutter : loginAs DIAGNOSTIC — onLoginScreen(text "Đăng nhập" tồn tại) = true
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ #1   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:137:12)
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ #2   <asynchronous suspension>
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛 {
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛   "REQUEST": {
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛     "DOCUMENT": [
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "mutation Mutation($input: LoginInput!) {",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "  __typename",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "  login(input: $input) {",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "    __typename",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "    ... on LoginOutput {",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      idToken",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      accessToken",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      refreshToken",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      firstLoginChallenge",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "    }",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "    ... on ErrorResponse {",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      code",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      id",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      message",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      path",
+07-03 10:30:39.272 14381 14381 I flutter : DEBUG │ 🐛       "      statusCode",
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛       "      timestamp",
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛       "    }",
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛       "  }",
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛       "}"
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛     ],
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛     "rootField": "login",
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛     "variables": {
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛       "input": {
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛         "identifier": "0810000002",
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛         "password": "Test@12345"
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛       }
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛     }
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛   }
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG │ 🐛 }
+07-03 10:30:39.273 14381 14381 I flutter : DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:218:12)
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛 {
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛   "RESPONSE": {
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛     "__typename": "Mutation",
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛     "login": {
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛       "__typename": "LoginOutput",
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛       "idToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZXYtdXNlci0wMDIiLCJjdXN0b206dGVuYW50X2lkIjoiMSIsImN1c3RvbTp0ZW5hbnRfdHlwZSI6IkdBUkFHRSIsImN1c3RvbTpzdWJfZG9tYWluIjoiZGVtbyIsImN1c3RvbTpyb2xlIjoiYWNjb3VudGFudCIsImN1c3RvbTpncm91cF9yb2xlcyI6ImFjY291bnRhbnQiLCJjdXN0b206cmVnaW9ucyI6IlZOIiwiY3VzdG9tOnN0YXR1cyI6IkFDVElWRSIsImVtYWlsIjoiYWNjb3VudGFudEBkZW1vLmxvY2FsIiwicGhvbmVfbnVtYmVyIjoiMDgxMDAwMDAwMiIsImlhdCI6MTc4MzA0OTQzOSwiZXhwIjoxNzgzMTM1ODM5fQ.VYyxl7kLB26kk3KHh1U_z4OZHmrP_TJzUPK5GCXyxRk",
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛       "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJkZXYtdXNlci0wMDIiLCJjdXN0b206dGVuYW50X2lkIjoiMSIsImN1c3RvbTp0ZW5hbnRfdHlwZSI6IkdBUkFHRSIsImN1c3RvbTpzdWJfZG9tYWluIjoiZGVtbyIsImN1c3RvbTpyb2xlIjoiYWNjb3VudGFudCIsImN1c3RvbTpncm91cF9yb2xlcyI6ImFjY291bnRhbnQiLCJjdXN0b206cmVnaW9ucyI6IlZOIiwiY3VzdG9tOnN0YXR1cyI6IkFDVElWRSIsImVtYWlsIjoiYWNjb3VudGFudEBkZW1vLmxvY2FsIiwicGhvbmVfbnVtYmVyIjoiMDgxMDAwMDAwMiIsImlhdCI6MTc4MzA0OTQzOSwiZXhwIjoxNzgzMTM1ODM5fQ.VYyxl7kLB26kk3KHh1U_z4OZHmrP_TJzUPK5GCXyxRk",
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛       "refreshToken": "dev-refresh-aqm6h67d579",
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛       "firstLoginChallenge": null
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛     }
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛   }
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG │ 🐛 }
+07-03 10:30:39.331 14381 14381 I flutter : DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.753 14381 14381 I flutter : DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.753 14381 14381 I flutter : DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 10:30:39.753 14381 14381 I flutter : DEBUG │ #1   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:137:12)
+07-03 10:30:39.753 14381 14381 I flutter : DEBUG │ #2   <asynchronous suspension>
+07-03 10:30:39.754 14381 14381 I flutter : DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 10:30:39.754 14381 14381 I flutter : DEBUG │ 🐛 {
+07-03 10:30:39.754 14381 14381 I flutter : DEBUG │ 🐛   "REQUEST": {
+07-03 10:30:39.754 14381 14381 I flutter : DEBUG │ 🐛     "DOCUMENT": [
+07-03 10:30:39.755 14381 14381 I flutter : DEBUG │ 🐛       "query GetTenantInfo {",
+07-03 10:30:39.755 14381 14381 I flutter : DEBUG │ 🐛       "  __typename",
+07-03 10:30:39.755 14381 14381 I flutter : DEBUG │ 🐛       "  getTenantInfo {",
+07-03 10:30:39.755 14381 14381 I flutter : DEBUG │ 🐛       "    __typename",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "    ... on GetTenantInfoApiResponse {",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "      data {",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        __typename",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        id",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        code",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        name",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        type",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        logoUrl",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        representativeName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        chiefAccountantName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        companyPhoneNumber",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        companyEmailAddress",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        companyHoAddress",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        taxCode",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        invoiceCompanyName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        invoiceCompanyAddress",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        invoiceCompanyEmailAddress",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        transporterRegistry {",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          __typename",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          id",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          tenantId",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          transporterName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          routeName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          routeContactPhoneNumber",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          routeStartedAt",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          shippingAddress",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          note",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        }",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        operationAreas {",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          __typename",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          id",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          tenantId",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          operationRegionCode",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          operationAreaCode",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        }",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        branches {",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          __typename",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          id",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          branchCode",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          branchName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          address",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          phone",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          city",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          ward",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          isDefault",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          email",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        }",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        currentUser {",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          __typename",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          id",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          userName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          fullName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          phoneNumber",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          emailAddress",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          avatarUrl",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          iamCreationStatus",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          status",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        }",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        opsArea",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        opsRegion",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        tcConfirmed",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        dataPrivacyConfirmed",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        ecommerceConfirmed",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        tenantBusinessModel",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        insurances {",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          __typename",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          tenantId",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          insuranceCode",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "          insuranceName",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "        }",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "      }",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "    }",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "  }",
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛       "}"
+07-03 10:30:39.757 14381 14381 I flutter : DEBUG │ 🐛     ],
+07-03 10:30:39.758 14381 14381 I flutter : DEBUG │ 🐛     "rootField": "getTenantInfo",
+07-03 10:30:39.758 14381 14381 I flutter : DEBUG │ 🐛     "variables": {}
+07-03 10:30:39.758 14381 14381 I flutter : DEBUG │ 🐛   }
+07-03 10:30:39.758 14381 14381 I flutter : DEBUG │ 🐛 }
+07-03 10:30:39.758 14381 14381 I flutter : DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:218:12)
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ 🐛 {
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ 🐛   "RESPONSE": {
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ 🐛     "__typename": "Query",
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ 🐛     "getTenantInfo": {
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ 🐛       "__typename": "ErrorResponse"
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ 🐛     }
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ 🐛   }
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG │ 🐛 }
+07-03 10:30:39.814 14381 14381 I flutter : DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.815 14381 14381 I flutter : WARNING ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ {__typename: ErrorResponse}
+07-03 10:30:39.816 14381 14381 I flutter : WARNING ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:232:14)
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ #3   <asynchronous suspension>
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ #4   ProfileRepositoryImpl.getTenantInfo (package:cardoctor_garage_v3/core/repositories/profile/profile_repository.dart:70:20)
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ #5   <asynchronous suspension>
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ #6   LoginCubit.getTenantInfo.<anonymous closure> (package:cardoctor_garage_v3/ui/auth/login/login_cubit.dart:71:22)
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ #7   <asynchronous suspension>
+07-03 10:30:39.816 14381 14381 I flutter : WARNING ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 10:30:39.816 14381 14381 I flutter : WARNING │ ⚠️ GraphQL ErrorResponse
+07-03 10:30:39.816 14381 14381 I flutter : WARNING └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 10:30:40.039 14381 14381 I flutter : 00:09 +1: .Users.all_engineer.Projects.lemn.garage_agentic_design.Execution.auto.specs.W03.mobile_e2e.inventory_hub_patrol_test W03 Hub journey: TC-001 render 2 tile -> TC-002 nav+back -> TC-003 Product tile -> TC-004 debounce -> TC-005 regression -> TC-006 hardware back [E]
+07-03 10:30:40.040 14381 14381 I flutter :   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+07-03 10:30:40.042 14381 14381 I flutter :   dart:core-patch/errors_patch.dart 67:4         _AssertionError._doThrowNew
+07-03 10:30:40.042 14381 14381 I flutter :   dart:core-patch/errors_patch.dart 49:5         _AssertionError._throwNew
+07-03 10:30:40.042 14381 14381 I flutter :   package:flutter_test/src/binding.dart 1911:9   TestWidgetsFlutterBinding._runTest.handleUncaughtError
+07-03 10:30:40.042 14381 14381 I flutter :   package:flutter_test/src/binding.dart 1920:13  TestWidgetsFlutterBinding._runTest.<fn>
+07-03 10:30:40.042 14381 14381 I flutter :   dart:async/zone.dart 482:14                    _Zone._processUncaughtError
+07-03 10:30:40.042 14381 14381 I flutter :   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 10:30:40.042 14381 14381 I flutter :   dart:async/future_impl.dart 848:24             Future._propagateToListeners
+07-03 10:30:40.042 14381 14381 I flutter :   dart:async/future_impl.dart 738:5              Future._completeErrorObject
+07-03 10:30:40.042 14381 14381 I flutter :   dart:async/future_impl.dart 742:5              Future._completeError
+07-03 10:30:40.042 14381 14381 I flutter :

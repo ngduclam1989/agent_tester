@@ -1,0 +1,922 @@
+# KG UI Label Map — garage-mobile
+#
+# Purpose:
+# - Keep mobile UI label mapping inside the KG area, not Product/.
+# - Map the full gf-garage-app mobile project by route/domain/source-of-truth.
+# - Keep detailed visible-label drill-downs in the same KG extension when a
+#   screen needs field-level mapping.
+
+metadata:
+  type: knowledge-graph-extension
+  artifact_kind: mobile-ui-label-map
+  status: ACTIVE
+  version: 6
+  tier: T2
+  owner_authority: Architecture Authority
+  boundary: "garage-mobile"
+  parent_kg: "Execution/knowledge-graphs/garage-mobile.knowledge-graph.yaml"
+  source_repo: "/Users/congvn/Desktop/gf-garage-app"
+  source_package: "cardoctor_garage_v3"
+  last_reviewed: "2026-05-19"
+  coverage_status: "full-project-structural-map"
+  project_inventory:
+    routed_entries: 126
+    ui_page_files: 133
+    ui_top_level_domains: 26
+    graphql_documents: 24
+    repository_files: 28
+
+coverage_model:
+  structural_map:
+    status: "complete-for-routed-mobile-domains"
+    means:
+      - "Every route declared in lib/core/router/router.dart is assigned to a mobile domain below."
+      - "Each domain points to its Flutter UI path, repository boundary, GraphQL document(s), and downstream provider."
+      - "Shared widgets/platform plugins are mapped as supporting surfaces instead of standalone business routes."
+  detailed_label_map:
+    status: "drill-down-by-priority-screen"
+    means:
+      - "Only mobile-owned labels are expanded per screen: LocaleKeys/localization JSON, hardcoded Flutter strings, shared constants, enum labels, or common UI classes maintained by mobile."
+      - "Backend-owned dynamic text/options/statuses from API/Graph responses are excluded completely from ui_label_maps."
+
+label_ownership_policy:
+  include:
+    - "Localization keys and translated values maintained in assets/localizations/*.json, generated LocaleKeys, or lib/core/localizations/**."
+    - "Hardcoded visible strings in Flutter widgets, dialogs, toasts, buttons, placeholders, empty states, app bars, and tab labels."
+    - "Static constants/enums/common classes maintained by mobile that drive visible labels."
+  exclude:
+    - "Customer, vehicle, supplier, product, catalog, payment, chat, notification, and status text returned as backend response data."
+    - "Runtime values loaded from searchCatalog, suggest*, CometChat runtime, payment gateway pages, or notification payloads."
+  boundary_rule: "If mobile stores only the selected id/code and renders the display name from response, the display name is backend-owned dynamic text, not a mobile label."
+
+authoring_rules:
+  - "UI label maps for garage-mobile live in this KG extension, not in Product/."
+  - "Use Flutter source, assets/localizations/*.json, generated LocaleKeys, and mobile constants/enums as source of truth for labels."
+  - "Do not copy labels from garage-web label maps unless the mobile source shows the same label."
+  - "For hardcoded Flutter labels, record source_file and component context instead of inventing i18n keys."
+  - "For backend dynamic catalog/options/statuses, do not record response text under ui_label_maps."
+  - "Append new screen drill-downs under ui_label_maps; do not rewrite existing entries without updating change_log."
+
+source_priority:
+  - priority: 1
+    source: "Flutter UI source under lib/ui/**"
+    used_for: "visible labels, buttons, placeholders, modal titles, toast text"
+  - priority: 2
+    source: "assets/localizations/vi.json + generated LocaleKeys"
+    used_for: "resolved Vietnamese labels for i18n-backed UI"
+  - priority: 3
+    source: "Mobile-maintained constants/enums/common UI classes"
+    used_for: "static visible labels not backed by localization"
+
+domain_maps:
+  - domain_id: "app-bootstrap-shell"
+    domain_name: "App bootstrap, flavor, guards, app shell"
+    ui_paths:
+      - "lib/app/**"
+      - "lib/start.dart"
+      - "lib/flavors.dart"
+      - "lib/ui/splash/**"
+      - "lib/ui/main/**"
+      - "lib/core/router/**"
+    routes:
+      - "SplashRoute"
+      - "MainRoute"
+      - "HomeRoute"
+      - "PersonalProfileRoute"
+      - "BusinessInformationRoute"
+      - "DeliveryAddressRoute"
+      - "AffiliatedGarageRoute"
+      - "PolicyTermsRoute"
+      - "PolicyFirstRoute"
+      - "ProfileQrRoute"
+    repositories:
+      - "lib/core/repositories/profile/profile_repository.dart"
+      - "lib/core/repositories/home/home_repository.dart"
+      - "lib/core/repositories/permission/permission_repository.dart"
+      - "lib/core/repositories/flag/flags_repository.dart"
+    graphql_documents:
+      - "profile_document.dart"
+      - "home_document.dart"
+      - "permission_document.dart"
+      - "feature_flags_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["home", "account", "personal_profile", "business_info", "delivery_address", "terms_and_policies", "setting"]
+      hardcoded_sources: ["lib/ui/main/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "Firebase Remote Config"
+      - "permission snapshot"
+
+  - domain_id: "auth-iam"
+    domain_name: "Authentication, password, first-login challenge"
+    ui_paths:
+      - "lib/ui/auth/**"
+      - "lib/ui/change_user_password/**"
+    routes:
+      - "LoginRoute"
+      - "ChangePasswordRoute"
+      - "ForgotPasswordRoute"
+      - "PhoneNumberRoute"
+      - "CreateNewPasswordRoute"
+      - "OtpRoute"
+      - "ChangeUserPasswordRoute"
+    repositories:
+      - "lib/core/repositories/auth/auth_repository.dart"
+      - "lib/core/repositories/profile/profile_repository.dart"
+    graphql_documents:
+      - "auth_document.dart"
+      - "profile_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["welcome", "phone_number", "password", "forgot_password", "login", "change_password", "iam_*"]
+    cross_boundaries:
+      - "agg-sso-graph"
+      - "sec-iam-service"
+
+  - domain_id: "quotation-request-quote"
+    domain_name: "Request quote, quotation detail, pricing and quotation history"
+    ui_paths:
+      - "lib/ui/quotation/**"
+    routes:
+      - "CreateQuotationRoute"
+      - "RequestQuoteListRoute"
+      - "RequestQuoteListSearchRoute"
+      - "RequestQuoteListFilterRoute"
+      - "QuotationDetailRoute"
+      - "HistoryUpdateQuotationRoute"
+    repositories:
+      - "lib/core/repositories/quotation/quotation_repository.dart"
+      - "lib/core/repositories/request_quote/request_quote_repository.dart"
+      - "lib/core/repositories/product/product_repository.dart"
+    graphql_documents:
+      - "quotation_document.dart"
+      - "product_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["quote", "quotation_detail", "create_a_quote_request", "request_best_price", "send_quotation", "spare_parts_quote", "invoice_request", "invoice_locked_note", "company_name", "tax_code", "invoice_company_name_hint", "invoice_company_name_required", "invoice_tax_code_hint", "invoice_tax_code_required", "invoice_company_email", "invoice_company_email_hint", "invoice_company_email_invalid", "invoice_company_address", "invoice_company_address_hint", "invoice_company_address_required"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "gf-sales"
+      - "gf-erp-mdm"
+
+  - domain_id: "ordering-purchase"
+    domain_name: "Cart, purchase request, purchase order V1/V3, payment and transfer information"
+    ui_paths:
+      - "lib/ui/ordering/**"
+    routes:
+      - "CartRoute"
+      - "ConfirmOrderRoute"
+      - "ListPurchaseRequestRoute"
+      - "ListPurchaseRequestSearchRoute"
+      - "ListPurchaseRequestFilterRoute"
+      - "PurchaseRequestDetailRoute"
+      - "ListOrderRoute"
+      - "SearchListOrderRoute"
+      - "ListOrderV3Route"
+      - "SearchListOrderV3Route"
+      - "ListOrderFilterRoute"
+      - "CreateNewOrderRoute"
+      - "CreateNewProductRoute"
+      - "SparePartSelectionRoute"
+      - "OrderDetailRoute"
+      - "OrderDetailV3Route"
+      - "MarketplaceOrderDetailRoute"
+      - "TransferInformationRoute"
+      - "CreditCardPaymentRoute"
+    repositories:
+      - "lib/core/repositories/ordering/ordering_repository.dart"
+      - "lib/core/repositories/direct_purchase/direct_purchase_repository.dart"
+      - "lib/core/repositories/supplier/supplier_repository.dart"
+      - "lib/core/repositories/product/product_repository.dart"
+    graphql_documents:
+      - "ordering_document.dart"
+      - "direct_purchase_document.dart"
+      - "supplier_document.dart"
+      - "product_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["cart", "print_order", "payment_history", "tax_code", "vendor_name", "order_source_direct", "order_source_marketplace"]
+      hardcoded_sources: ["lib/ui/ordering/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "payment-gateway-pages"
+
+  - domain_id: "booking"
+    domain_name: "Booking list/search/filter/create/detail/edit"
+    ui_paths:
+      - "lib/ui/booking/**"
+    routes:
+      - "BookingListRoute"
+      - "BookingSearchRoute"
+      - "BookingFilterRoute"
+      - "BookingCreateRoute"
+      - "BookingDetailRoute"
+      - "BookingEditRoute"
+    repositories:
+      - "lib/core/repositories/booking/booking_repository.dart"
+      - "lib/core/repositories/service_order/suggest_repository.dart"
+    graphql_documents:
+      - "booking_document.dart"
+      - "suggest_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["customer_*", "vehicle_*", "phone", "creation_date", "apply", "cancel"]
+      hardcoded_sources: ["lib/ui/booking/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "gf-sales"
+      - "gf-customer"
+
+  - domain_id: "service-order-v1"
+    domain_name: "Service order V1 list/create/detail/print/payment/edit"
+    ui_paths:
+      - "lib/ui/service_order/**"
+    routes:
+      - "ServiceOrderListRoute"
+      - "ServiceOrderDetailRoute"
+      - "ServiceOrderCreationRoute"
+      - "ServiceOrderListFilterRoute"
+      - "ServiceOrderListSearchRoute"
+      - "CreateProductRoute"
+      - "ServiceOrderPrintRoute"
+      - "ServiceOrderRecordPaymentRoute"
+      - "AddEditOrderRoute"
+    repositories:
+      - "lib/core/repositories/service_order/service_order_repository.dart"
+      - "lib/core/repositories/service_order/suggest_repository.dart"
+      - "lib/core/repositories/media/media_repository_impl.dart"
+    graphql_documents:
+      - "service_order_document.dart"
+      - "suggest_document.dart"
+      - "shared_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["so_*", "print_service_order", "print_repair_order", "payment_history"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "garage-rest-export-api"
+      - "garage-rest-upload-helper"
+
+  - domain_id: "service-order-v3"
+    domain_name: "Service order V3 list/create/detail/print/part order"
+    ui_paths:
+      - "lib/ui/service_order_v3/**"
+    routes:
+      - "ServiceOrderDetailV3Route"
+      - "ServiceOrderCreationV3Route"
+      - "ServiceOrderListFilterRouteV3"
+      - "ServiceOrderListSearchRouteV3"
+      - "ServiceOrderListRouteV3"
+      - "ServiceOrderPrintV3Route"
+      - "PartOrderRoute"
+    repositories:
+      - "lib/core/repositories/service_order/service_order_repository.dart"
+      - "lib/core/repositories/ordering/ordering_repository.dart"
+    graphql_documents:
+      - "service_order_document.dart"
+      - "ordering_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["so_*", "so_print_title_*", "so_parts_*", "so_service_*"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "gf-service-order-v3"
+
+  - domain_id: "customer"
+    domain_name: "Customer list/search/filter/detail/form and vehicle customer data"
+    ui_paths:
+      - "lib/ui/customer/**"
+    routes:
+      - "CustomerListRoute"
+      - "CustomerSearchRoute"
+      - "CustomerDetailRoute"
+      - "CustomerFormRoute"
+    repositories:
+      - "lib/core/repositories/customer/customer_repository.dart"
+    graphql_documents:
+      - "customer_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["customer_*"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "gf-customer"
+
+  - domain_id: "supplier"
+    domain_name: "Supplier list/search/filter/add/edit/detail"
+    ui_paths:
+      - "lib/ui/supplier/**"
+    routes:
+      - "SupplierListRoute"
+      - "SupplierSearchRoute"
+      - "SupplierDetailRoute"
+      - "SupplierAddRoute"
+      - "SupplierEditRoute"
+      - "SupplierFilterRoute"
+    repositories:
+      - "lib/core/repositories/supplier/supplier_repository.dart"
+    graphql_documents:
+      - "supplier_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["vendor_name", "number_vendor", "apply", "cancel", "address", "phone"]
+      hardcoded_sources: ["lib/ui/supplier/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "supplier/catalog service"
+
+  - domain_id: "tenant-transporter-registry"
+    domain_name: "Tenant transporter registry list/search/filter/add/edit/detail"
+    ui_paths:
+      - "lib/ui/tenant_transporter_registry/**"
+    routes:
+      - "TenantTransporterRegistryListRoute"
+      - "TenantTransporterRegistrySearchRoute"
+      - "TenantTransporterRegistryFilterRoute"
+      - "TenantTransporterRegistryDetailRoute"
+      - "TenantTransporterRegistryAddRoute"
+      - "TenantTransporterRegistryEditRoute"
+    repositories:
+      - "lib/core/repositories/tenant_transporter_registry/tenant_transporter_registry_repository.dart"
+    graphql_documents:
+      - "tenant_transporter_registry_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["transporter_registry_*", "phone_number", "enter_phone_number", "customer_note", "so_note_input", "customer_save", "customer_edit", "customer_status", "customer_status_active", "customer_all", "customer_show_result", "vehicle_management_filter_title", "vehicle_management_reset", "departure_time", "cancel", "hrm_4_close_btn"]
+      hardcoded_sources: ["lib/ui/tenant_transporter_registry/**", "lib/core/common/bases/enum/transporter_registry_status.dart"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "tenant transporter registry service"
+
+  - domain_id: "inventory"
+    domain_name: "Inventory stock, receipt, delivery, service and period stock"
+    ui_paths:
+      - "lib/ui/inventory/**"
+    routes:
+      - "InventoryListRoute"
+      - "InventorySearchRoute"
+      - "InventoryFilterRoute"
+      - "ReceiptDetailRoute"
+      - "DeliveryDetailRoute"
+      - "StockDetailRoute"
+      - "ServiceDetailRoute"
+      - "PeriodStockDetailRoute"
+    repositories:
+      - "lib/core/repositories/inventory/inventory_repository.dart"
+      - "lib/core/repositories/inventory_stock/inventory_stock_repository.dart"
+    graphql_documents:
+      - "inventory_document.dart"
+      - "inventory_stock_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["spare_parts_list", "sold_out", "creation_date", "update_time", "load_more"]
+      hardcoded_sources: ["lib/ui/inventory/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "inventory service"
+
+  - domain_id: "human-resource"
+    domain_name: "HRM employee list/search/filter/create/detail and SSO provisioning"
+    ui_paths:
+      - "lib/ui/human_resource/**"
+    routes:
+      - "EmployeeListRoute"
+      - "EmployeeSearchRoute"
+      - "EmployeeFilterRoute"
+      - "EmployeeCreateRoute"
+      - "EmployeeDetailRoute"
+    repositories:
+      - "lib/core/repositories/employee/employee_repository.dart"
+    graphql_documents:
+      - "employee_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["hrm_*"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "HRM service"
+      - "SSO provisioning"
+
+  - domain_id: "employee-accounts"
+    domain_name: "Employee account list/search/filter/detail"
+    ui_paths:
+      - "lib/ui/employee_accounts/**"
+    routes:
+      - "ListEmployeeAccountsRoute"
+      - "FilterEmployeeAccountsRoute"
+      - "DetailEmployeeAccountsRoute"
+      - "SearchEmployeeAccountsRoute"
+    repositories:
+      - "lib/core/repositories/employee_accounts/employee_accounts_repository.dart"
+    graphql_documents:
+      - "employee_account_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["hrm_sso_*", "hrm_filter_*", "hrm_list_*"]
+      hardcoded_sources: ["lib/ui/employee_accounts/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "policy/role service"
+
+  - domain_id: "settlement"
+    domain_name: "Settlement list/search/filter/create/edit/detail/print"
+    ui_paths:
+      - "lib/ui/settlement/**"
+    routes:
+      - "SettlementListRoute"
+      - "SettlementDetailRoute"
+      - "SettlementEditRoute"
+      - "SettlementSearchRoute"
+      - "SettlementFilterRoute"
+      - "SettlementPrintRoute"
+      - "SettlementCreateRoute"
+    repositories:
+      - "lib/core/repositories/settlement/settlement_repository.dart"
+    graphql_documents:
+      - "settlement_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["create_settlement", "payment_history", "invoice_*", "linked_service_order"]
+      hardcoded_sources: ["lib/ui/settlement/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "garage-rest-export-api"
+
+  - domain_id: "vehicle-management"
+    domain_name: "Vehicle list/search/filter/detail/services/parts/technical notes"
+    ui_paths:
+      - "lib/ui/vehicle_management/**"
+    routes:
+      - "VehicleManagementListRoute"
+      - "VehicleManagementSearchRoute"
+      - "VehicleManagementFilterRoute"
+      - "VehicleManagementDetailRoute"
+      - "VehicleManagementServicesRoute"
+      - "VehicleManagementServicesSearchRoute"
+      - "VehicleManagementServicesFilterRoute"
+      - "VehicleManagementPartsRoute"
+      - "VehicleManagementPartsSearchRoute"
+      - "VehicleManagementPartsFilterRoute"
+      - "VehicleManagementTechnicalNotesRoute"
+    repositories:
+      - "lib/core/repositories/vehicle_management/vehicle_management_repository.dart"
+    graphql_documents:
+      - "vehicle_management_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["vehicle_management_*", "vehicle_brand", "vehicle_model", "vehicle_year", "vehicle_version", "vin_number"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "vehicle management service"
+
+  - domain_id: "vehicle-info-recognizer"
+    domain_name: "Vehicle OCR image capture and autofill"
+    ui_paths:
+      - "lib/ui/vehicle_info_recognizer/**"
+      - "lib/ui/widgets/camera/**"
+      - "lib/ui/widgets/image_picker/**"
+    routes:
+      - "VehicleInfoRecognizerRoute"
+    repositories:
+      - "lib/core/repositories/media/media_repository_impl.dart"
+    graphql_documents:
+      - "shared_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["vehicle_management_vehicle_recognition", "camera", "gallery", "manual_entry", "so_scan_photo"]
+      hardcoded_sources: ["lib/ui/vehicle_info_recognizer/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "OCR service"
+      - "file upload storage"
+
+  - domain_id: "notification"
+    domain_name: "Notification inbox, unread state and push replay"
+    ui_paths:
+      - "lib/ui/notification/**"
+      - "lib/core/managers/notifications/**"
+    routes:
+      - "NotificationRoute"
+    repositories:
+      - "lib/core/repositories/notification/notification_repository.dart"
+    graphql_documents:
+      - "notification_document.dart"
+    mobile_owned_label_sources:
+      hardcoded_sources: ["lib/ui/notification/**"]
+    cross_boundaries:
+      - "Firebase Messaging"
+      - "Local Notification"
+      - "agg-garage-graph"
+
+  - domain_id: "chat-call"
+    domain_name: "CometChat conversations, messages, thread, outgoing/waiting/ongoing call"
+    ui_paths:
+      - "lib/ui/comet_chat/**"
+      - "flutter_callkit_incoming/**"
+      - "flutter_apns_only/**"
+      - "flutter_apns_x/**"
+    routes:
+      - "ConversationsRoute"
+      - "MessageRoute"
+      - "ChatThreadRoute"
+      - "OutgoingCallRoute"
+      - "WaitingCallRoute"
+      - "OngoingCallRoute"
+    repositories:
+      - "lib/core/repositories/comet_chat/comet_chat_repository.dart"
+    graphql_documents:
+      - "comet_chat_document.dart"
+      - "auth_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["group_chat_alert", "forward_by", "contact_customer_service"]
+      hardcoded_sources: ["lib/ui/comet_chat/**"]
+    cross_boundaries:
+      - "agg-sso-graph"
+      - "CometChat"
+      - "APNs / PushKit / CallKit"
+
+  - domain_id: "feedback-survey"
+    domain_name: "Feedback, survey form and ecommerce confirmation"
+    ui_paths:
+      - "lib/ui/feedback/**"
+      - "lib/ui/survey_form/**"
+      - "lib/ui/ecomerce_confirmed/**"
+    routes:
+      - "FeedbackRoute"
+      - "SurveyFormRoute"
+      - "EcomerceConfirmedRoute"
+    repositories:
+      - "lib/core/repositories/media/media_repository_impl.dart"
+      - "lib/core/repositories/profile/profile_repository.dart"
+    graphql_documents:
+      - "shared_document.dart"
+      - "profile_document.dart"
+    mobile_owned_label_sources:
+      localization_keys: ["export_electronic_invoice", "save_default_electronic_invoice"]
+      hardcoded_sources: ["lib/ui/feedback/**", "lib/ui/survey_form/**", "lib/ui/ecomerce_confirmed/**"]
+    cross_boundaries:
+      - "agg-garage-graph"
+      - "feedback-web-portal"
+      - "file upload storage"
+
+  - domain_id: "shared-ui-support"
+    domain_name: "Reusable UI widgets, localization, formatters, storage and platform helpers"
+    ui_paths:
+      - "lib/ui/widgets/**"
+      - "lib/core/localizations/**"
+      - "lib/core/local_storage/**"
+      - "lib/core/formater/**"
+      - "lib/core/services/file/**"
+      - "lib/core/feature_flag/**"
+      - "lib/core/debug/**"
+    routes: []
+    repositories:
+      - "lib/core/repositories/base_repository.dart"
+    graphql_documents:
+      - "shared_document.dart"
+      - "feature_flags_document.dart"
+    mobile_owned_label_sources:
+      localization_files: ["assets/localizations/vi.json", "lib/core/localizations/translations_vi.dart", "lib/l10n/intl_en.arb"]
+      hardcoded_sources: ["lib/ui/widgets/**"]
+    cross_boundaries:
+      - "local preferences"
+      - "file export MethodChannel"
+      - "feature flags"
+
+ui_label_maps:
+  - screen_id: "main-navigation"
+    screen_name: "Main shell bottom navigation"
+    route: "MainRoute"
+    label_scope: "mobile-owned static tab labels"
+    source_files:
+      - "lib/core/router/router.dart"
+      - "lib/ui/main/**"
+      - "Execution/knowledge-graphs/garage-mobile.knowledge-graph.yaml implementation.navigation"
+    labels:
+      - { ui_label: "Trang chủ", ui_element: "bottom_tab", source_file: "lib/ui/main/main_page.dart", source_line: 238, ownership: "mobile_hardcoded" }
+      - { ui_label: "Chat", ui_element: "bottom_tab", source_file: "lib/ui/main/main_page.dart", source_line: 244, ownership: "mobile_hardcoded" }
+      - { ui_label: "Hỏi giá", ui_element: "bottom_tab_quick_action", source_file: "lib/ui/main/main_page.dart", source_line: 252, ownership: "mobile_hardcoded" }
+      - { ui_label: "Thông báo", ui_element: "bottom_tab", source_file: "lib/ui/main/main_page.dart", source_line: 278, ownership: "mobile_hardcoded" }
+      - { ui_label: "Tài khoản", ui_element: "bottom_tab", source_file: "lib/ui/main/main_page.dart", source_line: 291, ownership: "mobile_hardcoded" }
+
+  - screen_id: "login"
+    screen_name: "Đăng nhập"
+    route: "LoginRoute"
+    label_scope: "mobile-owned labels from localization/hardcoded Flutter text"
+    source_files:
+      - "lib/ui/auth/login/login_page.dart"
+      - "assets/localizations/vi.json"
+    fields:
+      - ui_label: "Chào mừng"
+        i18n_key: "welcome"
+        ui_element: "heading"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 47
+        ownership: "mobile_localized"
+      - ui_label: "Nhập số điện thoại và mật khẩu để đăng nhập"
+        i18n_key: "enter_phone_number_and_password_to_login"
+        ui_element: "body_text"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 50
+        ownership: "mobile_localized"
+      - ui_label: "Số điện thoại"
+        i18n_key: "phone_number"
+        ui_element: "phone_text_input"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 55
+        ownership: "mobile_localized"
+      - ui_label: "Nhập số điện thoại"
+        i18n_key: "enter_phone_number"
+        ui_element: "phone_text_input_hint"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 60
+        ownership: "mobile_localized"
+      - ui_label: "Mật khẩu"
+        i18n_key: "password"
+        ui_element: "password_text_input"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 65
+        ownership: "mobile_localized"
+      - ui_label: "Nhập mật khẩu"
+        i18n_key: "enter_password"
+        ui_element: "password_text_input_hint"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 72
+        ownership: "mobile_localized"
+      - ui_label: "Quên mật khẩu"
+        i18n_key: "forgot_password"
+        ui_element: "text_link"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 87
+        ownership: "mobile_localized"
+      - ui_label: "Gửi phản ánh"
+        ui_element: "text_link"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 100
+        ownership: "mobile_hardcoded"
+      - ui_label: "Đăng nhập"
+        i18n_key: "login"
+        ui_element: "primary_button"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 126
+        ownership: "mobile_localized"
+      - ui_label: "Sàn CarDoctor Garage V2\nđang trong quá trình thử nghiệm."
+        ui_element: "footer_text"
+        source_file: "lib/ui/auth/login/login_page.dart"
+        source_line: 119
+        ownership: "mobile_hardcoded"
+
+  - screen_id: "booking-create"
+    screen_name: "Tạo lịch hẹn"
+    route: "BookingCreateRoute"
+    label_scope: "mobile-owned static form labels and placeholders; autocomplete results/catalog option text are backend-owned dynamic values"
+    source_files:
+      - "lib/ui/booking/booking_create/booking_create_page.dart"
+      - "lib/ui/booking/booking_create/widgets/customer_information_form.dart"
+      - "lib/ui/booking/booking_create/widgets/customer_create_information.dart"
+      - "lib/ui/booking/booking_create/widgets/vehicle_information.dart"
+    fields:
+      - { section: "Thông tin khách hàng", ui_label: "Thông tin khách hàng", ui_element: "section_title", source_file: "lib/ui/booking/booking_create/widgets/customer_information_form.dart", source_line: 94, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin khách hàng", ui_label: "Tên khách hàng", ui_element: "autocomplete_label", source_file: "lib/ui/booking/booking_create/widgets/customer_information_form.dart", source_line: 119, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin khách hàng", ui_label: "Nhập/ Chọn tên khách hàng", ui_element: "autocomplete_hint", source_file: "lib/ui/booking/booking_create/widgets/customer_information_form.dart", source_line: 120, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin khách hàng", ui_label: "Số điện thoại", ui_element: "phone_input_label", source_file: "lib/ui/booking/booking_create/widgets/customer_information_form.dart", source_line: 141, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin khách hàng", ui_label: "Nhập/ Chọn số điện thoại khách hàng", ui_element: "phone_input_hint", source_file: "lib/ui/booking/booking_create/widgets/customer_information_form.dart", source_line: 142, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin xe", ui_label: "Thông tin xe", ui_element: "section_title", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 121, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin xe", ui_label: "Biển số xe", ui_element: "text_input_label", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 145, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin xe", ui_label: "Nhập biển số xe", ui_element: "text_input_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 146, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin xe", ui_label: "Không tìm thấy xe", ui_element: "empty_state", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 173, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin xe", ui_label: "Số khung xe (VIN)", ui_element: "text_input_label", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 321, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin xe", ui_label: "Nhập số khung xe", ui_element: "text_input_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 322, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin xe", ui_label: "Số Km đã chạy", ui_element: "number_input_label", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 348, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin xe", ui_label: "Nhập số Km đã chạy", ui_element: "number_input_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 349, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin chi tiết", ui_label: "Thông tin chi tiết", ui_element: "section_title", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 373, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin chi tiết", ui_label: "Hãng xe", ui_element: "select_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 380, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin chi tiết", ui_label: "Chọn hãng xe", i18n_key: "choose_car_brand", ui_element: "bottom_sheet_title", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 384, ownership: "mobile_localized" }
+      - { section: "Thông tin chi tiết", ui_label: "Tìm hãng xe", ui_element: "search_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 388, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin chi tiết", ui_label: "Dòng xe", ui_element: "select_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 394, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin chi tiết", ui_label: "Chọn dòng xe", i18n_key: "choose_car_model", ui_element: "bottom_sheet_title", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 399, ownership: "mobile_localized" }
+      - { section: "Thông tin chi tiết", ui_label: "Tìm dòng xe", ui_element: "search_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 403, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin chi tiết", ui_label: "Năm sản xuất", ui_element: "select_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 415, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin chi tiết", ui_label: "Chọn năm sản xuất", i18n_key: "choose_car_year", ui_element: "bottom_sheet_title", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 420, ownership: "mobile_localized" }
+      - { section: "Thông tin chi tiết", ui_label: "Phiên bản xe", ui_element: "select_hint", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 429, ownership: "mobile_hardcoded" }
+      - { section: "Thông tin chi tiết", ui_label: "Chọn phiên bản xe", i18n_key: "choose_car_version", ui_element: "bottom_sheet_title", source_file: "lib/ui/booking/booking_create/widgets/vehicle_information.dart", source_line: 434, ownership: "mobile_localized" }
+    open_gaps:
+      - "Customer/vehicle/catalog option values returned by backend are intentionally not listed."
+
+  - screen_id: "quotation-create-invoice-request"
+    screen_name: "Yêu cầu xuất hóa đơn"
+    route: "CreateQuotationRoute"
+    label_scope: "mobile-owned invoice request section inside CreateQuotationRoute; vehicle selectors, spare-part content, app bar, and submit CTA are intentionally excluded"
+    source_files:
+      - "lib/ui/quotation/create_quotation/create_quotation_page.dart"
+      - "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart"
+    fields:
+      - { section: "invoice_request", ui_label: "Yêu cầu xuất hóa đơn", i18n_key: "invoice_request", ui_element: "section_title", source_file: "lib/ui/quotation/create_quotation/create_quotation_page.dart", source_line: 271, ownership: "mobile_localized" }
+      - { section: "invoice_request", ui_label: "Yêu cầu xuất hóa đơn", i18n_key: "invoice_request", ui_element: "checkbox_label", source_file: "lib/ui/quotation/create_quotation/create_quotation_page.dart", source_line: 279, ownership: "mobile_localized" }
+      - { section: "invoice_request", ui_label: "Bạn không thể tự chỉnh sửa thông tin yêu cầu xuất hóa đơn, vui lòng liên hệ CSKH để được hỗ trợ.", i18n_key: "invoice_locked_note", ui_element: "helper_text", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 51, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Tên công ty", i18n_key: "company_name", ui_element: "text_input_label", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 59, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Nhập tên công ty", i18n_key: "invoice_company_name_hint", ui_element: "text_input_hint", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 60, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Vui lòng nhập tên công ty.", i18n_key: "invoice_company_name_required", ui_element: "validation_message", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 68, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Mã số thuế", i18n_key: "tax_code", ui_element: "text_input_label", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 74, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Nhập mã số thuế", i18n_key: "invoice_tax_code_hint", ui_element: "text_input_hint", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 75, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Vui lòng nhập mã số thuế.", i18n_key: "invoice_tax_code_required", ui_element: "validation_message", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 85, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Email công ty", i18n_key: "invoice_company_email", ui_element: "text_input_label", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 91, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Nhập email công ty", i18n_key: "invoice_company_email_hint", ui_element: "text_input_hint", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 92, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Email công ty không đúng định dạng.", i18n_key: "invoice_company_email_invalid", ui_element: "validation_message", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 105, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Địa chỉ", i18n_key: "invoice_company_address", ui_element: "text_input_label", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 110, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Nhập địa chỉ", i18n_key: "invoice_company_address_hint", ui_element: "text_input_hint", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 111, ownership: "mobile_localized" }
+      - { section: "invoice_form", ui_label: "Vui lòng nhập địa chỉ.", i18n_key: "invoice_company_address_required", ui_element: "validation_message", source_file: "lib/ui/quotation/create_quotation/widgets/elec_invoice_form.dart", source_line: 121, ownership: "mobile_localized" }
+    open_gaps:
+      - "Invoice form field values can be prefilled and locked by QuotationAskTenantInvoiceInfo response; those runtime values are excluded from mobile-owned labels."
+      - "The detailed invoice form renders only when purchasePurchaseV02 is on and the invoice checkbox is selected; legacy flow renders only the invoice checkbox."
+
+  - screen_id: "vehicle-info-recognizer"
+    screen_name: "Tự động nhập thông tin xe"
+    route: "VehicleInfoRecognizerRoute"
+    label_scope: "mobile-owned static OCR flow labels; OCR result text is backend-owned dynamic data"
+    source_files:
+      - "lib/ui/vehicle_info_recognizer/vehicle_info_recognizer_page.dart"
+      - "lib/ui/vehicle_info_recognizer/vehicle_info_recognizer_cubit.dart"
+      - "lib/ui/vehicle_info_recognizer/widgets/vir_bottom_button_bar.dart"
+      - "lib/ui/vehicle_info_recognizer/widgets/vir_pick_image.dart"
+    labels:
+      - { ui_label: "Tự động nhập thông tin xe", ui_element: "app_bar_title", source_file: "lib/ui/vehicle_info_recognizer/vehicle_info_recognizer_page.dart", source_line: 112, ownership: "mobile_hardcoded" }
+      - { ui_label: "Thư viện ảnh", ui_element: "image_picker_option", source_file: "lib/ui/vehicle_info_recognizer/widgets/vir_pick_image.dart", source_line: 71, ownership: "mobile_hardcoded" }
+      - { ui_label: "Chụp lại", ui_element: "button", source_file: "lib/ui/vehicle_info_recognizer/widgets/vir_bottom_button_bar.dart", source_line: 22, ownership: "mobile_hardcoded" }
+      - { ui_label: "Sử dụng ảnh", ui_element: "button", source_file: "lib/ui/vehicle_info_recognizer/widgets/vir_bottom_button_bar.dart", source_line: 46, ownership: "mobile_hardcoded" }
+      - { ui_label: "Huỷ", ui_element: "button", source_file: "lib/ui/vehicle_info_recognizer/widgets/vir_bottom_button_bar.dart", source_line: 60, ownership: "mobile_hardcoded" }
+      - { ui_label: "Chụp lại ảnh", ui_element: "button", source_file: "lib/ui/vehicle_info_recognizer/widgets/vir_bottom_button_bar.dart", source_line: 79, ownership: "mobile_hardcoded" }
+
+  - screen_id: "credit-card-payment-webview"
+    screen_name: "Thanh toán thẻ tín dụng"
+    route: "CreditCardPaymentRoute"
+    label_scope: "mobile-owned WebView shell/toast/dialog labels; payment page content from gateway is backend-owned dynamic text"
+    source_files:
+      - "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart"
+      - "lib/ui/ordering/credit_card_payment/credit_card_payment_cubit.dart"
+    labels:
+      - { ui_label: "Thanh toán thẻ tín dụng", ui_element: "app_bar_title", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 344, ownership: "mobile_hardcoded" }
+      - { ui_label: "Lỗi tải trang", ui_element: "toast_title", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 92, ownership: "mobile_hardcoded" }
+      - { ui_label: "Thanh toán thành công", ui_element: "toast_title", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 235, ownership: "mobile_hardcoded" }
+      - { ui_label: "Giao dịch đã được xử lý", ui_element: "toast_description", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 236, ownership: "mobile_hardcoded" }
+      - { ui_label: "Thanh toán thất bại", ui_element: "toast_title", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 242, ownership: "mobile_hardcoded" }
+      - { ui_label: "Đã có lỗi xảy ra", ui_element: "toast_description_fallback", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 243, ownership: "mobile_hardcoded" }
+      - { ui_label: "Authentication Required", ui_element: "http_auth_dialog_title", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 293, ownership: "mobile_hardcoded" }
+      - { ui_label: "Cancel", ui_element: "dialog_button", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 301, ownership: "mobile_hardcoded" }
+      - { ui_label: "Login", ui_element: "dialog_button", source_file: "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart", source_line: 308, ownership: "mobile_hardcoded" }
+
+  - screen_id: "tenant-transporter-registry-list"
+    screen_name: "Danh sách nhà xe liên kết"
+    route: "TenantTransporterRegistryListRoute"
+    label_scope: "mobile-owned static list-shell labels, empty states, and status badge labels; list row values are backend-owned dynamic data"
+    source_files:
+      - "lib/ui/tenant_transporter_registry/list/tenant_transporter_registry_list_page.dart"
+      - "lib/ui/tenant_transporter_registry/list/widgets/transporter_registry_empty_widget.dart"
+      - "lib/ui/tenant_transporter_registry/widgets/transporter_registry_status_badge.dart"
+    fields:
+      - { section: "app_bar", ui_label: "Danh sách nhà xe", i18n_key: "transporter_registry_list_title", ui_element: "app_bar_title", source_file: "lib/ui/tenant_transporter_registry/list/tenant_transporter_registry_list_page.dart", source_line: 73, ownership: "mobile_localized" }
+      - { section: "footer_action", ui_label: "Thêm nhà xe liên kết", i18n_key: "transporter_registry_add_button", ui_element: "primary_button", source_file: "lib/ui/tenant_transporter_registry/list/tenant_transporter_registry_list_page.dart", source_line: 183, ownership: "mobile_localized" }
+      - { section: "empty_state", ui_label: "Chưa có Thông tin nhà xe liên kết", i18n_key: "transporter_registry_empty_list", ui_element: "empty_state_default", source_file: "lib/ui/tenant_transporter_registry/list/widgets/transporter_registry_empty_widget.dart", source_line: 25, ownership: "mobile_localized" }
+      - { section: "empty_state", ui_label: "Chưa có Thông tin nhà xe liên kết Đang hoạt động", i18n_key: "transporter_registry_empty_list_active", ui_element: "empty_state_active", source_file: "lib/ui/tenant_transporter_registry/list/widgets/transporter_registry_empty_widget.dart", source_line: 21, ownership: "mobile_localized" }
+      - { section: "empty_state", ui_label: "Chưa có Thông tin nhà xe liên kết Ngừng hoạt động", i18n_key: "transporter_registry_empty_list_inactive", ui_element: "empty_state_inactive", source_file: "lib/ui/tenant_transporter_registry/list/widgets/transporter_registry_empty_widget.dart", source_line: 23, ownership: "mobile_localized" }
+      - { section: "status_badge", ui_label: "Đang hoạt động", i18n_key: "customer_status_active", ui_element: "item_status_badge", source_file: "lib/ui/tenant_transporter_registry/widgets/transporter_registry_status_badge.dart", source_line: 18, ownership: "mobile_localized" }
+      - { section: "status_badge", ui_label: "Ngừng hoạt động", i18n_key: "transporter_registry_status_badge_inactive", ui_element: "item_status_badge", source_file: "lib/ui/tenant_transporter_registry/widgets/transporter_registry_status_badge.dart", source_line: 19, ownership: "mobile_localized" }
+    open_gaps:
+      - "List item values such as transporterName, routeContactPhoneNumber, routeName, and shippingAddress come from SearchTenantTransporterRegistries response and are excluded."
+
+  - screen_id: "tenant-transporter-registry-search"
+    screen_name: "Tìm kiếm nhà xe liên kết"
+    route: "TenantTransporterRegistrySearchRoute"
+    label_scope: "mobile-owned search bar, search guide, result summary, and empty search state; search results are backend-owned dynamic data"
+    source_files:
+      - "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart"
+      - "lib/ui/tenant_transporter_registry/list/widgets/transporter_registry_empty_widget.dart"
+    fields:
+      - { section: "search_input", ui_label: "Tìm theo tên nhà xe, số điện thoại, Thông tin tuyến xe", i18n_key: "transporter_registry_search_hint", ui_element: "search_hint", source_file: "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart", source_line: 84, ownership: "mobile_localized" }
+      - { section: "search_result", ui_label: "{} có kết quả tìm kiếm cho \"{}\"", i18n_key: "transporter_registry_search_result", ui_element: "result_summary", source_file: "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart", source_line: 129, ownership: "mobile_localized" }
+      - { section: "search_guide", ui_label: "Tìm kiếm nhà xe theo từ khoá", i18n_key: "transporter_registry_search_guide_title", ui_element: "guide_title", source_file: "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart", source_line: 195, ownership: "mobile_localized" }
+      - { section: "search_guide", ui_label: "Tên nhà xe", i18n_key: "transporter_registry_name", ui_element: "guide_bullet", source_file: "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart", source_line: 185, ownership: "mobile_localized" }
+      - { section: "search_guide", ui_label: "Số điện thoại", i18n_key: "phone_number", ui_element: "guide_bullet", source_file: "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart", source_line: 186, ownership: "mobile_localized" }
+      - { section: "search_guide", ui_label: "Thông tin tuyến xe", i18n_key: "transporter_registry_route_name", ui_element: "guide_bullet", source_file: "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart", source_line: 187, ownership: "mobile_localized" }
+      - { section: "empty_state", ui_label: "Không tìm thấy thông tin nhà xe liên kết phù hợp", i18n_key: "transporter_registry_empty_search", ui_element: "empty_state_search", source_file: "lib/ui/tenant_transporter_registry/list/widgets/transporter_registry_empty_widget.dart", source_line: 17, ownership: "mobile_localized" }
+    open_gaps:
+      - "Rendered search results and runtime count/keyword values are backend/search-state driven and are not cataloged as mobile-owned labels."
+
+  - screen_id: "tenant-transporter-registry-filter"
+    screen_name: "Lọc nhà xe liên kết"
+    route: "TenantTransporterRegistryFilterRoute"
+    label_scope: "mobile-owned filter shell labels, placeholders, and enum-backed status options"
+    source_files:
+      - "lib/ui/tenant_transporter_registry/filter/tenant_transporter_registry_filter_page.dart"
+      - "lib/core/common/bases/enum/transporter_registry_status.dart"
+    fields:
+      - { section: "app_bar", ui_label: "Lọc xe", i18n_key: "vehicle_management_filter_title", ui_element: "app_bar_title", source_file: "lib/ui/tenant_transporter_registry/filter/tenant_transporter_registry_filter_page.dart", source_line: 49, ownership: "mobile_localized" }
+      - { section: "app_bar", ui_label: "Đặt lại", i18n_key: "vehicle_management_reset", ui_element: "text_action", source_file: "lib/ui/tenant_transporter_registry/filter/tenant_transporter_registry_filter_page.dart", source_line: 62, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Trạng thái", i18n_key: "customer_status", ui_element: "field_label", source_file: "lib/ui/tenant_transporter_registry/filter/tenant_transporter_registry_filter_page.dart", source_line: 76, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Chọn trạng thái", i18n_key: "transporter_registry_filter_status_hint", ui_element: "field_placeholder", source_file: "lib/ui/tenant_transporter_registry/filter/tenant_transporter_registry_filter_page.dart", source_line: 99, ownership: "mobile_localized" }
+      - { section: "status_menu", ui_label: "Tất cả", i18n_key: "customer_all", ui_element: "dropdown_option", source_file: "lib/core/common/bases/enum/transporter_registry_status.dart", source_line: 27, ownership: "mobile_localized" }
+      - { section: "status_menu", ui_label: "Đang hoạt động", i18n_key: "customer_status_active", ui_element: "dropdown_option", source_file: "lib/core/common/bases/enum/transporter_registry_status.dart", source_line: 28, ownership: "mobile_localized" }
+      - { section: "status_menu", ui_label: "Ngừng hoạt động", i18n_key: "transporter_registry_status_badge_inactive", ui_element: "dropdown_option", source_file: "lib/core/common/bases/enum/transporter_registry_status.dart", source_line: 29, ownership: "mobile_localized" }
+      - { section: "footer_action", ui_label: "Hiển thị kết quả", i18n_key: "customer_show_result", ui_element: "primary_button", source_file: "lib/ui/tenant_transporter_registry/filter/tenant_transporter_registry_filter_page.dart", source_line: 143, ownership: "mobile_localized" }
+
+  - screen_id: "tenant-transporter-registry-add"
+    screen_name: "Thêm nhà xe liên kết"
+    route: "TenantTransporterRegistryAddRoute"
+    label_scope: "mobile-owned add form labels, placeholders, validation messages, and create toasts"
+    source_files:
+      - "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart"
+      - "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart"
+    fields:
+      - { section: "app_bar", ui_label: "Thêm nhà xe liên kết", i18n_key: "transporter_registry_add_title", ui_element: "app_bar_title", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 59, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Hoạt động", i18n_key: "transporter_registry_operating_label", ui_element: "switch_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 277, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Tên nhà xe", i18n_key: "transporter_registry_name", ui_element: "text_input_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 153, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập tên nhà xe", i18n_key: "transporter_registry_name_hint", ui_element: "text_input_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 156, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Tên nhà xe là bắt buộc.", i18n_key: "transporter_registry_name_required", ui_element: "validation_message", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 161, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Số điện thoại", i18n_key: "phone_number", ui_element: "text_input_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 166, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập số điện thoại", i18n_key: "enter_phone_number", ui_element: "text_input_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 169, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Số điện thoại đã tồn tại.", i18n_key: "transporter_registry_phone_duplicated", ui_element: "validation_message", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart", source_line: 182, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Địa chỉ nhà xe nhận hàng", i18n_key: "transporter_registry_shipping_address", ui_element: "text_input_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 181, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập địa chỉ nhà xe nhận hàng", i18n_key: "transporter_registry_shipping_address_hint", ui_element: "text_input_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 184, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Địa chỉ nhà xe nhận hàng là bắt buộc.", i18n_key: "transporter_registry_shipping_address_required", ui_element: "validation_message", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 190, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Thông tin tuyến xe", i18n_key: "transporter_registry_route_name", ui_element: "text_input_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 195, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập thông tin tuyến xe", i18n_key: "transporter_registry_route_name_hint", ui_element: "text_input_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 198, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Thông tin tuyến xe là bắt buộc.", i18n_key: "transporter_registry_route_name_required", ui_element: "validation_message", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 203, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Thời gian xe chạy", i18n_key: "departure_time", ui_element: "time_picker_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 377, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập thời gian, cách nhau bằng dấu ,", i18n_key: "transporter_registry_add_time", ui_element: "time_picker_placeholder", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 425, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Thời gian xe chạy là bắt buộc.", i18n_key: "transporter_registry_route_started_at_required", ui_element: "validation_message", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 451, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Ghi chú", i18n_key: "customer_note", ui_element: "textarea_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 216, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập ghi chú", i18n_key: "so_note_input", ui_element: "textarea_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 218, ownership: "mobile_localized" }
+      - { section: "footer_action", ui_label: "Hủy", i18n_key: "cancel", ui_element: "secondary_button", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 322, ownership: "mobile_localized" }
+      - { section: "footer_action", ui_label: "Lưu", i18n_key: "customer_save", ui_element: "primary_button", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 230, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Thông báo", i18n_key: "transporter_registry_notification_title", ui_element: "toast_title", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart", source_line: 215, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Lưu thông tin nhà xe liên kết thành công.", i18n_key: "transporter_registry_create_success", ui_element: "toast_message_success", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart", source_line: 217, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Không thể lưu thông tin nhà xe liên kết. Vui lòng thử lại sau.", i18n_key: "transporter_registry_save_failed", ui_element: "toast_message_error_fallback", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart", source_line: 225, ownership: "mobile_localized" }
+    open_gaps:
+      - "Time chip values, transporter identifiers, and API error messages returned in result.message are runtime data and are excluded."
+
+  - screen_id: "tenant-transporter-registry-edit"
+    screen_name: "Chỉnh sửa nhà xe liên kết"
+    route: "TenantTransporterRegistryEditRoute"
+    label_scope: "mobile-owned edit form labels, placeholders, validation messages, and update toasts; existing field values are backend-owned dynamic data"
+    source_files:
+      - "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart"
+      - "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart"
+    fields:
+      - { section: "app_bar", ui_label: "Chỉnh sửa nhà xe liên kết", i18n_key: "transporter_registry_edit_title", ui_element: "app_bar_title", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 113, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Hoạt động", i18n_key: "transporter_registry_operating_label", ui_element: "switch_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 277, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Tên nhà xe", i18n_key: "transporter_registry_name", ui_element: "text_input_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 153, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập tên nhà xe", i18n_key: "transporter_registry_name_hint", ui_element: "text_input_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 156, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Số điện thoại", i18n_key: "phone_number", ui_element: "text_input_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 166, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập số điện thoại", i18n_key: "enter_phone_number", ui_element: "text_input_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 169, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Số điện thoại đã tồn tại.", i18n_key: "transporter_registry_phone_duplicated", ui_element: "validation_message", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart", source_line: 182, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Địa chỉ nhà xe nhận hàng", i18n_key: "transporter_registry_shipping_address", ui_element: "text_input_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 181, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập địa chỉ nhà xe nhận hàng", i18n_key: "transporter_registry_shipping_address_hint", ui_element: "text_input_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 184, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Thông tin tuyến xe", i18n_key: "transporter_registry_route_name", ui_element: "text_input_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 195, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập thông tin tuyến xe", i18n_key: "transporter_registry_route_name_hint", ui_element: "text_input_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 198, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Thời gian xe chạy", i18n_key: "departure_time", ui_element: "time_picker_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 377, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập thời gian, cách nhau bằng dấu ,", i18n_key: "transporter_registry_add_time", ui_element: "time_picker_placeholder", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 425, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Thời gian xe chạy là bắt buộc.", i18n_key: "transporter_registry_route_started_at_required", ui_element: "validation_message", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 451, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Ghi chú", i18n_key: "customer_note", ui_element: "textarea_label", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 216, ownership: "mobile_localized" }
+      - { section: "form", ui_label: "Nhập ghi chú", i18n_key: "so_note_input", ui_element: "textarea_hint", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 218, ownership: "mobile_localized" }
+      - { section: "footer_action", ui_label: "Hủy", i18n_key: "cancel", ui_element: "secondary_button", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 322, ownership: "mobile_localized" }
+      - { section: "footer_action", ui_label: "Cập nhật", i18n_key: "transporter_registry_update_button", ui_element: "primary_button", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart", source_line: 231, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Thông báo", i18n_key: "transporter_registry_notification_title", ui_element: "toast_title", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart", source_line: 215, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Cập nhật thông tin nhà xe liên kết thành công.", i18n_key: "transporter_registry_update_success", ui_element: "toast_message_success", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart", source_line: 218, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Không thể lưu thông tin nhà xe liên kết. Vui lòng thử lại sau.", i18n_key: "transporter_registry_save_failed", ui_element: "toast_message_error_fallback", source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart", source_line: 225, ownership: "mobile_localized" }
+    open_gaps:
+      - "Prefilled form values and backend-returned result.message content are excluded because they are runtime data."
+
+  - screen_id: "tenant-transporter-registry-detail"
+    screen_name: "Chi tiết nhà xe liên kết"
+    route: "TenantTransporterRegistryDetailRoute"
+    label_scope: "mobile-owned detail section labels, edit/delete actions, confirmation dialogs, blocked-delete copy, and delete toasts; detail field values are backend-owned dynamic data"
+    source_files:
+      - "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart"
+      - "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_cubit.dart"
+    fields:
+      - { section: "app_bar", ui_label: "Chi tiết nhà xe", i18n_key: "transporter_registry_detail_title", ui_element: "app_bar_title", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 63, ownership: "mobile_localized" }
+      - { section: "app_bar", ui_label: "Chỉnh sửa", i18n_key: "customer_edit", ui_element: "text_action", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 78, ownership: "mobile_localized" }
+      - { section: "detail_section", ui_label: "Thông tin nhà xe", i18n_key: "transporter_registry_info_title", ui_element: "section_title", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 97, ownership: "mobile_localized" }
+      - { section: "detail_section", ui_label: "Tên nhà xe", i18n_key: "transporter_registry_name", ui_element: "field_label", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 102, ownership: "mobile_localized" }
+      - { section: "detail_section", ui_label: "Số điện thoại", i18n_key: "phone_number", ui_element: "field_label", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 106, ownership: "mobile_localized" }
+      - { section: "detail_section", ui_label: "Địa chỉ nhà xe nhận hàng", i18n_key: "transporter_registry_shipping_address", ui_element: "field_label", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 110, ownership: "mobile_localized" }
+      - { section: "detail_section", ui_label: "Thông tin tuyến xe", i18n_key: "transporter_registry_route_name", ui_element: "field_label", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 114, ownership: "mobile_localized" }
+      - { section: "detail_section", ui_label: "Thời gian xe chạy", i18n_key: "departure_time", ui_element: "field_label", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 118, ownership: "mobile_localized" }
+      - { section: "detail_section", ui_label: "Ghi chú", i18n_key: "customer_note", ui_element: "field_label", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 121, ownership: "mobile_localized" }
+      - { section: "danger_zone", ui_label: "Xóa nhà xe", i18n_key: "transporter_registry_delete_garage_button", ui_element: "danger_button", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 141, ownership: "mobile_localized" }
+      - { section: "delete_dialog", ui_label: "Xác nhận xóa", i18n_key: "transporter_registry_delete_confirm_title", ui_element: "dialog_title", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 193, ownership: "mobile_localized" }
+      - { section: "delete_dialog", ui_label: "Bạn có chắc chắn muốn xóa ", i18n_key: "transporter_registry_delete_confirm_prefix", ui_element: "dialog_body_prefix", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 209, ownership: "mobile_localized" }
+      - { section: "delete_dialog", ui_label: " không? Sau khi xóa, nhà xe này sẽ không còn hiển thị trong danh sách.", i18n_key: "transporter_registry_delete_confirm_suffix", ui_element: "dialog_body_suffix", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 220, ownership: "mobile_localized" }
+      - { section: "delete_dialog", ui_label: "Hủy", i18n_key: "cancel", ui_element: "dialog_secondary_button", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 248, ownership: "mobile_localized" }
+      - { section: "delete_dialog", ui_label: "Xóa", i18n_key: "transporter_registry_delete_button", ui_element: "dialog_primary_button", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 257, ownership: "mobile_localized" }
+      - { section: "delete_blocked_dialog", ui_label: "Không thể xóa thông tin liên kết nhà xe vì đang có dữ liệu liên quan sử dụng thông tin này.", i18n_key: "transporter_registry_delete_blocked_message", ui_element: "dialog_body", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 396, ownership: "mobile_localized" }
+      - { section: "delete_blocked_dialog", ui_label: "Yêu cầu đặt hàng", i18n_key: "transporter_registry_delete_blocked_purchase_request", ui_element: "dialog_reference_label", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 399, ownership: "mobile_localized" }
+      - { section: "delete_blocked_dialog", ui_label: "Đơn hàng mua", i18n_key: "transporter_registry_delete_blocked_purchase_order", ui_element: "dialog_reference_label", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 402, ownership: "mobile_localized" }
+      - { section: "delete_blocked_dialog", ui_label: "Đóng", i18n_key: "hrm_4_close_btn", ui_element: "dialog_button", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart", source_line: 338, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Thông báo", i18n_key: "transporter_registry_notification_title", ui_element: "toast_title", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_cubit.dart", source_line: 133, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Xóa thông tin nhà xe liên kết thành công.", i18n_key: "transporter_registry_delete_success", ui_element: "toast_message_success", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_cubit.dart", source_line: 134, ownership: "mobile_localized" }
+      - { section: "toast", ui_label: "Không thể xóa thông tin nhà xe liên kết. Vui lòng thử lại sau.", i18n_key: "transporter_registry_delete_failed", ui_element: "toast_message_error_fallback", source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_cubit.dart", source_line: 96, ownership: "mobile_localized" }
+    open_gaps:
+      - "Detail field values, delete-blocked reference codes, and backend result.message payloads are runtime data and are excluded."
+
+change_log:
+  - date: "2026-05-19"
+    author: "Codex"
+    summary: "Added invoice-request-only ui label map coverage inside CreateQuotationRoute, limited to the invoice section/form and excluding other create-quotation labels. Bump version 5→6."
+  - date: "2026-05-19"
+    author: "Codex"
+    summary: "Added detailed mobile-owned label drill-downs for Tenant Transporter Registry list/search/filter/add/edit/detail screens and expanded the feature domain label sources. Bump version 4→5."
+  - date: "2026-05-19"
+    author: "Codex"
+    summary: "Tightened ui_label_maps to mobile-owned labels only: removed GraphQL/response/backend dynamic fields from detailed labels and kept only source-backed Flutter/localization/static labels."
+  - date: "2026-05-19"
+    author: "Codex"
+    summary: "Expanded from 5-screen baseline seed to full gf-garage-app structural domain map covering 126 router entries, 133 UI page files, 26 UI top-level domains, 24 GraphQL documents, and 28 repository files."
+  - date: "2026-05-19"
+    author: "Codex"
+    summary: "Initial KG-local mobile UI label map seeded from gf-garage-app source; no Product/ files used."

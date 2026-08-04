@@ -1,0 +1,17 @@
+# alchemist_config.yaml — Golden test pipeline config
+# Rules:
+# - Font: Roboto bundled (deterministic cross-platform, no font drift)
+# - Platform: flutter_test (NOT raw emulator screenshot)
+# - Threshold: 0 (exact pixel match)
+# - Update goldens: ONLY via approved PR + human review (NOT --update-goldens in CI auto)
+# - Baseline dir: ../../specs/W{NN}/mobile-ui/golden/
+
+font_family: Roboto
+platform_agnostic: true
+golden_dir: ../../specs/W01/mobile-ui/golden
+update_goldens: false
+pixel_threshold: 0.0
+
+# Violation guards:
+# - MOBILE_UI_GOLDEN_FONT_DRIFT: enforced by bundled font only (no system font fallback)
+# - MOBILE_UI_GOLDEN_AUTO_UPDATE: update_goldens=false enforces human-review gate

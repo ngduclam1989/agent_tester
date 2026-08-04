@@ -1,0 +1,121 @@
+07-03 23:22:09.168 I/flutter ( 9858): [TIMING] DONE  autoFixC10#8 sau 315ms
+07-03 23:22:09.170 I/flutter ( 9858): [TIMING] START autoFixC10#9 @ 2026-07-03T23:22:09.169915
+07-03 23:22:09.485 I/flutter ( 9858): [TIMING] DONE  autoFixC10#9 sau 315ms
+07-03 23:22:09.498 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA47].tap(noSettle) @ 2026-07-03T23:22:09.498682
+07-03 23:22:09.557 I/flutter ( 9858): INFO ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:22:09.557 I/flutter ( 9858): INFO │ 💡 Bloc AddMaterialGroupCubit Closed
+07-03 23:22:09.558 I/flutter ( 9858): INFO └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:22:09.560 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA47].tap(noSettle) sau 61ms
+07-03 23:22:09.560 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA47].pump#0 @ 2026-07-03T23:22:09.560942
+07-03 23:22:09.563 W/OnBackInvokedCallback( 9858): OnBackInvokedCallback is not enabled for the application.
+07-03 23:22:09.563 W/OnBackInvokedCallback( 9858): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+07-03 23:22:09.859 D/EGL_emulation( 9858): app_time_stats: avg=48.34ms min=8.37ms max=316.95ms count=18
+07-03 23:22:09.865 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA47].pump#0 sau 304ms
+07-03 23:22:09.865 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA47].pump#1 @ 2026-07-03T23:22:09.865836
+07-03 23:22:10.182 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA47].pump#1 sau 316ms
+07-03 23:22:10.182 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA47].pump#2 @ 2026-07-03T23:22:10.182277
+07-03 23:22:10.506 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA47].pump#2 sau 323ms
+07-03 23:22:10.507 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA47].pump#3 @ 2026-07-03T23:22:10.507099
+07-03 23:22:10.818 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA47].pump#3 sau 311ms
+07-03 23:22:10.822 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA48].tap(noSettle) @ 2026-07-03T23:22:10.821986
+07-03 23:22:10.850 D/AudioFlinger(  332): mixer(0xb400007507efa9a0) throttle end: throttle time(36)
+07-03 23:22:10.855 I/flutter ( 9858): INFO ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:22:10.855 I/flutter ( 9858): INFO │ 💡 Bloc AddMaterialGroupCubit Created
+07-03 23:22:10.855 I/flutter ( 9858): INFO └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:22:10.866 D/EGL_emulation( 9858): app_time_stats: avg=197.28ms min=8.26ms max=329.49ms count=5
+07-03 23:22:10.873 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA48].tap(noSettle) sau 51ms
+07-03 23:22:10.874 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA48].pump#0 @ 2026-07-03T23:22:10.874084
+07-03 23:22:10.875 W/OnBackInvokedCallback( 9858): OnBackInvokedCallback is not enabled for the application.
+07-03 23:22:10.875 W/OnBackInvokedCallback( 9858): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+07-03 23:22:11.182 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA48].pump#0 sau 308ms
+07-03 23:22:11.182 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA48].pump#1 @ 2026-07-03T23:22:11.182702
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ #1   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:137:12)
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ #2   <asynchronous suspension>
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛 {
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛   "REQUEST": {
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛     "DOCUMENT": [
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "query SearchMaterialGroups($input: MaterialGroupSearchInput!) {",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "  __typename",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "  searchMaterialGroups(input: $input) {",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "    __typename",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "    ... on ApiResponsePageMaterialGroup {",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      success",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      code",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      message",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      data {",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "        __typename",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "        content {",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          __typename",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          id",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          code",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          name",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          description",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          status",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          parentId",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          parentName",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          createdAt",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          updatedAt",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "        }",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "        pageInfo {",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          __typename",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          page",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          size",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          totalElements",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          totalPages",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          first",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          last",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          hasNext",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "          hasPrevious",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "        }",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      }",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "    }",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "    ... on ErrorResponse {",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      id",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      code",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      serverResponse",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      message",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      statusCode",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      path",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      timestamp",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "      details",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "    }",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "  }",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "}"
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛     ],
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛     "rootField": "searchMaterialGroups",
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛     "variables": {
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       "input": {
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛         "page": 0,
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛         "size": 200,
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛         "status": "ACTIVE"
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛       }
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛     }
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛   }
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG │ 🐛 }
+07-03 23:22:11.336 I/flutter ( 9858): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:22:11.499 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA48].pump#1 sau 316ms
+07-03 23:22:11.499 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA48].pump#2 @ 2026-07-03T23:22:11.499833
+07-03 23:22:11.816 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA48].pump#2 sau 316ms
+07-03 23:22:11.816 I/flutter ( 9858): [TIMING] START tapBounded[autoFixA48].pump#3 @ 2026-07-03T23:22:11.816677
+07-03 23:22:11.864 W/TransactionTracing(  335): Could not find layer id -1
+07-03 23:22:11.864 W/TransactionTracing(  335): Could not find layer id -1
+07-03 23:22:11.864 W/TransactionTracing(  335): Could not find layer id -1
+07-03 23:22:11.864 W/TransactionTracing(  335): Could not find layer id -1
+07-03 23:22:11.872 D/EGL_emulation( 9858): app_time_stats: avg=16.77ms min=12.98ms max=24.99ms count=60
+07-03 23:22:12.031 W/TransactionTracing(  335): Could not find layer id -1
+07-03 23:22:12.133 I/flutter ( 9858): [TIMING] DONE  tapBounded[autoFixA48].pump#3 sau 317ms
+07-03 23:22:12.626 I/flutter ( 9858): ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+07-03 23:22:12.626 I/flutter ( 9858): The following IndexError was thrown running a test:
+07-03 23:22:12.626 I/flutter ( 9858): RangeError (index): Index out of range: no indices are valid: 0
+07-03 23:22:12.626 I/flutter ( 9858): 
+07-03 23:22:12.626 I/flutter ( 9858): When the exception was thrown, this was the stack:
+07-03 23:22:12.626 I/flutter ( 9858): #0      CachingIterable.elementAt (package:flutter/src/foundation/basic_types.dart:191:9)
+07-03 23:22:12.626 I/flutter ( 9858): #1      _IndexFinderMixin.filter (package:flutter_test/src/finders.dart:1439:28)
+07-03 23:22:12.626 I/flutter ( 9858): #3      ExpandIterator.moveNext (dart:_internal/iterable.dart:506:21)
+07-03 23:22:12.626 I/flutter ( 9858): #4      SetBase.addAll (dart:collection/set.dart:58:23)
+07-03 23:22:12.626 I/flutter ( 9858): #5      _Set.addAll (dart:_compact_hash:1197:11)
+07-03 23:22:12.626 I/flutter ( 9858): #6      new LinkedHashSet.of (dart:collection/linked_hash_set.dart:193:27)
+07-03 23:22:12.626 I/flutter ( 9858): #7      Iterable.toSet (dart:core/iterable.dart:532:21)

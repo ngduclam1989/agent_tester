@@ -1,0 +1,1392 @@
+# Knowledge Graph — gf-marketing
+
+boundary: "gf-marketing"
+version: 4
+last_updated: "2026-05-19"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý campaign, wave, message template, tracking message, voucher program, voucher claim/redeem, QR và orchestration marketing theo tenant."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA", data_store: "PostgreSQL" }
+  epics: []
+  features: []
+  integration_ref: ""
+  integration_consumers: ["agg-garage-graph", "gf-customer"]
+
+
+apis:
+  # =====================================================================
+  # Public v1 — gf-marketing chỉ có 1 phiên bản v1 cho toàn bộ surface;
+  # không có @Deprecated annotation; không có v2/v3 thay thế cùng chức năng.
+  # =====================================================================
+
+  # v1 — CampaignController (class-level @FeatureOn GMS_CAMPAIGN_V01)
+  - name: "campaign-create"
+    path: "/api/v1/campaigns"
+    method: POST
+    purpose: "Create campaign"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaign: object
+    response:
+      schema:
+        id: long
+        code: string
+
+  - name: "campaign-list"
+    path: "/api/v1/campaigns"
+    method: GET
+    purpose: "List campaigns by tenant, optional filter by status"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        status: string
+    response:
+      schema:
+        items: array
+
+  - name: "campaign-search"
+    path: "/api/v1/campaigns/search"
+    method: POST
+    purpose: "Search campaigns with filters and pagination"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+        pagination: object
+    response:
+      schema:
+        items: array
+
+  - name: "campaign-get"
+    path: "/api/v1/campaigns/{campaignId}"
+    method: GET
+    purpose: "Get campaign by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+    response:
+      schema:
+        campaign: object
+
+  - name: "campaign-update"
+    path: "/api/v1/campaigns/{campaignId}"
+    method: PUT
+    purpose: "Update campaign (only when status=DRAFT)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+        campaign: object
+    response:
+      schema:
+        campaign: object
+
+  - name: "campaign-delete"
+    path: "/api/v1/campaigns/{campaignId}"
+    method: DELETE
+    purpose: "Delete campaign"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+    response:
+      schema:
+        deleted: boolean
+
+  - name: "campaign-by-code"
+    path: "/api/v1/campaigns/code/{code}"
+    method: GET
+    purpose: "Get campaign by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        campaign: object
+
+  - name: "campaign-start"
+    path: "/api/v1/campaigns/{campaignId}/start"
+    method: POST
+    purpose: "Start campaign — emit CampaignStarted"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+    response:
+      schema:
+        status: string
+
+  - name: "campaign-pause"
+    path: "/api/v1/campaigns/{campaignId}/pause"
+    method: POST
+    purpose: "Pause campaign"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+    response:
+      schema:
+        status: string
+
+  - name: "campaign-resume"
+    path: "/api/v1/campaigns/{campaignId}/resume"
+    method: POST
+    purpose: "Resume paused campaign"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+    response:
+      schema:
+        status: string
+
+  - name: "campaign-cancel"
+    path: "/api/v1/campaigns/{campaignId}/cancel"
+    method: POST
+    purpose: "Cancel campaign"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+    response:
+      schema:
+        status: string
+
+  - name: "campaign-stats"
+    path: "/api/v1/campaigns/{campaignId}/stats"
+    method: GET
+    purpose: "Campaign sent/delivered/opened/clicked counters"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+    response:
+      schema:
+        stats: object
+
+  - name: "campaign-messages-search"
+    path: "/api/v1/campaigns/messages/search"
+    method: POST
+    purpose: "Search campaign messages with filters (status, channel, execution, customer)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "campaign-message-get"
+    path: "/api/v1/campaigns/messages/{messageId}"
+    method: GET
+    purpose: "Get individual campaign message by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        messageId: long
+    response:
+      schema:
+        message: object
+
+  # v1 — CampaignWaveController (class-level @FeatureOn GMS_CAMPAIGN_V01)
+  - name: "campaign-wave-list"
+    path: "/api/v1/campaigns/{campaignId}/waves"
+    method: GET
+    purpose: "List waves of a campaign"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+    response:
+      schema:
+        items: array
+
+  - name: "campaign-wave-get"
+    path: "/api/v1/campaigns/{campaignId}/waves/{waveId}"
+    method: GET
+    purpose: "Get a single wave"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+        waveId: long
+    response:
+      schema:
+        wave: object
+
+  - name: "campaign-wave-pause"
+    path: "/api/v1/campaigns/{campaignId}/waves/{waveId}/pause"
+    method: POST
+    purpose: "Pause a running wave"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+        waveId: long
+    response:
+      schema:
+        status: string
+
+  - name: "campaign-wave-resume"
+    path: "/api/v1/campaigns/{campaignId}/waves/{waveId}/resume"
+    method: POST
+    purpose: "Resume a paused wave"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+        waveId: long
+    response:
+      schema:
+        status: string
+
+  - name: "campaign-wave-cancel"
+    path: "/api/v1/campaigns/{campaignId}/waves/{waveId}/cancel"
+    method: POST
+    purpose: "Cancel wave"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+        waveId: long
+    response:
+      schema:
+        status: string
+
+  - name: "campaign-wave-execution-get"
+    path: "/api/v1/campaigns/{campaignId}/waves/executions/{executionId}"
+    method: GET
+    purpose: "Get a wave execution detail"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        campaignId: long
+        executionId: long
+    response:
+      schema:
+        execution: object
+
+  # v1 — MessageTemplateController (class-level @FeatureOn GMS_CAMPAIGN_V01)
+  - name: "message-template-create"
+    path: "/api/v1/message-templates"
+    method: POST
+    purpose: "Create message template (with channel content)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        template: object
+    response:
+      schema:
+        id: long
+
+  - name: "message-template-list"
+    path: "/api/v1/message-templates"
+    method: GET
+    purpose: "List message templates, optional filter by category or channel (EMAIL/SMS/PUSH/ZALO)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        category: string
+        channel: string
+    response:
+      schema:
+        items: array
+
+  - name: "message-template-search"
+    path: "/api/v1/message-templates/search"
+    method: POST
+    purpose: "Search message templates (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "message-template-active-list"
+    path: "/api/v1/message-templates/active"
+    method: GET
+    purpose: "List only active templates"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        items: array
+
+  - name: "message-template-get"
+    path: "/api/v1/message-templates/{templateId}"
+    method: GET
+    purpose: "Get template by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        templateId: long
+    response:
+      schema:
+        template: object
+
+  - name: "message-template-update"
+    path: "/api/v1/message-templates/{templateId}"
+    method: PUT
+    purpose: "Update template"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        templateId: long
+        template: object
+    response:
+      schema:
+        template: object
+
+  - name: "message-template-delete"
+    path: "/api/v1/message-templates/{templateId}"
+    method: DELETE
+    purpose: "Delete template"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        templateId: long
+    response:
+      schema:
+        deleted: boolean
+
+  - name: "message-template-activate"
+    path: "/api/v1/message-templates/{templateId}/activate"
+    method: POST
+    purpose: "Activate template (set is_active=true)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        templateId: long
+    response:
+      schema:
+        status: string
+
+  - name: "message-template-deactivate"
+    path: "/api/v1/message-templates/{templateId}/deactivate"
+    method: POST
+    purpose: "Deactivate template (set is_active=false)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        templateId: long
+    response:
+      schema:
+        status: string
+
+  - name: "message-template-send"
+    path: "/api/v1/message-templates/send"
+    method: POST
+    purpose: "Render and send message ad-hoc using a template"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        templateId: long
+        recipient: string
+        variables: object
+    response:
+      schema:
+        sent: boolean
+
+  # v1 — NotificationLimitsController (class-level @FeatureOn GMS_CAMPAIGN_V01)
+  - name: "notification-limits"
+    path: "/api/v1/notification-limits"
+    method: GET
+    purpose: "Current month notification channel usage statistics và limits per tenant"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        limits: object
+
+  # v1 — VoucherProgramController (class-level @FeatureOn GMS_VOUCHER_01)
+  - name: "voucher-program-create"
+    path: "/api/v1/voucher-programs"
+    method: POST
+    purpose: "Create voucher program"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        program: object
+    response:
+      schema:
+        programId: long
+
+  - name: "voucher-program-update"
+    path: "/api/v1/voucher-programs/{programId}"
+    method: PUT
+    purpose: "Update voucher program"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+        program: object
+    response:
+      schema:
+        program: object
+
+  - name: "voucher-program-get"
+    path: "/api/v1/voucher-programs/{programId}"
+    method: GET
+    purpose: "Get voucher program by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+    response:
+      schema:
+        program: object
+
+  - name: "voucher-program-delete"
+    path: "/api/v1/voucher-programs/{programId}"
+    method: DELETE
+    purpose: "Delete voucher program (DRAFT only)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+    response:
+      schema:
+        deleted: boolean
+
+  - name: "voucher-program-active"
+    path: "/api/v1/voucher-programs/active"
+    method: GET
+    purpose: "List active voucher programs"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        items: array
+
+  - name: "voucher-program-search"
+    path: "/api/v1/voucher-programs/search"
+    method: POST
+    purpose: "Search voucher programs by keyword, status, date range"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "voucher-program-activate"
+    path: "/api/v1/voucher-programs/{programId}/activate"
+    method: POST
+    purpose: "Activate program — start VoucherProgramWorkflow"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+    response:
+      schema:
+        status: string
+
+  - name: "voucher-program-cancel"
+    path: "/api/v1/voucher-programs/{programId}/cancel"
+    method: POST
+    purpose: "Cancel program — emit VoucherProgramCancelledOrExpired"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+    response:
+      schema:
+        status: string
+
+  - name: "voucher-program-suspend"
+    path: "/api/v1/voucher-programs/{programId}/suspend"
+    method: POST
+    purpose: "Temporarily suspend a voucher program (resumable)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+    response:
+      schema:
+        status: string
+
+  - name: "voucher-program-resume"
+    path: "/api/v1/voucher-programs/{programId}/resume"
+    method: POST
+    purpose: "Resume a suspended voucher program back to ACTIVE"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+    response:
+      schema:
+        status: string
+
+  - name: "voucher-program-generate-qr"
+    path: "/api/v1/voucher-programs/{programId}/generate-qr"
+    method: POST
+    purpose: "Generate signed QR payload for distribution (customers scan to claim)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+    response:
+      schema:
+        qrUrl: string
+
+  - name: "voucher-program-claim-qr"
+    path: "/api/v1/voucher-programs/claim-qr"
+    method: POST
+    purpose: "Public claim by signed QR (driver/customer mobile flow): verify QR signature/expiry → claim voucher"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        qrCode: string
+        driverId: string
+        driverPhone: string
+        driverName: string
+        claimSource: string
+    response:
+      schema:
+        voucher: object
+
+  # v1 — VoucherController (class-level @FeatureOn GMS_VOUCHER_01)
+  - name: "voucher-get"
+    path: "/api/v1/vouchers/{voucherId}"
+    method: GET
+    purpose: "Get voucher by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        voucherId: long
+    response:
+      schema:
+        voucher: object
+
+  - name: "voucher-get-by-code"
+    path: "/api/v1/vouchers/code/{voucherCode}"
+    method: GET
+    purpose: "Get voucher by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        voucherCode: string
+    response:
+      schema:
+        voucher: object
+
+  - name: "voucher-list-by-customer"
+    path: "/api/v1/vouchers/customer/{customerId}"
+    method: GET
+    purpose: "List vouchers of a customer"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+    response:
+      schema:
+        items: array
+
+  - name: "voucher-validate"
+    path: "/api/v1/vouchers/validate"
+    method: GET
+    purpose: "Validate voucher (status/expiry/conditions) for a specific customer"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        voucherCode: string
+        customerId: long
+    response:
+      schema:
+        voucher: object
+
+  - name: "voucher-search"
+    path: "/api/v1/vouchers/search"
+    method: POST
+    purpose: "Search vouchers by program with keyword, status, customer, date range filters (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programIds: array
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "voucher-redeem-by-driver"
+    path: "/api/v1/vouchers/redeem-by-driver"
+    method: POST
+    purpose: "Use voucher by driver — validate ownership/status/expiry, resolve customer from driver id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        voucherCode: string
+        phone: string
+        bookingId: long
+        originalAmount: decimal
+    response:
+      schema:
+        voucher: object
+
+  - name: "voucher-cancel-batch"
+    path: "/api/v1/vouchers/cancel-batch"
+    method: POST
+    purpose: "Bulk cancel vouchers within a specific program"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        programId: long
+        voucherIds: array
+    response:
+      schema:
+        cancelled: integer
+
+  - name: "voucher-redemption-history"
+    path: "/api/v1/vouchers/{voucherCode}/voucher-redemption"
+    method: GET
+    purpose: "Voucher redemption history by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        voucherCode: string
+    response:
+      schema:
+        items: array
+
+  # =====================================================================
+  # Internal v1 — /protected/* endpoints for cross-service calls (x-api-key).
+  # =====================================================================
+
+  # Internal — CampaignInternalController (X-Tenant-Id header, no class-level feature flag)
+  - name: "internal-segment-linked"
+    path: "/protected/v1/campaigns/segments/{segmentId}/linked"
+    method: GET
+    purpose: "Check whether a segment is linked to any campaign audience (caller gf-customer)"
+    status: internal-only
+    active_callers: ["gf-customer"]
+    replaced_by: null
+    request:
+      schema:
+        segmentId: long
+        X-Tenant-Id: long
+    response:
+      schema:
+        linked: boolean
+
+  # Internal — VoucherProgramInternalController (tenantId from body, no class-level feature flag)
+  - name: "internal-voucher-program-claim-qr"
+    path: "/protected/v1/voucher-programs/claim-qr"
+    method: POST
+    purpose: "Internal claim QR — same flow as public claim-qr, tenantId từ body (caller gf-customer)"
+    status: internal-only
+    active_callers: ["gf-customer"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        qrCode: string
+        driverId: string
+        driverPhone: string
+        driverName: string
+        claimSource: string
+    response:
+      schema:
+        voucher: object
+
+  - name: "internal-voucher-program-redeem-by-driver"
+    path: "/protected/v1/voucher-programs/redeem-by-driver"
+    method: POST
+    purpose: "Internal use voucher by driver, tenantId từ body (caller gf-customer)"
+    status: internal-only
+    active_callers: ["gf-customer"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        voucherCode: string
+        phone: string
+        bookingId: long
+        originalAmount: decimal
+    response:
+      schema:
+        voucher: object
+
+events:
+  produces:
+    - topic: "AC-DEV-CAMPAIGN-TOPIC"
+      payload:
+        event_type: string
+        tenant_id: long
+        campaign_id: long
+        timestamp: datetime
+      meaning: "CampaignCreated / CampaignScheduled / CampaignStarted / CampaignCompleted / CampaignPaused / CampaignCancelled — emitted by CampaignService lifecycle methods via outbox"
+
+    - topic: "AC-DEV-VOUCHER-TOPIC"
+      payload:
+        event_type: string
+        tenant_id: long
+        voucher_id: long
+      meaning: "VoucherCreated / VoucherClaimed / VoucherRedeemed / VoucherExpired — emitted by VoucherService và VoucherProgramActivities khi expire batch"
+
+    - topic: "AC-DEV-VOUCHER-PROGRAM-TOPIC"
+      payload:
+        event_type: string
+        tenant_id: long
+        program_id: long
+      meaning: "VoucherProgramCreated / VoucherProgramActivated / VoucherProgramCancelledOrExpired — self-consumed to drive Temporal workflows"
+
+    - topic: "AC-DEV-MESSAGE-TOPIC"
+      payload:
+        event_type: string
+        external_id: string
+        tenant_id: long
+        customer_id: long
+        channel: string
+        body: string
+      meaning: "SendMessageEvent / MessageSent / MessageDelivered / MessageFailed — wave activities + lambda integration; SendMessageEvent consumed by gf-customer InteractionConsumer"
+
+  consumes:
+    - topic: "AC-DEV-VOUCHER-PROGRAM-TOPIC"
+      payload:
+        event_type: string
+        tenant_id: long
+        program_id: long
+      action: "TriggerEventConsumer (group gf-marketing-group-voucher-program) — VOUCHER_PROGRAM_ACTIVATED → WorkflowStarter.startVoucherProgramWorkflow; VOUCHER_PROGRAM_CANCELLED_OR_EXPIRED → cancelVoucherProgramWorkflow"
+
+    - topic: "AC-DEV-BOOKING-COMPLETED-TOPIC"
+      payload:
+        tenant_id: long
+        booking_id: long
+        customer_id: long
+        completed_at: datetime
+      action: "BookingCompletedConsumer (group gf-marketing-group-booking) → BookingCompletedEventProcessor — drive event-driven campaigns"
+
+    - topic: "AC-DEV-MESSAGE-TOPIC"
+      payload:
+        message_group: string
+        message_step: string
+        external_id: string
+        status: string
+      action: "MessageSendConsumer (group gf-marketing-group-message-status, filter MessageGroup=MESSAGE + MessageStep=MESSAGE.SEND.2) → update campaign_messages.status"
+
+entities:
+  - name: "Campaign"
+    type: "aggregate_root"
+    description: "Chiến dịch marketing theo tenant, gồm lifecycle, trigger, cron, template, voucher program, channels và counters gửi message."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "name", type: "VARCHAR(255)", required: true }
+      - { name: "description", type: "TEXT", required: false }
+      - { name: "campaign_type", type: "CampaignType", required: true, constraints: ["ONE_TIME | RECURRING | TRIGGERED"] }
+      - { name: "status", type: "CampaignStatus", required: true, constraints: ["DRAFT | SCHEDULED | RUNNING | PAUSED | COMPLETED | CANCELLED"] }
+      - { name: "trigger_event", type: "TriggerEvent", required: false, constraints: ["CUSTOMER_BIRTHDAY | BOOKING_COMPLETED | VEHICLE_MAINTENANCE_DUE | CUSTOMER_CREATED | CUSTOMER_INACTIVE | BOOKING_CANCELLED | PAYMENT_COMPLETED | SERVICE_COMPLETED"] }
+      - { name: "trigger_config", type: "TEXT/JSON string", required: false }
+      - { name: "cron_expression", type: "VARCHAR(255)", required: false }
+      - { name: "scheduled_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "started_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "completed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "total_waves", type: "BIGINT", required: false }
+      - { name: "completed_waves", type: "BIGINT", required: false }
+      - { name: "total_recipients", type: "INTEGER", required: false }
+      - { name: "sent_count", type: "INTEGER", required: false }
+      - { name: "delivered_count", type: "INTEGER", required: false }
+      - { name: "opened_count", type: "INTEGER", required: false }
+      - { name: "clicked_count", type: "INTEGER", required: false }
+      - { name: "voucher_program_id", type: "BIGINT", required: false }
+      - { name: "channels", type: "TEXT", required: false }
+      - { name: "template_id", type: "BIGINT", required: false }
+    relationships:
+      - { target: "CampaignAudience", type: "one_to_one", description: "Một campaign có tối đa một audience qua campaign_id unique." }
+      - { target: "CampaignWave", type: "one_to_many", description: "Một campaign có nhiều wave qua campaign_id." }
+      - { target: "CampaignMessage", type: "one_to_many", description: "Một campaign có nhiều message tracking qua campaign_id." }
+      - { target: "TriggerEventMapping", type: "one_to_many", description: "Một campaign có thể được kích hoạt bởi nhiều trigger mapping." }
+      - { target: "VoucherProgram", type: "logical_reference", description: "voucher_program_id liên kết logic tới voucher program." }
+      - { target: "MessageTemplate", type: "logical_reference", description: "template_id liên kết logic tới message template." }
+    invariants:
+      - "Chỉ cho phép chuyển trạng thái theo Campaign.validateStateTransition."
+      - "Trigger event chỉ được set cho campaign_type TRIGGERED."
+      - "Campaign chỉ có thể chỉnh sửa khi status là DRAFT theo canBeModified."
+      - "RECURRING campaign có thể scheduleNext từ RUNNING hoặc COMPLETED để quay về SCHEDULED."
+
+  - name: "CampaignAudience"
+    type: "entity"
+    description: "Audience của campaign, lưu segment logical reference và số lượng customer."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "campaign_id", type: "BIGINT", required: true, constraints: ["unique"] }
+      - { name: "segment_id", type: "BIGINT", required: false }
+      - { name: "customer_count", type: "INTEGER", required: false }
+    relationships:
+      - { target: "Campaign", type: "many_to_one", description: "campaign_id FK tới campaigns.id." }
+    invariants:
+      - "campaign_id unique giữ tối đa một audience record cho mỗi campaign."
+      - "segment_id là logical reference sang gf-customer, không phải FK vật lý."
+
+  - name: "CampaignWave"
+    type: "entity"
+    description: "Đợt gửi trong campaign, có lịch chạy, delay, template/voucher liên kết logic và counters cấp wave."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "campaign_id", type: "BIGINT", required: true }
+      - { name: "wave_number", type: "INTEGER", required: true }
+      - { name: "name", type: "VARCHAR(255)", required: false }
+      - { name: "description", type: "TEXT", required: false }
+      - { name: "template_id", type: "BIGINT", required: false }
+      - { name: "voucher_program_id", type: "BIGINT", required: false }
+      - { name: "delay_days", type: "INTEGER", required: false }
+      - { name: "delay_hours", type: "INTEGER", required: false }
+      - { name: "status", type: "WaveStatus", required: true, constraints: ["PENDING | SCHEDULED | RUNNING | COMPLETED | PAUSED | CANCELLED | SKIPPED"] }
+      - { name: "scheduled_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "started_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "completed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "target_count", type: "INTEGER", required: false }
+      - { name: "sent_count", type: "INTEGER", required: false }
+      - { name: "delivered_count", type: "INTEGER", required: false }
+      - { name: "opened_count", type: "INTEGER", required: false }
+      - { name: "clicked_count", type: "INTEGER", required: false }
+    relationships:
+      - { target: "Campaign", type: "many_to_one", description: "campaign_id FK tới campaigns.id." }
+      - { target: "WaveExecution", type: "one_to_many", description: "Một wave có nhiều execution qua wave_id." }
+      - { target: "CampaignMessage", type: "one_to_many", description: "Message có thể gắn wave_id khi được gửi trong wave." }
+      - { target: "MessageTemplate", type: "logical_reference", description: "template_id liên kết logic tới template dùng cho wave." }
+      - { target: "VoucherProgram", type: "logical_reference", description: "voucher_program_id liên kết logic tới voucher program dùng để assign voucher." }
+    invariants:
+      - "Unique theo campaign_id và wave_number."
+      - "Chỉ cho phép chuyển trạng thái theo CampaignWave.validateStateTransition."
+      - "COMPLETED, CANCELLED và SKIPPED là terminal states."
+
+  - name: "WaveExecution"
+    type: "entity"
+    description: "Lịch sử chạy thực tế từng batch của campaign wave."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "wave_id", type: "BIGINT", required: true }
+      - { name: "execution_number", type: "INTEGER", required: true }
+      - { name: "status", type: "ExecutionStatus", required: true, constraints: ["PENDING | IN_PROGRESS | COMPLETED | FAILED"] }
+      - { name: "started_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "completed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "total_messages", type: "INTEGER", required: false }
+      - { name: "sent_count", type: "INTEGER", required: false }
+      - { name: "delivered_count", type: "INTEGER", required: false }
+      - { name: "failed_count", type: "INTEGER", required: false }
+      - { name: "error_message", type: "TEXT", required: false }
+    relationships:
+      - { target: "CampaignWave", type: "many_to_one", description: "wave_id FK tới campaign_waves.id." }
+      - { target: "CampaignMessage", type: "one_to_many", description: "Message gửi trong execution có thể gắn execution_id." }
+    invariants:
+      - "Mỗi execution ghi nhận tổng message, sent/delivered/failed và lỗi nếu có cho một lần chạy wave."
+
+  - name: "CampaignMessage"
+    type: "entity"
+    description: "Message đã render để gửi qua notification provider, kèm status callback và snapshot customer."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "execution_id", type: "BIGINT", required: true }
+      - { name: "wave_id", type: "BIGINT", required: true }
+      - { name: "campaign_id", type: "BIGINT", required: true }
+      - { name: "customer_id", type: "BIGINT", required: true }
+      - { name: "channel", type: "NotificationChannel", required: true, constraints: ["SMS | EMAIL | PUSH | ZALO"] }
+      - { name: "recipient", type: "VARCHAR(200)", required: true }
+      - { name: "status", type: "MessageStatus", required: true, constraints: ["PENDING | SENDING | SENT | DELIVERED | OPENED | CLICKED | FAILED | BOUNCED"] }
+      - { name: "rendered_subject", type: "VARCHAR(500)", required: false }
+      - { name: "rendered_content", type: "TEXT", required: true }
+      - { name: "external_id", type: "VARCHAR(100)", required: false }
+      - { name: "error_message", type: "TEXT", required: false }
+      - { name: "sent_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "delivered_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "opened_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "clicked_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "customer_name", type: "VARCHAR(255)", required: false }
+      - { name: "customer_phone", type: "VARCHAR(25)", required: false }
+    relationships:
+      - { target: "Campaign", type: "many_to_one", description: "campaign_id FK tới campaigns.id." }
+      - { target: "CampaignWave", type: "many_to_one", description: "wave_id FK tới campaign_waves.id (NOT NULL)." }
+      - { target: "WaveExecution", type: "many_to_one", description: "execution_id FK tới wave_executions.id (NOT NULL)." }
+    invariants:
+      - "MESSAGE.SEND.2 cập nhật message bằng external_id + tenant_id."
+      - "Không downgrade status từ FAILED/BOUNCED và chỉ cho progression SENT -> DELIVERED -> OPENED -> CLICKED."
+      - "execution_id và wave_id đều NOT NULL theo entity; CampaignMessage chỉ được tạo trong wave execution context."
+
+  - name: "TriggerEventMapping"
+    type: "entity"
+    description: "Mapping trigger event tới campaign đang active cho event-driven campaign."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "trigger_event", type: "TriggerEvent", required: true }
+      - { name: "campaign_id", type: "BIGINT", required: true }
+      - { name: "active", type: "BOOLEAN", required: true }
+    relationships:
+      - { target: "Campaign", type: "many_to_one", description: "campaign_id FK tới campaigns.id." }
+    invariants:
+      - "Unique theo tenant_id, trigger_event và campaign_id."
+
+  - name: "MessageTemplate"
+    type: "aggregate_root"
+    description: "Header template notification theo tenant, gồm nhiều channel content."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "name", type: "VARCHAR(255)", required: true }
+      - { name: "description", type: "TEXT", required: false }
+      - { name: "category", type: "VARCHAR(50)", required: false }
+      - { name: "is_active", type: "BOOLEAN", required: true }
+    relationships:
+      - { target: "TemplateChannel", type: "one_to_many", description: "Một template có nhiều channel content qua template_id." }
+    invariants:
+      - "Template chỉ usable khi is_active=true và có ít nhất một channel."
+      - "Migration seed template mặc định với tenant_id = -1."
+
+  - name: "TemplateChannel"
+    type: "entity"
+    description: "Nội dung template theo channel notification."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "template_id", type: "BIGINT", required: true }
+      - { name: "channel", type: "NotificationChannel", required: true, constraints: ["SMS | EMAIL | PUSH | ZALO"] }
+      - { name: "subject", type: "VARCHAR(500)", required: false }
+      - { name: "content", type: "TEXT", required: true }
+      - { name: "variables", type: "TEXT", required: false }
+    relationships:
+      - { target: "MessageTemplate", type: "many_to_one", description: "template_id FK tới message_templates.id." }
+    invariants:
+      - "Unique theo template_id và channel."
+      - "Content và subject được render bằng TemplateContent trước khi ghi CampaignMessage và publish SendMessageEvent."
+
+  - name: "VoucherProgram"
+    type: "aggregate_root"
+    description: "Chương trình voucher, gồm lifecycle, số lượng, điều kiện claim/redeem, phân phối, QR và giới hạn sử dụng."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "name", type: "VARCHAR(255)", required: true }
+      - { name: "description", type: "TEXT", required: false }
+      - { name: "voucher_type", type: "VoucherType", required: true, constraints: ["PERCENT_DISCOUNT | FIXED_DISCOUNT | FREE_SERVICE | GIFT"] }
+      - { name: "discount_value", type: "DECIMAL(10,2)", required: true }
+      - { name: "total_quantity", type: "INTEGER", required: true }
+      - { name: "distributed_quantity", type: "INTEGER", required: true }
+      - { name: "claimed_quantity", type: "INTEGER", required: true }
+      - { name: "redeemed_quantity", type: "INTEGER", required: true }
+      - { name: "valid_from", type: "TIMESTAMPTZ", required: false }
+      - { name: "valid_to", type: "TIMESTAMPTZ", required: false }
+      - { name: "status", type: "VoucherProgramStatus", required: true, constraints: ["DRAFT | ACTIVE | EXPIRED | CANCELLED | SUSPENDED"] }
+      - { name: "distribution_method", type: "VARCHAR(30)", required: true }
+      - { name: "distribution_channels", type: "TEXT", required: false }
+      - { name: "distribution_start_date", type: "TIMESTAMPTZ", required: false }
+      - { name: "distribution_end_date", type: "TIMESTAMPTZ", required: false }
+      - { name: "target_segment_ids", type: "TEXT", required: false }
+      - { name: "auto_assign_trigger", type: "VARCHAR(50)", required: false }
+      - { name: "daily_distribution_limit", type: "INTEGER", required: false }
+      - { name: "claim_start_date", type: "TIMESTAMPTZ", required: false }
+      - { name: "claim_end_date", type: "TIMESTAMPTZ", required: false }
+      - { name: "claim_cycle", type: "ClaimCycle", required: false, constraints: ["NONE | DAILY | WEEKLY | MONTHLY | YEARLY"] }
+      - { name: "max_claims_per_cycle", type: "INTEGER", required: false }
+      - { name: "max_claims_per_customer", type: "INTEGER", required: false }
+      - { name: "claim_verification_type", type: "VARCHAR(20)", required: false }
+      - { name: "customer_eligibility_rules", type: "TEXT", required: false }
+      - { name: "required_segment_ids", type: "TEXT", required: false }
+      - { name: "excluded_customer_ids", type: "TEXT", required: false }
+      - { name: "new_customer_only", type: "BOOLEAN", required: false }
+      - { name: "existing_customer_only", type: "BOOLEAN", required: false }
+      - { name: "min_total_spent", type: "DECIMAL(15,2)", required: false }
+      - { name: "min_visit_count", type: "INTEGER", required: false }
+      - { name: "require_complete_profile", type: "BOOLEAN", required: false }
+      - { name: "days_valid_after_claim", type: "INTEGER", required: false }
+      - { name: "min_order_amount", type: "DECIMAL(15,2)", required: false }
+      - { name: "max_discount_amount", type: "DECIMAL(15,2)", required: false }
+      - { name: "applicable_service_ids", type: "TEXT", required: false }
+      - { name: "excluded_service_ids", type: "TEXT", required: false }
+      - { name: "applicable_category_ids", type: "TEXT", required: false }
+      - { name: "applicable_days", type: "TEXT", required: false }
+      - { name: "applicable_time_from", type: "TIME", required: false }
+      - { name: "applicable_time_to", type: "TIME", required: false }
+      - { name: "blackout_dates", type: "TEXT", required: false }
+      - { name: "is_stackable", type: "BOOLEAN", required: false }
+      - { name: "max_stack_count", type: "INTEGER", required: false }
+      - { name: "combinable_with_promotion", type: "BOOLEAN", required: false }
+      - { name: "max_usage_per_customer", type: "INTEGER", required: false }
+      - { name: "max_usage_per_order", type: "INTEGER", required: false }
+      - { name: "require_booking", type: "BOOLEAN", required: false }
+      - { name: "min_items_count", type: "INTEGER", required: false }
+      - { name: "first_visit_only", type: "BOOLEAN", required: false }
+      - { name: "applicable_vehicle_types", type: "TEXT", required: false }
+    relationships:
+      - { target: "Voucher", type: "one_to_many", description: "Một voucher program có nhiều voucher qua program_id." }
+      - { target: "Campaign", type: "logical_reference", description: "Campaign và wave có thể tham chiếu voucher_program_id." }
+    invariants:
+      - "Create/update yêu cầu valid_from, valid_to và valid_to không trước valid_from hoặc hiện tại."
+      - "Chỉ cho phép chuyển trạng thái theo VoucherProgram.validateStateTransition."
+      - "Không cancel hoặc suspend voucher program đang linked với campaign chưa COMPLETED/CANCELLED."
+      - "Claim bị chặn nếu program không ACTIVE hoặc vượt max_claims_per_customer/max_claims_per_cycle."
+      - "Activate publish VoucherProgramActivated để self-consumer start workflow sinh voucher."
+
+  - name: "Voucher"
+    type: "aggregate_root"
+    description: "Voucher cụ thể thuộc voucher program, có lifecycle claim, distribute, redeem, expire, cancel và snapshot customer."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "program_id", type: "BIGINT", required: true }
+      - { name: "customer_id", type: "BIGINT", required: false }
+      - { name: "campaign_id", type: "BIGINT", required: false }
+      - { name: "status", type: "VoucherStatus", required: true, constraints: ["CREATED | CLAIMED | DISTRIBUTED | REDEEMED | EXPIRED | CANCELLED"] }
+      - { name: "claim_source", type: "ClaimSource/String", required: false, constraints: ["QR_SCAN | CAMPAIGN | MANUAL"] }
+      - { name: "distributed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "claimed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "redeemed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "expired_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "customer_name", type: "VARCHAR(255)", required: false }
+      - { name: "customer_phone", type: "VARCHAR(25)", required: false }
+    relationships:
+      - { target: "VoucherProgram", type: "many_to_one", description: "program_id FK tới voucher_programs.id." }
+      - { target: "VoucherRedemption", type: "one_to_many", description: "Voucher có lịch sử redeem qua voucher_id." }
+      - { target: "Campaign", type: "logical_reference", description: "campaign_id liên kết voucher được phân phối bởi campaign." }
+    invariants:
+      - "claim chỉ từ CREATED và voucher chưa expired; chuyển sang CLAIMED."
+      - "distribute chỉ từ CREATED và voucher chưa expired; chuyển sang DISTRIBUTED."
+      - "redeem chỉ cho CLAIMED, chưa expired, chưa REDEEMED/CANCELLED/EXPIRED."
+      - "Không cancel/expire voucher đã REDEEMED."
+
+  - name: "VoucherRedemption"
+    type: "entity"
+    description: "Lịch sử redeem voucher và số tiền trước/sau giảm."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "voucher_id", type: "BIGINT", required: true }
+      - { name: "customer_id", type: "BIGINT", required: true }
+      - { name: "booking_id", type: "BIGINT", required: false }
+      - { name: "service_order_id", type: "BIGINT", required: false }
+      - { name: "original_amount", type: "DECIMAL(15,2)", required: true }
+      - { name: "discount_amount", type: "DECIMAL(15,2)", required: true }
+      - { name: "final_amount", type: "DECIMAL(15,2)", required: true }
+      - { name: "redeemed_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "redeemed_by", type: "VARCHAR(255)", required: true }
+    relationships:
+      - { target: "Voucher", type: "many_to_one", description: "voucher_id FK tới vouchers.id." }
+    invariants:
+      - "booking_id, service_order_id và customer_id là logical references ngoài boundary gf-marketing."
+
+  - name: "Outbox"
+    type: "aggregate_root"
+    description: "Bảng outbox lưu outbound events để publish Kafka theo scheduler và retry."
+    attributes:
+      - { name: "id", type: "VARCHAR(50)", required: true, constraints: ["primary key"] }
+      - { name: "aggregate_type", type: "VARCHAR(100)", required: true }
+      - { name: "aggregate_id", type: "VARCHAR(100)", required: true }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "payload", type: "TEXT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "retry_count", type: "INTEGER", required: false }
+      - { name: "error_message", type: "TEXT", required: false }
+    relationships: []
+    invariants:
+      - "OutboxProcessor dùng RedisLockRegistry với lock gf-marketing-outbox-processor để xử lý batch."
+      - "Retry failed events dùng lock gf-marketing-outbox-retry-processor và max retries theo marketing.outbox.max-retries."
+      - "Topic được resolve từ event_type, không lưu trực tiếp trong outbox row."
+
+  - name: "Inbox"
+    type: "aggregate_root"
+    description: "Bảng inbox chống xử lý trùng inbound Kafka events."
+    attributes:
+      - { name: "id", type: "VARCHAR(50)", required: true, constraints: ["primary key"] }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "source_service", type: "VARCHAR(100)", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "received_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "status", type: "VARCHAR(20)", required: true }
+    relationships: []
+    invariants:
+      - "id là khóa idempotency; duplicate event được bỏ qua trong InboxService.processIfNotDuplicate."
+      - "Processed inbox events được cleanup theo marketing.inbox.retention-days."
+
+  - name: "Sequence"
+    type: "entity"
+    description: "Counter global để sinh mã nghiệp vụ theo type/prefix."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "type", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "current_value", type: "BIGINT", required: true }
+      - { name: "prefix", type: "VARCHAR(10)", required: false }
+      - { name: "min_length", type: "INTEGER", required: true }
+    relationships: []
+    invariants:
+      - "sequences không có tenant_id vì là counter global theo type."
+      - "V4 seed type voucher_programs với prefix VP; VoucherProgramServiceImpl dùng SequenceGenerator cho mã program."
+
+business_rules:
+  - { id: "BR-GF-MARKETING-001", description: "Voucher program activation kích VoucherProgramWorkflow qua Kafka VOUCHER_PROGRAM_ACTIVATED: workflow generate voucher pool qua generateVoucherWithQuantity rồi trigger 2 TOP-LEVEL workflows (VoucherProgramExpiryWorkflow + VoucherExpiryScheduledWorkflow) bằng WorkflowStarter.scheduleVoucherProgramExpiryWorkflow / scheduleVoucherExpiryWorkflow với startDelay = program.endDate. Không phải Temporal child workflow.", cornerstone: true, enforcement_point: "TriggerEventConsumer + VoucherProgramWorkflow + VoucherProgramActivities.generateVoucherWithQuantity + WorkflowStarter.scheduleVoucherProgramExpiry/ExpiryWorkflow" }
+  - { id: "BR-GF-MARKETING-002", description: "BookingCompleted-driven campaign chạy ĐỒNG BỘ trong consumer: BookingCompletedConsumer → BookingCompletedEventProcessor → gọi TriggeredCampaignActivities trực tiếp (không qua Temporal workflow). TriggeredCampaignWorkflow interface declared trong workflow/ nhưng KHÔNG có impl class trong workflow/impl/, KHÔNG được sử dụng.", cornerstone: true, enforcement_point: "BookingCompletedConsumer + BookingCompletedEventProcessor + TriggeredCampaignActivities" }
+  - { id: "BR-GF-MARKETING-003", description: "TriggeredCampaignCronWorkflow chạy theo Temporal Schedule cron per-campaign-type (birthday, maintenance reminder, inactive customer); poll customer cohort bằng getMatchingCustomersForTodayPaged, filter trùng bằng filterAlreadySentCustomers rồi gửi qua sendMessageToCustomer.", cornerstone: true, enforcement_point: "TriggeredCampaignCronWorkflow + TriggeredCampaignActivities.getMatchingCustomersForTodayPaged/filterAlreadySentCustomers/sendMessageToCustomer" }
+  - { id: "BR-GF-MARKETING-004", description: "WaveWorkflow auto start qua ScheduledWorkflowTasks → WorkflowStarter.startWaveWorkflow; execute batch message send với tryAssignVoucher per customer trước khi send; auto-complete campaign + remaining waves khi voucher exhausted (hasAvailableVouchers=false) hoặc notification limit exhausted (tryCheckNotificationLimit=false); mark wave COMPLETED/FAILED qua updateWaveProgress + completeWave.", cornerstone: true, enforcement_point: "ScheduledWorkflowTasks + WorkflowStarter.startWaveWorkflow + WaveWorkflow + WaveActivities (getWaveDetails/startWave/getWaveRecipientsBySegmentIdPaged/tryAssignVoucher/sendMessageToCustomer/updateWaveProgress/completeWave)" }
+  - { id: "BR-GF-MARKETING-005", description: "VoucherProgramUpdateExpiredWorkflow react Kafka VOUCHER_PROGRAM_CANCELLED_OR_EXPIRED bằng cách cancel/expire toàn bộ voucher con qua VoucherProgramActivities.cancelOrExpireVouchers và terminate các VoucherProgramExpiry/VoucherExpiryScheduled workflows đang sleep qua terminateScheduledWorkflows.", cornerstone: true, enforcement_point: "TriggerEventConsumer + VoucherProgramUpdateExpiredWorkflow + VoucherProgramActivities.cancelOrExpireVouchers + terminateScheduledWorkflows" }
+  - { id: "BR-GF-MARKETING-006", description: "Outbound Kafka event (AC-DEV-CAMPAIGN-TOPIC / AC-DEV-VOUCHER-TOPIC / AC-DEV-VOUCHER-PROGRAM-TOPIC / AC-DEV-MESSAGE-TOPIC) đi qua OutboxEntity (insert sau commit từ service layer) + OutboxProcessor (batch publish qua OutboxPublisher với RedisLockRegistry) để retry bền vững.", cornerstone: true, enforcement_point: "OutboxProcessor + OutboxPublisher + campaign/voucher/message service layer (insert outbox row sau commit)" }
+  - { id: "BR-GF-MARKETING-007", description: "Voucher claim validate: program ACTIVE, voucher available (status ACTIVE + no customerId), customer chưa đạt maxClaimsPerCustomer và maxClaimsPerCycle (DAILY/WEEKLY/MONTHLY). Redeem validate: voucher thuộc customer, status CLAIMED/DISTRIBUTED, chưa đạt maxUsagePerCustomer; discountAmount = PERCENT_DISCOUNT capped by maxDiscountAmount hoặc FIXED_DISCOUNT trừ thẳng. Expire: batch update ACTIVE vouchers past validTo.", cornerstone: true, enforcement_point: "VoucherServiceImpl.claimVoucher + redeemVoucher + expireVouchers + VoucherProgram claim limits" }
+  - { id: "BR-GF-MARKETING-008", description: "Campaign chuyển trạng thái theo validateStateTransition: DRAFT→SCHEDULED→RUNNING→COMPLETED, RUNNING→PAUSED/CANCELLED, PAUSED→RUNNING/CANCELLED. Chỉ DRAFT mới edit (canBeModified). ONE_TIME cần waves+scheduledAt+segmentId; TRIGGERED cần triggerEvent+triggerConfig; RECURRING dùng cronExpression (default 0 1 * * *). VoucherProgram phải ACTIVE khi campaign start nếu có voucherProgramId.", cornerstone: true, enforcement_point: "Campaign.validateStateTransition + canBeModified + CampaignServiceImpl.startCampaign + OneTimeCampaignValidator + RecurringTriggeredCampaignValidator" }
+  - { id: "BR-GF-MARKETING-009", description: "Gửi message bị giới hạn monthly per channel per tenant (SMS/EMAIL/PUSH/ZALO configurable). Khi exhausted, wave/cron workflow auto-complete campaign + stop processing. Fail open: lỗi check limit vẫn cho gửi (return true).", cornerstone: true, enforcement_point: "MessageTemplateServiceImpl.tryCheckNotificationLimit + WaveWorkflowImpl + TriggeredCampaignCronWorkflowImpl" }
+  - { id: "BR-GF-MARKETING-010", description: "BOOKING_COMPLETED trigger campaigns chạy direct qua BookingCompletedConsumer → BookingCompletedEventProcessor (không qua TriggeredCampaignCronWorkflow). Các trigger khác (CUSTOMER_BIRTHDAY, VEHICLE_MAINTENANCE_DUE, CUSTOMER_INACTIVE) chạy qua cron workflow.", cornerstone: true, enforcement_point: "ScheduledWorkflowTasks.checkTriggeredCampaigns + BookingCompletedConsumer + BookingCompletedEventProcessor" }
+  - { id: "BR-GF-MARKETING-011", description: "VoucherProgram create với isActive=true publish cả VOUCHER_PROGRAM_CREATED lẫn VOUCHER_PROGRAM_ACTIVATED event, kích hoạt VoucherProgramWorkflow pipeline ngay lập tức (generate vouchers + schedule expiry workflows).", cornerstone: false, enforcement_point: "VoucherProgramServiceImpl.createProgram" }
+  - { id: "BR-GF-MARKETING-012", description: "TriggeredCampaignCronWorkflow filter customers đã nhận message hôm nay (filterAlreadySentCustomers) ngăn gửi trùng cho TRIGGERED campaigns. RECURRING campaigns skip filter — cho phép gửi lại mỗi chu kỳ.", cornerstone: true, enforcement_point: "TriggeredCampaignActivitiesImpl.filterAlreadySentCustomers + campaignMessageRepository.findCustomerIdsAlreadySentToday" }
+  - { id: "BR-GF-MARKETING-013", description: "Voucher code sinh dạng TENANT-{4_RANDOM}-{4_RANDOM} (ký tự A-Z0-9, SecureRandom, 17 chars); bulk generate song song với ConcurrentHashMap dedup + retry 3 lần khi trùng; batch insert 1000 vouchers/lần. Campaign code sinh dạng CAMP_{NNNNN} và VoucherProgram code sinh dạng VP_{NNNNN} qua SequenceGenerator (bảng sequences, SELECT FOR UPDATE + REQUIRES_NEW transaction, zero-pad 5 digits). Tất cả code đều có UNIQUE constraint trên DB.", cornerstone: true, enforcement_point: "VoucherCode.generate + VoucherServiceImpl.createVouchersForProgram + SequenceGenerator.generateCode + CampaignServiceImpl.buildCampaignFromRequest + VoucherProgramServiceImpl.createProgram" }
+
+workflows:
+
+  - name: "VoucherProgramWorkflow"
+    type: TEMPORAL
+    description: "Manage voucher program lifecycle on activation — task queue marketing-task-queue, timeout 2h"
+    steps:
+      - step: 1
+        service: "gf-marketing"
+        action: "Triggered by Kafka VOUCHER_PROGRAM_ACTIVATED via TriggerEventConsumer → WorkflowStarter.startVoucherProgramWorkflow"
+      - step: 2
+        service: "gf-marketing"
+        action: "VoucherProgramActivities.generateVoucherWithQuantity — populate voucher pool"
+      - step: 3
+        service: "gf-marketing"
+        action: "VoucherProgramActivities.scheduleVoucherProgramExpiry + scheduleVoucherExpiry — trigger 2 top-level workflows (VoucherProgramExpiryWorkflow + VoucherExpiryScheduledWorkflow) qua WorkflowStarter.scheduleVoucherProgramExpiryWorkflow / scheduleVoucherExpiryWorkflow với startDelay = program.endDate - now. Không phải Temporal child workflow."
+
+  - name: "VoucherProgramExpiryWorkflow"
+    type: TEMPORAL
+    description: "Expire program at endDate — top-level workflow với startDelay = program.endDate - now, timeout 2h"
+    steps:
+      - step: 1
+        service: "gf-marketing"
+        action: "Started as TOP-LEVEL workflow bởi WorkflowStarter.scheduleVoucherProgramExpiryWorkflow (gọi từ VoucherProgramActivitiesImpl.scheduleVoucherProgramExpiry) qua WorkflowClient.start với WorkflowOptions.setStartDelay(program.endDate - now). Không phải Temporal child workflow."
+      - step: 2
+        service: "gf-marketing"
+        action: "Sleep startDelay until program.endDate"
+      - step: 3
+        service: "gf-marketing"
+        action: "VoucherProgramActivities.expireVoucherProgram — set status EXPIRED + emit event"
+
+  - name: "VoucherExpiryScheduledWorkflow"
+    type: TEMPORAL
+    description: "Expire individual vouchers at program endDate — top-level workflow với startDelay, timeout 2h"
+    steps:
+      - step: 1
+        service: "gf-marketing"
+        action: "Started as TOP-LEVEL workflow bởi WorkflowStarter.scheduleVoucherExpiryWorkflow (gọi từ VoucherProgramActivitiesImpl.scheduleVoucherExpiry) qua WorkflowClient.start với startDelay = program.endDate. Không phải Temporal child workflow."
+      - step: 2
+        service: "gf-marketing"
+        action: "Sleep until endDate"
+      - step: 3
+        service: "gf-marketing"
+        action: "VoucherProgramActivities.triggerVoucherExpiryWorkflow — bulk update voucher status EXPIRED"
+
+  - name: "VoucherProgramUpdateExpiredWorkflow"
+    type: TEMPORAL
+    description: "React to VOUCHER_PROGRAM_CANCELLED_OR_EXPIRED — close active vouchers — timeout 2h"
+    steps:
+      - step: 1
+        service: "gf-marketing"
+        action: "Triggered by Kafka VOUCHER_PROGRAM_CANCELLED_OR_EXPIRED via TriggerEventConsumer → WorkflowStarter.cancelVoucherProgramWorkflow"
+      - step: 2
+        service: "gf-marketing"
+        action: "VoucherProgramActivities.cancelOrExpireVouchers + terminateScheduledWorkflows — cancel/expire all child vouchers và terminate các VoucherProgramExpiry/VoucherExpiryScheduled workflows đang sleep"
+
+  - name: "WaveWorkflow"
+    type: TEMPORAL
+    description: "Execute campaign wave — auto start qua scheduled task, timeout 12h"
+    steps:
+      - step: 1
+        service: "gf-marketing"
+        action: "Started bởi ScheduledWorkflowTasks (scheduled bean tự động poll PENDING/SCHEDULED waves) → WorkflowStarter.startWaveWorkflow qua WorkflowClient.start. Không phải manual operator trigger."
+      - step: 2
+        service: "gf-marketing"
+        action: "WaveActivities.getWaveDetails + startWave + getWaveRecipientsBySegmentIdPaged + tryAssignVoucher (qua TriggeredCampaignActivities.assignVoucherToCustomer) + sendMessageToCustomer — gửi message từng recipient qua gf-notification"
+      - step: 3
+        service: "gf-marketing"
+        action: "WaveActivities.updateWaveProgress + completeWave — cập nhật counters và mark wave COMPLETED/FAILED"
+
+  - name: "TriggeredCampaignCronWorkflow"
+    type: TEMPORAL
+    description: "Cron-based polling for triggered campaign cohort (birthday, maintenance reminder, inactive customer)"
+    steps:
+      - step: 1
+        service: "gf-marketing"
+        action: "Triggered by Temporal Schedule cron (per-campaign-type expression; timezone Asia/Ho_Chi_Minh — verify trong schedule registration code)"
+      - step: 2
+        service: "gf-marketing"
+        action: "TriggeredCampaignActivities.getMatchingCustomersForTodayPaged + filterAlreadySentCustomers + sendMessageToCustomer — fetch eligible customers, lọc trùng, gửi message"
+
+  - name: "CampaignWorkflow"
+    type: TEMPORAL
+    description: "Placeholder — implementation empty (timeout 10m)"
+    steps:
+      - step: 1
+        service: "gf-marketing"
+        action: "Reserved for future campaign-level orchestration"
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-customer"
+      purpose: "GET /protected/v1/campaigns/segments/{segmentId}/linked, POST /protected/v1/voucher-programs/{claim-qr,redeem-by-driver}"
+    - type: API
+      source: "agg-garage-graph"
+      purpose: "BFF campaign / voucher queries"
+    - type: EVENT
+      source: "gf-sales"
+      purpose: "BookingCompletedEvent → BookingCompletedConsumer"
+    - type: EVENT
+      source: "lambda-marketing-notification"
+      purpose: "MessageSend2Event → MessageSendConsumer (update message status)"
+
+  outbound:
+    - type: API
+      target: "gf-customer"
+      purpose: "Resolve segment customer ids, customer details, birthday/maintenance/inactive lookup — /protected/v1/customers/...,/segments/{id}/..."
+    - type: API
+      target: "gf-notification"
+      purpose: "Send notifications (multi-channel) — POST /protected/v1/notifications"
+    - type: API
+      target: "ct-saas-tenant"
+      purpose: "Tenant operations"
+    - type: EVENT
+      target: "Kafka — campaign-events / voucher-events / voucher-program-events / message-events"
+      purpose: "Publish campaign + voucher + voucher-program + message lifecycle events via outbox"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "Lưu campaign, wave, voucher, voucher_program, message, segment-linked records và sequence counters (JPA aggregates).", config_ref: "spring.datasource.*, spring.jpa.properties.hibernate.default_schema, DB_SCHEMA" }
+  - { name: "Flyway", type: "database_migration", purpose: "Quản lý schema migrations (8 files V1__create_marketing_tables → V8__enable_unaccent_extension trong src/main/resources/db/migration/).", config_ref: "flyway-core, flyway-database-postgresql, spring.flyway.*" }
+  - { name: "Kafka", type: "broker", purpose: "Produce campaign/voucher/voucher-program/message lifecycle events via outbox; consume booking-events (BookingCompletedConsumer), message-events (MessageSendConsumer), trigger events (VOUCHER_PROGRAM_ACTIVATED / CANCELLED_OR_EXPIRED).", config_ref: "KAFKA_BOOTSTRAP_SERVERS, kafka.topics.*" }
+  - { name: "Redis", type: "cache_lock", purpose: "RedisLockRegistry cho OutboxProcessor (lock gf-marketing-outbox-processor và gf-marketing-outbox-retry-processor); Spring Cache abstraction.", config_ref: "spring.data.redis.*, spring-boot-starter-data-redis, spring-integration-redis" }
+  - { name: "Temporal Java SDK", type: "workflow", purpose: "Runtime cho 7 workflow (VoucherProgram, VoucherProgramExpiry, VoucherExpiryScheduled, VoucherProgramUpdateExpired, Wave, TriggeredCampaignCron, Campaign placeholder); host signal/query handlers, top-level workflows với startDelay, Temporal Schedule cron.", config_ref: "TEMPORAL_CONNECTION_TARGET, TEMPORAL_NAMESPACE, spring.temporal.*, marketing-task-queue" }
+  - { name: "Spring Boot 3.5.0 + JPA + Kafka", type: "framework", purpose: "Host REST controllers, JPA repositories, Kafka producers/consumers cho campaign/voucher/message lifecycle.", config_ref: "spring.application.name, spring.kafka.*" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Dual auth: /protected/* bằng x-api-key (ApiKeyAuthenticationFilter, INTERNAL_API_KEY), /api/* bằng JWT; SecurityUtils cho audit trail và tenant context trong JWT context.", config_ref: "com.actechx.common:spring-security-starter, actechx.security.*" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho REST controllers.", config_ref: "springdoc-openapi-starter-webmvc-ui:2.8.9, OpenApiConfig" }
+
+change_log:
+  - { date: "2026-05-19", summary: "Cross-review với INTEG-EXT-gf-marketing.md: sửa auth comment /protected/* từ JWT sang x-api-key (D2), sửa spring-security-starter purpose mô tả dual auth (D2), xoá integration_ref sai (D4), thêm gf-customer vào integration_consumers (D4).", author: "Architecture Authority" }
+  - { date: "2026-05-18", summary: "BR review fix: sửa BR-004 (thêm voucher/notification exhaustion handling); thêm BR-007 (voucher claim/redeem lifecycle validation), BR-008 (campaign state machine + type validation), BR-009 (notification limits per channel/month), BR-010 (BOOKING_COMPLETED bypass cron), BR-011 (VoucherProgram create auto-activate), BR-012 (triggered campaign duplicate-send prevention + RECURRING exception), BR-013 (code generation — voucher TENANT-XXXX-XXXX random, campaign CAMP_NNNNN sequence, voucherProgram VP_NNNNN sequence).", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-11", summary: "Thêm business_rules (6 rules) và dependencies (5 deps); chuẩn hoá trigger step 1 cho các workflows.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Sync với source: sửa activity method names (6 workflows), xóa dead TriggeredCampaignWorkflow, rewrite BR-002 (BookingCompleted), sửa enforcement_point BRs, thêm VoucherExpired event, bổ sung Redis/Flyway/SpringDoc, làm rõ internal controllers auth.", author: "Architecture Authority" }
+  - { date: "2026-05-14", summary: "Sync apis với source: thêm status/active_callers/replaced_by cho mọi entry, sửa schema voucher-validate (customerId), voucher-redeem-by-driver (voucherCode/phone/bookingId/originalAmount), voucher-cancel-batch (programId), voucher-program-claim-qr (qrCode + driver fields); xóa 3 campaign endpoints commented-out (schedule/complete/schedule-next) và 4 voucher endpoints commented-out (claim/redeem-by-qr/redeem-by-code/redeemable-by-customer); làm rõ internal-voucher-program-* request schema; cập nhật active_callers cho internal endpoints sang gf-customer.", author: "Architecture Authority" }
+  - { date: "2026-05-14", summary: "Sửa status của 3 internal endpoints (/protected/v1/campaigns/segments/.../linked, /protected/v1/voucher-programs/claim-qr, /protected/v1/voucher-programs/redeem-by-driver) từ active sang internal-only theo RULE-08 của _TEMPLATE-knowledge-graph.yaml.", author: "Architecture Authority" }

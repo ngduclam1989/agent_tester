@@ -1,0 +1,60 @@
+# W{NN} — Contract scope cho <EPIC_OR_THEME>
+#
+# Liệt kê các cross-boundary contract trong wave + producer + consumer list.
+# Đọc bởi:
+#   - scripts/contract-sign.py verify <consumer> [<contract-path>]  → /dev-handoff gate
+#   - scripts/hooks/check-contract-drift.sh                          → PreToolUse warn
+# Append-only — sửa entry sau khi wave start chỉ qua decision entry trong _decisions.md (PROTOCOL §DEV W1).
+#
+# === Schema ===
+#
+# wave: W{NN}                          # required — wave key matching folder
+# contracts:                            # required — array of contract entries
+#   - path: <relative-from-repo-root>  # required — contract file (Architecture/api/*.md, events/*.md, integrations/INTEG-*.md)
+#     producer: <consumer path>         # required — boundary path that OWNS (writes) contract
+#     consumers: [<consumer paths>]     # required — array; consumers that READ (depend on) contract
+#     kind: api | event | integration | graphql   # required
+#     note: <free text>                 # optional — tại sao trong scope wave này
+#
+# Consumer path convention (matches contract-sign.py CONSUMER_PREFIXES):
+#   boundaries/<service>            (gf-* backend service)
+#   bff-experiences/<bff>           (agg-garage-graph, ...)
+#   web-experiences/<web>           (garage-web)
+#   mobile-experiences/<mobile>     (garage-mobile)
+#
+# === Authoring guidance (PLANNING stage) ===
+#
+# Cho mỗi cross-boundary contract trong wave scope:
+# 1. Liệt kê producer (boundary OWN file). 1 contract = 1 producer.
+# 2. Walk Architecture/integrations/INTEG-*.md để map consumers (REST clients, Kafka subscribers, GraphQL FE).
+# 3. Distinguish kind:
+#      - api       → REST endpoint contract (sync call)
+#      - event     → Kafka topic schema
+#      - integration → INTEG narrative (BFF orchestration steps, multi-step flow)
+#      - graphql   → BFF SDL surface schema
+# 4. Append vào file này.
+# 5. Run: `python3 scripts/contract-sign.py sign <consumer> <path>` cho mỗi (consumer, contract) pair
+#    để baseline ACTIVE entry trong consumer/tracking/contract-signatures.json.
+# 6. Commit + log decision row vào _decisions.md (PROTOCOL §DEV W1 mandatory).
+#
+# === Verification ===
+#
+#   python3 scripts/contract-sign.py verify <consumer>            # all contracts for 1 consumer
+#   python3 scripts/contract-sign.py audit --drift                # wave-wide drift scan
+#   python3 scripts/contract-sign.py cascade <contract-path>      # list consumers affected by contract edit
+#
+# === Examples ===
+#
+# Reference đầy đủ: Execution/wave-specs/W02/contract-scope.yaml (6 contracts, EP-INSURANCE-SETTLEMENT).
+#
+
+wave: W{NN}
+contracts:
+  # Example entry — replace với wave's contracts
+  - path: Architecture/api/<producer-boundary>-api.md
+    producer: boundaries/<producer-boundary>
+    consumers:
+      - bff-experiences/agg-garage-graph
+      - boundaries/<consumer-boundary>
+    kind: api
+    note: "<lý do contract trong scope wave này — e.g. EP-X cần endpoint mới Y>"

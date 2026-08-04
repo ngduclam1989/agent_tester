@@ -1,0 +1,15 @@
+{
+  "name": "garage-ui-unit-harness",
+  "version": "1.0.0",
+  "description": "QC-owned Vitest+RTL harness for garage-web UI unit/structural (C1) checks. Reuses garage-function/gf-gms-web installed node_modules (react/react-dom/@apollo/client/@radix-ui/*) via resolve.alias to avoid duplicate-React instance hazard and avoid re-installing the full frontend dependency tree. Read-only reference to the frontend repo — never writes into it.",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.6",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "jsdom": "^25.0.1",
+    "typescript": "^5.4.0"
+  }
+}

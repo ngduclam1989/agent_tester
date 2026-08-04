@@ -1,0 +1,27 @@
+name: garage_mobile_patrol_harness
+description: QC-owned Patrol harness for garage-mobile E2E tests (W01+)
+publish_to: none
+version: 1.0.0
+
+environment:
+  sdk: ">=3.11.0 <4.0.0"
+  flutter: ">=3.41.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  patrol: ^3.9.0
+  flutter_test:
+    sdk: flutter
+  integration_test:
+    sdk: flutter
+  graphql_flutter: ^5.1.2
+  http: ^1.2.1
+
+dev_dependencies:
+  flutter_lints: ^3.0.0
+  patrol_cli: ^2.8.0
+
+# Patrol configuration — see patrol.yaml
+flutter:
+  uses-material-design: true

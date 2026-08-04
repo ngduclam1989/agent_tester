@@ -1,0 +1,41 @@
+BUG-W03-153 evidence — material_group_crud_patrol_test.dart, 2026-07-03, Run 4
+(POST_NOTIFICATIONS pre-granted qua adb trước cả 2 lần chạy). TÁI HIỆN 2/2 LẦN Y HỆT
+NHAU tại đúng bước "autoFixA6" (tap mở Group Detail cho nhóm thứ 2 tạo qua
+`createGroupSimple()`, phục vụ luồng Edit TC-013/014/015) — STALL HOÀN TOÀN sau
+assertion, KHÔNG kill tay thì không bao giờ tự thoát.
+
+=== Lần 1 (run4_crud_1.log), CPU host runaway 843% lúc kill ===
+07-03 19:45:12.052 I/flutter (24847): [TIMING] DONE  tapBounded[autoFixA6].pump#4 sau 313ms
+07-03 19:45:12.056 I/flutter (24847): [TIMING] START tapBounded[autoFixA6].pump#5 @ 2026-07-03T19:45:12.054842
+07-03 19:45:12.367 I/flutter (24847): [TIMING] DONE  tapBounded[autoFixA6].pump#5 sau 312ms
+07-03 19:45:12.368 I/flutter (24847): [TIMING] START tapBounded[autoFixA6].pump#6 @ 2026-07-03T19:45:12.368497
+07-03 19:45:12.684 I/flutter (24847): [TIMING] DONE  tapBounded[autoFixA6].pump#6 sau 315ms
+07-03 19:45:13.085 I/flutter (24847):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+07-03 19:45:13.085 I/flutter (24847):   dart:core-patch/errors_patch.dart 67:4         _AssertionError._doThrowNew
+07-03 19:45:13.085 I/flutter (24847):   package:flutter_test/src/binding.dart 1911:9   TestWidgetsFlutterBinding._runTest.handleUncaughtError
+07-03 19:45:13.085 I/flutter (24847):   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 19:45:13.085 I/flutter (24847):   dart:async/future_impl.dart 742:5              Future._completeError
+-- KHÔNG CÓ [TIMING] LOG NÀO SAU MỐC NÀY -- (đã chờ >13 phút, ps aux xác nhận qemu-system-aarch64-headless CPU >800%, giảm về ~130% ngay sau khi kill -9 process patrol + gradlew)
+
+=== Lần 2 retry (run4_crud_2.log), CPU host BÌNH THƯỜNG (~30%) lúc kill — cùng điểm dừng ===
+07-03 20:00:18.970 I/flutter (25956): [TIMING] START tapBounded[autoFixA6].pump#5 @ 2026-07-03T20:00:18.970278
+07-03 20:00:19.285 I/flutter (25956): [TIMING] DONE  tapBounded[autoFixA6].pump#5 sau 314ms
+07-03 20:00:19.288 I/flutter (25956): [TIMING] START tapBounded[autoFixA6].pump#6 @ 2026-07-03T20:00:19.288408
+07-03 20:00:19.601 I/flutter (25956): [TIMING] DONE  tapBounded[autoFixA6].pump#6 sau 313ms
+07-03 20:00:20.031 I/flutter (25956):   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 20:00:20.031 I/flutter (25956):   dart:async/future_impl.dart 886:24             Future._propagateToListeners
+07-03 20:00:20.031 I/flutter (25956):   dart:async/future_impl.dart 738:5              Future._completeErrorObject
+07-03 20:00:20.031 I/flutter (25956):   dart:async/future_impl.dart 742:5              Future._completeError
+-- KHÔNG CÓ [TIMING] LOG NÀO SAU MỐC NÀY -- (đã chờ >8 phút, CPU host THẤP ~30% lần này —
+2 CƠ CHẾ STALL KHÁC NHAU (busy-loop CPU cao lần 1 vs corrupted-state-thấp-CPU lần 2)
+CÙNG 1 ĐIỂM KÍCH HOẠT — xác nhận đây KHÔNG PHẢI flake ngẫu nhiên mà là 1 lỗi
+DETERMINISTIC tại đúng bước "mở Group Detail cho nhóm Edit-flow").
+
+QUAN TRỌNG: KHÔNG có bất kỳ dòng log lỗi/exception nào hiện rõ TRƯỚC assertion ở cả 2
+lần (khác với case saveFcmToken ở file khác nơi GraphQL exception hiện rõ ngay trước) —
+gợi ý đây có thể là 1 async completion TỪ TRƯỚC ĐÓ (residual từ CometChat/Firebase/
+saveFcmToken chain lúc bootstrap) chỉ "trồi lên" (resolve) đúng lúc binding đang xử lý
+transition Detail-page, TRÙNG THỜI ĐIỂM với việc `MaterialGroupDetailCubit.load()` tự
+gọi 1 GraphQL query mới (getMaterialGroup) trong `initState()` — nếu response này ALSO
+có contract-mismatch tương tự SaveTokenInput (chưa xác nhận), đây có thể là family lỗi
+cùng gốc. Cần agent-fix-garage-mobile audit sâu hơn (xem BUG-W03-153.verify.md §12).

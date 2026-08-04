@@ -1,0 +1,701 @@
+# Knowledge Graph — gf-erp-mdm
+
+boundary: "gf-erp-mdm"
+version: 3
+last_updated: "2026-05-18"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý catalog master dùng chung, hierarchy xe, import catalog, dynamic master data bằng runtime DDL, API lookup nội bộ và bridge Kafka catalog/PIM sang gf-inventory."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Kafka + REST Client + Apache POI", data_store: "PostgreSQL" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/integrations/INTEG-BFF-gf-erp-mdm.md"
+  integration_consumers: ["agg-garage-graph"]
+
+
+apis:
+  - name: "catalog-crud"
+    path: "/api/v1/catalog"
+    method: POST
+    purpose: "Create catalog entry"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        catalog: object
+    response:
+      schema:
+        id: long
+
+  - name: "catalog-get"
+    path: "/api/v1/catalog"
+    method: GET
+    purpose: "Get single catalog entry by ID"
+    status: unused
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        item: object
+
+  - name: "catalog-update"
+    path: "/api/v1/catalog"
+    method: PUT
+    purpose: "Update catalog entry"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        catalog: object
+    response:
+      schema:
+        item: object
+
+  - name: "catalog-delete"
+    path: "/api/v1/catalog"
+    method: DELETE
+    purpose: "Delete catalog entry (soft)"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        deleted: boolean
+
+  - name: "catalog-inquiry"
+    path: "/api/v1/catalog/inquiry"
+    method: POST
+    purpose: "Inquiry catalog by criteria"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        criteria: object
+    response:
+      schema:
+        items: array
+
+  - name: "catalog-get-hierarchy"
+    path: "/api/v1/catalog/get-hierarchy"
+    method: POST
+    purpose: "Recursive parent/child hierarchy query"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        hierarchy: object
+
+  - name: "catalog-get-hierarchy-list"
+    path: "/api/v1/catalog/get-hierarchy-list"
+    method: POST
+    purpose: "Hierarchy list query"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        codes: array
+    response:
+      schema:
+        items: array
+
+  - name: "catalog-get-hierarchy-line"
+    path: "/api/v1/catalog/get-hierarchy-line"
+    method: POST
+    purpose: "Hierarchy line lookup"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        line: array
+
+  - name: "catalog-find-by-code"
+    path: "/api/v1/catalog/find-by-code"
+    method: POST
+    purpose: "Find catalog entry by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        item: object
+
+  - name: "catalog-inquiry-hierarchy"
+    path: "/api/v1/catalog/inquiry-hierarchy"
+    method: POST
+    purpose: "Inquiry hierarchy by criteria"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        criteria: object
+    response:
+      schema:
+        items: array
+
+  - name: "catalog-create-hierarchy"
+    path: "/api/v1/catalog/create-hierarchy"
+    method: POST
+    purpose: "Create hierarchy + publish GarageCatalogPublished event"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        hierarchy: object
+        publish: boolean
+    response:
+      schema:
+        ids: array
+
+  # Public — DynamicMasterDataController (role CA / SYSTEM_ADMIN gated)
+  - name: "dynamic-data-get-detail"
+    path: "/api/v1/dynamic-data/{tableName}/{id}"
+    method: GET
+    purpose: "Get a single row from a dynamic master-data table by id"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+        id: long
+    response:
+      schema:
+        row: object
+
+  - name: "dynamic-data-search"
+    path: "/api/v1/dynamic-data/{tableName}/search"
+    method: POST
+    purpose: "Search rows in a dynamic master-data table (filters + pagination, FilterOperator/SortDirection enum)"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+        filters: object
+        pagination: object
+    response:
+      schema:
+        items: array
+
+  - name: "dynamic-data-create"
+    path: "/api/v1/dynamic-data/{tableName}/{dataSet}"
+    method: POST
+    purpose: "Insert row into dynamic table; validate NOT NULL/UNIQUE/length/format from MasterDataDefinition"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+        dataSet: string
+        row: object
+    response:
+      schema:
+        id: long
+
+  - name: "dynamic-data-update"
+    path: "/api/v1/dynamic-data/{tableName}/{dataSet}/{id}"
+    method: PUT
+    purpose: "Update row in dynamic table; status update propagates to descendants via recursive CTE if parent_id present"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+        dataSet: string
+        id: long
+        row: object
+    response:
+      schema:
+        row: object
+
+  - name: "dynamic-data-get-columns"
+    path: "/api/v1/dynamic-data/{tableName}/column"
+    method: GET
+    purpose: "Get column metadata for a dynamic table (derived from MasterDataDefinition)"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+    response:
+      schema:
+        columns: array
+
+  - name: "dynamic-data-list-by-ids"
+    path: "/api/v1/dynamic-data/{tableName}/list"
+    method: POST
+    purpose: "Batch fetch rows by ids from a dynamic table"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+        ids: array
+    response:
+      schema:
+        items: array
+
+  - name: "dynamic-data-list-by-parent"
+    path: "/api/v1/dynamic-data/{tableName}/list-by-parent"
+    method: POST
+    purpose: "List rows with the same parent_id (tree query, level<5, is_deleted=false)"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+        parent_id: long
+    response:
+      schema:
+        items: array
+
+  - name: "master-data-define"
+    path: "/api/v1/master-data"
+    method: POST
+    purpose: "Trigger DDL builder to create dynamic_master_data_table_* from definitions + registry"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        registry: object
+        definitions: array
+    response:
+      schema:
+        targetTableName: string
+
+  - name: "catalog-import"
+    path: "/api/v1/catalog/import"
+    method: POST
+    purpose: "Async Excel import via Apache POI"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        file: file
+    response:
+      schema:
+        importId: string
+
+  - name: "catalog-import-common"
+    path: "/api/v1/catalog/import/common"
+    method: POST
+    purpose: "Async common-shape Excel import"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        file: file
+    response:
+      schema:
+        importId: string
+
+  - name: "internal-create-hierarchy"
+    path: "/protected/catalog/v1/create-hierarchy"
+    method: POST
+    purpose: "SVC-to-SVC create hierarchy (x-api-key)"
+    status: internal-only
+    active_callers: ["gf-customer", "gf-hrms"]
+    replaced_by: null
+    request:
+      schema:
+        hierarchy: object
+    response:
+      schema:
+        ids: array
+
+  - name: "internal-get-hierarchy"
+    path: "/protected/catalog/v1/get-hierarchy"
+    method: POST
+    purpose: "SVC-to-SVC hierarchy lookup"
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        hierarchy: object
+
+  - name: "internal-get-parent"
+    path: "/protected/catalog/v1/get-parent"
+    method: POST
+    purpose: "SVC-to-SVC parent lookup"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        parent: object
+
+  - name: "internal-get-parent-code"
+    path: "/protected/catalog/v1/get-parent-code"
+    method: POST
+    purpose: "SVC-to-SVC parent code lookup"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        parent_code: string
+
+  - name: "internal-get-hierarchy-codes"
+    path: "/protected/catalog/v1/get-hierarchy-codes"
+    method: POST
+    purpose: "SVC-to-SVC hierarchy codes (used by gf-customer for address)"
+    status: internal-only
+    active_callers: ["gf-customer"]
+    replaced_by: null
+    request:
+      schema:
+        codes: array
+    response:
+      schema:
+        items: array
+
+  - name: "internal-inquiry"
+    path: "/protected/catalog/v1/inquiry"
+    method: POST
+    purpose: "SVC-to-SVC catalog inquiry — used by gf-inventory for catalog metadata"
+    status: internal-only
+    active_callers: ["gf-customer", "gf-hrms", "gf-inventory", "gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        criteria: object
+    response:
+      schema:
+        items: array
+
+  - name: "internal-dynamic-data-get"
+    path: "/protected/v1/dynamic-data/{tableName}/{id}"
+    method: GET
+    purpose: "SVC-to-SVC fetch dynamic row by id"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+        id: long
+    response:
+      schema:
+        row: object
+
+  - name: "internal-dynamic-data-search-by-code"
+    path: "/protected/v1/dynamic-data/{tableName}/search-by-code"
+    method: GET
+    purpose: "SVC-to-SVC fetch dynamic rows by codes"
+    status: unused
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tableName: string
+        codes: array
+    response:
+      schema:
+        rows: array
+
+events:
+  produces:
+    - topic: "AC-NONPROD-DEV-MDM-VEHICLE-CATALOG"
+      payload:
+        message_group: string
+        message_step: string
+        source: string
+        type: string
+        tenant_id: long
+        catalog: object
+      meaning: "GarageCatalogPublished — direct KafkaTemplate publish (no outbox) khi public POST /api/v1/catalog/create-hierarchy (publish=true) HOẶC internal POST /protected/catalog/v1/create-hierarchy (V1, luôn publish). MessageGroup=CATALOG, MessageStep=GARAGE.CATALOG.1 (enum GARAGE_CATALOG_1)"
+
+  consumes:
+    - topic: "AC-NONPROD-DEV-MDM-VEHICLE-CATALOG"
+      payload:
+        message_group: string
+        message_step: string
+        catalog: object
+      action: "MdmCatalogMessageHandler — route by MessageStep (COP_INSURANCE_CATALOG_1, COP_PROVINCE_CATALOG_1, hierarchy steps); ignore self GARAGE_CATALOG_1 to prevent self-loop"
+
+    - topic: "AC-NONPROD-DEV-PIM-INFO"
+      payload:
+        tenant_id: long
+        pim_lived_info: object
+      action: "PIMInfoMessageHandler — call gf-inventory POST /protected/v1/pim-info via GFInventoryClient.importPIM(PimLivedInfoDto)"
+
+entities:
+    - name: "MdmCatalog"
+      type: "aggregate_root"
+      description: "Catalog tổng quát cho xe, bảo hiểm, tỉnh/thành và catalog dùng chung, phân biệt bằng directory/code và hỗ trợ cây cha-con qua parent_id."
+      attributes:
+        - { name: "id", type: "BIGINT", required: true, constraints: ["PK", "IDENTITY"] }
+        - { name: "directory", type: "VARCHAR(255)", required: false }
+        - { name: "code", type: "VARCHAR(255)", required: false }
+        - { name: "name", type: "VARCHAR(255)", required: false }
+        - { name: "description", type: "VARCHAR(255)", required: false }
+        - { name: "parent_id", type: "BIGINT", required: false }
+        - { name: "parent_directory", type: "VARCHAR(255)", required: false }
+        - { name: "deleted", type: "BOOLEAN", required: false, constraints: ["default false (@Builder.Default)"] }
+        - { name: "created_at", type: "TIMESTAMPTZ", required: true, constraints: ["AuditableEntity @CreatedDate", "updatable=false"] }
+        - { name: "created_by", type: "VARCHAR(255)", required: true, constraints: ["AuditableEntity @CreatedBy", "updatable=false"] }
+        - { name: "updated_at", type: "TIMESTAMPTZ", required: false, constraints: ["AuditableEntity @LastModifiedDate"] }
+        - { name: "updated_by", type: "VARCHAR(255)", required: false, constraints: ["AuditableEntity @LastModifiedBy"] }
+      transient_fields:
+        - { name: "parent_name", type: "@Transient String", description: "Computed parent name — không persist." }
+        - { name: "parent_code", type: "@Transient String", description: "Computed parent code — không persist." }
+      relationships:
+        - { target: "MdmCatalog", type: "self_parent_child", description: "parent_id trỏ tới catalog cha trong cùng bảng; hierarchy xe dùng CAR_BRAND -> CAR_MODEL -> YEAR_OF_MANUFACTURE -> TRIMS_LEVEL." }
+      invariants:
+        - "Public create kiểm tra trùng code trong cùng directory (chỉ so record chưa deleted); update kiểm tra trùng code trong cùng directory kể cả record đã deleted. Delete là soft delete bằng deleted=true."
+        - "createInsurance và createProvince bỏ qua nếu đã có code + directory chưa deleted."
+        - "createProvince có thể resolve parent_id từ parentCode + parentDirectory."
+        - "getOrCreateHierarchyCatalogContent tạo thiếu từng cấp hierarchy xe và chỉ publish Kafka khi tham số publish=true."
+        - "Entity name attribute = 'MdmCatalogEntity' (override của @Entity name) cho native query reference."
+
+    - name: "MasterDataRegistry"
+      type: "aggregate_root"
+      description: "Metadata đăng ký dataset dynamic master data và tên bảng runtime được tạo bởi native DDL."
+      attributes:
+        - { name: "id", type: "BIGINT", required: true, constraints: ["PK", "IDENTITY"] }
+        - { name: "data_set", type: "VARCHAR(255)", required: false }
+        - { name: "key", type: "VARCHAR(255)", required: false, constraints: ["SQL reserved word — quoted at runtime"] }
+        - { name: "name", type: "VARCHAR(255)", required: false }
+        - { name: "target_table_name", type: "VARCHAR(255)", required: false }
+        - { name: "has_status_field", type: "BOOLEAN", required: false }
+        - { name: "has_deleted_field", type: "BOOLEAN", required: false }
+        - { name: "has_effected_range_field", type: "BOOLEAN", required: false }
+        - { name: "is_table_created", type: "BOOLEAN", required: false }
+        - { name: "ddl_error_message", type: "VARCHAR(255)", required: false }
+        - { name: "created_at", type: "TIMESTAMPTZ", required: true, constraints: ["AuditableEntity @CreatedDate", "updatable=false"] }
+        - { name: "created_by", type: "VARCHAR(255)", required: true, constraints: ["AuditableEntity @CreatedBy", "updatable=false"] }
+        - { name: "updated_at", type: "TIMESTAMPTZ", required: false, constraints: ["AuditableEntity @LastModifiedDate"] }
+        - { name: "updated_by", type: "VARCHAR(255)", required: false, constraints: ["AuditableEntity @LastModifiedBy"] }
+      relationships:
+        - { target: "MasterDataDefinition", type: "one_to_many", description: "Registry và definition liên kết logical bằng data_set/key." }
+        - { target: "DynamicMasterDataRecord", type: "logical_reference", description: "target_table_name lưu tên bảng dynamic dạng {targetTableName}_data." }
+      invariants:
+        - "createMasterData yêu cầu request không rỗng."
+        - "createMasterDataList bỏ qua dataset nếu {targetTableName}_data đã tồn tại trong information_schema."
+        - "is_table_created chỉ chuyển true sau khi DDL tạo bảng chạy thành công; lỗi DDL được ghi vào ddl_error_message trước khi ném lỗi."
+
+    - name: "MasterDataDefinition"
+      type: "entity"
+      description: "Định nghĩa field của dynamic master data, gồm kiểu logic, độ dài, uniqueness, nullable và regex format."
+      attributes:
+        - { name: "id", type: "BIGINT", required: true, constraints: ["PK", "IDENTITY"] }
+        - { name: "data_set", type: "VARCHAR(255)", required: false }
+        - { name: "key", type: "VARCHAR(255)", required: false, constraints: ["SQL reserved word — quoted at runtime"] }
+        - { name: "field_pos", type: "INTEGER", required: false }
+        - { name: "field", type: "VARCHAR(255)", required: false }
+        - { name: "type", type: "VARCHAR(255)", required: false, constraints: ["NUMERIC | BIG_DECIMAL | STRING | TEXT | TIMESTAMP | BOOLEAN | BIGINT | fallback VARCHAR"] }
+        - { name: "is_unique", type: "BOOLEAN", required: false }
+        - { name: "default_value", type: "VARCHAR(255)", required: false }
+        - { name: "comment", type: "VARCHAR(255)", required: false }
+        - { name: "parent_id", type: "BIGINT", required: false }
+        - { name: "length", type: "INTEGER", required: false }
+        - { name: "format", type: "VARCHAR(255)", required: false, constraints: ["regex pattern dùng validate runtime"] }
+        - { name: "is_nullable", type: "BOOLEAN", required: false }
+        - { name: "created_at", type: "TIMESTAMPTZ", required: true, constraints: ["AuditableEntity @CreatedDate", "updatable=false"] }
+        - { name: "created_by", type: "VARCHAR(255)", required: true, constraints: ["AuditableEntity @CreatedBy", "updatable=false"] }
+        - { name: "updated_at", type: "TIMESTAMPTZ", required: false, constraints: ["AuditableEntity @LastModifiedDate"] }
+        - { name: "updated_by", type: "VARCHAR(255)", required: false, constraints: ["AuditableEntity @LastModifiedBy"] }
+      relationships:
+        - { target: "MasterDataDefinition", type: "self_parent_child", description: "parent_id được resolve từ parentField trong cùng request tạo metadata." }
+        - { target: "MasterDataRegistry", type: "many_to_one", description: "Definition logical link tới Registry qua (data_set, key)." }
+      invariants:
+        - "field_pos tăng theo thứ tự fields trong MasterDataCreateRequest."
+        - "is_unique sinh UNIQUE trong DDL; is_nullable=false sinh NOT NULL trong DDL."
+        - "format dùng để validate regex runtime khi insert/update dynamic data."
+
+    # === Dynamic / runtime DDL-generated tables (KHÔNG có @Entity Java class) ===
+
+    - name: "DynamicMasterDataRecord"
+      type: "aggregate_root"
+      persisted: true
+      runtime_generated: true
+      description: "Bản ghi trong bảng runtime {targetTableName}_data do MasterDataRegistry và MasterDataDefinition tạo qua MDMNativeRepositoryImpl DDL builder. KHÔNG có @Entity Java class — schema sinh động từ metadata."
+      attributes:
+        - { name: "id", type: "BIGSERIAL", required: true, constraints: ["PK"] }
+        - { name: "data_set", type: "VARCHAR(255)", required: false }
+        - { name: "key", type: "VARCHAR(255)", required: false }
+        - { name: "{field}", type: "Theo MasterDataDefinition.type", required: false, constraints: ["dynamic columns sinh từ MasterDataDefinition"] }
+        - { name: "status", type: "VARCHAR(50)", required: false, constraints: ["chỉ tạo khi MasterDataRegistry.has_status_field=true"] }
+        - { name: "is_deleted", type: "BOOLEAN", required: false, constraints: ["chỉ tạo khi MasterDataRegistry.has_deleted_field=true"] }
+        - { name: "effected_from", type: "TIMESTAMP", required: false, constraints: ["chỉ tạo khi MasterDataRegistry.has_effected_range_field=true"] }
+        - { name: "effected_to", type: "TIMESTAMP", required: false, constraints: ["chỉ tạo khi MasterDataRegistry.has_effected_range_field=true"] }
+        - { name: "parent_id", type: "BIGINT", required: false }
+        - { name: "created_at", type: "TIMESTAMP", required: false }
+        - { name: "updated_at", type: "TIMESTAMP", required: false }
+        - { name: "created_by", type: "VARCHAR(255)", required: false }
+        - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      relationships:
+        - { target: "DynamicMasterDataRecord", type: "self_parent_child", description: "parent_id hỗ trợ tree query và update status cho descendants." }
+        - { target: "DynamicMdmChildRecord", type: "one_to_many", description: "Payload field dạng mdm_*_mdm* được ghi sang bảng child {mdm_field_name}_data với FK quy ước." }
+        - { target: "DynamicMdmRelation", type: "many_to_many", description: "Repository phát hiện bảng quan hệ theo quy ước {table_a}_data_has_{table_b}_data." }
+        - { target: "MasterDataRegistry", type: "logical_reference", description: "target_table_name của Registry là tên bảng (không có FK)." }
+      invariants:
+        - "Public dynamic data APIs yêu cầu role CA hoặc SYSTEM_ADMIN trong DynamicMasterDataServiceImpl.checkPermission."
+        - "Protected dynamic data detail/search-by-code không gọi checkPermission và dựa vào protected route/internal auth."
+        - "Insert validate NOT NULL, UNIQUE, length và format trước khi ghi. Update chỉ validate UNIQUE, length và format (KHÔNG validate NOT NULL/required)."
+        - "Nếu update field status và bảng có parent_id thì status được propagate tới toàn bộ descendants bằng recursive CTE."
+        - "Search chỉ nhận FilterOperator và SortDirection enum; parent tree query lọc is_deleted=false và giới hạn level < 5 trong các nhánh có parent_id."
+
+    - name: "DynamicMasterDataArchiveRecord"
+      type: "entity"
+      persisted: true
+      runtime_generated: true
+      description: "Bản ghi archive trong bảng runtime {targetTableName}_data_archive khi request archive=true."
+      attributes:
+        - { name: "id", type: "BIGSERIAL", required: true, constraints: ["PK"] }
+        - { name: "data_set", type: "VARCHAR(255)", required: false }
+        - { name: "key", type: "VARCHAR(255)", required: false }
+        - { name: "{field}", type: "Theo MasterDataDefinition.type", required: false, constraints: ["dynamic columns mirror DynamicMasterDataRecord"] }
+        - { name: "archive_reason", type: "VARCHAR(50)", required: false }
+        - { name: "parent_id", type: "BIGINT", required: false }
+        - { name: "created_at", type: "TIMESTAMP", required: false }
+        - { name: "updated_at", type: "TIMESTAMP", required: false }
+        - { name: "created_by", type: "VARCHAR(255)", required: false }
+        - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      relationships:
+        - { target: "DynamicMasterDataRecord", type: "logical_reference", description: "Archive table giữ cùng dynamic fields và parent_id theo quy ước tên bảng." }
+      invariants:
+        - "Archive DDL KHÔNG thêm status, is_deleted, effected_from hoặc effected_to."
+
+    - name: "DynamicMdmChildRecord"
+      type: "entity"
+      persisted: true
+      runtime_generated: true
+      description: "Bản ghi trong bảng chi tiết {mdm_field_name}_data được ghi từ payload dynamic có key chứa mdm_ và _mdm."
+      attributes:
+        - { name: "id", type: "BIGSERIAL", required: true, constraints: ["PK"] }
+        - { name: "data_set", type: "VARCHAR(255)", required: false }
+        - { name: "key", type: "VARCHAR(255)", required: false }
+        - { name: "{field}", type: "Theo schema runtime", required: false }
+        - { name: "{parent_table_without_data}_id", type: "BIGINT", required: false, constraints: ["logical FK theo quy ước tên cột"] }
+        - { name: "created_at", type: "TIMESTAMP", required: false }
+        - { name: "updated_at", type: "TIMESTAMP", required: false }
+        - { name: "created_by", type: "VARCHAR(255)", required: false }
+        - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      relationships:
+        - { target: "DynamicMasterDataRecord", type: "logical_reference", description: "{parent_table_without_data}_id trỏ về record cha theo quy ước tên cột." }
+      invariants:
+        - "Repository chỉ insert/upsert child table nếu bảng runtime đã tồn tại; không thấy DDL FK trong source."
+
+    - name: "DynamicMdmRelation"
+      type: "entity"
+      persisted: true
+      runtime_generated: true
+      description: "Bảng quan hệ runtime theo quy ước tên {table_a}_data_has_{table_b}_data dùng cho query relation/subFilters."
+      attributes:
+        - { name: "{table_a_without_data}_id", type: "BIGINT", required: false, constraints: ["logical FK part of composite key"] }
+        - { name: "{table_b_without_data}_id", type: "BIGINT", required: false, constraints: ["logical FK part of composite key"] }
+      relationships:
+        - { target: "DynamicMasterDataRecord", type: "many_to_many", description: "DynamicMasterDataNativeRepository join relation table và other table bằng quy ước tên cột." }
+      invariants:
+        - "Source hiện phát hiện relation table bằng information_schema và pattern _has_; KHÔNG thấy code tạo relation table — table phải được seed thủ công hoặc qua future feature."
+
+business_rules:
+  - { id: "BR-GF-ERP-MDM-001", description: "Catalog create chặn trùng code trong cùng directory (chỉ so record chưa deleted); update chặn trùng code trong cùng directory kể cả record đã deleted. Delete chỉ set deleted=true.", cornerstone: true, enforcement_point: "MdmCatalogServiceImpl.create + update + delete" }
+  - { id: "BR-GF-ERP-MDM-002", description: "Hierarchy xe được tạo/lookup theo thứ tự CAR_BRAND -> CAR_MODEL -> YEAR_OF_MANUFACTURE -> TRIMS_LEVEL.", cornerstone: true, enforcement_point: "MdmCatalogServiceImpl.createHierarchyCatalogContent + getOrCreateHierarchyCatalogContent" }
+  - { id: "BR-GF-ERP-MDM-003", description: "Cả public và internal create-hierarchy đều publish GarageCatalogPublished. Public dùng getOrCreateHierarchyCatalogContent(publish=true), internal dùng createHierarchyCatalogContent (V1, luôn publish). Inbound catalog consumer dùng publish=false và self-consumer bỏ qua MessageStep GARAGE.CATALOG.1.", cornerstone: true, enforcement_point: "MdmCatalogController.createHierarchyCatalogContent + CatalogMdmContentInternalController.createHierarchyCatalogContent + MdmCatalogMessageHandler.handleMessage" }
+  - { id: "BR-GF-ERP-MDM-004", description: "Inbound insurance/province catalog là idempotent theo code + directory; province có thể resolve parent theo parentCode + parentDirectory.", cornerstone: true, enforcement_point: "MdmCatalogServiceImpl.createInsurance + createProvince" }
+  - { id: "BR-GF-ERP-MDM-005", description: "Tạo master data yêu cầu danh sách request không rỗng; createMasterDataList bỏ qua bảng đã tồn tại. NOTE: MDMNativeRepositoryImpl.createMasterData (single) tồn tại nhưng là dead code — không được gọi từ controller/service.", cornerstone: true, enforcement_point: "MasterDataServiceImpl.createMasterData + MDMNativeRepositoryImpl.createMasterDataList" }
+  - { id: "BR-GF-ERP-MDM-006", description: "Runtime DDL luôn thêm id, data_set, key, parent_id và audit; status/is_deleted/effected range chỉ thêm theo flag, archive chỉ thêm archive_reason.", cornerstone: true, enforcement_point: "MDMNativeRepositoryImpl.buildCreateTableDDL" }
+  - { id: "BR-GF-ERP-MDM-007", description: "Dynamic public CRUD/search/column/list chỉ cho role CA hoặc SYSTEM_ADMIN; protected detail/search-by-code không check role trong service.", cornerstone: true, enforcement_point: "DynamicMasterDataServiceImpl.checkPermission + getDetailProtected/findByCodesProtected" }
+  - { id: "BR-GF-ERP-MDM-008", description: "Dynamic insert validate unique, required (NOT NULL), length và regex format từ metadata. Dynamic update chỉ validate unique, length và format (KHÔNG validate required). Update status tự cascade xuống descendants nếu có parent_id.", cornerstone: true, enforcement_point: "DynamicMasterDataNativeRepositoryImpl.validateUniqueForInsert + validateUniqueFields + updateChildrenStatus" }
+  - { id: "BR-GF-ERP-MDM-009", description: "Dynamic search chỉ dùng FilterOperator/SortDirection enum; tree search dùng recursive CTE, is_deleted=false và level < 5 trong các nhánh parent_id.", cornerstone: true, enforcement_point: "FilterOperator + SortDirection + DynamicMasterDataNativeRepositoryImpl.search/processForeignTable" }
+  - { id: "BR-GF-ERP-MDM-010", description: "Import catalog parse file rồi start async import và trả HTTP success ngay khi job bắt đầu, không phải khi import hoàn tất.", cornerstone: false, enforcement_point: "ImportMdmCatalogController + ImportMdmCatalogServiceImpl.importCarDataAsync/importCommonDataAsync" }
+  - { id: "BR-GF-ERP-MDM-011", description: "PIM inbound chỉ parse PimLivedInfoDto và forward sang gf-inventory; service không lưu PIM vào catalog tables.", cornerstone: true, enforcement_point: "PIMInfoMessageHandler.handleMessage + GFInventoryClient.importPIM" }
+  - { id: "BR-GF-ERP-MDM-012", description: "Kafka consumer manual ack sau handleRawMessage; source không có outbox/inbox/DLQ riêng cho event boundary này.", cornerstone: true, enforcement_point: "KafkaConfig + MdmCatalogMessageHandler + PIMInfoMessageHandler" }
+  - { id: "BR-GF-ERP-MDM-013", description: "Dynamic data delete thực hiện hard delete (xoá hoàn toàn record, không soft delete). Service method deleteData có checkPermission nhưng chưa expose qua REST controller endpoint.", cornerstone: false, enforcement_point: "DynamicMasterDataServiceImpl.deleteData + DynamicMasterDataNativeRepositoryImpl.delete" }
+  - { id: "BR-GF-ERP-MDM-014", description: "findOrCreateCatalogContent V1 (internal create-hierarchy) kiểm tra trùng code global trong directory. V2 (public getOrCreate) kiểm tra trùng code scoped theo parent_id, cho phép cùng code tồn tại ở parent khác nhau.", cornerstone: false, enforcement_point: "MdmCatalogServiceImpl.findOrCreateCatalogContent + findOrCreateCatalogContentV2" }
+  - { id: "BR-GF-ERP-MDM-015", description: "Dynamic insert/update hỗ trợ nested data: field 'children' được insert cùng table với parent_id; field có pattern mdm_*_mdm* được extract và ghi sang bảng con {mdm_field_name}_data. Update dùng upsert cho mdm data.", cornerstone: false, enforcement_point: "DynamicMasterDataNativeRepositoryImpl.insert + update + extractMdmData + processMdmData + updateMdmData" }
+
+
+workflows: []
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-customer"
+      purpose: "Address hierarchy (province/ward) lookup"
+    - type: API
+      source: "gf-hrms"
+      purpose: "Catalog validation (province/ward)"
+    - type: API
+      source: "gf-inventory"
+      purpose: "Catalog inquiry for product/part metadata"
+    - type: API
+      source: "gf-sales"
+      purpose: "Vehicle catalog + insurance/units lookup"
+    - type: API
+      source: "agg-garage-graph"
+      purpose: "BFF catalog queries"
+    - type: EVENT
+      source: "External COP"
+      purpose: "Catalog/insurance/province ingestion via vehicle-catalog topic"
+    - type: EVENT
+      source: "External PIM"
+      purpose: "PIM info ingestion via AC-NONPROD-DEV-PIM-INFO"
+
+  outbound:
+    - type: API
+      target: "gf-inventory"
+      purpose: "Push parsed PIM info — POST /protected/v1/pim-info"
+    - type: EVENT
+      target: "Kafka — vehicle-catalog"
+      purpose: "Direct KafkaTemplate.send GarageCatalogPublished (no outbox — tech-debt)"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho mdm_catalog, master_data_registry, master_data_definition và các bảng dynamic runtime.", config_ref: "spring.datasource.*, spring.jpa.properties.hibernate.default_schema, DB_SCHEMA" }
+  - { name: "Kafka", type: "broker", purpose: "Consume pim-info và vehicle-catalog, publish vehicle-catalog bằng PimLivedMessage.", config_ref: "KAFKA_BOOTSTRAP_SERVERS, kafka.consumer.*, kafka.topics.*" }
+  - { name: "GFInventoryClient", type: "http_client", purpose: "Gọi gf-inventory để import PIM live data từ event inbound.", config_ref: "GF_INVENTORY_URL, INTERNAL_API_KEY" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Cung cấp SecurityUtils current roles/user cho dynamic public permission và audit user.", config_ref: "spring-security-starter, OAuth2 resource server" }
+  - { name: "Apache POI", type: "file_import", purpose: "Parse XLS/XLSX cho import vehicle/common catalog.", config_ref: "poi, poi-ooxml, spring.servlet.multipart.*" }
+  - { name: "Actuator + OTLP", type: "observability", purpose: "Health/info/metrics/prometheus và tracing OTLP.", config_ref: "management.*, spring.profiles.include=otlp" }
+
+
+
+change_log:
+  - { date: "2026-05-18", summary: "BR review fix: sửa BR-001 (create vs update duplicate scope), BR-003 (internal cũng publish), BR-005 (dead code note), BR-008 (update không validate required); thêm BR-013 (hard delete), BR-014 (V1/V2 uniqueness scope), BR-015 (nested mdm data); sửa API catalog-get purpose + schema, internal-dynamic-data-search-by-code schema; cập nhật events.produces.meaning và entity invariants.", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-14", summary: "RULE-08 wiring: thêm status/active_callers/replaced_by cho 29 API. Public catalog/dynamic-data: chỉ 5 endpoint (inquiry, get-hierarchy, get-hierarchy-list, find-by-code, create-hierarchy) được agg-garage-graph gọi; 16 endpoint public (catalog CRUD, hierarchy-line, inquiry-hierarchy, dynamic-data-*, master-data-define, catalog-import) không có caller → mark unused + TODO confirm dead code. Internal: internal-inquiry → 4 caller (gf-customer/gf-hrms/gf-inventory/gf-sales qua GfErpMdmClient/MdmClient); internal-get-hierarchy-codes → gf-customer; internal-create-hierarchy → gf-customer/gf-hrms; internal-get-hierarchy → gf-sales; 4 internal endpoint (get-parent, get-parent-code, dynamic-data-get, dynamic-data-search-by-code) không có caller. (Lưu ý: Java BE service Java calls via *Client base /protected/catalog/v1/* — assigned to internal endpoints, không phải public.)", author: "Architecture Authority — RULE-08 audit 2026-05-14" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Section structure verified against canonical BE template (no structural change needed).", author: "Architecture Authority" }

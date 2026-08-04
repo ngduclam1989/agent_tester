@@ -1,0 +1,289 @@
+# Knowledge Graph — agg-sso-graph
+
+boundary: "agg-sso-graph"
+version: 2
+last_updated: "2026-05-19"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "BFF GraphQL aggregator cho auth + Superset embed: compose 5 module (auth, notification, firebase, conversation, supper-set); proxy IAM, NotiHub, conversation client, Superset; quản lý device token DynamoDB (shared registry với gf-notification theo ADR-006)."
+  tech: { language: "Node.js 22", framework: "Apollo Server 4 + Express", data_store: "DynamoDB (device token registry — shared)" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/integrations/INTEG-BFF-agg-sso-graph.md"
+  integration_consumers: []
+
+apis:
+  - name: "graphql-public"
+    path: "/graphql"
+    method: POST
+    purpose: "Apollo Server 4 GraphQL endpoint composed từ 5 module schemas (auth, notification, firebase, conversation, supper-set); single Express route /graphql có processUploads middleware để hỗ trợ multipart upload (groupUpload mutation)"
+    request:
+      schema:
+        query: string
+        variables: object
+        operationName: string
+    response:
+      schema:
+        data: object
+        errors: array
+    operations:
+      auth:
+        Query:
+          me:
+            returns: User
+            downstream: []  # JWT-resolved from request context; no BE call.
+        Mutation:
+          login:
+            returns: LoginResponse
+            downstream:
+              - { service: sec-iam-service, method: POST, path: "/auth/login" }
+          logout:
+            returns: LogoutResponse
+            # Cascade: also calls firebaseService.deleteToken → AWS-DynamoDB DeleteItem (auth.service.ts:88).
+            downstream:
+              - { service: sec-iam-service, method: POST,      path: "/auth/logout" }
+              - { service: AWS-DynamoDB,    method: DeleteItem, path: "table:${DEVICE_TOKEN_TABLE}" }
+          refreshToken:
+            returns: RefreshTokenResponse
+            downstream:
+              - { service: sec-iam-service, method: POST, path: "/auth/refresh-token" }
+          forgotPassword:
+            returns: ForgotPasswordResponse
+            downstream:
+              - { service: sec-iam-service, method: POST, path: "/auth/forgot-password" }
+          forgotPasswordConfirm:
+            returns: ForgotPasswordConfirmResponse
+            downstream:
+              - { service: sec-iam-service, method: POST, path: "/auth/forgot-password/confirm" }
+          firstChangePassword:
+            returns: FirstChangePasswordResponse
+            downstream:
+              - { service: sec-iam-service, method: POST, path: "/auth/first-change-password" }
+          changePassword:
+            returns: ChangePasswordResponse
+            downstream:
+              - { service: sec-iam-service, method: POST, path: "/auth/change-password" }
+          deleteUser:
+            returns: DeleteUserResponse
+            downstream:
+              - { service: sec-iam-service, method: DELETE, path: "/users/{userId}" }
+      notification:
+        Query:
+          notificationList:
+            returns: NotificationListResponse
+            downstream:
+              - { service: ct-notihub-notification, method: GET, path: "/api/v1/notifications" }
+          notificationUnreadCount:
+            returns: NotificationUnreadCountResponse
+            # Reuses /api/v1/notifications with query filter isRead=false; client extracts totalElements as count.
+            downstream:
+              - { service: ct-notihub-notification, method: GET, path: "/api/v1/notifications" }
+        Mutation:
+          notificationReadAll:
+            returns: NotificationReadAllResponse
+            downstream:
+              - { service: ct-notihub-notification, method: PUT, path: "/api/v1/notifications/mark-all-as-read" }
+          notificationReadById:
+            returns: NotificationReadByIdResponse
+            downstream:
+              - { service: ct-notihub-notification, method: PUT, path: "/api/v1/notifications/{id}/mark-as-read" }
+      firebase:
+        Query: {}
+        Mutation:
+          saveToken:
+            returns: SaveTokenResponse
+            # Multi-step: dedupe scan → batch cleanup duplicates → put new token. Shared registry with gf-notification per ADR-006.
+            downstream:
+              - { service: AWS-DynamoDB, method: Scan,           path: "table:${DEVICE_TOKEN_TABLE}" }
+              - { service: AWS-DynamoDB, method: BatchWriteItem, path: "table:${DEVICE_TOKEN_TABLE}" }
+              - { service: AWS-DynamoDB, method: PutItem,        path: "table:${DEVICE_TOKEN_TABLE}" }
+      conversation:
+        Query:
+          conversationList:
+            returns: ConversationListResponse
+            downstream:
+              - { service: ct-conversation-client, method: GET, path: "/api/v1/conversations/user" }
+          groupConversationList:
+            returns: GroupConversationListResponse
+            downstream:
+              - { service: ct-conversation-client, method: GET, path: "/api/v1/conversations/group/{sourceCode}" }
+          groupSubordinates:
+            returns: GroupSubordinatesResponse
+            downstream:
+              - { service: ct-conversation-client, method: POST, path: "/api/v1/conversations/group/subordinates/search" }
+          userToken:
+            returns: UserTokenResponse
+            downstream:
+              - { service: ct-conversation-client, method: GET, path: "/api/v1/conversations/user/token" }
+        Mutation:
+          groupUpload:
+            returns: GroupUploadResponse
+            downstream:
+              - { service: ct-conversation-client, method: POST, path: "/api/v1/conversations/group/upload" }
+          deleteToken:
+            returns: DeleteTokenResponse  # Conversation token, NOT FCM device token.
+            downstream:
+              - { service: ct-conversation-client, method: DELETE, path: "/api/v1/conversations/user/delete-token" }
+          routingCandidate:
+            returns: RoutingCandidateResponse
+            downstream:
+              - { service: ct-conversation-client, method: POST, path: "/api/v1/conversations/routing/candidate" }
+          endCall:
+            returns: EndCallResponse
+            downstream:
+              - { service: ct-conversation-client, method: POST, path: "/api/v1/conversations/routing/end-call" }
+          groupCS:
+            returns: GroupCSResponse
+            downstream:
+              - { service: ct-conversation-client, method: POST, path: "/api/v1/conversations/group-cs" }
+          addCS:
+            returns: AddCSResponse
+            downstream:
+              - { service: ct-conversation-client, method: POST, path: "/api/v1/conversations/add-cs" }
+          addCSWeekend:
+            returns: AddCSResponse
+            downstream:
+              - { service: ct-conversation-client, method: POST, path: "/api/v1/conversations/add-cs-weekend/{groupCode}" }
+          kickMemberQuotationGroupChat:
+            returns: KickMemberQuotationGroupChatResponse
+            downstream:
+              - { service: ct-conversation-client, method: DELETE, path: "/api/v1/conversations/quotations/groups/{groupCode}/members/{userId}" }
+          kickMemberOrderGroupChat:
+            returns: KickMemberQuotationGroupChatResponse
+            downstream:
+              - { service: ct-conversation-client, method: DELETE, path: "/api/v1/conversations/order/groups/{groupCode}/members/{userId}" }
+          KickMemberCCRoutingGroupChat:
+            returns: KickMemberQuotationGroupChatResponse  # Note: schema name uses PascalCase first letter
+            downstream:
+              - { service: ct-conversation-client, method: DELETE, path: "/api/v1/conversations/cc_routing/groups/{groupCode}/members/{userId}" }
+          addMembers:
+            returns: AddMembersResponse
+            downstream:
+              - { service: ct-conversation-client, method: PUT, path: "/api/v1/conversations/group/add-members" }
+      supper-set:
+        Query:
+          supperSetQuestToken:
+            returns: SupperSetQuestTokenResponse
+            # Multi-hop proxy: admin login → CSRF token → guest token with RLS tenant_id={tenantId} for dashboardId.
+            downstream:
+              - { service: Superset, method: POST, path: "/api/v1/security/login" }
+              - { service: Superset, method: GET,  path: "/api/v1/security/csrf_token/" }
+              - { service: Superset, method: POST, path: "/api/v1/security/guest_token/" }
+        Mutation: {}
+
+  - name: "health"
+    path: "/health"
+    method: GET
+    purpose: "Liveness probe — trả status, timestamp ISO, uptime; trong non-prod còn echo env"
+    request:
+      schema: {}
+    response:
+      schema:
+        status: string
+        timestamp: string
+        uptime: number
+        env: object
+
+  - name: "metrics"
+    path: "/metrics"
+    method: GET
+    purpose: "Prometheus metrics scrape — collectDefaultMetrics + OpenTelemetry auto-instrumentation"
+    request:
+      schema: {}
+    response:
+      schema:
+        prometheus_text: string
+
+  - name: "check-env"
+    path: "/check-env"
+    method: GET
+    purpose: "Env diagnostics — trả env config object trong non-prod, trả {} trong production"
+    request:
+      schema: {}
+    response:
+      schema:
+        env: object
+
+  - name: "superset-proxy"
+    path: "/*"
+    method: ANY
+    purpose: "Catch-all proxy sang Apache Superset (http-proxy-middleware) cho mọi path KHÔNG nằm trong allowlist của checkPath (allowlist: /graphql, /metrics, /check-env, /health). Xóa x-frame-options/CSP để cho phép embed iframe; rewrite cookies (xóa Domain, Secure, SameSite=Lax); target = process.env.SUPERSET_ENDPOINT (default https://superset.nonprod.aggregatoricapaci.com); có authMiddleware skeleton (hiện đang comment)"
+    request:
+      schema:
+        any: any
+    response:
+      schema:
+        any: any
+
+events:
+  produces: []
+  consumes: []
+
+data:
+  entities:
+    - name: "UserDevice (DynamoDB — shared table với gf-notification per ADR-006, NHƯNG attribute names divergent: agg-sso-graph dùng snake_case (notification_token, platform), gf-notification dùng camelCase (fcmToken, endpointArn). Cần ADR-006 amendment hoặc source fix để unify schema.)"
+      table: "${DEVICE_TOKEN_TABLE:nonprod-dev-ac-device-token}"
+      fields:
+        - name: "device_id"
+          type: "String — DynamoDbPartitionKey"
+          meaning: "DynamoDB partition key — Firebase device token registration"
+        - name: "user_id"
+          type: "String — DynamoDbSecondaryPartitionKey (user_id-index)"
+          meaning: "Owning user — GSI cho lookup theo user. Note: KHÔNG 'owned' theo ADR-006 (shared registry với gf-notification)"
+        - name: "tenant_id"
+          type: "Long — DynamoDbSecondaryPartitionKey (tenant-index)"
+          meaning: "Tenant scope — GSI"
+        - name: "tenant_type"
+          type: "String — DynamoDbSecondarySortKey (tenant-index)"
+          meaning: "Tenant type — sort key của tenant-index"
+        - name: "source_system"
+          type: "String — DynamoDbSecondaryPartitionKey (source_system-index)"
+          meaning: "Source system — GSI"
+        - name: "notification_token"
+          type: "String"
+          meaning: "Firebase Cloud Messaging device token (ghi qua firebase.saveToken mutation, source: firebase.service.ts:43). Lưu ý: gf-notification ghi cùng giá trị này dưới key `fcmToken` — schema mismatch per ADR-006."
+        - name: "platform"
+          type: "String"
+          meaning: "Device platform identifier (e.g. ios/android), ghi qua firebase.saveToken (source: firebase.service.ts:44)"
+
+business_rules: []  # BFF không own domain logic; auth/permission/notification rule sống ở sec-iam-service, ct-notihub-notification, gf-notification
+
+workflows: []
+
+integrations:
+  inbound:
+    - type: API
+      source: "garage-web frontend"
+      purpose: "Auth flow + Superset dashboard embed (GraphQL + iframe)"
+    - type: API
+      source: "Mobile app (Pulse)"
+      purpose: "Auth + push token registration"
+
+  outbound:
+    - type: API
+      target: "sec-iam-service"
+      purpose: "auth (login/logout/refresh/forgotPassword/firstChange/change/delete)"
+    - type: API
+      target: "ct-notihub-notification"
+      purpose: "notification (list/unread/mark-read)"
+    - type: API
+      target: "ct-conversation-client"
+      purpose: "conversation (list/group/upload/routing/calls)"
+    - type: API
+      target: "Superset"
+      purpose: "Superset guest token API + HTTP proxy /supperset/*"
+    - type: API
+      target: "AWS DynamoDB"
+      purpose: "Device token table CRUD (firebase module)"
+
+dependencies:
+  - { name: "Apollo Server 4", type: "framework", purpose: "GraphQL server compose 5 module (auth, notification, firebase, conversation, supper-set); expose POST /graphql với processUploads middleware cho multipart groupUpload.", config_ref: "apolloConfig.*, module-schema loaders" }
+  - { name: "Express", type: "framework", purpose: "HTTP runtime cho Apollo Server + custom /supperset/* proxy route.", config_ref: "server.port, middleware.*" }
+  - { name: "AWS DynamoDB SDK", type: "database", purpose: "Read/write UserDevice table (device_id PK, user_id/tenant/source_system GSIs); shared registry với gf-notification theo ADR-006.", config_ref: "DEVICE_TOKEN_TABLE, AWS_REGION, dynamoDB client config" }
+  - { name: "HTTP client (axios / fetch)", type: "api_client", purpose: "Gọi sec-iam-service (auth), ct-notihub-notification, ct-conversation-client, Superset guest token API.", config_ref: "<service>.api.host, <service>.api-key, timeout configs" }
+  - { name: "JWT auth", type: "auth", purpose: "Validate/refresh access token; firstLoginChallenge handling; persistent cookie session cho Superset CSRF chain.", config_ref: "JWT_PUBLIC_KEY, JWT_ISSUER, refresh-token store" }
+
+change_log:
+  - { date: "2026-05-19", summary: "Consistency audit vs INTEG-BFF: (L1) fix integration_ref path integrations→integrations; (L2) remove duplicate business_rules line.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Reformatted to BFF canonical: thêm `owner_authority`, `metadata` (Apollo Server 4 + DynamoDB device registry), `business_rules: []`, `dependencies` (5 deps: Apollo Server, Express, AWS DynamoDB SDK, HTTP client, JWT auth).", author: "Architecture Authority" }

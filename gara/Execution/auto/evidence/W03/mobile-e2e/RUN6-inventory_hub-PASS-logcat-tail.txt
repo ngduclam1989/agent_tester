@@ -1,0 +1,60 @@
+07-03 23:04:30.158 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.169 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=android.service.gatekeeper.IGateKeeperService scontext=u:r:shell:s0 tcontext=u:object_r:gatekeeper_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.170 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.175 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.177 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.180 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.186 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.187 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.188 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.190 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.190 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.190 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=dnsresolver scontext=u:r:shell:s0 tcontext=u:object_r:dnsresolver_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.193 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.195 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.197 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=incident scontext=u:r:shell:s0 tcontext=u:object_r:incident_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.198 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=installd scontext=u:r:shell:s0 tcontext=u:object_r:installd_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.204 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.206 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.207 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=mdns scontext=u:r:shell:s0 tcontext=u:object_r:mdns_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.215 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.218 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=netd scontext=u:r:shell:s0 tcontext=u:object_r:netd_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.221 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.228 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.230 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.234 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.239 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.246 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=suspend_control scontext=u:r:shell:s0 tcontext=u:object_r:system_suspend_control_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.246 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=suspend_control_internal scontext=u:r:shell:s0 tcontext=u:object_r:system_suspend_control_internal_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.248 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.251 E/Parcel  ( 6332): Reading a NULL string not supported here.
+07-03 23:04:30.261 E/SELinux (  148): avc:  denied  { find } for pid=6332 uid=2000 name=vold scontext=u:r:shell:s0 tcontext=u:object_r:vold_service:s0 tclass=service_manager permissive=0
+07-03 23:04:30.288 W/PackageManager(  505): Not removing non-existent package com.cardoctor.garage.squad.dev.test
+07-03 23:04:30.641 I/init    (    1): Untracked pid 4997 received signal 1
+07-03 23:04:30.641 I/init    (    1): Untracked pid 4997 did not have an associated service entry and will not be reaped
+07-03 23:04:36.148 D/CompatibilityChangeReporter(  505): Compat change id reported: 161145287; UID 10145; state: DISABLED
+07-03 23:04:37.743 I/wpa_supplicant(  706): wlan0: CTRL-EVENT-BEACON-LOSS 
+07-03 23:04:37.984 I/logd    ( 2517): start watching /data/system/packages.list ...
+07-03 23:04:37.985 I/logd    ( 2517): ReadPackageList, total packages: 181
+07-03 23:04:38.883 I/keystore2(  172): keystore2::watchdog: Watchdog thread idle -> terminating. Have a great day.
+07-03 23:04:43.427 D/BoundBrokerSvc( 1614): onUnbind: Intent { act=com.google.android.gms.feedback.internal.IFeedbackService dat=chimera-action:/... cmp=com.google.android.gms/.chimera.GmsBoundBrokerService }
+07-03 23:04:43.454 I/ActivityManager(  505): Killing 4747:com.google.android.partnersetup/u0a104 (adj 955): empty #17
+07-03 23:04:43.455 I/libprocessgroup(  505): Successfully killed process cgroup uid 10104 pid 4747 in 0ms
+07-03 23:04:43.461 I/binder  (   38): undelivered transaction 5796303, process died.
+07-03 23:04:43.461 I/binder  (   38): undelivered transaction 5799529, process died.
+07-03 23:04:43.461 I/binder  (   38): undelivered transaction 5804163, process died.
+07-03 23:04:43.461 I/binder  (   38): undelivered transaction 5795628, process died.
+07-03 23:04:43.458 I/Zygote  (  298): Process 4747 exited due to signal 9 (Killed)
+07-03 23:04:44.037 D/BoundBrokerSvc( 1278): onUnbind: Intent { act=com.google.android.gms.clearcut.bootcount.service.START pkg=com.google.android.gms }
+07-03 23:04:44.134 I/ActivityManager(  505): Killing 4766:com.google.android.gms.unstable/u0a111 (adj 975): empty #17
+07-03 23:04:44.137 I/libprocessgroup(  505): Successfully killed process cgroup uid 10111 pid 4766 in 0ms
+07-03 23:04:44.151 I/Zygote  (  298): Process 4766 exited due to signal 9 (Killed)
+07-03 23:04:44.153 I/binder  (   70): undelivered transaction 5796302, process died.
+07-03 23:04:44.153 I/binder  (   70): undelivered transaction 5799528, process died.
+07-03 23:04:44.153 I/binder  (   70): undelivered transaction 5804162, process died.
+07-03 23:04:44.154 I/binder  (   70): undelivered transaction 5748989, process died.
+07-03 23:04:44.154 I/binder  (   70): undelivered transaction 5754471, process died.
+07-03 23:04:44.154 I/binder  (   70): undelivered transaction 5754525, process died.
+07-03 23:04:45.850 D/WifiNl80211Manager(  505): Scan result ready event
+07-03 23:04:45.850 D/WifiNative(  505): Scan result ready event
+07-03 23:04:46.432 W/BatteryExternalStatsWorker(  505): error reading Bluetooth stats: 11

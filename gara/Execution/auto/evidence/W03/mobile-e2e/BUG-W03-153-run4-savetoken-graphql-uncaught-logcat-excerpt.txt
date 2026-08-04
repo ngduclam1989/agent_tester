@@ -1,0 +1,39 @@
+BUG-W03-153 evidence — Run 4b (inventory_hub_patrol_test.dart, POST_NOTIFICATIONS pre-granted),
+2026-07-03. Uncaught GraphQL contract-mismatch exception từ `MainCubit.saveFcmToken()`
+(gọi fire-and-forget, không await, từ `FirebaseNotificationManager.init()`'s `fcmToken(token)`
+callback) — trip cùng `_pendingExceptionDetails` assertion như BUG-W03-152 (nhưng ĐÂY LÀ 1
+CALL SITE HOÀN TOÀN KHÁC, KHÔNG liên quan CometChat).
+
+07-03 19:38:10.258 I/flutter (23566): DEBUG │ #1   FirebaseNotificationManager.requestPermission.<anonymous closure> (package:cardoctor_garage_v3/core/managers/notifications/firebase_notification_manager.dart:95:33)
+07-03 19:38:10.258 I/flutter (23566): DEBUG │ 🐛 User granted permission: AuthorizationStatus.authorized
+07-03 19:38:10.358 I/flutter (23566): registerPushToken:error CometChatException{code: ERROR_USER_NOT_LOGGED_IN, details: null , message Please log in to CometChat before calling this method}
+07-03 19:38:10.362 I/flutter (23566): DEBUG │ 🐛 User granted permission: AuthorizationStatus.authorized
+07-03 19:38:10.362 D/getUnreadMessageCount(23566): onError: Please log in to CometChat before calling this method
+07-03 19:38:10.805 I/flutter (23566): ERROR │ OperationException(linkException: ServerException(originalException: null, originalStackTrace: null, parsedResponse: Response(data: null, errors: [GraphQLError(message: Unknown type "SaveTokenInput". Did you mean "RefreshTokenInput"?, locations: [ErrorLocation(line: 1, column: 28)], path: null, extensions: {code: GRAPHQL_VALIDATION_FAILED, stacktrace: [GraphQLError: Unknown type "SaveTokenInput". Did you mean "RefreshTokenInput"?,     at Object.NamedType (/app/node_modules/graphql/validation/rules/KnownTypeNamesRule.js:94:11), ...
+07-03 19:38:10.805 I/flutter (23566): ERROR │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 19:38:10.805 I/flutter (23566): ERROR │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:181:14)
+07-03 19:38:10.805 I/flutter (23566): ERROR │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 19:38:10.805 I/flutter (23566): ERROR │ #3   <asynchronous suspension>
+07-03 19:38:10.805 I/flutter (23566): ERROR │ #4   AuthRepositoryImpl.saveFcmToken (package:cardoctor_garage_v3/core/repositories/auth/auth_repository.dart:174:43)
+07-03 19:38:10.805 I/flutter (23566): ERROR │ #5   <asynchronous suspension>
+07-03 19:38:10.805 I/flutter (23566): ERROR │ #6   MainCubit.saveFcmToken (package:cardoctor_garage_v3/ui/main/bloc/main_cubit.dart:143:25)
+07-03 19:38:10.805 I/flutter (23566): ERROR │ #7   <asynchronous suspension>
+07-03 19:38:10.805 I/flutter (23566): ERROR │ ⛔ GraphQL exception
+07-03 19:38:11.084 I/flutter (23566):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+
+ROOT CAUSE (2 lớp):
+1. BFF schema hiện tại KHÔNG định nghĩa type "SaveTokenInput" (chỉ có "RefreshTokenInput")
+   -> mutation SaveToken mobile gọi bị GRAPHQL_VALIDATION_FAILED 100% (contract mismatch
+   thật, không phải flaky) — cần xác nhận với agent-dev/fix-agg-garage-graph + BA xem
+   mutation "SaveToken"/lưu FCM token có đúng schema hiện hành hay app đang dùng field/type
+   cũ (nghi ngờ app dùng type SaveTokenInput đã bị đổi tên/rename thành cái khác khi BFF
+   evolve, hoặc mobile chưa cập nhật theo API version mới).
+2. `GraphQLServiceBase._handleGraphQLResponse` `throw result.exception!;` (dòng 208) khi
+   validation error không match nhánh 401/403/HRM_001 — throw này lan tới
+   `AuthRepositoryImpl.saveFcmToken` -> `MainCubit.saveFcmToken` -> gọi từ
+   `FirebaseNotificationManager.init()`'s `fcmToken(token)` callback (dòng 40,
+   `firebase_notification_manager.dart`) KHÔNG await -> uncaught async exception.
+
+Test PATROL_LOG cuối: {"type":"test","status":"failure","error":null} (30s, hoàn tất,
+không stall lần này — so sánh Run 4c/4d bên dưới nơi cùng lỗi-class dẫn tới STALL
+hoàn toàn thay vì hoàn tất với verdict failure).

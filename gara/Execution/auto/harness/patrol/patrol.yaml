@@ -1,0 +1,33 @@
+# Patrol harness configuration — garage-mobile W01+ mobile E2E
+# Requires patrol_cli >= 2.8.0
+# Source-of-truth flavor + applicationId: mobile/gf-garage-app/android/app/build.gradle
+
+app_name: "GMS Garage"
+package_name: com.cardoctor.garage.squad.stag
+
+# Android target: API 33 emulator + API 28 (min supported)
+android:
+  flavor: stag
+  wait_for_app_to_settle:
+    enabled: true
+    duration: 1500
+
+# iOS target: iOS 16+ simulator (iPhone 14+)
+ios:
+  flavor: stag
+  wait_for_app_to_settle:
+    enabled: true
+    duration: 2000
+
+# Test timeout per scenario
+timeout: 120
+
+# Dart defines — overrideable via --dart-define at runtime
+dart_defines:
+  BFF_BASE_URL: http://10.0.2.2:3000  # Android emulator host; override for staging
+  FCM_TEST_PROJECT_ID: gms-test-firebase
+  TEST_TENANT_ID: garage-a
+  TEST_ACCOUNTANT_EMAIL: accountant@garage-a.test
+  TEST_ACCOUNTANT_PASSWORD: Test@123456
+  DEEPLINK_DOMAIN: app.garage.test
+  DEEPLINK_SCHEME: https

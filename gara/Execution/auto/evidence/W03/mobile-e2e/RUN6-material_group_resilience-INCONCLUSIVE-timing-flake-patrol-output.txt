@@ -1,0 +1,259 @@
+Resolving dependencies...
+Downloading packages...
+  _fe_analyzer_shared 91.0.0 (104.0.0 available)
+  analyzer 8.4.0 (14.0.0 available)
+  analyzer_plugin 0.13.10 (0.14.13 available)
+  cli_util 0.4.2 (0.5.1 available)
+  custom_lint_core 0.8.1 (0.8.2 available)
+  custom_lint_visitor 1.0.0+8.4.0 (1.0.0+9.0.0 available)
+  dart_style 3.1.3 (3.1.9 available)
+  leancode_lint 19.0.1 (24.0.0 available)
+  package_config 2.2.0 (3.0.0 available)
+  test 1.31.1 (1.31.2 available)
+  test_api 0.7.12 (0.7.13 available)
+  test_core 0.6.18 (0.6.19 available)
+  win32 5.15.0 (6.3.0 available)
+No dependencies would change in `/Users/all_engineer/patrol_patched_v1/packages/patrol_cli`.
+13 packages have newer versions incompatible with dependency constraints.
+Try `dart pub outdated` for more information.
+	The following plugins do not support Swift Package Manager for ios:
+	  - patrol
+	  - gallery_saver_plus
+	  - flutter_keyboard_visibility
+	  - flutter_local_notifications
+	  - flutter_inappwebview_ios
+	  - flutter_document_picker
+	  - flutter_callkit_incoming
+	  - flutter_apns_only
+	  - cometchat_sdk
+	  - cometchat_chat_uikit
+	  - cometchat_uikit_shared
+	  - cometchat_calls_uikit
+	  - cometchat_calls_sdk
+	This will become an error in a future version of Flutter. Please contact the plugin maintainers to request Swift Package Manager adoption.
+	The following plugins do not support Swift Package Manager for macos:
+	  - patrol
+	  - flutter_local_notifications
+	  - flutter_inappwebview_macos
+	This will become an error in a future version of Flutter. Please contact the plugin maintainers to request Swift Package Manager adoption.
+• Building apk with entrypoint test_bundle.dart...
+	Warning: Flutter support for your project's Gradle version (8.12.0) will soon be dropped. Please upgrade your Gradle version to a version of at least 8.14.0 soon.
+	Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+	
+	Potential fix: Your project's gradle version is typically defined in the gradle wrapper file. By default, this can be found at /Users/all_engineer/Projects/lemn/gf-garage-app/android/gradle/wrapper/gradle-wrapper.properties. 
+	For more information, see https://docs.gradle.org/current/userguide/gradle_wrapper.html.
+	
+	Warning: Flutter support for your project's Android Gradle Plugin version (Android Gradle Plugin version 8.9.1) will soon be dropped. Please upgrade your Android Gradle Plugin version to a version of at least Android Gradle Plugin version 8.11.1 soon.
+	Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+	
+	Potential fix: Your project's AGP version is typically defined in the plugins block of the `settings.gradle` file (/Users/all_engineer/Projects/lemn/gf-garage-app/android/settings.gradle), by a plugin with the id of com.android.application. 
+	If you don't see a plugins block, your project was likely created with an older template version. In this case it is most likely defined in the top-level build.gradle file (/Users/all_engineer/Projects/lemn/gf-garage-app/android/build.gradle) by the following line in the dependencies block of the buildscript: "classpath 'com.android.tools.build:gradle:<version>'".
+	
+	Warning: Flutter support for your project's Kotlin version (2.1.0) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.2.20 soon.
+	Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+	
+	Potential fix: Your project's KGP version is typically defined in the plugins block of the `settings.gradle` file (/Users/all_engineer/Projects/lemn/gf-garage-app/android/settings.gradle), by a plugin with the id of org.jetbrains.kotlin.android. 
+	If you don't see a plugins block, your project was likely created with an older template version, in which case it is most likely defined in the top-level build.gradle file (/Users/all_engineer/Projects/lemn/gf-garage-app/android/build.gradle) by the ext.kotlin_version property.
+	
+	Your project is configured with Android NDK 28.0.12433566, but the following plugin(s) depend on a different Android NDK version:
+	- audio_session requires Android NDK 27.0.12077973
+	- camera_android requires Android NDK 27.0.12077973
+	- cometchat_calls_sdk requires Android NDK 27.0.12077973
+	- cometchat_calls_uikit requires Android NDK 27.0.12077973
+	- cometchat_chat_uikit requires Android NDK 27.0.12077973
+	- cometchat_sdk requires Android NDK 27.0.12077973
+	- cometchat_uikit_shared requires Android NDK 27.0.12077973
+	- connectivity_plus requires Android NDK 27.0.12077973
+	- device_info_plus requires Android NDK 27.0.12077973
+	- file_picker requires Android NDK 27.0.12077973
+	- firebase_analytics requires Android NDK 27.0.12077973
+	- firebase_core requires Android NDK 27.0.12077973
+	- firebase_crashlytics requires Android NDK 27.0.12077973
+	- firebase_dynamic_links requires Android NDK 27.0.12077973
+	- firebase_messaging requires Android NDK 27.0.12077973
+	- firebase_remote_config requires Android NDK 27.0.12077973
+	- flutter_callkit_incoming requires Android NDK 27.0.12077973
+	- flutter_document_picker requires Android NDK 27.0.12077973
+	- flutter_inappwebview_android requires Android NDK 27.0.12077973
+	- flutter_keyboard_visibility requires Android NDK 27.0.12077973
+	- flutter_local_notifications requires Android NDK 27.0.12077973
+	- flutter_pdfview requires Android NDK 27.0.12077973
+	- flutter_plugin_android_lifecycle requires Android NDK 27.0.12077973
+	- gallery_saver_plus requires Android NDK 27.0.12077973
+	- image_picker_android requires Android NDK 27.0.12077973
+	- integration_test requires Android NDK 28.2.13676358
+	- jni requires Android NDK 28.2.13676358
+	- jni_flutter requires Android NDK 27.0.12077973
+	- just_audio requires Android NDK 27.0.12077973
+	- package_info_plus requires Android NDK 27.0.12077973
+	- patrol requires Android NDK 27.0.12077973
+	- permission_handler_android requires Android NDK 27.0.12077973
+	- photo_manager requires Android NDK 27.0.12077973
+	- sensors_plus requires Android NDK 27.0.12077973
+	- share_plus requires Android NDK 27.0.12077973
+	- shared_preferences_android requires Android NDK 27.0.12077973
+	- sqflite_android requires Android NDK 27.0.12077973
+	- url_launcher_android requires Android NDK 27.0.12077973
+	- video_player_android requires Android NDK 27.0.12077973
+	- webview_flutter_android requires Android NDK 27.0.12077973
+	Fix this issue by using the highest Android NDK version (they are backward compatible).
+	Add the following to /Users/all_engineer/Projects/lemn/gf-garage-app/android/app/build.gradle:
+	
+	    android {
+	        ndkVersion = "28.2.13676358"
+	        ...
+	    }
+	WARNING: Your Android app project: app located at: /Users/all_engineer/Projects/lemn/gf-garage-app/android/app/build.gradle
+	applies the Kotlin Gradle Plugin, which will cause build failures in future versions of Flutter. 
+	Please migrate your app to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers
+	
+	WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP): cometchat_calls_sdk, cometchat_calls_uikit, cometchat_chat_uikit, cometchat_sdk, cometchat_uikit_shared, device_info_plus, file_picker, firebase_analytics, firebase_remote_config, flutter_callkit_incoming, flutter_document_picker, gallery_saver_plus, image_picker_android, package_info_plus, patrol, photo_manager, share_plus, shared_preferences_android, url_launcher_android, video_player_android, webview_flutter_android
+	Future versions of Flutter will fail to build if your app uses plugins that apply KGP.
+	
+	Please check the changelogs of these plugins and upgrade to a version that supports Built-in Kotlin.
+	If no such version exists, report the issue to the plugin. If necessary, here is a guide on filing 
+	an issue against a plugin: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers#report-incompatible-kotlin-gradle-plugin-usage-to-plugin-authors
+	
+	If you are a plugin author, please migrate your plugin to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
+	Warning: Flutter support for your project's Gradle version (8.12.0) will soon be dropped. Please upgrade your Gradle version to a version of at least 8.14.0 soon.
+	Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+	
+	Potential fix: Your project's gradle version is typically defined in the gradle wrapper file. By default, this can be found at /Users/all_engineer/Projects/lemn/gf-garage-app/android/gradle/wrapper/gradle-wrapper.properties. 
+	For more information, see https://docs.gradle.org/current/userguide/gradle_wrapper.html.
+	
+	Warning: Flutter support for your project's Android Gradle Plugin version (Android Gradle Plugin version 8.9.1) will soon be dropped. Please upgrade your Android Gradle Plugin version to a version of at least Android Gradle Plugin version 8.11.1 soon.
+	Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+	
+	Potential fix: Your project's AGP version is typically defined in the plugins block of the `settings.gradle` file (/Users/all_engineer/Projects/lemn/gf-garage-app/android/settings.gradle), by a plugin with the id of com.android.application. 
+	If you don't see a plugins block, your project was likely created with an older template version. In this case it is most likely defined in the top-level build.gradle file (/Users/all_engineer/Projects/lemn/gf-garage-app/android/build.gradle) by the following line in the dependencies block of the buildscript: "classpath 'com.android.tools.build:gradle:<version>'".
+	
+	Warning: Flutter support for your project's Kotlin version (2.1.0) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.2.20 soon.
+	Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+	
+	Potential fix: Your project's KGP version is typically defined in the plugins block of the `settings.gradle` file (/Users/all_engineer/Projects/lemn/gf-garage-app/android/settings.gradle), by a plugin with the id of org.jetbrains.kotlin.android. 
+	If you don't see a plugins block, your project was likely created with an older template version, in which case it is most likely defined in the top-level build.gradle file (/Users/all_engineer/Projects/lemn/gf-garage-app/android/build.gradle) by the ext.kotlin_version property.
+	
+	Your project is configured with Android NDK 28.0.12433566, but the following plugin(s) depend on a different Android NDK version:
+	- audio_session requires Android NDK 27.0.12077973
+	- camera_android requires Android NDK 27.0.12077973
+	- cometchat_calls_sdk requires Android NDK 27.0.12077973
+	- cometchat_calls_uikit requires Android NDK 27.0.12077973
+	- cometchat_chat_uikit requires Android NDK 27.0.12077973
+	- cometchat_sdk requires Android NDK 27.0.12077973
+	- cometchat_uikit_shared requires Android NDK 27.0.12077973
+	- connectivity_plus requires Android NDK 27.0.12077973
+	- device_info_plus requires Android NDK 27.0.12077973
+	- file_picker requires Android NDK 27.0.12077973
+	- firebase_analytics requires Android NDK 27.0.12077973
+	- firebase_core requires Android NDK 27.0.12077973
+	- firebase_crashlytics requires Android NDK 27.0.12077973
+	- firebase_dynamic_links requires Android NDK 27.0.12077973
+	- firebase_messaging requires Android NDK 27.0.12077973
+	- firebase_remote_config requires Android NDK 27.0.12077973
+	- flutter_callkit_incoming requires Android NDK 27.0.12077973
+	- flutter_document_picker requires Android NDK 27.0.12077973
+	- flutter_inappwebview_android requires Android NDK 27.0.12077973
+	- flutter_keyboard_visibility requires Android NDK 27.0.12077973
+	- flutter_local_notifications requires Android NDK 27.0.12077973
+	- flutter_pdfview requires Android NDK 27.0.12077973
+	- flutter_plugin_android_lifecycle requires Android NDK 27.0.12077973
+	- gallery_saver_plus requires Android NDK 27.0.12077973
+	- image_picker_android requires Android NDK 27.0.12077973
+	- integration_test requires Android NDK 28.2.13676358
+	- jni requires Android NDK 28.2.13676358
+	- jni_flutter requires Android NDK 27.0.12077973
+	- just_audio requires Android NDK 27.0.12077973
+	- package_info_plus requires Android NDK 27.0.12077973
+	- patrol requires Android NDK 27.0.12077973
+	- permission_handler_android requires Android NDK 27.0.12077973
+	- photo_manager requires Android NDK 27.0.12077973
+	- sensors_plus requires Android NDK 27.0.12077973
+	- share_plus requires Android NDK 27.0.12077973
+	- shared_preferences_android requires Android NDK 27.0.12077973
+	- sqflite_android requires Android NDK 27.0.12077973
+	- url_launcher_android requires Android NDK 27.0.12077973
+	- video_player_android requires Android NDK 27.0.12077973
+	- webview_flutter_android requires Android NDK 27.0.12077973
+	Fix this issue by using the highest Android NDK version (they are backward compatible).
+	Add the following to /Users/all_engineer/Projects/lemn/gf-garage-app/android/app/build.gradle:
+	
+	    android {
+	        ndkVersion = "28.2.13676358"
+	        ...
+	    }
+	WARNING: Your Android app project: app located at: /Users/all_engineer/Projects/lemn/gf-garage-app/android/app/build.gradle
+	applies the Kotlin Gradle Plugin, which will cause build failures in future versions of Flutter. 
+	Please migrate your app to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers
+	
+	WARNING: Your app uses the following plugins that apply Kotlin Gradle Plugin (KGP): cometchat_calls_sdk, cometchat_calls_uikit, cometchat_chat_uikit, cometchat_sdk, cometchat_uikit_shared, device_info_plus, file_picker, firebase_analytics, firebase_remote_config, flutter_callkit_incoming, flutter_document_picker, gallery_saver_plus, image_picker_android, package_info_plus, patrol, photo_manager, share_plus, shared_preferences_android, url_launcher_android, video_player_android, webview_flutter_android
+	Future versions of Flutter will fail to build if your app uses plugins that apply KGP.
+	
+	Please check the changelogs of these plugins and upgrade to a version that supports Built-in Kotlin.
+	If no such version exists, report the issue to the plugin. If necessary, here is a guide on filing 
+	an issue against a plugin: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-app-developers#report-incompatible-kotlin-gradle-plugin-usage-to-plugin-authors
+	
+	If you are a plugin author, please migrate your plugin to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
+✓ Completed building apk with entrypoint test_bundle.dart (82.2s)
+• Executing tests of apk with entrypoint test_bundle.dart on emulator-5554...
+[33mPrinting flutter steps is disabled in the config. To enable it, set `PatrolTesterConfig(printLogs: true)`.[0m
+🧪 .Users.all_engineer.Projects.lemn.gf_garage_app...garage_agentic_design.Execution.auto.specs.W03.mobile_e2e.material_group_resilience_patrol_test W03 Resilience + persona + localization: TC-
+        ⏳   1. [94mpressHome[0m [90m(native)[0m
+[A[K        ✅   1. [94mpressHome[0m [90m(native)[0m
+        ⏳   2. [94mopenApp[0m [90m(native)[0m
+[A[K        ✅   2. [94mopenApp[0m [90m(native)[0m
+❌ W03 Resilience + persona + localization: TC- [90m(//Users/all_engineer/Projects/lemn/gf_garage_app///garage_agentic_design/Execution/auto/specs/W03/mobile_e2e/material_group_resilience_patrol_test.dart)[0m [90m(33s)[0m
+[31m══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════[0m
+[31mThe following IndexError was thrown running a test:[0m
+[31mRangeError (index): Index out of range: no indices are valid: 0[0m
+[31m[0m
+[31mWhen the exception was thrown, this was the stack:[0m
+[31m#0      CachingIterable.elementAt (package:flutter/src/foundation/basic_types.dart:191:9)[0m
+[31m#1      _IndexFinderMixin.filter (package:flutter_test/src/finders.dart:1439:28)[0m
+[31m#3      ExpandIterator.moveNext (dart:_internal/iterable.dart:506:21)[0m
+[31m#4      SetBase.addAll (dart:collection/set.dart:58:23)[0m
+[31m#5      _Set.addAll (dart:_compact_hash:1197:11)[0m
+[31m#6      new LinkedHashSet.of (dart:collection/linked_hash_set.dart:193:27)[0m
+[31m#7      Iterable.toSet (dart:core/iterable.dart:532:21)[0m
+[31m#8      _DescendantFinderMixin.allCandidates (package:flutter_test/src/finders.dart:1782:10)[0m
+[31m#9      FinderBase.evaluate (package:flutter_test/src/finders.dart:1030:76)[0m
+[31m#10     WidgetController.state (package:flutter_test/src/controller.dart:932:31)[0m
+[31m#11     WidgetTester.showKeyboard.<anonymous closure> (package:flutter_test/src/widget_tester.dart:1125:42)[0m
+[31m#14     TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)[0m
+[31m#15     WidgetTester.showKeyboard (package:flutter_test/src/widget_tester.dart:1124:27)[0m
+[31m#16     WidgetTester.enterText.<anonymous closure> (package:flutter_test/src/widget_tester.dart:1160:13)[0m
+[31m#19     TestAsyncUtils.guard (package:flutter_test/src/test_async_utils.dart:74:41)[0m
+[31m#20     WidgetTester.enterText (package:flutter_test/src/widget_tester.dart:1159:27)[0m
+[31m#21     main.<anonymous closure> (file:///Users/all_engineer/Projects/lemn/garage-agentic-design/Execution/auto/specs/W03/mobile-e2e/material_group_resilience_patrol_test.dart:70:22)[0m
+[31m<asynchronous suspension>[0m
+[31m#22     patrolTest.<anonymous closure> (package:patrol/src/common.dart:169:9)[0m
+[31m<asynchronous suspension>[0m
+[31m#23     testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)[0m
+[31m<asynchronous suspension>[0m
+[31m#24     PatrolBinding._wrapTestBodyWithExceptionGatherer (package:patrol/src/binding.dart:246:5)[0m
+[31m<asynchronous suspension>[0m
+[31m#25     TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)[0m
+[31m<asynchronous suspension>[0m
+[31m#26     TestWidgetsFlutterBinding._createTestCompletionHandler.<anonymous closure> (package:flutter_test/src/binding.dart:1706:12)[0m
+[31m<asynchronous suspension>[0m
+[31m(elided 5 frames from dart:async and dart:async-patch)[0m
+[31m[0m
+[31mThe test description was:[0m
+[31m  W03 Resilience + persona + localization: TC-025[0m
+[31m  background-foreground, TC-026 network-toggle, TC-028[0m
+[31m  offline-banner, TC-049 wording[0m
+[31m═════════════════════════════════════════════════════════════════[0m
+[31m[0m
+
+[1mTest summary:[0m
+📝 Total: 1
+✅ Successful: 0
+❌ Failed: 1
+  - W03 Resilience + persona + localization: TC- [90m(//Users/all_engineer/Projects/lemn/gf_garage_app///garage_agentic_design/Execution/auto/specs/W03/mobile_e2e/material_group_resilience_patrol_test.dart)[0m
+⏩ Skipped: 0
+📊 Report: file:///Users/all_engineer/Projects/lemn/gf-garage-app/build/app/reports/androidTests/connected/debug/flavors/dev/index.html
+⏱️  Duration: 1m 28s
+
+✗ Failed to execute tests of apk with entrypoint test_bundle.dart on emulator-5554 (Gradle test execution failed with code 1) (88.9s)
+Exception: Gradle test execution failed with code 1
+See the logs above to learn what happened. Also consider running with --verbose. If the logs still aren't useful, then it's a bug - please report it.
+EXIT_CODE=1

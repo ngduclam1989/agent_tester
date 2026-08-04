@@ -1,0 +1,500 @@
+# Knowledge Graph — gf-system
+
+boundary: "gf-system"
+version: 4
+last_updated: "2026-05-19"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Materialize tenant subscription quota, tạo default branch cho tenant GARAGE, quản lý tenant invoice info, tenant transporter registry,  tenant invoice info events và tenant transporter registry events qua Kafka."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Kafka", data_store: "PostgreSQL" }
+  epics: []
+  features: ["tenant-provisioning", "branch-lifecycle", "tenant-invoice-info", "tenant-transporter-registry", "transactional-outbox"]
+  integration_ref: ""
+  integration_consumers: ["gf-purchase"]
+
+
+apis:
+  - name: "transporter-create"
+    path: "/api/v1/system/tenant-transporter-registry"
+    method: POST
+    purpose: "Create tenant transporter registry entry; tenant resolve qua SecurityUtils, chống trùng theo (tenantId, routeContactPhoneNumber)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        transporterName: string
+        routeName: string
+        routeContactPhoneNumber: string
+        routeStartedAt: string
+        shippingAddress: string
+        note: string
+        status: TenantTransporterRegistryStatus
+    response:
+      schema:
+        data: TenantTransporterRegistryResponse
+
+  - name: "transporter-search"
+    path: "/api/v1/system/tenant-transporter-registry/search"
+    method: POST
+    purpose: "Paginated search transporter theo tenant (BaseSearchRequest + keyword + status[])"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        keyword: string
+        status: array
+        page: integer
+        size: integer
+        sort: string
+    response:
+      schema:
+        data: array
+        page: object
+
+  - name: "transporter-get-detail"
+    path: "/api/v1/system/tenant-transporter-registry/{id}"
+    method: GET
+    purpose: "Get transporter registry detail by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: TenantTransporterRegistryResponse
+
+  - name: "transporter-get-by-cop-id"
+    path: "/api/v1/system/tenant-transporter-registry/cop-transporter-registry/{copTransporterRegistryId}"
+    method: GET
+    purpose: "Get transporter registry detail by COP transporter registry id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        copTransporterRegistryId: long
+    response:
+      schema:
+        data: TenantTransporterRegistryResponse
+
+  - name: "transporter-update"
+    path: "/api/v1/system/tenant-transporter-registry/{id}"
+    method: PUT
+    purpose: "Update tenant transporter — null field giữ nguyên giá trị cũ; manual Long version counter, service increment thủ công (không dùng JPA @Version)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        transporterName: string
+        routeName: string
+        routeContactPhoneNumber: string
+        routeStartedAt: string
+        shippingAddress: string
+        note: string
+        status: TenantTransporterRegistryStatus
+    response:
+      schema:
+        data: TenantTransporterRegistryResponse
+
+  - name: "transporter-delete"
+    path: "/api/v1/system/tenant-transporter-registry/{id}"
+    method: DELETE
+    purpose: "Hard-delete transporter via JPA repository.delete(); publish TenantTransporterRegistryEvent action=DELETED trước khi delete; bị block nếu copTransporterRegistryId != null và route đang dùng bởi gf-purchase (TTR_01)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        data: TenantTransporterRegistryResponse
+
+  # =====================================================================
+  # Internal SVC-to-SVC (/protected/v1) — InternalTenantInvoiceInfoController.
+  # Không có v2/v3, không deprecated.
+  # =====================================================================
+  - name: "internal-tenant-invoice-info-get"
+    path: "/protected/v1/tenant-invoice-info"
+    method: GET
+    purpose: "SVC-to-SVC fetch tenant invoice info; tenant từ header X-Tenant-Id; trả empty aggregate khi tenant chưa cấu hình"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        X-Tenant-Id: long
+    response:
+      schema:
+        tenantId: long
+        invoiceInfo: object
+        version: long
+        updatedAt: instant
+
+  - name: "internal-tenant-invoice-info-upsert"
+    path: "/protected/v1/tenant-invoice-info"
+    method: PUT
+    purpose: "SVC-to-SVC upsert tenant invoice info từ luồng garage; chỉ fill missing field, KHÔNG overwrite; emit TenantInvoiceInfoUpdatedEvent qua outbox khi có thay đổi"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        X-Tenant-Id: long
+        companyName: string
+        taxCode: string
+        companyEmailAddress: string
+        companyAddress: string
+        updatedBy: string
+    response:
+      schema:
+        tenantId: long
+        invoiceInfo: object
+        version: long
+        updatedAt: instant
+
+events:
+  produces:
+    - topic: "AC-DEV-BRANCH-LIFECYCLE"
+      payload:
+        branchId: long
+        branchCode: string
+        branchName: string
+        branchType: string
+        address: string
+        city: string
+        ward: string
+        latitude: BigDecimal   # nullable — field tồn tại trong BranchPayload.java; chưa populate tại runtime (null)
+        longitude: BigDecimal  # nullable — field tồn tại trong BranchPayload.java; chưa populate tại runtime (null)
+        phone: string
+        email: string
+        taxCode: string
+        status: string
+        isDefault: boolean
+      meaning: "BranchCreatedEvent (MessageGroup=BRANCH-LIFECYCLE, MessageStep=BRANCH_CREATED.1) — emitted by BranchService when default branch created from TenantProvisioned; action phân biệt qua messageStep header, không phải payload field; BranchCreatedEvent publish trực tiếp qua KafkaMessagePublisher (không qua outbox — BR-GF-SYSTEM-005); không có retry/durability guarantee nếu publish fail"
+
+    - topic: "${kafka.topics.tenant-invoice-info:AC-DEV-TENANT-INVOICE-INFO}"
+      payload:
+        tenantId: long
+        version: long
+        invoiceInfo:
+          companyName: string
+          taxCode: string
+          companyEmailAddress: string
+          companyAddress: string
+        updatedBy: string
+      meaning: "TenantInvoiceInfoUpdatedEvent (MessageGroup=TENANT_INVOICE_PROFILE_EVENTS, MessageStep=TENANT_INVOICE_INFO_UPDATED) — emitted by TenantInvoiceInfoService.upsertFromGarage via outbox AFTER_COMMIT; partitionKey = tenantId; KHÔNG emit khi upsertFromCop hoặc khi không có thay đổi thực sự"
+
+    - topic: "${kafka.topics.tenant-transporter-registry:AC-DEV-TENANT-TRANSPORTER-REGISTRY}"
+      payload:
+        tenantId: long
+        copTransporterRegistryId: long
+        tenantType: string
+        transporterName: string
+        routeName: string
+        routeContactPhoneNumber: string
+        routeStartedAt: string
+        shippingAddress: string
+        note: string
+        status: TenantTransporterRegistryStatus
+        changeSource: string
+      meaning: "TenantTransporterRegistryEvent — action phân biệt qua messageStep header: TENANT_TRANSPORTER_REGISTRY_UPSERTED | TENANT_TRANSPORTER_REGISTRY_DELETED; emitted by TenantTransporterRegistryEventPublisher từ REST create/update/delete (changeSource=GARAGE_UI) hoặc command upsert (changeSource=COP_BACKOFFICE) qua outbox; LƯU Ý: command delete KHÔNG publish event"
+
+  consumes:
+    - topic: "AC-DEV-TENANT-PROVISIONING"
+      payload:
+        tenantId: long
+        tenantCode: string
+        tenantName: string
+        tenantType: string
+        address: string
+        city: string
+        ward: string
+        phone: string
+        email: string
+        taxCode: string
+        subscriptionPlan: string
+        maxBranches: integer
+        maxUsers: integer
+        maxWarehouses: integer
+        validFrom: instant
+        validUntil: instant
+      action: "TenantProvisionedEventListener (gated by feature Inventory:InventoryStockV01) — seed tenant_subscriptions + create default branch; chỉ xử lý tenantType=GARAGE"
+
+    - topic: "${kafka.topics.tenant-invoice-info:AC-DEV-TENANT-INVOICE-INFO}"
+      payload:
+        tenantId: long
+        invoiceInfo:
+          companyName: string
+          taxCode: string
+          companyEmailAddress: string
+          companyAddress: string
+        updatedBy: string
+        changeSource: string
+      action: "TenantInvoiceInfoCommandListener (MessageGroup=TENANT_INVOICE_PROFILE_COMMANDS — khác với MessageGroup=TENANT_INVOICE_PROFILE_EVENTS của topic cùng tên khi produces) — idempotent via inbox_event (MessageStep=TENANT_INVOICE_INFO_UPSERT_REQUESTED); upsertFromCop patch các field non-blank vào TenantInvoiceInfo"
+
+    - topic: "${kafka.topics.tenant-transporter-registry:AC-DEV-TENANT-TRANSPORTER-REGISTRY}"
+      payload:
+        tenantId: long
+        id: long
+        recordId: long
+        copTransporterRegistryId: long
+        tenantType: string
+        transporterName: string
+        routeName: string
+        routeContactPhoneNumber: string
+        routeStartedAt: string
+        shippingAddress: string
+        note: string
+        status: TenantTransporterRegistryStatus
+        removeTransporterRegistryIds: array
+        addTransporterRegistryData: array
+      action: "TenantTransporterRegistryCommandListener — action phân biệt qua messageStep header: TENANT_TRANSPORTER_REGISTRY_UPSERT_REQUESTED | TENANT_TRANSPORTER_REGISTRY_DELETE_REQUESTED; idempotent via inbox_event; upsert/delete theo copTransporterRegistryId hoặc recordId; resolveTenantId fallback sang originTenantId từ message header"
+
+entities:
+  - name: "TenantSubscriptions"
+    type: "aggregate_root"
+    description: "Projection quota subscription theo tenant từ TenantProvisionedEvent; ct-saas-tenant là source of truth."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true, constraints: ["unique"] }
+      - { name: "subscription_plan", type: "VARCHAR(50)", required: true }
+      - { name: "max_branches", type: "INTEGER", required: true }
+      - { name: "max_warehouses", type: "INTEGER", required: true }
+      - { name: "max_users", type: "INTEGER", required: true }
+      - { name: "features", type: "JSONB Map<String,Object>", required: false }
+      - { name: "valid_from", type: "TIMESTAMPTZ", required: true }
+      - { name: "valid_until", type: "TIMESTAMPTZ", required: false }
+      - { name: "synced_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "Branch", type: "one_to_many", description: "branches.tenant_id FK tới tenant_subscriptions.tenant_id." }
+      - { target: "TenantInvoiceInfo", type: "logical_reference", description: "Cùng tenant_id nhưng không có FK vật lý." }
+    invariants:
+      - "Upsert theo tenant_id khi nhận TenantProvisionedEvent."
+      - "features hiện được service set thành JSON map rỗng khi cache quota."
+      - "Projection không được coi là tenant source of truth."
+
+  - name: "Branch"
+    type: "aggregate_root"
+    description: "Branch master/support data của gf-system, tạo default branch khi tenant GARAGE được provision và feature InventoryStock bật."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "branch_code", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "branch_name", type: "VARCHAR(255)", required: true }
+      # branch_type column đã DROP ở V4 migration; domain model Branch.java vẫn có branchType (dùng cho BranchCreatedEvent payload) nhưng NOT persisted
+      - { name: "status", type: "BranchStatusEnum", required: true, constraints: ["DRAFT | PENDING_APPROVAL | ACTIVE | SUSPENDED | INACTIVE | CANCELLED"] }
+      - { name: "is_default", type: "BOOLEAN", required: true }
+      - { name: "additional_config", type: "JSONB Map<String,Object>", required: false }
+      - { name: "synced_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "TenantSubscriptions", type: "many_to_one", description: "tenant_id tham chiếu projection subscription của tenant." }
+    invariants:
+      - "Default branch chỉ tạo nếu JpaBranchRepository.existsByTenantIdAndIsDefaultTrue trả false."
+      - "branch_code sinh theo format tenantCode-city-sequence; code hiện dùng nguyên giá trị city từ event."
+      - "Branch tạo mới có status ACTIVE và is_default = true."
+      - "Unique partial index một default branch mỗi tenant đã bị drop ở migration V4; idempotency chính nằm ở service guard."
+
+  - name: "TenantInvoiceInfo"
+    type: "aggregate_root"
+    description: "Thông tin xuất hóa đơn theo tenant, được cập nhật qua protected REST hoặc command Kafka."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true, constraints: ["unique"] }
+      - { name: "company_name", type: "VARCHAR(255)", required: false }
+      - { name: "tax_code", type: "VARCHAR(50)", required: false }
+      - { name: "company_email_address", type: "VARCHAR(255)", required: false }
+      - { name: "company_address", type: "TEXT", required: false }
+      - { name: "version", type: "BIGINT @Version", required: false }
+      - { name: "status", type: "VARCHAR(50)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships: []
+    invariants:
+      - "Mỗi tenant có tối đa một TenantInvoiceInfo qua unique tenant_id."
+      - "Garage update chỉ fill các field còn blank; không overwrite field đã có."
+      - "COP command patch các field nonblank vào profile hiện tại."
+      - "Blank string được trim và normalize thành null."
+      - "Phải có ít nhất một field invoice info nonblank trong request/command update."
+
+  - name: "InboxEvent"
+    type: "aggregate_root"
+    description: "Inbox idempotency cho các command Kafka: TenantInvoiceInfoUpsertRequested và TenantTransporterRegistryUpsert/DeleteRequested."
+    attributes:
+      - { name: "event_id", type: "VARCHAR(100)", required: true, constraints: ["primary key"] }
+      - { name: "event_type", type: "VARCHAR(100)", required: false }
+      - { name: "source_service", type: "VARCHAR(100)", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "received_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "status", type: "VARCHAR(20)", required: false }
+    relationships: []
+    invariants:
+      - "event_id lấy từ messageId và là khóa chống xử lý trùng tenant invoice info command."
+      - "Duplicate command gây DataIntegrityViolationException được acknowledge và bỏ qua."
+
+  - name: "OutboxEvent"
+    type: "aggregate_root"
+    description: "Transactional outbox cho Kafka events, dùng cho TenantInvoiceInfoUpdatedEvent và TenantTransporterRegistryEvent; relay qua OutboxEventListener AFTER_COMMIT (primary) + OutboxScheduler polling (fallback)."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "event_id", type: "VARCHAR(100)", required: true, constraints: ["unique"] }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "topic", type: "VARCHAR(255)", required: true }
+      - { name: "partition_key", type: "VARCHAR(100)", required: true }
+      - { name: "metadata", type: "TEXT JSON", required: false }
+      - { name: "payload", type: "TEXT JSON", required: true }
+      - { name: "status", type: "EventStatus", required: true, constraints: ["PENDING | PROCESSING | PUBLISHED | FAILED"] }
+      - { name: "retry_count", type: "INTEGER", required: true }
+      - { name: "max_retries", type: "INTEGER", required: true }
+      - { name: "last_error", type: "TEXT", required: false }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "published_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships: []
+    invariants:
+      - "findPendingEventsForProcessing dùng FOR UPDATE SKIP LOCKED để tránh nhiều instance xử lý cùng event."
+      - "OutboxEventCreatedEvent xử lý sau commit; OutboxScheduler polling là fallback."
+      - "retry_count đạt max_retries thì status chuyển FAILED."
+      - "EventPublishingService skip BRANCH-LIFECYCLE group, nên BranchCreatedEvent runtime hiện publish trực tiếp."
+
+  - name: "TenantTransporterRegistry"
+    type: "aggregate_root"
+    description: "Đăng ký tenant transporter (nhà vận chuyển) với route info, status và cop linkage; HARD DELETE via JPA + manual versioning + duplicate guard theo phone."
+    attributes:
+      - { name: "id", type: "BIGSERIAL", required: true }
+      - { name: "cop_transporter_registry_id", type: "BIGINT", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "tenant_type", type: "VARCHAR(50)", required: false }
+      - { name: "transporter_name", type: "VARCHAR", required: true }
+      - { name: "route_name", type: "VARCHAR", required: true }
+      - { name: "route_contact_phone_number", type: "VARCHAR(20)", required: true }
+      - { name: "route_started_at", type: "TEXT", required: true }
+      - { name: "shipping_address", type: "TEXT", required: true }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "status", type: "TenantTransporterRegistryStatus", required: true, constraints: ["ACTIVE | INACTIVE"] }
+      - { name: "version", type: "BIGINT", required: true, constraints: ["manual Long counter, KHÔNG phải @Version; default 1L; service increment thủ công"] }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "TenantSubscriptions", type: "logical_reference", description: "tenant_id liên kết logic; không FK vật lý." }
+    invariants:
+      - "Chống trùng theo unique(tenantId, routeContactPhoneNumber) — unconditional unique index."
+      - "Delete là HARD DELETE via JPA repository.delete(); KHÔNG có is_deleted column hay soft-delete mechanism."
+      - "REST delete publish TenantTransporterRegistryEvent action=DELETED qua outbox trước khi delete; command delete KHÔNG publish event."
+      - "REST delete bị block khi copTransporterRegistryId != null và route đang dùng bởi gf-purchase (BusinessException TTR_01)."
+      - "version là Long manual counter, default 1L, service increment thủ công khi update — không dùng JPA @Version."
+      - "4 index + 1 unique: tenant_id, status, route_contact_phone_number, created_at, unique(tenant_id, route_contact_phone_number)."
+      - "cop_transporter_registry_id để link record từ cop-backoffice command."
+      - "Validation: routeContactPhoneNumber match ^\\d{10}$; routeStartedAt match hh:mm (comma-separated); transporterName, routeName, routeContactPhoneNumber, routeStartedAt, shippingAddress required."
+
+  - name: "Sequence"
+    type: "entity"
+    description: "Bảng SQL-only và function get_next_number dùng sinh số thứ tự nội bộ."
+    attributes:
+      - { name: "sequence_name", type: "VARCHAR(100)", required: true, constraints: ["primary key"] }
+      - { name: "current_value", type: "BIGINT", required: true }
+      - { name: "increment_by", type: "INTEGER", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: true }
+    relationships: []
+    invariants:
+      - "Function get_next_number tăng current_value atomically và auto-initialize nếu sequence chưa tồn tại."
+      - "BranchService dùng sequence_name = tenantCode khi sinh branch_code."
+business_rules:
+  - { id: "BR-GF-SYSTEM-001", description: "TenantProvisionedEvent chỉ xử lý khi MessageGroup=TENANT-PROVISIONING, MessageStep=TENANT_PROVISIONED.1, tenantType=GARAGE và feature Inventory:InventoryStockV01 bật.", cornerstone: true, enforcement_point: "TenantProvisionedEventListener + @FeatureOn(FeatureFlags.INVENTORY_INVENTORY_STOCK)" }
+  - { id: "BR-GF-SYSTEM-002", description: "Tenant subscription quota là projection từ ct-saas-tenant và được upsert theo tenantId.", cornerstone: true, enforcement_point: "TenantSubscriptionsService.cacheSubscriptionQuota" }
+  - { id: "BR-GF-SYSTEM-003", description: "Default branch chỉ tạo khi tenant chưa có branch mặc định; replay tenant provisioning không được tạo trùng theo service guard.", cornerstone: true, enforcement_point: "BranchService.createDefaultBranchIfNeeded + JpaBranchRepository.existsByTenantIdAndIsDefaultTrue" }
+  - { id: "BR-GF-SYSTEM-004", description: "Branch code được sinh bằng tenantCode, city trong event và sequence DB theo tenantCode.", cornerstone: true, enforcement_point: "BranchService.generateBranchCode + DBUtils.getNextSequence" }
+  - { id: "BR-GF-SYSTEM-005", description: "BranchCreatedEvent runtime hiện publish trực tiếp qua KafkaMessagePublisher, không đi qua outbox.", cornerstone: true, enforcement_point: "BranchEventPublisher.publishBranchCreated + EventPublishingService BRANCH-LIFECYCLE skip" }
+  - { id: "BR-GF-SYSTEM-006", description: "Garage cập nhật tenant invoice info chỉ fill field đang blank và chỉ publish event nếu dữ liệu thực sự thay đổi.", cornerstone: true, enforcement_point: "TenantInvoiceInfo.fillMissingFromGarage + TenantInvoiceInfoService.upsertFromGarage" }
+  - { id: "BR-GF-SYSTEM-007", description: "COP tenant invoice info command patch field nonblank, bắt buộc OriginTenantId hợp lệ và payload tenantId nếu có phải khớp OriginTenantId. LƯU Ý: companyEmailAddress KHÔNG check null trước khi patch — có thể bị set null từ COP command (khác companyName/taxCode/companyAddress check != null); cần review nếu đây là bug.", cornerstone: true, enforcement_point: "TenantInvoiceInfoCommandListener.resolveTenantId + TenantInvoiceInfo.applyCopPatch" }
+  - { id: "BR-GF-SYSTEM-008", description: "Tenant invoice info update phải có ít nhất một field invoice info nonblank.", cornerstone: true, enforcement_point: "TenantInvoiceInfoService.requireInvoiceInfo + TenantInvoiceInfoUpdateCommand.hasInvoiceInfo" }
+  - { id: "BR-GF-SYSTEM-009", description: "Tenant invoice info command chống trùng bằng InboxEvent.event_id = messageId; duplicate được bỏ qua.", cornerstone: true, enforcement_point: "TenantInvoiceInfoCommandListener.recordInboxEvent" }
+  - { id: "BR-GF-SYSTEM-010", description: "TenantInvoiceInfoUpdatedEvent được lưu outbox trong cùng transaction và publish sau commit hoặc qua scheduler fallback.", cornerstone: true, enforcement_point: "TenantInvoiceInfoService.publishUpdatedEvent + OutboxService + OutboxEventListener + OutboxScheduler" }
+  - { id: "BR-GF-SYSTEM-011", description: "TenantTransporterRegistry chống trùng theo (tenantId, routeContactPhoneNumber); duplicate phone trong tenant bị reject ở service.", cornerstone: true, enforcement_point: "TenantTransporterRegistryService.create + update + duplicate guard" }
+  - { id: "BR-GF-SYSTEM-012", description: "Delete transporter là HARD DELETE via JPA repository.delete(). REST delete endpoint publish TenantTransporterRegistryEvent action=DELETED qua outbox TRƯỚC khi delete; command delete (deleteFromCommand) KHÔNG publish event. KHÔNG có soft-delete (is_deleted) mechanism.", cornerstone: true, enforcement_point: "TenantTransporterRegistryService.delete + TenantTransporterRegistryEventPublisher.publishDeleted (REST only)" }
+  - { id: "BR-GF-SYSTEM-013", description: "Update transporter dùng manual Long version counter (default 1L) — không phải JPA @Version optimistic lock; service increment thủ công khi update để track revision.", cornerstone: true, enforcement_point: "TenantTransporterRegistryService.update + TenantTransporterRegistryEntity.version" }
+  - { id: "BR-GF-SYSTEM-014", description: "TenantTransporterRegistryCommandListener idempotent via InboxEvent.event_id = messageId; resolveTenantId fallback sang OriginTenantId từ message header khi payload không có tenantId; upsert/delete theo copTransporterRegistryId hoặc recordId tùy command.", cornerstone: true, enforcement_point: "TenantTransporterRegistryCommandListener + InboxEvent + resolveTenantId" }
+  - { id: "BR-GF-SYSTEM-015", description: "REST delete transporter bị block khi copTransporterRegistryId != null và transport route đang được sử dụng bởi gf-purchase (BusinessException TTR_01 via PurchaseInternalClient.isTransportRouteUsed). Nếu copTransporterRegistryId = null thì bypass check.", cornerstone: true, enforcement_point: "TenantTransporterRegistryService.delete + PurchaseInternalClient.isTransportRouteUsed" }
+
+
+workflows:
+  - name: "OutboxScheduler"
+    type: CRON_BATCH_PROCESSOR
+    description: "Periodic relay fallback cho transactional outbox — claim PENDING events qua FOR UPDATE SKIP LOCKED và publish lên Kafka. AFTER_COMMIT OutboxEventListener là primary path; scheduler là fallback nếu listener fail."
+    steps:
+      - step: 1
+        service: "gf-system"
+        action: "Triggered by Spring @Scheduled fixedDelay ${messaging.outbox.polling.interval-ms:60000} (default 60s), initialDelay ${messaging.outbox.polling.initial-delay-ms:30000} (default 30s); @ConditionalOnProperty messaging.outbox.polling.enabled=true (default true) trong OutboxScheduler.java:17-29"
+      - step: 2
+        service: "gf-system"
+        action: "OutboxEventRepository.findPendingEventsForProcessing — SELECT FOR UPDATE SKIP LOCKED → set PROCESSING"
+      - step: 3
+        service: "gf-system → Kafka"
+        action: "EventPublishingService.publishEvent — skip BRANCH-LIFECYCLE group (Branch event direct via KafkaMessagePublisher); publish các topic còn lại"
+      - step: 4
+        service: "gf-system"
+        action: "Mark PUBLISHED khi ack; tăng retry_count khi fail; đủ max_retries thì FAILED"
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-purchase"
+      purpose: "GET+PUT /protected/v1/tenant-invoice-info — lookup and upsert tenant invoice info"
+    - type: EVENT
+      source: "ct-saas-tenant"
+      purpose: "TenantProvisioned event ingestion"
+    - type: EVENT
+      source: "External producer"
+      purpose: "TenantInvoiceInfoCommandPayload + TenantTransporterRegistryCommandPayload commands"
+
+  outbound:
+    - type: API
+      target: "gf-purchase"
+      purpose: "Check transport route usage trước khi delete transporter (PurchaseInternalClient.isTransportRouteUsed); BR-GF-SYSTEM-015"
+    - type: EVENT
+      target: "Kafka — branch-lifecycle / tenant-invoice-info / tenant-transporter-registry"
+      purpose: "Outbox (OutboxEventListener AFTER_COMMIT + OutboxScheduler poll fallback) cho tenant-invoice-info + tenant-transporter-registry; direct publish không qua outbox cho branch-lifecycle"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho tenant_subscriptions, branches, tenant_invoice_info, inbox_event, outbox_events và sequences.", config_ref: "spring.datasource.*, DB_SCHEMA" }
+  - { name: "Kafka", type: "broker", purpose: "Consume tenant provisioning và tenant invoice commands; publish branch lifecycle và tenant invoice info events.", config_ref: "KAFKA_BOOTSTRAP_SERVERS, kafka.topics.*" }
+  - { name: "Flyway", type: "migration", purpose: "Quản lý schema dev_gf_system qua V1-V6, bao gồm outbox, sequence, tenant invoice info, inbox và tenant transporter registry.", config_ref: "spring.flyway.*, src/main/resources/db/migration" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho REST controllers.", config_ref: "springdoc-openapi-starter-webmvc-ui:2.8.9" }
+  - { name: "Spring Retry", type: "resilience", purpose: "Retry abstraction cho call/outbox publish operations.", config_ref: "spring-retry, spring-aspects" }
+  - { name: "spring-feature-flag-starter", type: "feature_flag", purpose: "Gate TenantProvisionedEventListener bằng Inventory:InventoryStockV01; gate TenantTransporterRegistryController bằng Purchase:PurchaseV02 (class-level @FeatureOn THROW_EXCEPTION).", config_ref: "feature-flag.*, feature-flags.json" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Bảo vệ protected API và cung cấp nền tảng security starter; endpoint tenant invoice info nhận tenant qua X-Tenant-Id.", config_ref: "internal-service.api-key, dependency spring-security-starter" }
+  - { name: "Actuator + OTLP", type: "observability", purpose: "Expose health/info/metrics/prometheus và tracing theo starter OTLP.", config_ref: "management.endpoints.*, spring.profiles.include=otlp" }
+
+change_log:
+  - { date: "2026-05-19", summary: "Cross-review với INTEG-EXT-gf-system.md: sửa integration_ref sai (D2), integration_consumers → [gf-purchase] (D2); xoá phantom callers 'gf-inventory / gf-sales / gf-accounting' khỏi integrations.inbound — không có endpoint nào có active_callers chứa các services này (D1).", author: "Architecture Authority" }
+  - { date: "2026-05-19", summary: "Source code audit: (C1) CRITICAL fix TenantTransporterRegistry delete là HARD DELETE không phải soft-delete — xóa is_deleted attribute, sửa BR-012, sửa unique index invariant; (C2) CRITICAL xóa branch_type khỏi Branch entity (column DROP ở V4, domain model có nhưng NOT persisted); (C3) thêm 2 API endpoints thiếu GET /{id} + GET /cop-transporter-registry/{copTransporterRegistryId}; (H1) thêm feature flag Purchase:PurchaseV02 (class-level trên TenantTransporterRegistryController); (H2) thêm outbound dependency gf-purchase (PurchaseInternalClient.isTransportRouteUsed) + BR-015; (H3) sửa BR-012 ghi rõ command delete KHÔNG publish event; (M2) sửa BR-007 note companyEmailAddress null behavior; (M3) thêm validation invariants. Source bugs phát hiện: @Value default AC-TENANT-INVOICE-INFO thiếu DEV- prefix (TenantInvoiceInfoService.java:27); stale JPA index idx_branches_branch_type trên column đã drop (BranchEntity.java:19).", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Verified cấu trúc section khớp canonical template.", author: "Architecture Authority" }
+  - { date: "2026-05-12", summary: "Fix MessageStep TENANT_INVOICE_INFO_UPDATED: xóa suffix .1 sai.", author: "Architecture Authority" }
+  - { date: "2026-05-12", summary: "Fix correctness: khôi phục latitude/longitude vào BRANCH-LIFECYCLE payload; thêm branch_type vào Branch entity.", author: "Architecture Authority" }
+  - { date: "2026-05-12", summary: "Sync round 2+3: fix transporter-delete response type, cập nhật metadata BRANCH-LIFECYCLE/TENANT-INVOICE-INFO, bổ sung OutboxScheduler config, xóa recordId/version khỏi event payloads, làm rõ outbox vs direct publish.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Sync round 1: thêm TenantTransporterRegistry entity (13 fields), 4 BRs mới (011-014), OutboxScheduler workflow, Flyway V1→V6, thêm SpringDoc/Spring Retry deps.", author: "Architecture Authority" }
+  - { date: "2026-05-14", summary: "Sync apis với source: thêm status/active_callers/replaced_by cho 6 entries theo RULE-08; 4 public /api/v1/system/tenant-transporter-registry/* → status=active, callers=[agg-garage-graph]; 2 internal /protected/v1/tenant-invoice-info (GET+PUT) → status=internal-only, callers=[gf-purchase] (verify từ gf-purchase/.../SystemClient.java).", author: "Architecture Authority" }

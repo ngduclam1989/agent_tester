@@ -1,0 +1,346 @@
+# Knowledge Graph — gf-worker
+
+boundary: "gf-worker"
+version: 3
+last_updated: "2026-05-18"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Vận hành generic scheduled HTTP jobs theo cấu hình DB-driven: load cron jobs, gọi target service qua HTTP, retry theo cấu hình và ghi lịch sử execution cho operator."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Spring Scheduler + RestClient + Resilience4j + Flyway", data_store: "PostgreSQL" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/api/gf-worker-api.md"
+  integration_consumers: []
+
+apis:
+  # =====================================================================
+  # Internal SVC-to-SVC (/protected/v1/jobs) — JobConfigController.
+  # Không có public v1/v2/v3, không method/class nào annotated @Deprecated.
+  # Tất cả endpoints internal-only (x-api-key, không qua graph); caller là
+  # admin/operator nội bộ.
+  # =====================================================================
+  - name: "job-list"
+    path: "/protected/v1/jobs"
+    method: GET
+    purpose: "List job configs"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        items: array
+
+  - name: "job-create"
+    path: "/protected/v1/jobs"
+    method: POST
+    purpose: "Create new cron-driven HTTP job config"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema:
+        job_name: string
+        cron_expression: string
+        base_url: string
+        http_method: string
+        endpoint_path: string
+        request_headers: string
+        is_active: boolean
+        retry_count: integer
+        timeout_seconds: integer
+        target_service: string
+    response:
+      schema:
+        id: long
+
+  - name: "job-update"
+    path: "/protected/v1/jobs/{id}"
+    method: PUT
+    purpose: "Update job + dynamic re-schedule"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        job: object
+    response:
+      schema:
+        config: "JobConfigEntity (updated)"
+
+  - name: "job-delete"
+    path: "/protected/v1/jobs/{id}"
+    method: DELETE
+    purpose: "Delete job config (also cancels active schedule)"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema: {}
+      note: "ResponseEntity<Void> empty body"
+
+  - name: "jobs-reload"
+    path: "/protected/v1/jobs/reload"
+    method: POST
+    purpose: "Full reload from DB"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema: {}
+      note: "ResponseEntity<Void> empty body"
+
+  - name: "schedule-enable"
+    path: "/protected/v1/jobs/schedule/enable"
+    method: POST
+    purpose: "Selectively enable a job by name"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema:
+        jobName: "String (query param, @RequestParam)"
+    response:
+      schema:
+        message: "String — e.g., 'Schedule ENABLED by SYSTEM jobName'"
+
+  - name: "schedule-disable"
+    path: "/protected/v1/jobs/schedule/disable"
+    method: POST
+    purpose: "Selectively disable a job by name"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema:
+        jobName: "String (query param, @RequestParam)"
+    response:
+      schema:
+        message: "String — e.g., 'Schedule DISABLED by SYSTEM jobName'"
+
+  - name: "emergency-disable-all"
+    path: "/protected/v1/jobs/emergency/disable-all"
+    method: POST
+    purpose: "Kill switch — disable all jobs"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        message: "String — emergency disable-all confirmation"
+
+  - name: "emergency-enable-all"
+    path: "/protected/v1/jobs/emergency/enable-all"
+    method: POST
+    purpose: "Re-enable all jobs (post emergency)"
+    status: internal-only
+    active_callers: ["admin-operator"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        message: "String — emergency enable-all confirmation"
+
+events:
+  produces: []
+  consumes: []
+
+entities:
+  - name: "JobConfig"
+    type: "aggregate_root"
+    description: "Cấu hình scheduled HTTP job ở mức platform/operator, gồm cron, target URL, HTTP method, headers, retry, timeout và trạng thái bật/tắt."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "job_name", type: "VARCHAR(255)", required: true, constraints: ["unique"] }
+      - { name: "cron_expression", type: "VARCHAR(255)", required: true }
+      - { name: "description", type: "VARCHAR(255)", required: false }
+      - { name: "is_active", type: "BOOLEAN", required: true }
+      - { name: "retry_count", type: "INTEGER", required: false }
+      - { name: "timeout_seconds", type: "INTEGER", required: false }
+      - { name: "base_url", type: "VARCHAR(255)", required: true }
+      - { name: "http_method", type: "VARCHAR(255)", required: true, constraints: ["POST | PUT | GET | DELETE theo comment; runtime dùng HttpMethod.valueOf"] }
+      - { name: "endpoint_path", type: "VARCHAR(255)", required: true }
+      - { name: "request_headers", type: "TEXT JSON string", required: false }
+      - { name: "content_type", type: "VARCHAR(255)", required: false }
+      - { name: "target_service", type: "VARCHAR(255)", required: true }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "ScheduleHistory", type: "one_to_many_logical", description: "Một job có nhiều lịch sử chạy qua job_name; source không khai báo FK vật lý hoặc JPA relationship." }
+    invariants:
+      - "job_name là khóa unique dùng để enable/disable, sync scheduler và chống insert trùng trong migration."
+      - "Chỉ job có is_active=true mới được schedule; executor đọc lại JobConfig trước khi chạy để bỏ qua job đã inactive."
+      - "CronTrigger chạy theo timezone Asia/Ho_Chi_Minh."
+      - "content_type mặc định application/json; retry_count mặc định entity là 5; timeout_seconds mặc định entity là 300."
+
+  - name: "ScheduleHistory"
+    type: "entity"
+    description: "Bản ghi lịch sử cho một lần chạy scheduled job, lưu request đã mask, target service, trạng thái, retry hiện tại, response hoặc lỗi cuối."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "job_name", type: "VARCHAR(255)", required: false }
+      - { name: "status", type: "VARCHAR(255)", required: false, constraints: ["OPEN | PROCESSING | PROCESSED | ERROR"] }
+      - { name: "error_message", type: "TEXT", required: false }
+      - { name: "request", type: "TEXT", required: false }
+      - { name: "target_service", type: "VARCHAR(255)", required: false }
+      - { name: "response_status", type: "VARCHAR(255)", required: false }
+      - { name: "response_body", type: "TEXT", required: false }
+      - { name: "current_retry", type: "BIGINT", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "JobConfig", type: "logical_reference", description: "job_name tham chiếu logic tới JobConfig.job_name; không có FK vật lý." }
+    invariants:
+      - "Mỗi lần execute tạo một record OPEN, cập nhật PROCESSING cho từng attempt, rồi kết thúc PROCESSED hoặc ERROR."
+      - "response_body thành công bị truncate tối đa 5000 ký tự."
+      - "error_message cuối cùng bị truncate tối đa 2000 ký tự."
+      - "request lưu thông tin HTTP request với header nhạy cảm đã mask theo key/token/auth."
+
+business_rules:
+  - { id: "BR-GF-WORKER-001", description: "Startup load toàn bộ active jobs từ DB và schedule cron; sync loop fixed delay 60 giây mặc định (worker.schedule.check-interval:60000, initial delay 10s) để add/remove job theo is_active.", cornerstone: true, enforcement_point: "DynamicJobProcessor.initializeScheduledJobs + checkAndSyncJobs" }
+  - { id: "BR-GF-WORKER-002", description: "Tạo/cập nhật/xóa JobConfig phải đồng bộ ngay với scheduler: active job được add, job cũ active bị remove, reload hủy và nạp lại toàn bộ active jobs.", cornerstone: true, enforcement_point: "JobConfigServiceImpl + DynamicJobProcessor.addJob/removeJob/reloadJobs" }
+  - { id: "BR-GF-WORKER-003", description: "Mỗi job có dedicated single-thread virtual executor; global semaphore giới hạn số job chạy đồng thời, nếu hết permit thì skip lần chạy đó.", cornerstone: true, enforcement_point: "DynamicJobProcessor.createOptimizedJobTask" }
+  - { id: "BR-GF-WORKER-004", description: "Executor phải đọc lại JobConfig theo jobName ngay trước khi chạy; job không tồn tại hoặc inactive thì bỏ qua execution.", cornerstone: true, enforcement_point: "DynamicJobProcessor.executeJobSafely" }
+  - { id: "BR-GF-WORKER-005", description: "Execution history bắt buộc đi OPEN → PROCESSING theo attempt → PROCESSED hoặc ERROR; mỗi lần chạy dùng một ScheduleHistory record.", cornerstone: true, enforcement_point: "GenericHttpJobExecutorServiceImpl" }
+  - { id: "BR-GF-WORKER-006", description: "Manual retry dùng job_config.retry_count, fallback 5 nếu null, wait 1000ms nhân số attempt trước lần retry tiếp theo; hết retry thì ghi ERROR và throw InternalServerException.", cornerstone: true, enforcement_point: "GenericHttpJobExecutorServiceImpl.executeWithRetry" }
+  - { id: "BR-GF-WORKER-007", description: "Generic HTTP client resolve giá trị runtime từ Spring Environment trong baseUrl/header, nối baseUrl với endpointPath, parse request_headers JSON và mask header nhạy cảm trước khi log/lưu request info.", cornerstone: true, enforcement_point: "GenericHttpClientFactory" }
+  - { id: "BR-GF-WORKER-008", description: "HTTP 503 được convert thành ServiceUnavailableException để circuit breaker ghi nhận; các HTTP lỗi khác được rethrow và log là không trigger circuit breaker.", cornerstone: true, enforcement_point: "GenericHttpClientFactory.executeHttpRequestInternal" }
+  - { id: "BR-GF-WORKER-009", description: "Emergency disable-all set mọi JobConfig inactive, cancel toàn bộ scheduled tasks và shutdown mọi job executors; emergency enable-all set active và reload jobs.", cornerstone: true, enforcement_point: "JobConfigController + DynamicJobProcessor.disableAllJobs/enableAllJobs" }
+  - { id: "BR-GF-WORKER-010", description: "Custom Flyway runner chỉ seed/update job_config sau ApplicationReadyEvent; DDL bảng do Hibernate ddl-auto update theo default schema.", cornerstone: true, enforcement_point: "FlywayConfig + application.yaml + db/migration/V1.0.*" }
+  - { id: "BR-GF-WORKER-011", description: "Fail-fast strategy cho high-frequency jobs: ERP batch jobs (10-15s cycle) dùng retry_count=1 để tránh overlap execution; booking auto-cancel (1 min cycle) dùng retry_count=2. Optimized trong V1.0.4 migration — high-frequency cần low retry vì next execution chạy sớm.", cornerstone: true, enforcement_point: "db/migration/V1.0.4__optimize_retry_counts.sql + GenericHttpJobExecutorServiceImpl.executeWithRetry" }
+
+workflows:
+  - name: "ErpInboundPollJob"
+    type: CRON_HTTP_JOB
+    description: "Cron-driven HTTP job poll batch inbound message của gf-erp-agent. Cron expression và timeout/retry lưu trong JobConfig (target_service=gf-erp-agent). Tick chu kỳ ~10–15s theo ghi chú integration; semaphore worker.job.max-concurrent-jobs giới hạn job đồng thời (BR-003)."
+    steps:
+      - step: 1
+        service: "gf-worker"
+        action: "Triggered by Spring TaskScheduler cron (cron_expression từ JobConfig, timezone Asia/Ho_Chi_Minh) — fire khi is_active=true; executor reload JobConfig theo jobName trước mỗi run (BR-004)"
+      - step: 2
+        service: "gf-worker"
+        action: "Tạo ScheduleHistory(status=OPEN), build HTTP request với headers đã mask (BR-005, BR-007)"
+      - step: 3
+        service: "gf-worker → gf-erp-agent"
+        action: "POST /protected/v1/batch/inbound (timeout_seconds, retry_count theo JobConfig; HTTP 503 trip circuit breaker — BR-006, BR-008)"
+      - step: 4
+        service: "gf-worker"
+        action: "Cập nhật ScheduleHistory PROCESSED (response_body truncate 5000) hoặc ERROR (error_message truncate 2000) sau khi hết retry"
+
+  - name: "ErpOutboundPollJob"
+    type: CRON_HTTP_JOB
+    description: "Cron-driven HTTP job poll batch outbound message của gf-erp-agent (publish pending OutboundMessage sang ERP Kafka). Cron expression lưu trong JobConfig (target_service=gf-erp-agent). Tick chu kỳ ~10–15s."
+    steps:
+      - step: 1
+        service: "gf-worker"
+        action: "Triggered by Spring TaskScheduler cron (cron_expression từ JobConfig, timezone Asia/Ho_Chi_Minh)"
+      - step: 2
+        service: "gf-worker"
+        action: "Tạo ScheduleHistory(status=OPEN), build HTTP request"
+      - step: 3
+        service: "gf-worker → gf-erp-agent"
+        action: "POST /protected/v1/batch/outbound"
+      - step: 4
+        service: "gf-worker"
+        action: "Cập nhật ScheduleHistory PROCESSED hoặc ERROR theo response/exception"
+
+  - name: "ErpInboundNotificationJob"
+    type: CRON_HTTP_JOB
+    description: "Cron-driven HTTP job dispatch notification cho inbound message đã COMPLETED nhưng is_notified=false. Cron expression lưu trong JobConfig (target_service=gf-erp-agent)."
+    steps:
+      - step: 1
+        service: "gf-worker"
+        action: "Triggered by Spring TaskScheduler cron (cron_expression từ JobConfig, timezone Asia/Ho_Chi_Minh)"
+      - step: 2
+        service: "gf-worker"
+        action: "Tạo ScheduleHistory(status=OPEN), build HTTP request"
+      - step: 3
+        service: "gf-worker → gf-erp-agent"
+        action: "POST /protected/v1/batch/inbound-notification"
+      - step: 4
+        service: "gf-worker"
+        action: "Cập nhật ScheduleHistory PROCESSED hoặc ERROR"
+
+  - name: "ErpOutboundNotificationJob"
+    type: CRON_HTTP_JOB
+    description: "Cron-driven HTTP job dispatch notification cho outbound message đã COMPLETED nhưng is_notified=false. Cron expression lưu trong JobConfig (target_service=gf-erp-agent)."
+    steps:
+      - step: 1
+        service: "gf-worker"
+        action: "Triggered by Spring TaskScheduler cron (cron_expression từ JobConfig, timezone Asia/Ho_Chi_Minh)"
+      - step: 2
+        service: "gf-worker"
+        action: "Tạo ScheduleHistory(status=OPEN), build HTTP request"
+      - step: 3
+        service: "gf-worker → gf-erp-agent"
+        action: "POST /protected/v1/batch/outbound-notification"
+      - step: 4
+        service: "gf-worker"
+        action: "Cập nhật ScheduleHistory PROCESSED hoặc ERROR"
+
+  - name: "BookingAutoCancelJob"
+    type: CRON_HTTP_JOB
+    description: "Cron-driven HTTP job kích BookingAutoCancelScheduler ở gf-sales (auto-cancel booking quá thời hạn confirm). Cron expression lưu trong JobConfig (target_service=gf-sales). Tick chu kỳ ~1m."
+    steps:
+      - step: 1
+        service: "gf-worker"
+        action: "Triggered by Spring TaskScheduler cron (cron_expression từ JobConfig, timezone Asia/Ho_Chi_Minh)"
+      - step: 2
+        service: "gf-worker"
+        action: "Tạo ScheduleHistory(status=OPEN), build HTTP request"
+      - step: 3
+        service: "gf-worker → gf-sales"
+        action: "POST /protected/v1/bookings/auto-cancel"
+      - step: 4
+        service: "gf-worker"
+        action: "Cập nhật ScheduleHistory PROCESSED hoặc ERROR"
+
+
+integrations:
+  inbound:
+    - type: API
+      source: "Admin / operator"
+      purpose: "/protected/v1/jobs/* — CRUD job config, reload, emergency switch"
+
+  outbound:
+    - type: API
+      target: "gf-erp-agent"
+      purpose: "POST /protected/v1/batch/{inbound,outbound,inbound-notification,outbound-notification} — ERP poll inbound/outbound + notification batch (10–15s cycle)"
+    - type: API
+      target: "gf-sales"
+      purpose: "POST /protected/v1/bookings/auto-cancel — trigger BookingAutoCancelScheduler (1m cycle)"
+    - type: API
+      target: "gf-policy-agent"
+      purpose: "POST /protected/v1/batch/inbound — policy ERP polling (currently DISABLED V1.0.3)"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho job_config và schedule_history trong schema dev_gf_worker mặc định.", config_ref: "spring.datasource.*, spring.jpa.properties.hibernate.default_schema, DB_SCHEMA" }
+  - { name: "Flyway", type: "migration", purpose: "Programmatic migration runner seed/update dữ liệu job_config sau ApplicationReadyEvent.", config_ref: "FlywayConfig, spring.flyway.*, src/main/resources/db/migration/V1.0.*" }
+  - { name: "Spring Scheduler + VirtualThreadTaskScheduler", type: "scheduler", purpose: "Schedule cron DB-driven, sync active jobs định kỳ và handoff execution sang virtual threads.", config_ref: "worker.schedule.*, worker.job.max-concurrent-jobs" }
+  - { name: "RestClient + Apache HttpClient", type: "http_client", purpose: "Thực thi HTTP request tới target service với connection pool và per-job read timeout.", config_ref: "worker.http-client.*, GenericHttpClientFactory, HttpClientPoolConfig" }
+  - { name: "Resilience4j", type: "resilience", purpose: "Bọc HTTP call bằng Bulkhead và CircuitBreaker cho lỗi hạ tầng như 503, connection timeout hoặc socket timeout.", config_ref: "resilience4j.circuitbreaker.*, resilience4j.bulkhead.*, GenericHttpClientFactory" }
+  - { name: "Spring Environment", type: "config", purpose: "Resolve giá trị runtime trong baseUrl và request_headers từ application properties/env.", config_ref: "GenericHttpClientFactory, application.yaml" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Bảo vệ protected admin API và cung cấp auditor qua SecurityUtils, fallback system.", config_ref: "build.gradle, JpaConfig" }
+  - { name: "Actuator + OTLP", type: "observability", purpose: "Expose health/info/metrics và tracing theo profile otlp.", config_ref: "application.yaml, build.gradle" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho REST controllers.", config_ref: "springdoc-openapi-starter-webmvc-ui:2.8.9" }
+
+change_log:
+  - { date: "2026-05-18", summary: "BR review fix: thêm BR-011 (Resilience4j CB config: failure rate 70%, slow call 80%/10s, window 20, wait 30s, bulkhead 100 concurrent), BR-012 (fail-fast strategy: high-freq=1 retry, medium-freq=2). 10/10 BR hiện tại đều chính xác.", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Thêm 5 workflow entries CRON_HTTP_JOB (ErpInboundPollJob, ErpOutboundPollJob, ErpInboundNotificationJob, ErpOutboundNotificationJob, BookingAutoCancelJob) — cron driven HTTP outbound.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Sync KG với source: (1) BR-001 sửa sync loop default 30s → 60s (worker.schedule.check-interval:60000, initial delay 10s); (2) schedule-enable/disable request schema clarify dùng @RequestParam(\"jobName\") query param không phải body; (3) sửa response schemas cho 6 endpoints — job-update returns JobConfigEntity, job-delete + jobs-reload trả Void empty body, schedule-*/emergency-* trả String message; (4) bổ sung SpringDoc OpenAPI vào dependencies.", author: "Architecture Authority" }
+  - { date: "2026-05-14", summary: "Sync apis với source: thêm status/active_callers/replaced_by cho 9 entries theo RULE-08; toàn bộ /protected/v1/jobs/* → status=internal-only, callers=[admin-operator] (x-api-key, không expose qua graph).", author: "Architecture Authority" }

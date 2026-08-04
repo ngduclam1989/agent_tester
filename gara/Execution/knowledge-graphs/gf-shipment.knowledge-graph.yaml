@@ -1,0 +1,234 @@
+# Knowledge Graph — gf-shipment
+
+boundary: "gf-shipment"
+version: 4
+last_updated: "2026-05-19"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý lệnh vận chuyển nội bộ của garage, gồm shipment order root, line PO/SO, attachment đa hình, cập nhật stage/status và callback gf-purchase khi PO line đã đóng, đủ hàng và là dòng cuối."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + MapStruct + RestClient HttpExchange", data_store: "PostgreSQL" }
+  epics: []
+  features: []
+  integration_ref: ""
+  integration_consumers: ["gf-erp-agent"]
+
+apis:
+  # =====================================================================
+  # Internal SVC-to-SVC (/protected/v1) — InternalShipmentOrderController.
+  # Không có public v1/v2/v3, không method/class nào annotated @Deprecated.
+  # =====================================================================
+  - name: "create-shipment-order"
+    path: "/protected/v1/shipment-orders"
+    method: POST
+    purpose: "Create shipment order with all lines + attachments (internal-only)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        id: "long (NotNull)"
+        code: "string (NotBlank)"
+        type: "ShipmentOrderType (RECEIPT | DELIVERY)"
+        locationId: "long (NotNull)"
+        note: string
+        status: "ShipmentOrderStatus (OPEN | CLOSED | WAIT_TO_CONFIRM) (NotNull)"
+        shipmentOrderLines: array
+        shipmentOrderLinePOs: array
+        shipmentOrderLineSOs: array
+        attachments: array
+        isDeleted: boolean
+    response:
+      schema: {}
+      note: "ApiResponse<String> wrapper, body empty (ResponseEntity.ok().build())"
+
+  - name: "update-shipment-status"
+    path: "/protected/v1/shipment-orders/status"
+    method: POST
+    purpose: "Update stage/status — may cascade trigger PO status update on gf-purchase when line CLOSED + isEnough + isLast"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        shipmentOrderCode: string
+        type: "ShipmentOrderType (RECEIPT | DELIVERY)"
+        status: "ShipmentOrderStatus (OPEN | CLOSED | WAIT_TO_CONFIRM)"
+    response:
+      schema: {}
+      note: "ApiResponse<String> wrapper, body empty (ResponseEntity.ok().build())"
+
+events:
+  produces: []
+  consumes: []
+
+entities:
+  - name: "ShipmentOrder"
+    type: "aggregate_root"
+    description: "Lệnh vận chuyển nội bộ, sở hữu type RECEIPT/DELIVERY, status root, location và các collection line/attachment trong domain aggregate."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true }
+      - { name: "type", type: "ShipmentOrderType", required: true, constraints: ["RECEIPT | DELIVERY"] }
+      - { name: "location_id", type: "BIGINT", required: true }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "status", type: "ShipmentOrderStatus", required: true, constraints: ["OPEN | CLOSED | WAIT_TO_CONFIRM"] }
+      - { name: "is_deleted", type: "BOOLEAN", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "ShipmentOrderLine", type: "one_to_many", description: "Một shipment order có nhiều line qua shipment_order_id logic." }
+      - { target: "ShipmentOrderLinePO", type: "one_to_many", description: "Aggregate giữ danh sách PO line, được load qua shipment order line ids." }
+      - { target: "ShipmentOrderLineSO", type: "one_to_many", description: "Aggregate giữ danh sách SO line, được load qua shipment order line ids." }
+      - { target: "ShipmentAttachment", type: "one_to_many", description: "Attachment root được flatten chung vào bảng shipment_attachments theo type/source_id." }
+    invariants:
+      - "id do caller/upstream cung cấp; entity không khai báo @GeneratedValue."
+      - "Lookup cập nhật stage/status dùng code qua JpaShipmentOrderRepository.findByCode, không kèm tenant scope."
+      - "WAIT_TO_CONFIRM là trạng thái root; source không map trạng thái này xuống PO/SO line."
+      - "is_deleted là soft delete; source không thấy hard delete nghiệp vụ cho aggregate."
+
+  - name: "ShipmentOrderLine"
+    type: "entity"
+    description: "Dòng vận chuyển liên kết logic với ShipmentOrder và đóng vai trò trung gian để load PO/SO line."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "shipment_order_id", type: "BIGINT", required: true }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "is_last", type: "BOOLEAN", required: false }
+      - { name: "is_deleted", type: "BOOLEAN", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "ShipmentOrder", type: "logical_reference", description: "shipment_order_id tham chiếu logic tới shipment_order.id; source không khai báo FK vật lý." }
+      - { target: "ShipmentAttachment", type: "one_to_many", description: "Attachment line được flatten chung vào bảng shipment_attachments theo type/source_id." }
+    invariants:
+      - "shipment_order_id bắt buộc nhưng không có FK vật lý trong JPA entity hoặc migration source."
+      - "Repository load line bằng findByShipmentOrderId."
+
+  - name: "ShipmentOrderLinePO"
+    type: "entity"
+    description: "Dòng vận chuyển cho purchase order, lưu snapshot tenant/carrier và trạng thái OPEN/CLOSED để callback delivered sang gf-purchase khi đủ điều kiện."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "shipment_order_line_id", type: "BIGINT", required: true }
+      - { name: "purchase_order_id", type: "BIGINT", required: false }
+      - { name: "purchase_order_code", type: "VARCHAR(255)", required: true }
+      - { name: "snapshot_tenant_id", type: "BIGINT", required: false }
+      - { name: "snapshot_tenant_name", type: "VARCHAR(255)", required: false }
+      - { name: "snapshot_tenant_address", type: "VARCHAR(255)", required: false }
+      - { name: "snapshot_tenant_phone_number", type: "VARCHAR(255)", required: false }
+      - { name: "carrier_id", type: "BIGINT", required: false }
+      - { name: "carrier_name", type: "VARCHAR(255)", required: false }
+      - { name: "carrier_route", type: "VARCHAR(255)", required: false }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "is_last", type: "BOOLEAN", required: false }
+      - { name: "status", type: "ShipmentOrderLinePOStatus", required: true, constraints: ["OPEN | CLOSED"] }
+      - { name: "is_deleted", type: "BOOLEAN", required: false }
+      - { name: "is_enough", type: "BOOLEAN", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "ShipmentOrderLine", type: "logical_reference", description: "shipment_order_line_id tham chiếu logic tới shipment_order_line.id; source không khai báo FK vật lý." }
+      - { target: "gf-purchase.PurchaseOrder", type: "external_reference", description: "purchase_order_code dùng để callback gf-purchase cập nhật trạng thái DELIVERED." }
+      - { target: "ShipmentAttachment", type: "one_to_many", description: "Attachment PO line được flatten chung vào bảng shipment_attachments theo type/source_id." }
+    invariants:
+      - "Chỉ update non-deleted PO line khi shipment type không phải RECEIPT."
+      - "Khi status mapped là CLOSED, is_enough=true và is_last=true thì purchase_order_code được gom để callback gf-purchase status DELIVERED."
+      - "WAIT_TO_CONFIRM không map được sang ShipmentOrderLinePOStatus nên không cập nhật PO line."
+
+  - name: "ShipmentOrderLineSO"
+    type: "entity"
+    description: "Dòng vận chuyển cho sales/service order, lưu snapshot tenant và trạng thái OPEN/CLOSED theo luồng RECEIPT."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "shipment_order_line_id", type: "BIGINT", required: true }
+      - { name: "sales_order_id", type: "BIGINT", required: false }
+      - { name: "sales_order_code", type: "VARCHAR(255)", required: true }
+      - { name: "snapshot_tenant_id", type: "BIGINT", required: false }
+      - { name: "snapshot_tenant_name", type: "VARCHAR(255)", required: false }
+      - { name: "snapshot_tenant_address", type: "VARCHAR(255)", required: false }
+      - { name: "snapshot_tenant_phone_number", type: "VARCHAR(255)", required: false }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "is_last", type: "BOOLEAN", required: false }
+      - { name: "status", type: "ShipmentOrderLineSOStatus", required: true, constraints: ["OPEN | CLOSED"] }
+      - { name: "is_deleted", type: "BOOLEAN", required: false }
+      - { name: "is_enough", type: "BOOLEAN", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "ShipmentOrderLine", type: "logical_reference", description: "shipment_order_line_id tham chiếu logic tới shipment_order_line.id; source không khai báo FK vật lý." }
+      - { target: "gf-sales.ServiceOrder", type: "external_reference", description: "sales_order_id/sales_order_code là tham chiếu ngoài boundary gf-shipment." }
+      - { target: "ShipmentAttachment", type: "one_to_many", description: "Attachment SO line được flatten chung vào bảng shipment_attachments theo type/source_id." }
+    invariants:
+      - "Chỉ update non-deleted SO line khi shipment type là RECEIPT."
+      - "WAIT_TO_CONFIRM không map được sang ShipmentOrderLineSOStatus nên không cập nhật SO line."
+      - "gf-shipment không trực tiếp cập nhật lifecycle của gf-sales service order."
+
+  - name: "ShipmentAttachment"
+    type: "entity"
+    description: "Attachment đa hình dùng chung cho root, line, PO line và SO line qua type/source_id."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "type", type: "ShipmentOrderAttachmentType", required: true, constraints: ["SHIPMENT_ORDER_ATTACHMENTS | SHIPMENT_ORDER_LINE_ATTACHMENTS | SHIPMENT_ORDER_LINE_SO_ATTACHMENTS | SHIPMENT_ORDER_LINE_PO_ATTACHMENTS"] }
+      - { name: "url", type: "VARCHAR(255)", required: true }
+      - { name: "source_id", type: "BIGINT", required: true }
+      - { name: "is_deleted", type: "BOOLEAN", required: false }
+      - { name: "created_by", type: "VARCHAR(255)", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_by", type: "VARCHAR(255)", required: false }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "ShipmentOrder|ShipmentOrderLine|ShipmentOrderLinePO|ShipmentOrderLineSO", type: "polymorphic_reference", description: "type/source_id xác định nguồn attachment; source không khai báo FK vật lý." }
+    invariants:
+      - "Attachment từ root, line, PO line và SO line được flatten khi save aggregate."
+      - "Repository findByCode hiện không load attachment trở lại aggregate; source trả List.of() cho root attachments và entity mapper ignore line attachments."
+
+business_rules:
+  - { id: "BR-GF-SHIPMENT-001", description: "Tạo shipment order yêu cầu id, code, locationId và status; nested line/attachment DTO yêu cầu id, source/link id, code/status hoặc url theo annotation validation.", cornerstone: true, enforcement_point: "ShipmentOrderRequest + ShipmentOrderLineRequest + ShipmentOrderLinePORequest + ShipmentOrderLineSORequest + ShipmentAttachmentRequest" }
+  - { id: "BR-GF-SHIPMENT-002", description: "Trước khi tạo aggregate, service normalize các list con null thành empty list để save root, line, PO line, SO line và attachment.", cornerstone: true, enforcement_point: "ShipmentOrderService.preValidate + createShipmentOrder" }
+  - { id: "BR-GF-SHIPMENT-003", description: "Save aggregate ghi header, shipment lines, PO lines, SO lines và toàn bộ attachment đã flatten; không thấy outbox/event trong source.", cornerstone: true, enforcement_point: "ShipmentOrderRepositoryImpl.save" }
+  - { id: "BR-GF-SHIPMENT-004", description: "Cập nhật stage/status load shipment order theo code, set status/type ở root rồi propagate xuống line theo type.", cornerstone: true, enforcement_point: "ShipmentOrderService.updateStageShipmentOrder + ShipmentOrderRepositoryImpl.findByCode" }
+  - { id: "BR-GF-SHIPMENT-005", description: "Nếu type là RECEIPT, status OPEN/CLOSED được map theo enum name sang SO line status và chỉ cập nhật SO line chưa bị soft delete.", cornerstone: true, enforcement_point: "ShipmentOrderService.mapToSOStatus + updateSOStatuses" }
+  - { id: "BR-GF-SHIPMENT-006", description: "Nếu type không phải RECEIPT, status OPEN/CLOSED được map sang PO line status và chỉ cập nhật PO line chưa bị soft delete.", cornerstone: true, enforcement_point: "ShipmentOrderService.mapToPOStatus + updatePOStatusesAndNotify" }
+  - { id: "BR-GF-SHIPMENT-007", description: "PO line CLOSED, isEnough=true và isLast=true kích hoạt callback gf-purchase cập nhật các purchase order code sang DELIVERED trong cùng transaction service.", cornerstone: true, enforcement_point: "ShipmentOrderService.updatePOStatusesAndNotify + GfPurchaseClient.updateStatusDelivered" }
+  - { id: "BR-GF-SHIPMENT-008", description: "WAIT_TO_CONFIRM chỉ là root status; source log warning và không update PO/SO line vì line enum chỉ có OPEN/CLOSED.", cornerstone: true, enforcement_point: "ShipmentOrderService.mapToPOStatus + mapToSOStatus" }
+  - { id: "BR-GF-SHIPMENT-009", description: "Data isolation không được enforce bằng tenant_id trên root/line/attachment; snapshotTenantId trên PO/SO line chỉ là snapshot nghiệp vụ.", cornerstone: true, enforcement_point: "ShipmentOrderEntity + ShipmentOrderLineEntity + ShipmentAttachmentEntity + gf-shipment-data-model.md" }
+  - { id: "BR-GF-SHIPMENT-010", description: "gf-purchase callback (updateStatusDelivered) chạy trong cùng @Transactional với update PO line status. HTTP failure → ExternalServiceException → rollback toàn bộ local status update. Rủi ro consistency: nếu callback thành công nhưng local commit fail → gf-purchase đã DELIVERED nhưng shipment PO line vẫn chưa CLOSED.", cornerstone: true, enforcement_point: "ShipmentOrderService.updateStageShipmentOrder (@Transactional) + GfPurchaseClient.updateStatusDelivered" }
+  - { id: "BR-GF-SHIPMENT-011", description: "ShipmentOrder.id do caller cung cấp (request @NotNull Long id, entity không có @GeneratedValue); caller (gf-erp-agent) phải đảm bảo uniqueness — duplicate id gây DB constraint violation.", cornerstone: true, enforcement_point: "ShipmentOrderRequest.id @NotNull + ShipmentOrderEntity (no @GeneratedValue)" }
+  - { id: "BR-GF-SHIPMENT-012", description: "findByCode hydrate đầy đủ lines + PO lines + SO lines nhưng KHÔNG load attachments — root attachments trả List.of(), line attachments ignored. Update status path không cần attachments.", cornerstone: false, enforcement_point: "ShipmentOrderRepositoryImpl.findByCode" }
+
+
+workflows: []
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-erp-agent"
+      purpose: "ERP-driven shipment lifecycle — POST /protected/v1/shipment-orders (create), POST /protected/v1/shipment-orders/status (update)"
+
+  outbound:
+    - type: API
+      target: "gf-purchase"
+      purpose: "PUT /protected/v1/purchase-orders/status — notify PO DELIVERED when shipment line CLOSED + isEnough + isLast"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "Lưu shipment_order, shipment_order_line, shipment_order_line_po, shipment_order_line_so và shipment_attachments trong schema dev_gf_shipment mặc định.", config_ref: "spring.datasource.*, spring.jpa.properties.hibernate.default_schema, DB_SCHEMA" }
+  - { name: "gf-purchase RestClient", type: "sync_rest", purpose: "Gọi protected API của gf-purchase để set purchase order status DELIVERED.", config_ref: "gf-purchase-service.url, internal-service.api-key" }
+  - { name: "spring-security-starter + OAuth2 resource server", type: "auth", purpose: "Bảo vệ protected endpoints qua OAuth2 resource server (JWT) và forward Authorization header hiện tại sang gf-purchase. LƯU Ý: internal-service.api-key KHÔNG dùng cho inbound — chỉ được set làm outbound header khi call gf-purchase (HttpClientConfig.java:54).", config_ref: "spring-boot-starter-oauth2-resource-server, spring-security-starter, internal-service.api-key" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho REST controllers.", config_ref: "springdoc-openapi-starter-webmvc-ui:2.8.9" }
+  - { name: "Actuator + OTLP", type: "observability", purpose: "Expose health/info/metrics/prometheus và tracing/log pattern có traceId/spanId/userId/duration.", config_ref: "management.*, spring.profiles.include=otlp, logging.pattern.console" }
+
+change_log:
+  - { date: "2026-05-19", summary: "Cross-review với INTEG-EXT-gf-shipment.md: sửa integration_ref sai (D5), thêm integration_consumers (D5); xoá gf-purchase khỏi integrations.inbound — gf-purchase không gọi gf-shipment, chỉ gf-erp-agent (D8/D2 — confirmed by user + active_callers).", author: "Architecture Authority" }
+  - { date: "2026-05-18", summary: "BR review fix: thêm BR-010 (callback trong @Transactional — consistency risk), BR-011 (caller-provided ID, no @GeneratedValue), BR-012 (findByCode không load attachments). 9/9 BR hiện tại đều chính xác.", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Section structure verified against canonical BE template (no structural change needed).", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Sync KG với source: (1) create-shipment-order request schema sửa thành 11 fields đúng (id NotNull, code NotBlank, type, locationId NotNull, note, status NotNull, 3 distinct arrays shipmentOrderLines/shipmentOrderLinePOs/shipmentOrderLineSOs, attachments, isDeleted) + response empty body; (2) update-shipment-status xóa ghost field `stage`, sửa shipmentOrderCode camelCase, thêm type field, response empty body; (3) dependencies sửa auth note — internal-service.api-key chỉ dùng outbound header tới gf-purchase, không bảo vệ inbound (inbound qua OAuth2 JWT); (4) bổ sung SpringDoc OpenAPI vào dependencies.", author: "Architecture Authority" }
+  - { date: "2026-05-14", summary: "Sync apis với source: thêm status/active_callers/replaced_by cho 2 entries theo RULE-08; cả 2 /protected/v1/shipment-orders + /status → status=internal-only, callers=[gf-erp-agent] (verify từ gf-erp-agent/.../GfShipmentClient.java).", author: "Architecture Authority" }

@@ -1,0 +1,309 @@
+# Knowledge Graph — gf-accounting
+
+boundary: "gf-accounting"
+version: 6
+last_updated: "2026-05-18"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý quyết toán service order cho garage, gồm settlement customer/insurance, tài liệu quyết toán, sinh mã settlement, in/xuất chứng từ và bàn giao trạng thái settle/reopen với gf-sales."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Kafka + common-printing", data_store: "PostgreSQL + Redis" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/integrations/INTEG-BFF-gf-accounting.md"
+  integration_consumers: ["agg-garage-graph"]
+
+apis:
+  - name: "create-settlements"
+    path: "/api/v1/service-orders/{id}/settlements"
+    method: POST
+    purpose: "Create settlement(s) for a service-order — CUSTOMER or CUSTOMER+INSURANCE pair"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        settlement_type: string
+        notes: string
+        documents: array
+    response:
+      schema:
+        customerSettlement: "SettlementResponse object"
+        insuranceSettlement: "SettlementResponse object (null nếu không có insurance payer)"
+
+  - name: "update-settlement"
+    path: "/api/v1/settlements/{code}"
+    method: PUT
+    purpose: "Update notes + documents on existing settlement"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+        notes: string
+        documents: array
+    response:
+      schema:
+        code: string
+
+  - name: "cancel-settlement"
+    path: "/api/v1/settlements/{code}/cancel"
+    method: POST
+    purpose: "Cancel settlement + reopen SO via gf-sales"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      path_params:
+        code: string
+    response:
+      schema:
+        serviceOrderCode: "String — code của SO vừa được reopen"
+
+  - name: "get-settlement"
+    path: "/api/v1/settlements/{code}"
+    method: GET
+    purpose: "Get settlement by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        settlement: object
+
+  - name: "search-settlements"
+    path: "/api/v1/settlements/search"
+    method: POST
+    purpose: "Paginated settlement search"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+        pagination: object
+    response:
+      schema:
+        items: array
+        total: integer
+
+  - name: "print-preview"
+    path: "/api/v1/settlements/{id}/print-preview"
+    method: GET
+    purpose: "HTML preview of settlement document"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        html: string
+
+  - name: "export-pdf"
+    path: "/api/v1/settlements/{id}/export-pdf"
+    method: GET
+    purpose: "PDF export of settlement document"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        binary: stream
+
+  - name: "export-image"
+    path: "/api/v1/settlements/{id}/export-image"
+    method: GET
+    purpose: "PNG hoặc JPG export of settlement document"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        format: "ImageFormat (query, optional, default PNG — PNG|JPG)"
+    response:
+      schema:
+        binary: stream
+
+events:
+  produces: []
+  # Note: outbox infrastructure exists (OutboxEvent aggregate, OutboxProcessor, OutboxEventListener)
+  # but no business call site currently calls OutboxEvent.create(...) for settlement lifecycle.
+  # `kafka.topics.accounting-events: DEV-ACCOUNTING-EVENTS` is configured in application.yml but unused at runtime.
+  # Per source-of-truth policy, no producer entry until publish call site exists.
+
+  consumes: []
+
+
+entities:
+  - name: "Settlement"
+    type: "aggregate_root"
+    description: "Phiếu quyết toán của một service order, lưu snapshot customer, amount theo payer CUSTOMER/INSURANCE và trạng thái DRAFT/CANCEL."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "service_order_code", type: "VARCHAR(50)", required: true }
+      - { name: "settlement_type", type: "SettlementType", required: true, constraints: ["CUSTOMER | INSURANCE"] }
+      - { name: "settlement_status", type: "SettlementStatus", required: true, constraints: ["DRAFT | CANCEL"] }
+      - { name: "related_settlement_code", type: "VARCHAR(50)", required: false }
+      - { name: "customer_name", type: "VARCHAR(255)", required: false }
+      - { name: "customer_phone", type: "VARCHAR(50)", required: false }
+      - { name: "total_service_amount", type: "NUMERIC(15,2)", required: true }
+      - { name: "total_parts_amount", type: "NUMERIC(15,2)", required: true }
+      - { name: "discount_amount", type: "NUMERIC(15,2)", required: true }
+      - { name: "tax_amount", type: "NUMERIC(15,2)", required: true }
+      - { name: "final_amount", type: "NUMERIC(15,2)", required: true }
+      - { name: "notes", type: "TEXT", required: false }
+      - { name: "settled_at", type: "TIMESTAMP", required: true }
+      - { name: "settled_by", type: "VARCHAR(100)", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: false }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_at", type: "TIMESTAMP", required: false }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "SettlementDocument", type: "one_to_many", description: "Một settlement có nhiều document qua settlement_documents.settlement_id; source không khai báo foreign key vật lý." }
+      - { target: "Settlement", type: "logical_reference", description: "related_settlement_code liên kết cặp CUSTOMER/INSURANCE khi service order có cả hai payer." }
+      - { target: "gf-sales ServiceOrder", type: "logical_reference", description: "service_order_code trỏ tới service order do gf-sales làm source of truth." }
+    invariants:
+      - "Active settlement là settlement có status khác CANCEL; mỗi serviceOrderCode chỉ có tối đa một active settlement cho mỗi SettlementType."
+      - "Settlement tạo mới luôn lấy snapshot service order từ gf-sales trước khi ghi local."
+      - "final_amount NHẬN trực tiếp từ client request (CreateSettlementRequest.customerFinalAmount / insuranceFinalAmount) — không compute server-side (xem BR-GF-ACCOUNTING-006)."
+      - "Cancel một settlement sẽ cancel toàn bộ settlements cùng service_order_code và gọi gf-sales chuyển trạng thái của service order từ SETTLED về COMPLETED."
+
+  - name: "SettlementDocument"
+    type: "entity"
+    description: "Metadata tài liệu gắn với settlement, lưu URL/file info và soft-delete bằng is_deleted."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "settlement_id", type: "BIGINT", required: true }
+      - { name: "document_type", type: "SettlementDocumentType", required: true, constraints: ["HANDOVER | RECEPTION | QUOTATION | REPAIR_ORDER | IMAGE | SETTLEMENT | OTHER"] }
+      - { name: "document_url", type: "VARCHAR(500)", required: true }
+      - { name: "file_name", type: "VARCHAR(200)", required: false }
+      - { name: "file_size", type: "BIGINT", required: false }
+      - { name: "mime_type", type: "VARCHAR(100)", required: false }
+      - { name: "description", type: "VARCHAR(500)", required: false }
+      - { name: "is_deleted", type: "BOOLEAN", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: false }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_at", type: "TIMESTAMP", required: false }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "Settlement", type: "logical_reference", description: "settlement_id trỏ tới settlement_records.id theo quy ước ứng dụng." }
+    invariants:
+      - "document_url là identity khi sync document: URL thiếu trong request sẽ bị soft delete, URL mới sẽ insert."
+      - "Nếu request không truyền document_type thì code mặc định là SETTLEMENT."
+      - "Repository chỉ đọc document có is_deleted=false trong tenant hiện tại."
+
+  - name: "TenantSequence"
+    type: "entity"
+    description: "Counter sinh mã settlement theo sequence_name + sequence_date (ngày của code); unique constraint vật lý uk_sequences_name_date trên (sequence_name, sequence_date)."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "sequence_name", type: "VARCHAR(50)", required: true }
+      - { name: "sequence_date", type: "LocalDate", required: true, constraints: ["part of unique constraint uk_sequences_name_date(sequence_name, sequence_date)"] }
+      - { name: "current_value", type: "BIGINT", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+    relationships: []
+    invariants:
+      - "Unique theo (sequence_name, sequence_date) — uk_sequences_name_date; KHÔNG có tenant_id column trong bảng này."
+      - "generateSettlementCode dùng timezone Asia/Ho_Chi_Minh và format SET-yyyyMMdd-00001."
+      - "TenantSequenceJpaRepository.findBySequenceNameAndSequenceDate(sequenceName, sequenceDate) dùng @Lock(PESSIMISTIC_WRITE) khi lấy row sequence."
+
+  - name: "OutboxEvent"
+    type: "aggregate_root"
+    description: "Bảng outbox generic cho Kafka relay bền vững, được scheduled processor và after-commit listener publish khi có OutboxEventCreatedEvent."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "aggregate_type", type: "VARCHAR(100)", required: true }
+      - { name: "aggregate_id", type: "VARCHAR(100)", required: true }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "payload", type: "TEXT", required: true }
+      - { name: "topic", type: "VARCHAR(200)", required: false }
+      - { name: "status", type: "OutboxStatus", required: true, constraints: ["PENDING | PROCESSING | SENT | FAILED"] }
+      - { name: "retry_count", type: "INTEGER", required: false }
+      - { name: "error_message", type: "TEXT", required: false }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: false }
+    relationships: []
+    invariants:
+      - "OutboxProcessor lấy Redis lock gf-accounting-outbox-processor trước khi xử lý pending/stale events."
+      - "PENDING hoặc stale PROCESSING được publish lại nếu retry_count nhỏ hơn max retries."
+      - "OutboxEvent.markAsFailed chuyển FAILED khi retry_count đạt 3."
+      - "Source hiện chỉ thấy hạ tầng outbox; chưa thấy code settlement tạo OutboxEvent domain cụ thể."
+
+  - name: "InboxEvent"
+    type: "aggregate_root"
+    description: "Bảng inbox generic chống xử lý trùng inbound event theo event_id."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "event_id", type: "VARCHAR(100)", required: true }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: false }
+    relationships: []
+    invariants:
+      - "InboxService kiểm tra existsByEventId trước khi chạy processor."
+      - "Source hiện không có @KafkaListener hoặc consumer gọi InboxService."
+      - "Entity chưa khai báo unique constraint cho event_id dù event_id được dùng làm duplicate key."
+
+business_rules:
+  - { id: "BR-GF-ACCOUNTING-001", description: "Tạo settlement phải gọi gf-sales for-settlement để lấy snapshot trước khi ghi settlement local.", cornerstone: true, enforcement_point: "SettlementService.createSettlement + GfSalesClient.getForSettlement" }
+  - { id: "BR-GF-ACCOUNTING-002", description: "Nếu service order có cả customer items và insurance items, tạo cặp CUSTOMER/INSURANCE, link relatedSettlementCode hai chiều theo code và settle gf-sales bằng insurance settlement code.", cornerstone: true, enforcement_point: "SettlementService.createInsuranceSettlements" }
+  - { id: "BR-GF-ACCOUNTING-003", description: "Nếu chỉ có customer items thì tạo CUSTOMER settlement; nếu chỉ có insurance items thì tạo INSURANCE settlement; cả hai path đều gọi gf-sales settle bằng code settlement vừa tạo.", cornerstone: true, enforcement_point: "SettlementService.createCustomerSettlementInternal + createInsuranceOnlySettlement" }
+  - { id: "BR-GF-ACCOUNTING-004", description: "Không cho tạo settlement active trùng serviceOrderCode và SettlementType; settlement đã CANCEL có thể được reuse code/id khi tạo lại.", cornerstone: true, enforcement_point: "SettlementService.hasActiveSettlement + findCancelledSettlementOrGenerateCode + rebuildWithId" }
+  - { id: "BR-GF-ACCOUNTING-005", description: "Cancel settlement sẽ set CANCEL cho toàn bộ settlements cùng serviceOrderCode và gọi gf-sales reopen-from-settled.", cornerstone: true, enforcement_point: "SettlementService.cancelSettlement" }
+  - { id: "BR-GF-ACCOUNTING-006", description: "Amount snapshot (totalServiceAmount, totalPartsAmount, discountAmount, taxAmount) lấy từ payer AmountBreakdown của gf-sales; finalAmount NHẬN trực tiếp từ client request (CreateSettlementRequest.customerFinalAmount / insuranceFinalAmount) — không compute server-side.", cornerstone: true, enforcement_point: "SettlementService.createSettlement (line 66-77 propagates request.getCustomerFinalAmount/getInsuranceFinalAmount); Settlement.createCustomerSettlement + createInsuranceSettlement factory methods" }
+  - { id: "BR-GF-ACCOUNTING-007", description: "Mã settlement sinh theo SET-yyyyMMdd-00001 với ngày Asia/Ho_Chi_Minh và PESSIMISTIC_WRITE lock trên tenant_sequences.", cornerstone: true, enforcement_point: "SettlementService.generateSettlementCode + TenantSequenceJpaRepository.findBySequenceNameAndSequenceDate" }
+  - { id: "BR-GF-ACCOUNTING-008", description: "Cập nhật settlement chỉ đổi notes và sync documents; document_url là identity, URL bị bỏ khỏi request sẽ soft-delete, URL mới sẽ insert.", cornerstone: true, enforcement_point: "SettlementService.updateSettlement + syncDocuments + SettlementDocumentRepositoryImpl.delete" }
+  - { id: "BR-GF-ACCOUNTING-009", description: "Search settlement luôn scope theo tenant hiện tại và keyword chỉ match code, serviceOrderCode, customerName, customerPhone.", cornerstone: true, enforcement_point: "SettlementSpecifications.withFilters" }
+  - { id: "BR-GF-ACCOUNTING-011", description: "Outbox retry phải qua Redis lock gf-accounting-outbox-processor và chỉ publish pending/stale events dưới max retries.", cornerstone: false, enforcement_point: "OutboxProcessor.processPendingEvents + OutboxEventJpaRepository.findPendingEventsWithLock" }
+  - { id: "BR-GF-ACCOUNTING-012", description: "Settlement print document chỉ in các items theo payer tương ứng: CUSTOMER settlement chỉ include CUSTOMER-payer items; INSURANCE settlement chỉ include INSURANCE-payer items. Tổng tiền được render bằng chữ tiếng Việt qua NumberToVietnameseWords.", cornerstone: true, enforcement_point: "SettlementPrintDataBuilder.buildServiceItems + buildPartItems + buildTotals" }
+  - { id: "BR-GF-ACCOUNTING-013", description: "Settlement status model chỉ có DRAFT + CANCEL. Create = DRAFT (immutable ngoại trừ notes+documents). Cancel = cascade CANCEL. Không có APPROVED/FINALIZED/PAID state — payment lifecycle delegated cho gf-sales.", cornerstone: true, enforcement_point: "SettlementStatus enum + Settlement.updateStatus + SettlementService.cancelSettlement" }
+
+workflows: []
+
+
+integrations:
+  inbound:
+    - type: API
+      source: "agg-garage-graph"
+      purpose: "Settlement queries for UI (BFF passthrough)"
+
+  outbound:
+    - type: API
+      target: "gf-sales"
+      purpose: "SO state transitions + print data via /protected/v1/service-orders/{tenantId}/{id|code}/{for-settlement|settle|reopen-from-settled|for-print}"
+    - type: API
+      target: "ct-saas-tenant"
+      purpose: "Tenant info for printing — GET /protected/v1/saas-tenant/{tenantId}"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho settlement_records, settlement_documents, tenant_sequences, outbox_events và inbox_events.", config_ref: "spring.datasource.*, spring.jpa.hibernate.default_schema, spring.flyway.*" }
+  - { name: "Redis", type: "cache", purpose: "Cache tenantInfo và RedisLockRegistry cho outbox singleton lock.", config_ref: "spring.data.redis.*, app.cache.key-prefix, gf-accounting-locks" }
+  - { name: "Kafka", type: "broker", purpose: "Hạ tầng publish outbox events generic qua KafkaTemplate; source hiện chưa thấy domain event settlement được tạo.", config_ref: "kafka.bootstrap-servers, kafka.topics.accounting-events, outbox.*" }
+  - { name: "common-printing", type: "printing", purpose: "Render HTML/PDF/PNG/JPG cho phiếu quyết toán từ template settlement.", config_ref: "templates/settlement/*, common-printing 0.0.2-SNAPSHOT" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Cung cấp current tenant/user cho public APIs, settlement search, auditing và print context.", config_ref: "actechx.security.*, SecurityUtils" }
+  - { name: "spring-feature-flag-starter", type: "feature_flag", purpose: "Dependency 0.0.9-SNAPSHOT; @FeatureOn(Sales:SalesManagementV01, fallback=THROW_EXCEPTION) được áp dụng ở class-level trên SettlementController và SettlementPrintingController — toàn bộ settlement và printing APIs đều bị gate.", config_ref: "feature-flag.*" }
+
+
+change_log:
+  - { date: "2026-05-18", summary: "BR review fix: thêm BR-013 (settlement status model DRAFT+CANCEL only — payment lifecycle delegated cho gf-sales). 12/12 BR hiện tại đều chính xác.", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-14", summary: "RULE-08 completeness: thêm replaced_by: null cho 8 entry sẵn có; unquote status values để khớp style template + gf-customer/gf-purchase/gf-sales. 2 endpoint print-preview/export-image kèm comment # TODO: confirm dead code.", author: "Architecture Authority — RULE-08 audit 2026-05-14" }
+  - { date: "2026-05-14", summary: "RULE-08 compliance: thêm status + active_callers cho 8 APIs. 6 endpoint active (caller = agg-garage-graph): create-settlements, update-settlement, cancel-settlement, get-settlement, search-settlements, export-pdf — verified qua agg-garage-graph/src/config/endpoints.ts:223-233. 2 endpoint đánh unused (print-preview, export-image): cross-repo grep trong garage-functions không tìm thấy caller; chỉ có log statement nội bộ trong SettlementPrintingController.", author: "Architecture Authority — RULE-08 backfill" }
+  - { date: "2026-05-13", summary: "Source audit: (1) cancel-settlement: xóa reason khỏi request (path param only), response đổi thành serviceOrderCode string; (2) create-settlements response đổi thành InsuranceSettlementResponse {customerSettlement, insuranceSettlement}; (3) export-image: thêm format query param (ImageFormat, default PNG); (4) TenantSequence: thêm sequence_date column, sửa unique constraint thành uk_sequences_name_date(sequence_name, sequence_date) bỏ tenant_id, sửa invariant repository method name; (5) spring-feature-flag-starter: xác nhận @FeatureOn(Sales:SalesManagementV01) wired trên cả hai controller.", author: "Architecture Authority — source audit 2026-05-13" }
+  - { date: "2026-05-12", summary: "AUDIT-2026-001 v3: xác nhận Flyway vắng mặt cố ý (FlywayConfig deleted); thêm BR-012 payer-filter print; document conditional tier-column DETAILING.", author: "Architecture Authority — AUDIT-2026-001 Iteration 3" }
+  - { date: "2026-05-12", summary: "AUDIT-2026-001 v2: fix tech_stack (Java 24/SB 4.0.3), thêm events.produces (Settlement*), thêm missing GET API, ghi nhận 4 governance gaps (FINDING-002/026/027/028).", author: "Architecture Authority — AUDIT-2026-001" }
+  - { date: "2026-05-12", summary: "Fix invariant sai: finalAmount nhận từ client request, không compute server-side.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Chuẩn hoá thứ tự section: business_rules trước workflows (canonical template).", author: "Architecture Authority" }

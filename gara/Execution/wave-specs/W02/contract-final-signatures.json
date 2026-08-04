@@ -1,0 +1,266 @@
+{
+  "boundaries/gf-accounting": {
+    "Architecture/api/gf-sales-api.md": [
+      {
+        "hash": "b054fa32f24cb801d0eee3c22c1788efe30ceb59743fb2bc7ba0598364a44390",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "b054fa32f24cb801d0eee3c22c1788efe30ceb59743fb2bc7ba0598364a44390",
+        "relabel_only": true
+      }
+    ],
+    "Architecture/events/gf-sales-events.md": [
+      {
+        "hash": "bc6082817531483373cb6866f668500e744cd3e75e73b6366b229abd78b9363a",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "bc6082817531483373cb6866f668500e744cd3e75e73b6366b229abd78b9363a",
+        "relabel_only": true
+      }
+    ],
+    "Architecture/api/gf-accounting-api.md": [
+      {
+        "hash": "0cc261d88350d02620de7416c45e4bfe8d40c4eec4c50d0eff1b5e690e4eaf3e",
+        "signed_at": "2026-06-18T07:27:22+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "superseded_at": "2026-06-19T15:03:33+00:00"
+      },
+      {
+        "hash": "ced064386b72ecb3686ced2e75fff6a19a6fe3870dfd70c480e5c04f0cbf1ea1",
+        "signed_at": "2026-06-19T15:03:33+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "0cc261d88350d02620de7416c45e4bfe8d40c4eec4c50d0eff1b5e690e4eaf3e"
+      }
+    ],
+    "Architecture/data/gf-accounting-data-model.md": [
+      {
+        "hash": "cf8cf5caa8edef355c943dd0aab1dc033e113b0a699bd90614cdcb58343a7e37",
+        "signed_at": "2026-06-18T07:27:25+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE"
+      }
+    ],
+    "Architecture/events/gf-accounting-events.md": [
+      {
+        "hash": "0fb5443f2bde8b74158b01f8f6f2dc87415530deedebb2539262a6a4266c032c",
+        "signed_at": "2026-06-18T07:27:29+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  "boundaries/gf-sales": {
+    "Architecture/api/gf-accounting-api.md": [
+      {
+        "hash": "648f3f9299ff4c0b5d269ca5722dca679d89ae772be20c04d5cc5b718a275fbc",
+        "signed_at": "2026-06-16T13:44:06+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "supersedes": "648f3f9299ff4c0b5d269ca5722dca679d89ae772be20c04d5cc5b718a275fbc",
+        "relabel_only": true,
+        "superseded_at": "2026-06-18T07:27:41+00:00"
+      },
+      {
+        "hash": "0cc261d88350d02620de7416c45e4bfe8d40c4eec4c50d0eff1b5e690e4eaf3e",
+        "signed_at": "2026-06-18T07:27:41+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "supersedes": "648f3f9299ff4c0b5d269ca5722dca679d89ae772be20c04d5cc5b718a275fbc",
+        "superseded_at": "2026-06-19T15:02:56+00:00"
+      },
+      {
+        "hash": "ced064386b72ecb3686ced2e75fff6a19a6fe3870dfd70c480e5c04f0cbf1ea1",
+        "signed_at": "2026-06-19T15:02:56+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "0cc261d88350d02620de7416c45e4bfe8d40c4eec4c50d0eff1b5e690e4eaf3e"
+      }
+    ],
+    "Architecture/events/gf-accounting-events.md": [
+      {
+        "hash": "0fb5443f2bde8b74158b01f8f6f2dc87415530deedebb2539262a6a4266c032c",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "0fb5443f2bde8b74158b01f8f6f2dc87415530deedebb2539262a6a4266c032c",
+        "relabel_only": true
+      }
+    ],
+    "Architecture/api/gf-sales-api.md": [
+      {
+        "hash": "b054fa32f24cb801d0eee3c22c1788efe30ceb59743fb2bc7ba0598364a44390",
+        "signed_at": "2026-06-18T07:27:32+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  "bff-experiences/agg-garage-graph": {
+    "Architecture/api/gf-sales-api.md": [
+      {
+        "hash": "b054fa32f24cb801d0eee3c22c1788efe30ceb59743fb2bc7ba0598364a44390",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "b054fa32f24cb801d0eee3c22c1788efe30ceb59743fb2bc7ba0598364a44390",
+        "relabel_only": true
+      }
+    ],
+    "Architecture/api/gf-accounting-api.md": [
+      {
+        "hash": "648f3f9299ff4c0b5d269ca5722dca679d89ae772be20c04d5cc5b718a275fbc",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "supersedes": "648f3f9299ff4c0b5d269ca5722dca679d89ae772be20c04d5cc5b718a275fbc",
+        "relabel_only": true,
+        "superseded_at": "2026-06-18T07:27:44+00:00"
+      },
+      {
+        "hash": "0cc261d88350d02620de7416c45e4bfe8d40c4eec4c50d0eff1b5e690e4eaf3e",
+        "signed_at": "2026-06-18T07:27:44+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "supersedes": "648f3f9299ff4c0b5d269ca5722dca679d89ae772be20c04d5cc5b718a275fbc",
+        "superseded_at": "2026-06-19T15:03:04+00:00"
+      },
+      {
+        "hash": "ced064386b72ecb3686ced2e75fff6a19a6fe3870dfd70c480e5c04f0cbf1ea1",
+        "signed_at": "2026-06-19T15:03:04+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "0cc261d88350d02620de7416c45e4bfe8d40c4eec4c50d0eff1b5e690e4eaf3e"
+      }
+    ],
+    "Architecture/api/agg-garage-graph-graphql.md": [
+      {
+        "hash": "859709854cdf013b623168a647f5f068cbb66445122bd6ccc00aa6e8ac521449",
+        "signed_at": "2026-06-18T07:27:35+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "superseded_at": "2026-06-19T15:03:33+00:00"
+      },
+      {
+        "hash": "5cb746add02a52dade5a62b9641433b47f119b59d4529df8636bdb77ba279869",
+        "signed_at": "2026-06-19T15:03:33+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "859709854cdf013b623168a647f5f068cbb66445122bd6ccc00aa6e8ac521449"
+      }
+    ],
+    "Architecture/integrations/INTEG-BFF-agg-garage-graph.md": [
+      {
+        "hash": "d7de439b7b05ae878309ffee5909020e0a065b0aabd58838ad674d07d783b076",
+        "signed_at": "2026-06-18T07:27:37+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE"
+      }
+    ]
+  },
+  "web-experiences/garage-web": {
+    "Architecture/api/agg-garage-graph-graphql.md": [
+      {
+        "hash": "84d933390cc18952fb694eda3b8a66556360b61634479ee59d15bd4c42d9d15f",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "supersedes": "84d933390cc18952fb694eda3b8a66556360b61634479ee59d15bd4c42d9d15f",
+        "relabel_only": true,
+        "superseded_at": "2026-06-18T07:27:59+00:00"
+      },
+      {
+        "hash": "859709854cdf013b623168a647f5f068cbb66445122bd6ccc00aa6e8ac521449",
+        "signed_at": "2026-06-18T07:27:59+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "supersedes": "84d933390cc18952fb694eda3b8a66556360b61634479ee59d15bd4c42d9d15f",
+        "superseded_at": "2026-06-19T15:03:05+00:00"
+      },
+      {
+        "hash": "5cb746add02a52dade5a62b9641433b47f119b59d4529df8636bdb77ba279869",
+        "signed_at": "2026-06-19T15:03:05+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "859709854cdf013b623168a647f5f068cbb66445122bd6ccc00aa6e8ac521449"
+      }
+    ],
+    "Architecture/integrations/INTEG-BFF-agg-garage-graph.md": [
+      {
+        "hash": "d7de439b7b05ae878309ffee5909020e0a065b0aabd58838ad674d07d783b076",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "d7de439b7b05ae878309ffee5909020e0a065b0aabd58838ad674d07d783b076",
+        "relabel_only": true
+      }
+    ]
+  },
+  "mobile-experiences/garage-mobile": {
+    "Architecture/api/agg-garage-graph-graphql.md": [
+      {
+        "hash": "84d933390cc18952fb694eda3b8a66556360b61634479ee59d15bd4c42d9d15f",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "supersedes": "84d933390cc18952fb694eda3b8a66556360b61634479ee59d15bd4c42d9d15f",
+        "relabel_only": true,
+        "superseded_at": "2026-06-18T07:28:03+00:00"
+      },
+      {
+        "hash": "859709854cdf013b623168a647f5f068cbb66445122bd6ccc00aa6e8ac521449",
+        "signed_at": "2026-06-18T07:28:03+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "SUPERSEDED",
+        "supersedes": "84d933390cc18952fb694eda3b8a66556360b61634479ee59d15bd4c42d9d15f",
+        "superseded_at": "2026-06-19T15:03:05+00:00"
+      },
+      {
+        "hash": "5cb746add02a52dade5a62b9641433b47f119b59d4529df8636bdb77ba279869",
+        "signed_at": "2026-06-19T15:03:05+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "859709854cdf013b623168a647f5f068cbb66445122bd6ccc00aa6e8ac521449"
+      }
+    ],
+    "Architecture/integrations/INTEG-BFF-agg-garage-graph.md": [
+      {
+        "hash": "d7de439b7b05ae878309ffee5909020e0a065b0aabd58838ad674d07d783b076",
+        "signed_at": "2026-06-16T13:44:20+00:00",
+        "signed_by": "agent-contract-steward",
+        "wave": "W02",
+        "status": "ACTIVE",
+        "supersedes": "d7de439b7b05ae878309ffee5909020e0a065b0aabd58838ad674d07d783b076",
+        "relabel_only": true
+      }
+    ]
+  }
+}

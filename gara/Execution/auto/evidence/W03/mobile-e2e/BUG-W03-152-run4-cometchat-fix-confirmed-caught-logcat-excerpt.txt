@@ -1,0 +1,48 @@
+BUG-W03-152 verify (Run 4, 2026-07-03) — evidence CometChat re-throw fix (main_cubit.dart initialCometChat()) CONFIRMED WORKING.
+APK rebuilt from source hiện tại (working-tree fix included) — patrol build "Completed building apk with entrypoint test_bundle.dart" logged trước mỗi run bên dưới.
+
+=== Run 4a — inventory_hub_patrol_test.dart, KHÔNG pre-grant POST_NOTIFICATIONS (lần chạy đầu) ===
+adb -s emulator-5554 logcat -d -v time | grep -i "cometchat"
+
+07-03 19:23:48.602 D/initializeCometChat(22198): Initialization completed successfully
+07-03 19:23:48.690 E/CometChat(22198): Please log in to CometChat before calling this method
+07-03 19:23:49.024 I/flutter (22198): ERROR │ #1   MainCubit.initialCometChat (package:cardoctor_garage_v3/ui/main/bloc/main_cubit.dart:107:14)
+07-03 19:23:49.024 I/flutter (22198): ERROR │ ⛔ initialCometChat failed: type 'String' is not a subtype of type 'num?' in type cast #0      _$CometChatTokenResponseFromJson (package:cardoctor_garage_v3/core/models/response/auth/comet_chat_token_response.g.dart:13:33)
+07-03 19:23:49.024 I/flutter (22198): ERROR │ ⛔ #1      new CometChatTokenResponse.fromJson (package:cardoctor_garage_v3/core/models/response/auth/comet_chat_token_response.dart:10:73)
+07-03 19:23:49.024 I/flutter (22198): ERROR │ ⛔ #2      AuthRepositoryImpl.getCometChatToken.<anonymous closure>.<anonymous closure> (package:cardoctor_garage_v3/core/repositories/auth/auth_repository.dart:165:39)
+07-03 19:23:49.024 I/flutter (22198): ERROR │ ⛔ #6      AuthRepositoryImpl.getCometChatToken.<anonymous closure> (package:cardoctor_garage_v3/core/repositories/auth/auth_repository.dart:163:25)
+07-03 19:23:49.024 I/flutter (22198): ERROR │ ⛔ #9      AuthRepositoryImpl.getCometChatToken (package:cardoctor_garage_v3/core/repositories/auth/auth_repository.dart:160:51)
+07-03 19:23:49.024 I/flutter (22198): ERROR │ ⛔ #10     MainCubit.initialCometChat (package:cardoctor_garage_v3/ui/main/bloc/main_cubit.dart:98:22)
+07-03 19:23:49.024 I/flutter (22198): ERROR │ ⛔ #11     _MainPageState.initialCometChat (package:cardoctor_garage_v3/ui/main/main_page.dart:147:5)
+07-03 19:23:50.154 I/flutter (22198): registerPushToken:error CometChatException{code: ERROR_USER_NOT_LOGGED_IN, details: null , message Please log in to CometChat before calling this method}
+07-03 19:23:50.407 D/getUnreadMessageCount(22198): onError: Please log in to CometChat before calling this method
+
+PHÂN TÍCH: "ERROR │ ⛔ initialCometChat failed: ..." là log CHÍNH XÁC từ fix mới
+(catch (error, stackTrace) { logger.e('initialCometChat failed: $error $stackTrace'); }
+trong main_cubit.dart). Trước fix, dòng này sẽ KHÔNG xuất hiện — thay vào đó lỗi sẽ
+RE-THROW ra ngoài thành uncaught async exception. Native log "E/CometChat: Please log
+in..." VẪN xuất hiện (đây là native SDK log độc lập, không phải Dart-side — race
+condition gốc giữa 4 Cubit init song song CHƯA được fix, chỉ có phần XỬ LÝ LỖI ở tầng
+Dart đã fix) nhưng KHÔNG CÒN dẫn tới uncaught exception — lỗi được BẮT (catch) và LOG,
+không propagate. registerPushToken + getUnreadMessageCount log "onError" (không throw)
+— xác nhận các API này đã SDK-safe từ trước (đúng như BUGFIX-BUG-W03-152.md mô tả).
+
+KẾT LUẬN: Root cause cụ thể của BUG-W03-152 (re-throw trong onError callback +
+thiếu try/catch quanh initialCometChat()) đã được FIX ĐÚNG NHƯ THIẾT KẾ — xác nhận
+qua bằng chứng logcat 2/2 lần chạy độc lập (xem thêm Run 4b bên dưới).
+
+=== Run 4b — inventory_hub_patrol_test.dart, POST_NOTIFICATIONS pre-granted qua adb ===
+07-03 19:38:09.269 D/initializeCometChat(23566): Initialization completed successfully
+07-03 19:38:09.345 E/CometChat(23566): Please log in to CometChat before calling this method
+07-03 19:38:09.686 I/flutter (23566): ERROR │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 19:38:09.686 I/flutter (23566): ERROR │ #1   MainCubit.initialCometChat (package:cardoctor_garage_v3/ui/main/bloc/main_cubit.dart:107:14)
+07-03 19:38:09.686 I/flutter (23566): ERROR │ #2   <asynchronous suspension>
+07-03 19:38:09.686 I/flutter (23566): ERROR │ ⛔ initialCometChat failed: type 'String' is not a subtype of type 'num?' in type cast #0      _$CometChatTokenResponseFromJson (package:cardoctor_garage_v3/core/models/response/auth/comet_chat_token_response.g.dart:13:33)
+07-03 19:38:09.686 I/flutter (23566): ERROR │ ⛔ #11     _MainPageState.initialCometChat (package:cardoctor_garage_v3/ui/main/main_page.dart:147:5)
+07-03 19:38:09.686 I/flutter (23566): ERROR │ ⛔
+(-> giống hệt Run 4a: bắt lỗi, log, KHÔNG throw — 2/2 lần chạy độc lập cùng kết quả)
+
+Test chạy này HOÀN TẤT (30s, KHÔNG stall) — kết quả PATROL_LOG cuối "status":"failure"
+NHƯNG lý do FAIL là 1 exception KHÁC hẳn (GraphQL "SaveTokenInput" schema mismatch —
+xem BUG-W03-153), KHÔNG PHẢI CometChat. Chi tiết đầy đủ + phân tích cluster rộng hơn:
+Tracking/WAVE03/verify/BUG-W03-153.verify.md.

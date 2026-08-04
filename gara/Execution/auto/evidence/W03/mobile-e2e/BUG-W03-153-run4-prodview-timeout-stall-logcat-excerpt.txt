@@ -1,0 +1,225 @@
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛         ],
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛         "pageInfo": {
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "__typename": "PageInfo",
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "page": 1,
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "size": 20,
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "totalElements": 1,
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "totalPages": 1,
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "first": true,
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "last": true,
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "hasNext": false,
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛           "hasPrevious": false
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛         }
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛       }
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛     }
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛   }
+07-03 20:09:10.062 I/flutter (27214): DEBUG │ 🐛 }
+07-03 20:09:10.062 I/flutter (27214): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 20:09:10.215 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA39].pump#0 sau 308ms
+07-03 20:09:10.215 I/flutter (27214): [TIMING] START tapBounded[autoFixA39].pump#1 @ 2026-07-03T20:09:10.215727
+07-03 20:09:10.457 D/BoundBrokerSvc( 1278): onUnbind: Intent { act=com.google.android.gms.phenotype.service.START pkg=com.google.android.gms }
+07-03 20:09:10.536 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA39].pump#1 sau 320ms
+07-03 20:09:10.536 I/flutter (27214): [TIMING] START tapBounded[autoFixA39].pump#2 @ 2026-07-03T20:09:10.536612
+07-03 20:09:10.852 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA39].pump#2 sau 315ms
+07-03 20:09:10.852 I/flutter (27214): [TIMING] START tapBounded[autoFixA39].pump#3 @ 2026-07-03T20:09:10.852604
+07-03 20:09:11.168 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA39].pump#3 sau 316ms
+07-03 20:09:11.170 I/flutter (27214): [TIMING] START tapBounded[autoFixA39].pump#4 @ 2026-07-03T20:09:11.169267
+07-03 20:09:11.172 D/EGL_emulation(27214): app_time_stats: avg=111.49ms min=14.45ms max=317.28ms count=10
+07-03 20:09:11.448 W/SP      ( 1950): File ref is being finalized but wasn't closed, file: main_en_us_2022051700_2[80]
+07-03 20:09:11.448 W/SP      ( 1950): File ref is being finalized but wasn't closed, file: main_vi_2022092100_1[46]
+07-03 20:09:11.448 W/SP      ( 1950): File ref is being finalized but wasn't closed, file: main_en_840_2022102600_1[80]
+07-03 20:09:11.448 W/SP      ( 1950): File ref is being finalized but wasn't closed, file: main_en_us_2022101700_1[80]
+07-03 20:09:11.448 W/SP      ( 1950): File ref is being finalized but wasn't closed, file: main_en_us_2022051700_2[80]
+07-03 20:09:11.448 W/SP      ( 1950): File ref is being finalized but wasn't closed, file: main_vi_2022092100_1[46]
+07-03 20:09:11.448 W/SP      ( 1950): File ref is being finalized but wasn't closed, file: main_en_840_2022102600_1[80]
+07-03 20:09:11.448 W/SP      ( 1950): File ref is being finalized but wasn't closed, file: main_en_us_2022101700_1[80]
+07-03 20:09:11.486 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA39].pump#4 sau 317ms
+07-03 20:09:11.486 I/flutter (27214): [TIMING] START tapBounded[autoFixA39].pump#5 @ 2026-07-03T20:09:11.486566
+07-03 20:09:11.800 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA39].pump#5 sau 314ms
+07-03 20:09:11.802 I/flutter (27214): [TIMING] START tapBounded[autoFixA39].pump#6 @ 2026-07-03T20:09:11.802453
+07-03 20:09:12.115 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA39].pump#6 sau 312ms
+07-03 20:09:12.119 I/flutter (27214): [TIMING] START tapBounded[autoFixA40].tap(noSettle) @ 2026-07-03T20:09:12.119325
+07-03 20:09:12.140 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA40].tap(noSettle) sau 21ms
+07-03 20:09:12.141 I/flutter (27214): [TIMING] START tapBounded[autoFixA40].pump#0 @ 2026-07-03T20:09:12.140863
+07-03 20:09:12.148 D/AudioFlinger(  332): mixer(0xb400007507efa9a0) throttle end: throttle time(35)
+07-03 20:09:12.178 D/EGL_emulation(27214): app_time_stats: avg=164.67ms min=8.09ms max=316.84ms count=6
+07-03 20:09:12.199 I/logd    ( 2517): start watching /data/system/packages.list ...
+07-03 20:09:12.200 I/logd    ( 2517): ReadPackageList, total packages: 185
+07-03 20:09:12.481 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA40].pump#0 sau 340ms
+07-03 20:09:12.481 I/flutter (27214): [TIMING] START tapBounded[autoFixA40].pump#1 @ 2026-07-03T20:09:12.481682
+07-03 20:09:12.604 I/flutter (27214): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ #1   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:137:12)
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ #2   <asynchronous suspension>
+07-03 20:09:12.604 I/flutter (27214): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛 {
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛   "REQUEST": {
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛     "DOCUMENT": [
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "query SearchInternalProducts($input: InternalProductSearchInput!) {",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "  __typename",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "  searchInternalProducts(input: $input) {",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "    __typename",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "    ... on ApiResponsePageInternalProduct {",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      success",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      code",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      message",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      data {",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "        __typename",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "        content {",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          __typename",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          id",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          code",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          name",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          status",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          nature",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          materialGroupId",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          materialGroupName",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          mainUnitCode",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          mainUnitDisplayName",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          brand",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "        }",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "        pageInfo {",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          __typename",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          page",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          size",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          totalElements",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          totalPages",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          first",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          last",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          hasNext",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "          hasPrevious",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "        }",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      }",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "    }",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "    ... on ErrorResponse {",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      id",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      code",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      serverResponse",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      message",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      statusCode",
+07-03 20:09:12.604 I/flutter (27214): DEBUG │ 🐛       "      path",
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛       "      timestamp",
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛       "      details",
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛       "    }",
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛       "  }",
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛       "}"
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛     ],
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛     "rootField": "searchInternalProducts",
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛     "variables": {
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛       "input": {
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛         "page": 0,
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛         "size": 20,
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛         "status": "INACTIVE"
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛       }
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛     }
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛   }
+07-03 20:09:12.605 I/flutter (27214): DEBUG │ 🐛 }
+07-03 20:09:12.605 I/flutter (27214): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 20:09:12.622 I/flutter (27214): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:218:12)
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 20:09:12.622 I/flutter (27214): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛 {
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛   "RESPONSE": {
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛     "__typename": "Query",
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛     "searchInternalProducts": {
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛       "__typename": "ApiResponsePageInternalProduct",
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛       "success": true,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛       "code": null,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛       "message": null,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛       "data": {
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛         "__typename": "PageDataInternalProduct",
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛         "content": [],
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛         "pageInfo": {
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "__typename": "PageInfo",
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "page": 1,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "size": 20,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "totalElements": 0,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "totalPages": 0,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "first": true,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "last": true,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "hasNext": false,
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛           "hasPrevious": false
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛         }
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛       }
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛     }
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛   }
+07-03 20:09:12.622 I/flutter (27214): DEBUG │ 🐛 }
+07-03 20:09:12.622 I/flutter (27214): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 20:09:12.798 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA40].pump#1 sau 317ms
+07-03 20:09:12.799 I/flutter (27214): [TIMING] START tapBounded[autoFixA40].pump#2 @ 2026-07-03T20:09:12.799121
+07-03 20:09:13.118 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA40].pump#2 sau 319ms
+07-03 20:09:13.119 I/flutter (27214): [TIMING] START tapBounded[autoFixA40].pump#3 @ 2026-07-03T20:09:13.119287
+07-03 20:09:13.337 D/IntervalStats(  505): Unable to parse usage stats packages: [213]
+07-03 20:09:13.337 D/IntervalStats(  505): Unable to parse event packages: [213]
+07-03 20:09:13.433 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA40].pump#3 sau 313ms
+07-03 20:09:13.433 I/flutter (27214): [TIMING] START tapBounded[autoFixA40].pump#4 @ 2026-07-03T20:09:13.433250
+07-03 20:09:13.434 D/EGL_emulation(27214): app_time_stats: avg=28.10ms min=0.97ms max=314.66ms count=33
+07-03 20:09:13.755 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA40].pump#4 sau 321ms
+07-03 20:09:13.756 I/flutter (27214): [TIMING] START tapBounded[autoFixA40].pump#5 @ 2026-07-03T20:09:13.756211
+07-03 20:09:14.068 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA40].pump#5 sau 312ms
+07-03 20:09:14.070 I/flutter (27214): [TIMING] START tapBounded[autoFixA40].pump#6 @ 2026-07-03T20:09:14.069283
+07-03 20:09:14.384 I/flutter (27214): [TIMING] DONE  tapBounded[autoFixA40].pump#6 sau 315ms
+07-03 20:09:14.389 I/flutter (27214): [TIMING] START tapBounded[autoFixA41].tap(noSettle) @ 2026-07-03T20:09:14.389284
+07-03 20:09:14.500 D/EGL_emulation(27214): app_time_stats: avg=266.43ms min=113.15ms max=324.52ms count=4
+07-03 20:09:15.549 D/EGL_emulation(27214): app_time_stats: avg=116.53ms min=112.34ms max=118.91ms count=9
+07-03 20:09:15.699 I/ActivityManager(  505): Killing 24054:com.google.android.partnersetup/u0a104 (adj 975): empty for 1801s
+07-03 20:09:15.702 I/libprocessgroup(  505): Successfully killed process cgroup uid 10104 pid 24054 in 0ms
+07-03 20:09:15.708 I/Zygote  (  298): Process 24054 exited due to signal 9 (Killed)
+07-03 20:09:16.583 D/EGL_emulation(27214): app_time_stats: avg=114.89ms min=104.71ms max=120.25ms count=9
+07-03 20:09:16.910 I/wpa_supplicant(  706): wlan0: CTRL-EVENT-BEACON-LOSS 
+07-03 20:09:17.636 D/EGL_emulation(27214): app_time_stats: avg=116.93ms min=111.96ms max=120.28ms count=9
+07-03 20:09:18.132 D/EGL_emulation(  710): app_time_stats: avg=18096.25ms min=18096.25ms max=18096.25ms count=1
+07-03 20:09:18.289 I/TRuntime.CctTransportBackend(27214): Making request to: https://crashlyticsreports-pa.googleapis.com/v1/firelog/legacy/batchlog
+07-03 20:09:18.291 I/resolv  (  297): GetAddrInfoHandler::run: {102 102 102 983142 10283 0}
+07-03 20:09:18.292 I/resolv  (  297): res_nmkquery: (QUERY, IN, AAAA)
+07-03 20:09:18.292 I/resolv  (  297): res_nmkquery: (QUERY, IN, A)
+07-03 20:09:18.292 I/resolv  (  297): res_stats_usable_server: too many resolution errors, ignoring server
+07-03 20:09:18.294 I/resolv  (  297): res_stats_usable_server: too many resolution errors, ignoring server
+07-03 20:09:18.478 D/BoundBrokerSvc( 1614): onUnbind: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+07-03 20:09:18.479 D/BtGatt.ScanManager(12499): uid 10111 isForeground true scanMode -1
+07-03 20:09:18.599 I/resolv  (  297): res_nsend: used send_dg 106 terrno: 0
+07-03 20:09:18.599 I/resolv  (  297): res_nsend: used send_dg 118 terrno: 0
+07-03 20:09:18.601 I/resolv  (  297): doQuery: rcode=0, ancount=1, return value=106
+07-03 20:09:18.601 I/resolv  (  297): doQuery: rcode=0, ancount=1, return value=118
+07-03 20:09:18.601 D/TrafficStats(27214): tagSocket(122) with statsTag=0xffffffff, statsUid=-1
+07-03 20:09:18.605 W/NetworkScheduler( 1278): Error inserting flex_time=3600000 job_id=-1 period=7201000 source=16 requires_charging=0 preferred_network_type=1 target_class=com.google.android.gms.measurement.PackageMeasurementTaskService user_id=0 target_package=com.google.android.gms tag=Measurement.PackageMeasurementTaskService.UPLOAD_TASK_TAG task_type=0 required_idleness_state=0 service_kind=0 source_version=231818000 persistence_level=1 preferred_charging_state=1 required_network_type=0 runtime=1783084158603 retry_strategy={"maximum_backoff_seconds":{"3600":0},"initial_backoff_seconds":{"30":0},"retry_policy":{"0":0}} last_runtime=0 [CONTEXT service_id=218 ]
+07-03 20:09:18.605 W/NetworkScheduler( 1278): android.database.sqlite.SQLiteConstraintException: UNIQUE constraint failed: pending_ops.tag, pending_ops.target_class, pending_ops.target_package, pending_ops.user_id (code 2067 SQLITE_CONSTRAINT_UNIQUE)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteConnection.nativeExecuteForLastInsertedRowId(Native Method)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteConnection.executeForLastInsertedRowId(SQLiteConnection.java:961)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteSession.executeForLastInsertedRowId(SQLiteSession.java:790)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteStatement.executeInsert(SQLiteStatement.java:89)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteDatabase.insertWithOnConflict(SQLiteDatabase.java:1868)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at android.database.sqlite.SQLiteDatabase.insertOrThrow(SQLiteDatabase.java:1763)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at byui.f(:com.google.android.gms@231818044@23.18.18 (190400-535401451):59)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at bytb.n(:com.google.android.gms@231818044@23.18.18 (190400-535401451):3)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at bytb.u(:com.google.android.gms@231818044@23.18.18 (190400-535401451):20)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at bytb.h(:com.google.android.gms@231818044@23.18.18 (190400-535401451):3)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at byot.run(:com.google.android.gms@231818044@23.18.18 (190400-535401451):9)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at aced.c(:com.google.android.gms@231818044@23.18.18 (190400-535401451):6)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at aced.run(:com.google.android.gms@231818044@23.18.18 (190400-535401451):8)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1137)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:637)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at acjn.run(:com.google.android.gms@231818044@23.18.18 (190400-535401451):0)
+07-03 20:09:18.605 W/NetworkScheduler( 1278): 	at java.lang.Thread.run(Thread.java:1012)
+07-03 20:09:18.684 D/EGL_emulation(27214): app_time_stats: avg=116.47ms min=113.99ms max=120.58ms count=9
+07-03 20:09:18.733 D/BoundBrokerSvc( 1614): onUnbind: Intent { act=com.google.firebase.dynamiclinks.service.START pkg=com.google.android.gms }
+07-03 20:09:19.734 D/EGL_emulation(27214): app_time_stats: avg=116.63ms min=110.44ms max=120.51ms count=9
+07-03 20:09:20.091 W/healthd (  317): battery l=100 v=5000 t=25.0 h=2 st=2 c=900000 fc=3000000 cc=10 chg=a
+07-03 20:09:20.769 D/EGL_emulation(27214): app_time_stats: avg=114.97ms min=105.58ms max=120.00ms count=9
+07-03 20:09:20.854 I/TRuntime.CctTransportBackend(27214): Status Code: 200
+07-03 20:09:21.818 D/EGL_emulation(27214): app_time_stats: avg=116.55ms min=113.11ms max=119.22ms count=9
+07-03 20:09:22.871 D/EGL_emulation(27214): app_time_stats: avg=116.92ms min=114.45ms max=119.82ms count=9
+07-03 20:09:23.340 I/ProvidersCache(25228): Updating roots due to change on user 0at content://com.android.externalstorage.documents/
+07-03 20:09:23.376 I/ProvidersCache(25228): Provider returned no roots. Possibly naughty: com.google.android.apps.docs.storage
+07-03 20:09:23.919 D/EGL_emulation(27214): app_time_stats: avg=116.47ms min=113.10ms max=120.50ms count=9
+07-03 20:09:24.846 I/wpa_supplicant(  706): wlan0: CTRL-EVENT-BEACON-LOSS 
+07-03 20:09:24.970 D/EGL_emulation(27214): app_time_stats: avg=116.77ms min=112.82ms max=121.37ms count=9
+07-03 20:09:26.020 D/EGL_emulation(27214): app_time_stats: avg=116.58ms min=113.13ms max=122.87ms count=9
+07-03 20:09:27.070 D/EGL_emulation(27214): app_time_stats: avg=116.68ms min=112.89ms max=119.21ms count=9
+07-03 20:09:28.117 D/EGL_emulation(27214): app_time_stats: avg=116.36ms min=110.90ms max=122.92ms count=9
+07-03 20:09:29.169 D/EGL_emulation(27214): app_time_stats: avg=116.79ms min=112.54ms max=121.19ms count=9
+07-03 20:09:29.392 I/flutter (27214): [TIMING] *** TIMEOUT *** tapBounded[autoFixA41].tap(noSettle) sau 15002ms (bound=0:00:15.000000) — ENV-HANG-R3 candidate
+07-03 20:09:29.392 I/flutter (27214): [TIMING] ERROR tapBounded[autoFixA41].tap(noSettle) sau 15003ms: TimeoutException: tapBounded[autoFixA41].tap(noSettle) KHÔNG hoàn tất trong 0:00:15.000000 (xem [TIMING] logcat để định vị bước treo)
+07-03 20:09:29.727 I/flutter (27214):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.

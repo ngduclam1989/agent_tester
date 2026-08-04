@@ -1,0 +1,181 @@
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "__typename": "MaterialGroup",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "id": 7,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "code": "TEST01",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "name": "TEST01",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "description": null,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "status": "ACTIVE",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "parentId": null,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "parentName": null,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "createdAt": "2026-07-03T09:07:51.092251Z",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "updatedAt": "2026-07-03T09:07:51.092251Z"
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           },
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           {
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "__typename": "MaterialGroup",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "id": 9,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "code": "TEST03",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "name": "TEST01",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "description": null,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "status": "ACTIVE",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "parentId": 7,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "parentName": "TEST01",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "createdAt": "2026-07-03T09:08:24.708497Z",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛             "updatedAt": "2026-07-03T09:08:24.708497Z"
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           }
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛         ],
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛         "pageInfo": {
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "__typename": "PageInfo",
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "page": 1,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "size": 20,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "totalElements": 28,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "totalPages": 2,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "first": true,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "last": false,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "hasNext": true,
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛           "hasPrevious": false
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛         }
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛       }
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛     }
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛   }
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG │ 🐛 }
+07-03 23:08:06.732 I/flutter ( 6956): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:08:06.733 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.751 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.819 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.821 W/OnBackInvokedCallback( 6956): OnBackInvokedCallback is not enabled for the application.
+07-03 23:08:06.821 W/OnBackInvokedCallback( 6956): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+07-03 23:08:06.840 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.866 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.868 W/OnBackInvokedCallback( 6956): OnBackInvokedCallback is not enabled for the application.
+07-03 23:08:06.868 W/OnBackInvokedCallback( 6956): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+07-03 23:08:06.881 W/TransactionTracing(  335): Could not find layer handle 0xb400006eff0c1690
+07-03 23:08:06.882 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.882 W/TransactionTracing(  335): Could not find layer id -1
+07-03 23:08:06.904 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.905 W/OnBackInvokedCallback( 6956): OnBackInvokedCallback is not enabled for the application.
+07-03 23:08:06.905 W/OnBackInvokedCallback( 6956): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+07-03 23:08:06.916 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.943 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.944 W/OnBackInvokedCallback( 6956): OnBackInvokedCallback is not enabled for the application.
+07-03 23:08:06.944 W/OnBackInvokedCallback( 6956): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+07-03 23:08:06.951 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.964 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:06.999 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:07.012 D/EGL_emulation( 6956): app_time_stats: avg=36.08ms min=2.00ms max=305.78ms count=24
+07-03 23:08:07.018 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:07.031 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:07.032 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:07.035 D/FlutterJNI( 6956): Sending viewport metrics to the engine.
+07-03 23:08:07.035 I/GoogleInputMethodService( 1950): GoogleInputMethodService.onStartInput():1877 onStartInput(EditorInfo{inputType=0x0(NULL) imeOptions=0x0 privateImeOptions=null actionName=UNSPECIFIED actionLabel=null actionId=0 initialSelStart=-1 initialSelEnd=-1 initialCapsMode=0x0 hintText=null label=null packageName=com.cardoctor.garage.squad.dev fieldId=1 fieldName=null extras=null}, true)
+07-03 23:08:07.035 I/GoogleInputMethodService( 1950): GoogleInputMethodService.shouldHideHeaderOnInitialState():4008 ShouldHideHeaderOnInitialState = false
+07-03 23:08:07.035 I/GoogleInputMethodService( 1950): GoogleInputMethodService.updateDeviceLockedStatus():2087 repeatCheckTimes = 2, unlocked = true
+07-03 23:08:07.036 W/SessionManager( 1950): SessionManager.beginSession():53 Try to begin an already begun session [INPUT_SESSION], end it first
+07-03 23:08:07.053 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#1 sau 333ms
+07-03 23:08:07.053 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA3].pump#2 @ 2026-07-03T23:08:07.053462
+07-03 23:08:07.177 W/AccessibilityManagerService(  505):  wait for adding window timeout: 1112
+07-03 23:08:07.285 W/TransactionTracing(  335): Could not find layer id -1
+07-03 23:08:07.286 W/TransactionTracing(  335): Could not find layer id -1
+07-03 23:08:07.308 I/ndroid.systemui(  710): Background young concurrent copying GC freed 296327(15MB) AllocSpace objects, 0(0B) LOS objects, 46% free, 17MB/32MB, paused 10.897ms,7us total 18.337ms
+07-03 23:08:07.365 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#2 sau 311ms
+07-03 23:08:07.366 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA3].pump#3 @ 2026-07-03T23:08:07.366335
+07-03 23:08:07.683 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#3 sau 317ms
+07-03 23:08:07.686 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA3].pump#4 @ 2026-07-03T23:08:07.684610
+07-03 23:08:07.998 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#4 sau 314ms
+07-03 23:08:07.999 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA3].pump#5 @ 2026-07-03T23:08:07.999705
+07-03 23:08:08.318 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#5 sau 319ms
+07-03 23:08:08.319 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA3].pump#6 @ 2026-07-03T23:08:08.319367
+07-03 23:08:08.323 D/EGL_emulation( 6956): app_time_stats: avg=61.45ms min=9.23ms max=321.68ms count=19
+07-03 23:08:08.634 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#6 sau 314ms
+07-03 23:08:08.634 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA3].pump#7 @ 2026-07-03T23:08:08.634789
+07-03 23:08:08.949 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#7 sau 315ms
+07-03 23:08:08.950 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA3].pump#8 @ 2026-07-03T23:08:08.950108
+07-03 23:08:09.267 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#8 sau 317ms
+07-03 23:08:09.268 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA3].pump#9 @ 2026-07-03T23:08:09.268099
+07-03 23:08:09.584 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA3].pump#9 sau 316ms
+07-03 23:08:09.588 D/EGL_emulation( 6956): app_time_stats: avg=316.13ms min=313.88ms max=320.57ms count=4
+07-03 23:08:09.588 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA6].tap(noSettle) @ 2026-07-03T23:08:09.587749
+07-03 23:08:09.626 I/flutter ( 6956): INFO ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:08:09.626 I/flutter ( 6956): INFO │ 💡 Bloc MaterialGroupDetailCubit Created
+07-03 23:08:09.626 I/flutter ( 6956): INFO └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:08:09.640 I/flutter ( 6956): [TIMING] DONE  tapBounded[autoFixA6].tap(noSettle) sau 52ms
+07-03 23:08:09.640 I/flutter ( 6956): [TIMING] START tapBounded[autoFixA6].pump#0 @ 2026-07-03T23:08:09.640411
+07-03 23:08:09.642 W/OnBackInvokedCallback( 6956): OnBackInvokedCallback is not enabled for the application.
+07-03 23:08:09.642 W/OnBackInvokedCallback( 6956): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ #1   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:137:12)
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ #2   <asynchronous suspension>
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛 {
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛   "REQUEST": {
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛     "DOCUMENT": [
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "query GetMaterialGroup($id: Int!) {",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "  __typename",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "  getMaterialGroup(id: $id) {",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "    __typename",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "    ... on ApiResponseMaterialGroup {",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      success",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      code",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      message",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      data {",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        __typename",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        id",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        code",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        name",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        description",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        status",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        parentId",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        parentName",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        createdAt",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        createdBy",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        createdByName",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        updatedAt",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        updatedBy",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "        updatedByName",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      }",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "    }",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "    ... on ErrorResponse {",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      id",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      code",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      serverResponse",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      message",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      statusCode",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      path",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      timestamp",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "      details",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "    }",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "  }",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "}"
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛     ],
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛     "rootField": "getMaterialGroup",
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛     "variables": {
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛       "id": 28
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛     }
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛   }
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG │ 🐛 }
+07-03 23:08:09.783 I/flutter ( 6956): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:08:09.801 I/flutter ( 6956): ERROR ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ OperationException(linkException: ServerException(originalException: null, originalStackTrace: null, parsedResponse: Response(data: null, errors: [GraphQLError(message: Cannot query field "createdByName" on type "MaterialGroup". Did you mean "createdBy" or "createdAt"?, locations: [ErrorLocation(line: 20, column: 9)], path: null, extensions: {code: GRAPHQL_VALIDATION_FAILED, stacktrace: [GraphQLError: Cannot query field "createdByName" on type "MaterialGroup". Did you mean "createdBy" or "createdAt"?,     at Object.Field (/src/node_modules/graphql/validation/rules/FieldsOnCorrectTypeRule.js:80:13),     at Object.enter (/src/node_modules/graphql/language/visitor.js:342:32),     at Object.enter (/src/node_modules/graphql/utilities/TypeInfo.js:834:27),     at visit (/src/node_modules/graphql/language/visitor.js:219:21),     at validate (/src/node_modules/graphql/validation/validate.js:160:24),     at /src/node_modules/@opentelemetry/instrumentation-graphql/build/src/instrumentation.js:205:33,     at s
+07-03 23:08:09.801 I/flutter ( 6956): ERROR ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:181:14)
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ #3   <asynchronous suspension>
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ #4   MaterialGroupDetailCubit.load.<anonymous closure> (package:cardoctor_garage_v3/ui/inventory_catalog/material_group_detail/material_group_detail_cubit.dart:21:24)
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ #5   <asynchronous suspension>
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ #6   BaseCubit.launch.<anonymous closure> (package:cardoctor_garage_v3/core/common/bases/bloc/base_cubit.dart:22:34)
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ #7   <asynchronous suspension>
+07-03 23:08:09.801 I/flutter ( 6956): ERROR ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 23:08:09.801 I/flutter ( 6956): ERROR │ ⛔ GraphQL exception
+07-03 23:08:09.801 I/flutter ( 6956): ERROR └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:08:10.135 W/AccessibilityManagerService(  505):  wait for adding window timeout: 1112
+07-03 23:08:10.282 I/flutter ( 6956): ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+07-03 23:08:10.283 I/flutter ( 6956): The following ServerError was thrown running a test:
+07-03 23:08:10.283 I/flutter ( 6956): Unauthorized
+07-03 23:08:10.283 I/flutter ( 6956): 
+07-03 23:08:10.283 I/flutter ( 6956): When the exception was thrown, this was the stack:
+07-03 23:08:10.283 I/flutter ( 6956): #0      GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:212:9)
+07-03 23:08:10.283 I/flutter ( 6956): #1      GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 23:08:10.283 I/flutter ( 6956): <asynchronous suspension>
+07-03 23:08:10.283 I/flutter ( 6956): #2      MaterialGroupDetailCubit.load.<anonymous closure> (package:cardoctor_garage_v3/ui/inventory_catalog/material_group_detail/material_group_detail_cubit.dart:21:24)
+07-03 23:08:10.283 I/flutter ( 6956): <asynchronous suspension>
+07-03 23:08:10.283 I/flutter ( 6956): #3      BaseCubit.launch.<anonymous closure> (package:cardoctor_garage_v3/core/common/bases/bloc/base_cubit.dart:22:34)

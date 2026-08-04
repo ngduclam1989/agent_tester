@@ -1,0 +1,3008 @@
+# Knowledge Graph — gf-purchase
+
+boundary: "gf-purchase"
+version: 4
+last_updated: "2026-05-19"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý domain mua hàng của garage: quotation ask, quotation bid/pricing, purchase request, purchase order, direct purchase order, receipt-facing state, payment reconciliation, supplier, cart, dashboard realtime và tích hợp inventory/agent/payment."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Kafka", data_store: "PostgreSQL + Redis" }
+  epics: []
+  features: []
+  integration_ref: ""
+  integration_consumers: ["agg-garage-graph", "gf-erp-agent", "gf-inventory", "gf-sales", "gf-shipment", "gf-system"]
+
+apis:
+  # =====================================================================
+  # Public v1 — superseded by v2/v3 hoặc giữ lại do không có bản kế thừa.
+  # =====================================================================
+
+  # v1 — PurchaseRequestController (no class-level feature flag)
+  - name: "v1-pr-create"
+    path: "/api/v1/purchase-request"
+    method: POST
+    purpose: "Create purchase request"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-pr-create"
+    request:
+      schema:
+        purchase_request: object
+    response:
+      schema:
+        id: long
+
+  - name: "v1-pr-confirm"
+    path: "/api/v1/purchase-request/confirm/{id}"
+    method: PUT
+    purpose: "Confirm purchase request"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-pr-confirm"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        status: string
+
+  - name: "v1-pr-cancel"
+    path: "/api/v1/purchase-request/cancel"
+    method: PUT
+    purpose: "Cancel purchase request"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-pr-cancel"
+    request:
+      schema:
+        prCode: string
+        reason: string
+    response:
+      schema:
+        status: string
+
+  - name: "v1-pr-detail-by-id"
+    path: "/api/v1/purchase-request/{purchaseId}"
+    method: GET
+    purpose: "Get PR detail by id"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-pr-detail-by-id"
+    request:
+      schema:
+        purchaseId: long
+    response:
+      schema:
+        purchase_request: object
+
+  - name: "v1-pr-detail-by-code"
+    path: "/api/v1/purchase-request/detail/{code}"
+    method: GET
+    purpose: "Get PR detail by code"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-pr-detail-by-code"
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        purchase_request: object
+
+  - name: "v1-pr-search"
+    path: "/api/v1/purchase-request/search"
+    method: GET
+    purpose: "Search PRs (paginated)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-pr-search"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v1-pr-saas-tenant-basic"
+    path: "/api/v1/purchase-request/saas-tenant"
+    method: GET
+    purpose: "Get SaaS tenant basic info for PR flow (không có bản v2)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        tenant: object
+
+  - name: "v1-pr-chat"
+    path: "/api/v1/purchase-request/chat/{code}"
+    method: GET
+    purpose: "Chat-friendly PR snapshot by code"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-pr-chat"
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        snapshot: object
+
+  # v1 — QuotationAskPricingController (no class-level feature flag)
+  - name: "v1-qa-pricing-request"
+    path: "/api/v1/quotation-pricing/request"
+    method: POST
+    purpose: "Submit pricing request for quotation ask"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-qa-pricing-request"
+    request:
+      schema:
+        pricing: object
+    response:
+      schema:
+        id: long
+
+  # v1 — CartController (no class-level feature flag)
+  - name: "v1-cart-get"
+    path: "/api/v1/cart"
+    method: GET
+    purpose: "Get current user cart (không còn giá trị nghiệp vụ, nhưng mobile vẫn gọi thừa)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-cart-get"
+    request:
+      schema: {}
+    response:
+      schema:
+        cart: object
+
+  - name: "v1-cart-add"
+    path: "/api/v1/cart/add/{sparePartPriceLineItemId}"
+    method: POST
+    purpose: "Add bid line item to cart"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-cart-add"
+    request:
+      schema:
+        sparePartPriceLineItemId: long
+        quantity: integer
+    response:
+      schema:
+        cart: object
+
+  - name: "v1-cart-update"
+    path: "/api/v1/cart"
+    method: PUT
+    purpose: "Update cart line"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-cart-update"
+    request:
+      schema:
+        cartItem: object
+    response:
+      schema:
+        cart: object
+
+  - name: "v1-cart-delete"
+    path: "/api/v1/cart/{id}"
+    method: DELETE
+    purpose: "Remove cart line"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-cart-delete"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        deleted: boolean
+
+  # v1 — PurchaseOrderController (no class-level feature flag)
+  - name: "v1-po-detail-by-id"
+    path: "/api/v1/purchase-order/{purchaseId}"
+    method: GET
+    purpose: "Get PO detail by id"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-po-detail-by-id"
+    request:
+      schema:
+        purchaseId: long
+    response:
+      schema:
+        purchase_order: object
+
+  - name: "v1-po-detail-by-code"
+    path: "/api/v1/purchase-order/detail/{code}"
+    method: GET
+    purpose: "Get PO detail by code"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-po-detail-by-code"
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        purchase_order: object
+
+  - name: "v1-po-search"
+    path: "/api/v1/purchase-order/search"
+    method: GET
+    purpose: "Search POs (paginated)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-po-search"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v1-po-confirm-received-by-id"
+    path: "/api/v1/purchase-order/{purchaseOrderId}/confirm-received"
+    method: POST
+    purpose: "Confirm received PO — drives state machine"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-po-confirm-received-by-id"
+    request:
+      schema:
+        purchaseOrderId: long
+    response:
+      schema:
+        status: string
+
+  - name: "v1-po-confirm-received-by-code"
+    path: "/api/v1/purchase-order/confirm-received/{code}"
+    method: POST
+    purpose: "Confirm received PO by code"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-po-confirm-received-by-code"
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        status: string
+
+  # v1 — DashboardStatisticsController (no class-level feature flag)
+  - name: "v1-dashboard-stats"
+    path: "/api/v1/dashboard/stats"
+    method: GET
+    purpose: "Dashboard aggregate stats"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-dashboard-stats"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        stats: object
+
+  - name: "v1-dashboard-spending-overview"
+    path: "/api/v1/dashboard/spending-overview"
+    method: GET
+    purpose: "Spending overview (cached)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-dashboard-spending-overview"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        overview: object
+
+  - name: "v1-dashboard-spending-chart"
+    path: "/api/v1/dashboard/spending-chart"
+    method: GET
+    purpose: "Spending chart series (cached)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-dashboard-spending-chart"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        chart: object
+
+  # v1 — QuotationAskController (no class-level feature flag)
+  - name: "v1-qa-create"
+    path: "/api/v1/quotation-asks"
+    method: POST
+    purpose: "Create quotation ask"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-qa-create"
+    request:
+      schema:
+        quotation: object
+    response:
+      schema:
+        id: long
+
+  - name: "v1-qa-get-by-id"
+    path: "/api/v1/quotation-asks/{id}"
+    method: GET
+    purpose: "Get quotation ask by id"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-qa-get-by-id"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        quotation_ask: object
+
+  - name: "v1-qa-get-by-code"
+    path: "/api/v1/quotation-asks/detail/{code}"
+    method: GET
+    purpose: "Get quotation ask detail by code"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-qa-get-by-code"
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        quotation_ask: object
+
+  - name: "v1-qa-list"
+    path: "/api/v1/quotation-asks"
+    method: GET
+    purpose: "List quotation asks (paginated)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-qa-list"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v1-qa-spare-parts"
+    path: "/api/v1/quotation-asks/spare-parts"
+    method: GET
+    purpose: "Spare-part suggestions for QA flow"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v1-qa-cancel"
+    path: "/api/v1/quotation-asks/{id}"
+    method: DELETE
+    purpose: "Cancel quotation ask — endpoint present but service body commented out (no-op stub in QuotationAskController:77)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        cancelled: boolean
+
+  - name: "v1-qa-history"
+    path: "/api/v1/quotation-asks/{quotationAskCode}/histories"
+    method: GET
+    purpose: "Quotation ask audit history"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-qa-history"
+    request:
+      schema:
+        quotationAskCode: string
+    response:
+      schema:
+        items: array
+
+  - name: "v1-qa-chat"
+    path: "/api/v1/quotation-asks/chat/{code}"
+    method: GET
+    purpose: "Chat-friendly QA snapshot by code"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-qa-chat"
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        snapshot: object
+
+  # v1 — TenantController (no class-level feature flag)
+  - name: "v1-tenant-info"
+    path: "/api/v1/tenant/info"
+    method: GET
+    purpose: "Tenant profile info"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-tenant-info"
+    request:
+      schema: {}
+    response:
+      schema:
+        tenant: object
+
+  - name: "v1-tenant-tc-data-privacy-confirmed"
+    path: "/api/v1/tenant/tc-data-privacy-confirmed"
+    method: POST
+    purpose: "Mark T&C / data privacy consent for tenant"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-tenant-tc-data-privacy-confirmed"
+    request:
+      schema: {}
+    response:
+      schema:
+        status: string
+
+  - name: "v1-tenant-ecommerce-confirmed"
+    path: "/api/v1/tenant/ecommerce-confirmed"
+    method: POST
+    purpose: "Confirm tenant ecommerce onboarding"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-tenant-ecommerce-confirmed"
+    request:
+      schema: {}
+    response:
+      schema:
+        status: string
+
+  - name: "v1-tenant-current-user"
+    path: "/api/v1/tenant/current-user"
+    method: GET
+    purpose: "Current user profile within tenant"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-tenant-current-user"
+    request:
+      schema: {}
+    response:
+      schema:
+        user: object
+
+  - name: "v1-tenant-current-user-delete"
+    path: "/api/v1/tenant/current-user"
+    method: DELETE
+    purpose: "Delete current user from tenant"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-tenant-current-user-delete"
+    request:
+      schema: {}
+    response:
+      schema:
+        deleted: boolean
+
+  # v1 — UserController (no class-level feature flag)
+  - name: "v1-user-preferences"
+    path: "/api/v1/user/preferences"
+    method: GET
+    purpose: "User preferences"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-user-preferences"
+    request:
+      schema: {}
+    response:
+      schema:
+        preferences: object
+
+  # v1 — DirectPurchaseOrderController (class-level @FeatureOn DIRECT_PURCHASE_V01_KEY)
+  - name: "v1-direct-po-create"
+    path: "/api/v1/direct-purchase-orders"
+    method: POST
+    purpose: "Create DIRECT PO (no QA/PR flow)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        purchase: object
+    response:
+      schema:
+        id: long
+
+  - name: "v1-direct-po-update"
+    path: "/api/v1/direct-purchase-orders/{poCode}"
+    method: PUT
+    purpose: "Update DIRECT PO"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        poCode: string
+        purchase: object
+    response:
+      schema:
+        purchase_order: object
+
+  - name: "v1-direct-po-update-status"
+    path: "/api/v1/direct-purchase-orders/{poCode}/status"
+    method: PUT
+    purpose: "Update DIRECT PO status"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        poCode: string
+        status: string
+    response:
+      schema:
+        status: string
+
+  - name: "v1-direct-po-update-attachments"
+    path: "/api/v1/direct-purchase-orders/{poCode}/attachments"
+    method: PUT
+    purpose: "Update DIRECT PO attachments"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        poCode: string
+        attachments: array
+    response:
+      schema:
+        attachments: array
+
+  - name: "v1-direct-po-by-service-order"
+    path: "/api/v1/direct-purchase-orders/related-service-order/{serviceOrderCode}"
+    method: GET
+    purpose: "List DIRECT POs related to a service order"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        serviceOrderCode: string
+    response:
+      schema:
+        items: array
+
+  # v1 — VariablesController (no class-level feature flag)
+  - name: "v1-variables-mobile"
+    path: "/api/v1/variables/mobile"
+    method: GET
+    purpose: "Mobile-side configurable variables"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v2-variables-mobile"
+    request:
+      schema: {}
+    response:
+      schema:
+        variables: object
+
+  # v1 — TestingController (conditional `app.test-api-enabled=true`, dev-only)
+  - name: "v1-testing-encrypt"
+    path: "/api/v1/testing/encrypt/{text}"
+    method: POST
+    purpose: "Test-only KMS encrypt (dev profile only)"
+    status: unused
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        text: string
+    response:
+      schema:
+        encrypted: string
+
+  - name: "v1-testing-decrypt"
+    path: "/api/v1/testing/decrypt/{text}"
+    method: POST
+    purpose: "Test-only KMS decrypt (dev profile only)"
+    status: unused
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        text: string
+    response:
+      schema:
+        decrypted: string
+
+  - name: "v1-testing-payment-checksum"
+    path: "/api/v1/testing/payment-checksum/{prId}"
+    method: GET
+    purpose: "Test-only payment checksum generator (dev profile only)"
+    status: unused
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        prId: long
+    response:
+      schema:
+        checksum: string
+
+  # =====================================================================
+  # Public v2 — current production surface (trừ Cart/Pricing đã deprecated).
+  # =====================================================================
+
+  # v2 — CartControllerV2 (class-level @Deprecated)
+  - name: "v2-cart-get"
+    path: "/api/v2/cart"
+    method: GET
+    purpose: "Get current user cart (class-level @Deprecated)"
+    status: deprecated
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        cart: object
+
+  - name: "v2-cart-add"
+    path: "/api/v2/cart/add/{sparePartPriceLineItemId}"
+    method: POST
+    purpose: "Add bid line item to cart (class-level @Deprecated)"
+    status: deprecated
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        sparePartPriceLineItemId: long
+        quantity: integer
+    response:
+      schema:
+        cart: object
+
+  - name: "v2-cart-update"
+    path: "/api/v2/cart"
+    method: PUT
+    purpose: "Update cart line (class-level @Deprecated)"
+    status: deprecated
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        cartItem: object
+    response:
+      schema:
+        cart: object
+
+  - name: "v2-cart-delete"
+    path: "/api/v2/cart/{id}"
+    method: DELETE
+    purpose: "Remove cart line (class-level @Deprecated)"
+    status: deprecated
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        deleted: boolean
+
+  # v2 — DashboardRealTimeController (class-level @FeatureOn Dashboard:Basicdashboard)
+  - name: "v2-dashboard-realtime-qa-asking"
+    path: "/api/v2/dashboard/realtime/quotation-asks-asking-count"
+    method: GET
+    purpose: "Realtime count of QAs in ASKING state"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        count: integer
+
+  - name: "v2-dashboard-realtime-po-delivering"
+    path: "/api/v2/dashboard/realtime/purchase-orders-delivering-count"
+    method: GET
+    purpose: "Realtime count of POs in DELIVERING state"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        count: integer
+
+  # v2 — DashboardStatisticsControllerV2 (no class-level feature flag)
+  - name: "v2-dashboard-stats"
+    path: "/api/v2/dashboard/stats"
+    method: GET
+    purpose: "Dashboard aggregate stats"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        stats: object
+
+  - name: "v2-dashboard-spending-overview"
+    path: "/api/v2/dashboard/spending-overview"
+    method: GET
+    purpose: "Spending overview (cached)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        overview: object
+
+  - name: "v2-dashboard-spending-chart"
+    path: "/api/v2/dashboard/spending-chart"
+    method: GET
+    purpose: "Spending chart series (cached)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        chart: object
+
+  # v2 — FeatureFlagControllerV2 (no class-level feature flag)
+  - name: "v2-feature-flags-mobile"
+    path: "/api/v2/feature-flags/mobile"
+    method: GET
+    purpose: "Mobile feature flags snapshot"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        flags: object
+
+  # v2 — PurchaseOrderControllerV2 (no class-level feature flag)
+  - name: "v2-po-detail-by-id"
+    path: "/api/v2/purchase-order/{purchaseId}"
+    method: GET
+    purpose: "Get PO detail by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        purchaseId: long
+    response:
+      schema:
+        purchase_order: object
+
+  - name: "v2-po-detail-by-code"
+    path: "/api/v2/purchase-order/detail/{code}"
+    method: GET
+    purpose: "Get PO detail by code"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v3-po-detail-by-code"
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        purchase_order: object
+
+  - name: "v2-po-search"
+    path: "/api/v2/purchase-order/search"
+    method: GET
+    purpose: "Search POs (paginated)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v3-po-search"
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v2-po-search-web"
+    path: "/api/v2/purchase-order/search-web"
+    method: GET
+    purpose: "Search POs for web (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v2-po-confirm-received-by-id"
+    path: "/api/v2/purchase-order/{purchaseOrderId}/confirm-received"
+    method: POST
+    purpose: "Confirm received PO by id — drives state machine"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        purchaseOrderId: long
+    response:
+      schema:
+        status: string
+
+  - name: "v2-po-confirm-received-by-code"
+    path: "/api/v2/purchase-order/confirm-received/{code}"
+    method: POST
+    purpose: "Confirm received PO by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        status: string
+
+  - name: "v2-po-for-receipt"
+    path: "/api/v2/purchase-order/{code}/for-receipt"
+    method: GET
+    purpose: "PO data tailored for receipt creation"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        purchase_order: object
+
+  # v2 — PurchaseRequestControllerV2 (no class-level feature flag)
+  - name: "v2-pr-create"
+    path: "/api/v2/purchase-request"
+    method: POST
+    purpose: "Create purchase request from quotation ask (V2 flow — code XNDH-{qaId})"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        purchase_request: object
+    response:
+      schema:
+        id: long
+
+  - name: "v2-pr-confirm"
+    path: "/api/v2/purchase-request/confirm/{id}"
+    method: PUT
+    purpose: "Confirm PR by id (method-level @Deprecated)"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        status: string
+
+  - name: "v2-pr-cancel"
+    path: "/api/v2/purchase-request/cancel"
+    method: PUT
+    purpose: "Cancel PR — chỉ hợp lệ khi mọi PO còn WAIT_TO_CONFIRM"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        prCode: string
+        reason: string
+    response:
+      schema:
+        status: string
+
+  - name: "v2-pr-detail-by-id"
+    path: "/api/v2/purchase-request/{purchaseId}"
+    method: GET
+    purpose: "Get PR detail by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        purchaseId: long
+    response:
+      schema:
+        purchase_request: object
+
+  - name: "v2-pr-detail-by-code"
+    path: "/api/v2/purchase-request/detail/{code}"
+    method: GET
+    purpose: "Get PR detail by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        purchase_request: object
+
+  - name: "v2-pr-search"
+    path: "/api/v2/purchase-request/search"
+    method: GET
+    purpose: "Search PRs (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v2-pr-search-for-web"
+    path: "/api/v2/purchase-request/search-for-web"
+    method: GET
+    purpose: "Search PRs for web (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v2-pr-chat"
+    path: "/api/v2/purchase-request/chat/{code}"
+    method: GET
+    purpose: "Chat-friendly PR snapshot by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        snapshot: object
+
+  - name: "v2-pr-payment-methods"
+    path: "/api/v2/purchase-request/payment-methods"
+    method: GET
+    purpose: "Enabled payment methods (gated bởi app.payment.enabled-methods)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        methods: array
+
+  - name: "v2-pr-change-payment-method"
+    path: "/api/v2/purchase-request/change-payment-method/{id}"
+    method: PUT
+    purpose: "Change payment method for PR — method-level @Deprecated, body throws InvalidOperationException unconditionally; service logic commented out, không còn reachable."
+    status: deprecated
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        paymentMethod: string
+    response:
+      schema:
+        status: string
+
+  - name: "v2-pr-place-order"
+    path: "/api/v2/purchase-request/place-order/{prId}"
+    method: POST
+    purpose: "Create POs từ paid PR"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        prId: long
+    response:
+      schema:
+        purchase_orders: array
+
+  - name: "v2-pr-checkout-qr"
+    path: "/api/v2/purchase-request/checkout/qr/{prId}"
+    method: POST
+    purpose: "Initialize QR payment (POST_PAID_QR/PRE_PAID_QR)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        prId: long
+    response:
+      schema:
+        qr_payload: object
+
+  - name: "v2-pr-checkout-cc"
+    path: "/api/v2/purchase-request/checkout/cc/{prId}"
+    method: POST
+    purpose: "Initialize credit card payment (PRE_PAID_CC)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        prId: long
+    response:
+      schema:
+        cc_payload: object
+
+  # v2 — QuotationAskControllerV2 (no class-level feature flag)
+  - name: "v2-qa-create"
+    path: "/api/v2/quotation-asks"
+    method: POST
+    purpose: "Create quotation ask"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v3-qa-create"
+    request:
+      schema:
+        quotation: object
+    response:
+      schema:
+        id: long
+
+  - name: "v2-qa-get-by-id"
+    path: "/api/v2/quotation-asks/{id}"
+    method: GET
+    purpose: "Get quotation ask by id"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v3-qa-get-by-id"
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        quotation_ask: object
+
+  - name: "v2-qa-get-by-code"
+    path: "/api/v2/quotation-asks/detail/{code}"
+    method: GET
+    purpose: "Get quotation ask detail by code"
+    status: deprecated
+    active_callers: ["agg-garage-graph"]
+    replaced_by: "v3-qa-get-by-code"
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        quotation_ask: object
+
+  - name: "v2-qa-list"
+    path: "/api/v2/quotation-asks"
+    method: GET
+    purpose: "List quotation asks (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v2-qa-search-for-web"
+    path: "/api/v2/quotation-asks/search-for-web"
+    method: GET
+    purpose: "Search quotation asks for web (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v2-qa-history"
+    path: "/api/v2/quotation-asks/{quotationAskCode}/histories"
+    method: GET
+    purpose: "Quotation ask audit history"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        quotationAskCode: string
+    response:
+      schema:
+        items: array
+
+  - name: "v2-qa-chat"
+    path: "/api/v2/quotation-asks/chat/{code}"
+    method: GET
+    purpose: "Chat-friendly QA snapshot by code"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        snapshot: object
+
+  - name: "v2-qa-ocr-upload"
+    path: "/api/v2/quotation-asks/ocr/upload"
+    method: POST
+    purpose: "Extract car-registration info từ ảnh đăng ký xe (OCR)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        file: binary
+    response:
+      schema:
+        vehicle_info: object
+
+  - name: "v2-qa-preliminary-quotation"
+    path: "/api/v2/quotation-asks/{code}/preliminary-quotation"
+    method: GET
+    purpose: "Get preliminary quotation gắn với quotation ask. Method-level @FeatureOn(Marketplace:QuotationConsultant)."
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        preliminary: object
+
+  # v2 — QuotationAskPricingControllerV2 (class-level @Deprecated)
+  - name: "v2-qa-pricing-request"
+    path: "/api/v2/quotation-pricing/request"
+    method: POST
+    purpose: "Submit pricing request for QA (class-level @Deprecated)"
+    status: deprecated
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        pricing: object
+    response:
+      schema:
+        id: long
+
+  # v2 — SupplierControllerV2 (class-level @FeatureOn DirectPurchase:DirectPurchaseV01)
+  - name: "v2-supplier-create"
+    path: "/api/v2/suppliers"
+    method: POST
+    purpose: "Create direct supplier (tenant-scoped)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        supplier: object
+    response:
+      schema:
+        supplier: object
+
+  - name: "v2-supplier-update"
+    path: "/api/v2/suppliers/{supplierId}"
+    method: PUT
+    purpose: "Update supplier"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        supplierId: long
+        supplier: object
+    response:
+      schema:
+        supplier: object
+
+  - name: "v2-supplier-get-by-id"
+    path: "/api/v2/suppliers/{supplierId}"
+    method: GET
+    purpose: "Get supplier by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        supplierId: long
+    response:
+      schema:
+        supplier: object
+
+  - name: "v2-supplier-search"
+    path: "/api/v2/suppliers/search"
+    method: POST
+    purpose: "Search suppliers (POST với body filter)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v2-supplier-toggle-status"
+    path: "/api/v2/suppliers/{supplierId}/toggle-status"
+    method: POST
+    purpose: "Toggle supplier is_active"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        supplierId: long
+    response:
+      schema:
+        is_active: boolean
+
+  # v2 — TenantControllerV2 (no class-level feature flag)
+  - name: "v2-tenant-info"
+    path: "/api/v2/tenant/info"
+    method: GET
+    purpose: "Tenant profile info"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        tenant: object
+
+  - name: "v2-tenant-tc-data-privacy-confirmed"
+    path: "/api/v2/tenant/tc-data-privacy-confirmed"
+    method: POST
+    purpose: "Mark T&C / data privacy consent for tenant"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        status: string
+
+  - name: "v2-tenant-ecommerce-confirmed"
+    path: "/api/v2/tenant/ecommerce-confirmed"
+    method: POST
+    purpose: "Confirm tenant ecommerce onboarding"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        status: string
+
+  - name: "v2-tenant-current-user"
+    path: "/api/v2/tenant/current-user"
+    method: GET
+    purpose: "Current user profile within tenant"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        user: object
+
+  - name: "v2-tenant-current-user-delete"
+    path: "/api/v2/tenant/current-user"
+    method: DELETE
+    purpose: "Delete current user from tenant"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        deleted: boolean
+
+  # v2 — UserControllerV2 (no class-level feature flag)
+  - name: "v2-user-preferences"
+    path: "/api/v2/user/preferences"
+    method: GET
+    purpose: "User preferences"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        preferences: object
+
+  - name: "v2-user-cards"
+    path: "/api/v2/user/cards"
+    method: GET
+    purpose: "List saved user cards (tokenized)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        cards: array
+
+  - name: "v2-user-card-delete"
+    path: "/api/v2/user/cards/{id}"
+    method: DELETE
+    purpose: "Soft-delete user card by id (current user only)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        deleted: boolean
+
+  # v2 — VariablesControllerV2 (no class-level feature flag)
+  - name: "v2-variables-mobile"
+    path: "/api/v2/variables/mobile"
+    method: GET
+    purpose: "Mobile-side configurable variables"
+    status: unused
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        variables: object
+
+  # =====================================================================
+  # Public v3 — bản kế thừa mới nhất cho quotation ask + purchase order.
+  # =====================================================================
+
+  # v3 — PurchaseOrderControllerV3 (no class-level gate; method-level @FeatureOn DirectPurchase:DirectPurchaseV01 on detail/supplier-names/search + Purchase:PurchaseV02 on transport-route-references)
+  - name: "v3-po-detail-by-code"
+    path: "/api/v3/purchase-order/detail/{code}"
+    method: GET
+    purpose: "Get PO detail by code (V3 — bản mới của v2-po-detail-by-code)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        purchase_order: object
+
+  - name: "v3-po-supplier-names"
+    path: "/api/v3/purchase-order/supplier-names"
+    method: POST
+    purpose: "Get supplier names for list of PO codes (batch lookup)"
+    status: unused
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        purchaseOrderCodes: array
+    response:
+      schema:
+        items: array
+
+  - name: "v3-po-search"
+    path: "/api/v3/purchase-order/search"
+    method: GET
+    purpose: "Search POs (V3 — bản mới của v2-po-search)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "v3-po-transport-route-references"
+    path: "/api/v3/purchase-order/tenant-transporter-registry/{id}/references"
+    method: GET
+    purpose: "Get transport-route usage references cho PO"
+    status: unused
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        references: array
+
+  # v3 — QuotationAskControllerV3 (no class-level feature flag)
+  - name: "v3-qa-create"
+    path: "/api/v3/quotation-asks"
+    method: POST
+    purpose: "Create quotation ask (V3 — bản mới của v2-qa-create)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        quotation: object
+    response:
+      schema:
+        id: long
+
+  - name: "v3-qa-tenant-invoice-info"
+    path: "/api/v3/quotation-asks/tenant-invoice-info"
+    method: GET
+    purpose: "Get tenant invoice info phục vụ tạo quotation ask"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        invoice_info: object
+
+  - name: "v3-qa-get-by-id"
+    path: "/api/v3/quotation-asks/{id}"
+    method: GET
+    purpose: "Get quotation ask by id (V3 — bản mới của v2-qa-get-by-id)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        quotation_ask: object
+
+  - name: "v3-qa-get-by-code"
+    path: "/api/v3/quotation-asks/detail/{code}"
+    method: GET
+    purpose: "Get quotation ask detail by code (V3 — bản mới của v2-qa-get-by-code)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        quotation_ask: object
+
+  # =====================================================================
+  # Internal protected — x-api-key (trừ một số endpoint dùng X-Tenant-ID).
+  # =====================================================================
+
+  # Internal — InternalBatchController (x-api-key, no class feature flag)
+  - name: "internal-batch-inbound"
+    path: "/protected/v1/batch/inbound"
+    method: POST
+    purpose: "Worker batch process inbound message rows"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        processed: integer
+
+  - name: "internal-batch-outbound"
+    path: "/protected/v1/batch/outbound"
+    method: POST
+    purpose: "Worker batch publish outbound message rows"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        published: integer
+
+  # Internal — InternalPurchaseController (x-api-key, no class feature flag)
+  - name: "internal-po-update"
+    path: "/protected/v1/purchase-orders"
+    method: PUT
+    purpose: "Update PO (multi-field) by gf-erp-agent"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        purchaseOrder: object
+    response:
+      schema:
+        purchase_order: object
+
+  - name: "internal-pr-status-update"
+    path: "/protected/v1/purchase-requests/status"
+    method: PUT
+    purpose: "Update PR status (caller gf-erp-agent)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        prCodes: array
+        status: string
+    response:
+      schema:
+        updated: integer
+
+  - name: "internal-po-stage-update"
+    path: "/protected/v1/purchase-orders/stage"
+    method: PUT
+    purpose: "Update PO stage (caller gf-erp-agent OrderStateUpdatedHandler)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        purchaseOrderCodes: array
+        stage: string
+    response:
+      schema:
+        updated: integer
+
+  - name: "internal-po-status-update"
+    path: "/protected/v1/purchase-orders/status"
+    method: PUT
+    purpose: "Update PO status (caller gf-erp-agent hoặc gf-shipment)"
+    status: internal-only
+    active_callers: ["gf-erp-agent", "gf-shipment"]
+    replaced_by: null
+    request:
+      schema:
+        purchaseOrderCodes: array
+        status: string
+    response:
+      schema:
+        updated: integer
+
+  - name: "internal-po-list"
+    path: "/protected/v1/purchase-orders"
+    method: GET
+    purpose: "Internal list POs (filterable)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "internal-po-get-by-code"
+    path: "/protected/v1/purchase-orders/code/{code}"
+    method: GET
+    purpose: "PO lookup by code (downstream services)"
+    status: internal-only
+    active_callers: ["gf-inventory"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        purchase_order: object
+
+  - name: "internal-pr-update-prepaid"
+    path: "/protected/v1/purchase-requests/prepaid"
+    method: PUT
+    purpose: "Update PR prepaid status (PR_PREPAID handler)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        prCode: string
+        paymentInfo: object
+    response:
+      schema:
+        status: string
+
+  - name: "internal-pr-update-postpaid"
+    path: "/protected/v1/purchase-requests/postpaid"
+    method: PUT
+    purpose: "Update PR postpaid status (PR_POSTPAID handler)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        prCode: string
+        paymentInfo: object
+    response:
+      schema:
+        status: string
+
+  - name: "internal-pr-receive-vendor-confirmation"
+    path: "/protected/v1/purchase-requests/receive-vendor-confirmation"
+    method: PUT
+    purpose: "Receive VENDOR_CONFIRMED signal from ERP"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        prCode: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-po-cod-delivered"
+    path: "/protected/v1/purchase-orders/cod-delivered"
+    method: PUT
+    purpose: "Mark COD PO delivered (DELIVERED_COD_PO handler)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        purchaseOrderCode: string
+    response:
+      schema:
+        status: string
+
+  - name: "internal-po-items"
+    path: "/protected/v1/purchase-orders/{code}/items"
+    method: GET
+    purpose: "PO items for receipt validation (caller gf-inventory). Auth: dùng X-Tenant-ID header thay vì x-api-key (khác pattern các endpoint khác trong InternalPurchaseController)."
+    status: internal-only
+    active_callers: ["gf-inventory"]
+    replaced_by: null
+    request:
+      schema:
+        code: string
+    response:
+      schema:
+        items: array
+
+  - name: "internal-po-transport-route-used"
+    path: "/protected/v1/purchase-orders/transport-routes/{transportRouteId}/used"
+    method: GET
+    purpose: "Check whether a transport route has ever been used by a PO (caller gf-system hoặc gf-logistics). Auth: x-api-key + X-Tenant-ID header."
+    status: internal-only
+    active_callers: ["gf-system"]
+    replaced_by: null
+    request:
+      schema:
+        transportRouteId: long
+        tenantId: long
+    response:
+      schema:
+        used: boolean
+
+  # Internal — InternalQuotationController (x-api-key, no class feature flag)
+  - name: "internal-quotation-ask-update"
+    path: "/protected/v1/quotation-asks"
+    method: PUT
+    purpose: "Update quotation ask (caller gf-erp-agent QuotationAskUpdatedHandler)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        quotation: object
+    response:
+      schema:
+        quotation_ask: object
+
+  - name: "internal-quotation-ask-get"
+    path: "/protected/v1/quotation-asks"
+    method: GET
+    purpose: "Get quotation asks by codes (internal)"
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        codes: array
+    response:
+      schema:
+        items: array
+
+  - name: "internal-quotation-bid-create"
+    path: "/protected/v1/quotation-bids"
+    method: POST
+    purpose: "Create quotation bid from inbound BID_1 (caller gf-erp-agent)"
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        bid: object
+    response:
+      schema:
+        id: long
+
+  - name: "internal-pricing-proposal-create"
+    path: "/protected/v1/pricing-proposals"
+    method: POST
+    purpose: "Create pricing proposal for quotation ask (method-level @Deprecated(forRemoval=true))"
+    status: deprecated
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        proposal: object
+    response:
+      schema:
+        id: long
+
+  - name: "internal-preliminary-quotation-create"
+    path: "/protected/v1/preliminary-quotation"
+    method: POST
+    purpose: "Create or update preliminary quotation (caller gf-erp-agent PreliminaryQuotationHandler). Method-level @FeatureOn(QUOTATION_CONSULTANT_KEY)."
+    status: internal-only
+    active_callers: ["gf-erp-agent"]
+    replaced_by: null
+    request:
+      schema:
+        preliminary: object
+    response:
+      schema:
+        id: long
+
+  # Internal — CacheController (no class feature flag — 28 cache eviction endpoints; 27/28 require x-api-key — DELETE /all KHÔNG require x-api-key)
+  - name: "internal-cache-evict-all"
+    path: "/protected/v1/cache/all"
+    method: DELETE
+    purpose: "Evict all caches"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-dashboard-stats"
+    path: "/protected/v1/cache/dashboard-stats"
+    method: DELETE
+    purpose: "Evict all dashboard-stats cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-dashboard-stats-tenant"
+    path: "/protected/v1/cache/dashboard-stats/{tenantId}"
+    method: DELETE
+    purpose: "Evict dashboard-stats cache for one tenant"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-spending-overview"
+    path: "/protected/v1/cache/spending-overview"
+    method: DELETE
+    purpose: "Evict all spending-overview cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-spending-overview-tenant"
+    path: "/protected/v1/cache/spending-overview/{tenantId}"
+    method: DELETE
+    purpose: "Evict spending-overview cache for one tenant"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-spending-chart"
+    path: "/protected/v1/cache/spending-chart"
+    method: DELETE
+    purpose: "Evict all spending-chart cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-spending-chart-tenant"
+    path: "/protected/v1/cache/spending-chart/{tenantId}"
+    method: DELETE
+    purpose: "Evict spending-chart cache for one tenant"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-quotation-ask"
+    path: "/protected/v1/cache/quotation-ask"
+    method: DELETE
+    purpose: "Evict all quotation-ask cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-quotation-ask-by-id"
+    path: "/protected/v1/cache/quotation-ask/id/{quotationAskId}"
+    method: DELETE
+    purpose: "Evict quotation-ask cache by id"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        quotationAskId: long
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-quotation-ask-by-code"
+    path: "/protected/v1/cache/quotation-ask/code/{quotationAskCode}"
+    method: DELETE
+    purpose: "Evict quotation-ask cache by code"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        quotationAskCode: string
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-quotation-ask-chat"
+    path: "/protected/v1/cache/quotation-ask/chat/{quotationAskCode}"
+    method: DELETE
+    purpose: "Evict quotation-ask chat snapshot cache"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        quotationAskCode: string
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-purchase-request"
+    path: "/protected/v1/cache/purchase-request"
+    method: DELETE
+    purpose: "Evict all purchase-request cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-purchase-request-by-id"
+    path: "/protected/v1/cache/purchase-request/id/{purchaseRequestId}"
+    method: DELETE
+    purpose: "Evict purchase-request cache by id"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        purchaseRequestId: long
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-purchase-request-by-code"
+    path: "/protected/v1/cache/purchase-request/code/{purchaseRequestCode}"
+    method: DELETE
+    purpose: "Evict purchase-request cache by code"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        purchaseRequestCode: string
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-purchase-request-chat"
+    path: "/protected/v1/cache/purchase-request/chat/{purchaseRequestCode}"
+    method: DELETE
+    purpose: "Evict purchase-request chat snapshot cache"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        purchaseRequestCode: string
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-purchase-order"
+    path: "/protected/v1/cache/purchase-order"
+    method: DELETE
+    purpose: "Evict all purchase-order cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-purchase-order-by-id"
+    path: "/protected/v1/cache/purchase-order/id/{purchaseOrderId}"
+    method: DELETE
+    purpose: "Evict purchase-order cache by id"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        purchaseOrderId: long
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-purchase-order-by-code"
+    path: "/protected/v1/cache/purchase-order/code/{purchaseOrderCode}"
+    method: DELETE
+    purpose: "Evict purchase-order cache by code"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        purchaseOrderCode: string
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-user-preferences"
+    path: "/protected/v1/cache/user/preferences"
+    method: DELETE
+    purpose: "Evict all user-preferences cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-user-preferences-by-user"
+    path: "/protected/v1/cache/user/preferences/{userId}"
+    method: DELETE
+    purpose: "Evict user-preferences cache for one user"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        userId: string
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-user-cards"
+    path: "/protected/v1/cache/user/cards"
+    method: DELETE
+    purpose: "Evict all user-cards cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-user-cards-by-user"
+    path: "/protected/v1/cache/user/cards/{userId}"
+    method: DELETE
+    purpose: "Evict user-cards cache for one user"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        userId: string
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-dashboard-realtime-qa-asking"
+    path: "/protected/v1/cache/dashboard-realtime-qa-asking"
+    method: DELETE
+    purpose: "Evict all dashboard-realtime QA-asking cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-dashboard-realtime-qa-asking-tenant"
+    path: "/protected/v1/cache/dashboard-realtime-qa-asking/{tenantId}"
+    method: DELETE
+    purpose: "Evict dashboard-realtime QA-asking cache for one tenant"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-dashboard-realtime-po-delivering"
+    path: "/protected/v1/cache/dashboard-realtime-po-delivering"
+    method: DELETE
+    purpose: "Evict all dashboard-realtime PO-delivering cache entries"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-dashboard-realtime-po-delivering-tenant"
+    path: "/protected/v1/cache/dashboard-realtime-po-delivering/{tenantId}"
+    method: DELETE
+    purpose: "Evict dashboard-realtime PO-delivering cache for one tenant"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-dashboard-realtime-all"
+    path: "/protected/v1/cache/dashboard-realtime-all"
+    method: DELETE
+    purpose: "Evict all dashboard-realtime caches"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        evicted: boolean
+
+  - name: "internal-cache-evict-dashboard-realtime-all-tenant"
+    path: "/protected/v1/cache/dashboard-realtime-all/{tenantId}"
+    method: DELETE
+    purpose: "Evict all dashboard-realtime caches for one tenant"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+    response:
+      schema:
+        evicted: boolean
+
+events:
+  produces:
+    - topic: "AC-NONPROD-DEV-PURCHASE-ORDER-EVENTS"
+      payload:
+        event_version: string
+        message_group: string
+        message_step: string
+        origin_tenant_id: long
+        origin_message_code: string
+        purchase_order_code: string
+        status: string
+        source: string
+      meaning: "PurchaseOrderStatusChanged (EVENT_VERSION 2.0; when status=DELIVERED + source=DIRECT). Outbound message tạo bởi PurchaseOrderEventPublisher qua OutboundMessageService.createMessage với MessageGroup.PO + MessageStep.DELIVERED_2; header `MessageStep` thực sự được set ở PurchaseOrderStatusChangedProducer khi publish lên Kafka từ outbox. Consumed by gf-inventory-worker to trigger receipt creation."
+
+  consumes: []
+
+entities:
+  - name: "QuotationAsk"
+    type: "aggregate_root"
+    description: "Yêu cầu hỏi giá phụ tùng của garage, gồm snapshot tenant, vehicle, spare parts, attachments, trạng thái hỏi giá và thông tin xuất hóa đơn."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR", required: true, constraints: ["unique"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "tenant_name", type: "VARCHAR", required: true }
+      - { name: "tenant_phone_number", type: "VARCHAR", required: false }
+      - { name: "tenant_ops_area", type: "VARCHAR", required: false }
+      - { name: "tenant_address", type: "TEXT", required: false }
+      - { name: "tenant_ops_region", type: "VARCHAR", required: false }
+      - { name: "ask_note", type: "TEXT", required: false }
+      - { name: "is_invoice_required", type: "BOOLEAN", required: true }
+      - { name: "invoice_company_name", type: "VARCHAR", required: false }
+      - { name: "tax_code", type: "VARCHAR", required: false }
+      - { name: "invoice_company_email_address", type: "VARCHAR", required: false }
+      - { name: "invoice_company_address", type: "TEXT", required: false }
+      - { name: "status", type: "QuotationStatus", required: true, constraints: ["OPEN | ASKING | BIDDING | PRICING | ORDER_CONFIRMING | CANCELLED | CLOSED"] }
+      - { name: "is_processed", type: "BOOLEAN", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: false }
+      - { name: "is_best_price", type: "BOOLEAN", required: true }
+      - { name: "quotation_ref_code", type: "VARCHAR", required: false }
+      - { name: "insurance_code", type: "VARCHAR", required: false }
+      - { name: "vehicle_id", type: "BIGINT", required: true }
+      - { name: "version", type: "BIGINT", required: false }
+    relationships:
+      - { target: "AskedVehicle", type: "one_to_one", description: "Một quotation ask tham chiếu một vehicle snapshot qua vehicle_id." }
+      - { target: "AskedSparePart", type: "one_to_many", description: "Một quotation ask có nhiều phụ tùng hỏi mua." }
+      - { target: "AskedAttachment", type: "one_to_many", description: "Một quotation ask có nhiều attachment từ garage/vendor/CSKH." }
+      - { target: "QuotationBid", type: "one_to_many", description: "quotation_ask_code liên kết các báo giá vendor." }
+      - { target: "PreliminaryQuotation", type: "one_to_one", description: "quotation_ask_code unique liên kết báo giá sơ bộ nếu có." }
+      - { target: "QuotationAskHistory", type: "one_to_many", description: "quotation_ask_code liên kết lịch sử thay đổi." }
+    invariants:
+      - "QuotationAsk khởi tạo ở OPEN và isProcessed=false."
+      - "Tạo purchase request từ quotation ask sẽ chuyển status sang ORDER_CONFIRMING."
+      - "Không tạo purchase request nếu quotation ask đã ở ORDER_CONFIRMING, CANCELLED hoặc CLOSED."
+
+  - name: "AskedVehicle"
+    type: "entity"
+    description: "Snapshot thông tin xe trong quotation ask."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "car_brand", type: "VARCHAR", required: true }
+      - { name: "car_model", type: "VARCHAR", required: true }
+      - { name: "year_of_manufacture", type: "VARCHAR", required: false }
+      - { name: "car_type", type: "CarType", required: false }
+      - { name: "trims_level", type: "VARCHAR", required: false }
+      - { name: "vin", type: "VARCHAR", required: false }
+      - { name: "license_plate", type: "VARCHAR", required: false }
+    relationships: []
+    invariants:
+      - "OCR quotation ask validate VIN không được toàn số hoặc toàn chữ trong luồng hiện tại."
+
+  - name: "AskedSparePart"
+    type: "entity"
+    description: "Dòng phụ tùng garage cần hỏi mua trong quotation ask."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR", required: true, constraints: ["unique"] }
+      - { name: "part_name_input", type: "VARCHAR", required: true }
+      - { name: "part_name_unit", type: "VARCHAR", required: true }
+      - { name: "ref_code", type: "VARCHAR", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "deleted", type: "BOOLEAN", required: true }
+      - { name: "quantity", type: "BIGINT", required: false }
+      - { name: "genuine_code", type: "VARCHAR", required: false }
+      - { name: "parent_code", type: "VARCHAR", required: false }
+      - { name: "quotation_ask_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "QuotationAsk", type: "many_to_one", description: "Dòng phụ tùng thuộc một quotation ask." }
+    invariants:
+      - "deleted là soft delete cho phụ tùng hỏi mua."
+
+  - name: "AskedAttachment"
+    type: "entity"
+    description: "Attachment của quotation ask, kèm owner, note và ref_code."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_id", type: "BIGINT", required: true }
+      - { name: "attachment_url", type: "TEXT", required: true }
+      - { name: "owner", type: "OwnerType", required: true, constraints: ["GARAGE | VENDOR | CSKH"] }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "deleted", type: "BOOLEAN", required: true }
+      - { name: "ref_code", type: "VARCHAR", required: false }
+    relationships:
+      - { target: "QuotationAsk", type: "many_to_one", description: "Attachment thuộc một quotation ask." }
+    invariants:
+      - "deleted là soft delete cho attachment."
+
+  - name: "QuotationBid"
+    type: "aggregate_root"
+    description: "Báo giá vendor cho một quotation ask, gồm phụ tùng báo giá, line item giá và phụ tùng vendor thêm."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "tenant_type", type: "TenantType", required: true }
+      - { name: "quotation_ask_code", type: "VARCHAR", required: false }
+      - { name: "bid_type", type: "BidType", required: true }
+      - { name: "status", type: "QuotationBidStatus", required: true, constraints: ["OPEN | PRICED | SOLD_OUT | CANCELLED | CLOSED"] }
+      - { name: "note", type: "VARCHAR", required: false }
+      - { name: "version", type: "BIGINT", required: false }
+    relationships:
+      - { target: "BiddedSparePart", type: "one_to_many", description: "Một bid có nhiều phụ tùng vendor báo." }
+      - { target: "SparePartPriceLineItem", type: "one_to_many", description: "Một bid có nhiều dòng giá theo phụ tùng garage yêu cầu." }
+      - { target: "AddedSparePartPriceLineItem", type: "one_to_many", description: "Một bid có nhiều dòng giá cho phụ tùng vendor thêm." }
+    invariants:
+      - "quotation_ask_code là liên kết logic tới QuotationAsk.code, không thấy FK vật lý."
+
+  - name: "BiddedSparePart"
+    type: "entity"
+    description: "Phụ tùng vendor báo trong quotation bid."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR", required: false, constraints: ["unique"] }
+      - { name: "ref_code", type: "VARCHAR", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "part_name_input", type: "VARCHAR", required: true }
+      - { name: "part_name_unit", type: "VARCHAR", required: false }
+      - { name: "deleted", type: "BOOLEAN", required: true }
+      - { name: "quotation_bid_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "QuotationBid", type: "many_to_one", description: "Dòng phụ tùng thuộc một quotation bid." }
+    invariants:
+      - "deleted là soft delete cho phụ tùng vendor báo."
+
+  - name: "SparePartPriceLineItem"
+    type: "entity"
+    description: "Dòng giá của vendor cho phụ tùng garage hỏi mua."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "spare_part_input_code", type: "VARCHAR", required: false }
+      - { name: "segment", type: "Segment", required: true }
+      - { name: "price", type: "NUMERIC", required: false }
+      - { name: "currency", type: "VARCHAR", required: false }
+      - { name: "unit", type: "VARCHAR", required: false }
+      - { name: "picked_to_po", type: "BOOLEAN", required: true }
+      - { name: "detail_status", type: "BOOLEAN", required: true }
+      - { name: "receive_detail_status", type: "BOOLEAN", required: true }
+      - { name: "quantity", type: "INTEGER", required: false }
+      - { name: "material_price", type: "NUMERIC", required: false }
+      - { name: "servicing_price", type: "NUMERIC", required: false }
+      - { name: "deleted", type: "BOOLEAN", required: true }
+      - { name: "quotation_bid_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "QuotationBid", type: "many_to_one", description: "Line item thuộc một quotation bid." }
+    invariants:
+      - "picked_to_po đánh dấu dòng đã được chọn sang purchase order."
+
+  - name: "AddedSparePartPriceLineItem"
+    type: "entity"
+    description: "Dòng giá cho phụ tùng vendor thêm ngoài danh sách garage hỏi mua."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "spare_part_input_code", type: "VARCHAR", required: false }
+      - { name: "segment", type: "Segment", required: true }
+      - { name: "price", type: "NUMERIC", required: false }
+      - { name: "currency", type: "VARCHAR", required: false }
+      - { name: "unit", type: "VARCHAR", required: false }
+      - { name: "picked_to_po", type: "BOOLEAN", required: true }
+      - { name: "deleted", type: "BOOLEAN", required: true }
+      - { name: "detail_status", type: "BOOLEAN", required: true }
+      - { name: "receive_detail_status", type: "BOOLEAN", required: true }
+      - { name: "quantity", type: "INTEGER", required: false }
+      - { name: "material_price", type: "NUMERIC", required: false }
+      - { name: "servicing_price", type: "NUMERIC", required: false }
+      - { name: "quotation_bid_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "QuotationBid", type: "many_to_one", description: "Line item phụ tùng thêm thuộc một quotation bid." }
+    invariants:
+      - "deleted là soft delete cho dòng giá phụ tùng vendor thêm."
+
+  - name: "QuotationAskPricingRequest"
+    type: "aggregate_root"
+    description: "Yêu cầu hỏi giá chi tiết gửi tới vendor theo quotation ask."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_code", type: "VARCHAR", required: true }
+      - { name: "origin_tenant_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "AskedSparePartPricingRequest", type: "one_to_many", description: "Một pricing request có nhiều dòng phụ tùng cần báo giá chi tiết." }
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_code liên kết logic tới QuotationAsk.code." }
+    invariants:
+      - "Pricing request validate danh sách quantity không null, số lượng phần tử khớp số phụ tùng, và quantity > 0."
+
+  - name: "AskedSparePartPricingRequest"
+    type: "entity"
+    description: "Dòng phụ tùng trong yêu cầu hỏi giá chi tiết."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR", required: true }
+      - { name: "part_name_input", type: "VARCHAR", required: true }
+      - { name: "part_name_unit", type: "VARCHAR", required: true }
+      - { name: "quantity", type: "INTEGER", required: true }
+      - { name: "segment", type: "Segment", required: true }
+      - { name: "ref_code", type: "VARCHAR", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "proposal_status", type: "BOOLEAN", required: true }
+      - { name: "quotation_ask_pricing_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "QuotationAskPricingRequest", type: "many_to_one", description: "Dòng phụ tùng thuộc một pricing request." }
+    invariants: []
+
+  - name: "QuotationAskPricingProposal"
+    type: "aggregate_root"
+    description: "Proposal trả lời giá chi tiết cho một quotation ask từ tenant vendor."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_code", type: "VARCHAR", required: true }
+      - { name: "reply_tenant_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "AskedSparePartPricingProposal", type: "one_to_many", description: "Một proposal có nhiều dòng giá chi tiết." }
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_code liên kết logic tới QuotationAsk.code." }
+    invariants: []
+
+  - name: "AskedSparePartPricingProposal"
+    type: "entity"
+    description: "Dòng giá chi tiết trong pricing proposal."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "spare_part_input_code", type: "VARCHAR", required: true }
+      - { name: "segment", type: "Segment", required: true }
+      - { name: "material_price", type: "NUMERIC", required: true }
+      - { name: "servicing_price", type: "NUMERIC", required: true }
+      - { name: "currency", type: "VARCHAR", required: true }
+      - { name: "quantity", type: "INTEGER", required: true }
+      - { name: "unit", type: "VARCHAR", required: true }
+      - { name: "ref_code", type: "VARCHAR", required: false }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "updated_status", type: "BOOLEAN", required: true }
+      - { name: "quotation_ask_pricing_proposal_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "QuotationAskPricingProposal", type: "many_to_one", description: "Dòng giá thuộc một pricing proposal." }
+    invariants: []
+
+  - name: "PreliminaryQuotation"
+    type: "aggregate_root"
+    description: "Báo giá sơ bộ gắn với một quotation ask, do consultant tạo/cập nhật."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR", required: true, constraints: ["unique"] }
+      - { name: "quotation_ask_code", type: "VARCHAR", required: true, constraints: ["unique"] }
+      - { name: "consultant_id", type: "BIGINT", required: true }
+      - { name: "consultant_name", type: "VARCHAR", required: false }
+      - { name: "consultant_phone_number", type: "VARCHAR", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "spare_parts", type: "JSONB", required: false }
+      - { name: "total_amount", type: "NUMERIC", required: false }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "status", type: "PreliminaryQuotationStatus", required: true }
+      - { name: "version", type: "INTEGER", required: true }
+    relationships:
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_code unique liên kết báo giá sơ bộ với quotation ask." }
+    invariants:
+      - "Mỗi quotation ask có tối đa một preliminary quotation theo quotation_ask_code unique."
+
+  - name: "QuotationAskHistory"
+    type: "aggregate_root"
+    description: "Lịch sử thay đổi quotation ask theo role và loại cập nhật."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_code", type: "VARCHAR(50)", required: true }
+      - { name: "updated_by_tenant_id", type: "BIGINT", required: false }
+      - { name: "updated_role", type: "OwnerType", required: true, constraints: ["GARAGE | VENDOR | CSKH"] }
+      - { name: "updated_type", type: "UpdatedType", required: true, constraints: ["ASKING | BIDDING | PRICING"] }
+    relationships:
+      - { target: "QuotationAskHistoryItem", type: "one_to_many", description: "Một history có nhiều field change item." }
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_code liên kết logic tới QuotationAsk.code." }
+    invariants:
+      - "History append khi quotation ask được cập nhật qua listener/service."
+
+  - name: "QuotationAskHistoryItem"
+    type: "entity"
+    description: "Chi tiết field thay đổi trong lịch sử quotation ask."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "field_name", type: "VARCHAR", required: false }
+      - { name: "old_data", type: "TEXT", required: false }
+      - { name: "new_data", type: "TEXT", required: false }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "quotation_ask_history_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "QuotationAskHistory", type: "many_to_one", description: "History item thuộc một quotation ask history." }
+    invariants: []
+
+  - name: "Cart"
+    type: "aggregate_root"
+    description: "Giỏ hàng phụ tùng theo purchaser/vendor, liên kết tới product và quotation ask."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "product_id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_id", type: "BIGINT", required: true }
+      - { name: "purchaser_id", type: "BIGINT", required: true }
+      - { name: "supplier_id", type: "BIGINT", required: true }
+      - { name: "quantity", type: "INTEGER", required: true }
+      - { name: "is_picked", type: "BOOLEAN", required: true }
+      - { name: "ref_pr_code", type: "VARCHAR", required: false }
+      - { name: "deleted", type: "BOOLEAN", required: true }
+    relationships:
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_id liên kết logic tới quotation ask." }
+    invariants:
+      - "deleted là soft delete cho cart item."
+
+  - name: "PurchaseRequest"
+    type: "aggregate_root"
+    description: "Xác nhận đặt hàng từ garage, gom các dòng sản phẩm đã chọn từ quotation/cart và điều phối payment/PO."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "purchaser_id", type: "BIGINT", required: true }
+      - { name: "status", type: "PurchaseRequestStatus", required: false }
+      - { name: "note", type: "TEXT", required: false }
+      - { name: "status_transition_data", type: "JSONB", required: false }
+      - { name: "payment_method", type: "PaymentMethod", required: false, constraints: ["COD | POST_PAID_QR | PRE_PAID_QR | PRE_PAID_CC | BANK_TRANSFER | CREDIT"] }
+      - { name: "payment_status", type: "PaymentStatus", required: false, constraints: ["PENDING | PAID"] }
+    relationships:
+      - { target: "PurchaseRequestData", type: "one_to_many", description: "Một PR có nhiều dòng sản phẩm yêu cầu." }
+      - { target: "PurchaseRequestConfirmation", type: "one_to_many", description: "Một PR có record chờ vendor confirmation khi place order." }
+      - { target: "PRQuotationRef", type: "one_to_many", description: "Một PR có thể tham chiếu nhiều quotation ask." }
+      - { target: "PurchaseOrder", type: "one_to_many", description: "Một PR có thể tạo nhiều purchase order theo supplier." }
+      - { target: "PaymentOrder", type: "one_to_many", description: "payment_orders liên kết qua purchase_request_code." }
+    invariants:
+      - "PurchaseRequest domain constructor mặc định status=OPEN và paymentStatus=PENDING."
+      - "(dead code) changePaymentMethod reset paymentStatus về PENDING — domain method còn tồn tại nhưng controller đã block, service logic commented out."
+      - "(dead code) Không đổi payment method nếu PR đã ORDER_CREATED hoặc CANCELLED — validation còn tồn tại nhưng unreachable."
+      - "Tạo PR V2 đặt code theo XNDH-{quotationAsk.id}."
+
+  - name: "PurchaseRequestData"
+    type: "entity"
+    description: "Dòng sản phẩm trong purchase request, gồm product, vendor, số lượng và giá chi tiết."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "requested_product_name", type: "VARCHAR", required: true }
+      - { name: "quotation_ask_code", type: "VARCHAR", required: true }
+      - { name: "product_id", type: "BIGINT", required: true }
+      - { name: "purchase_request_id", type: "BIGINT", required: true }
+      - { name: "purchaser_id", type: "BIGINT", required: true }
+      - { name: "supplier_id", type: "BIGINT", required: true }
+      - { name: "requested_quantity", type: "INTEGER", required: true }
+      - { name: "actual_sales_quantity", type: "INTEGER", required: false }
+      - { name: "detailed_price", type: "NUMERIC", required: false }
+      - { name: "material_price", type: "NUMERIC", required: false }
+      - { name: "servicing_price", type: "NUMERIC", required: false }
+      - { name: "sales_status", type: "PurchaseRequestDataStatus", required: true }
+    relationships:
+      - { target: "PurchaseRequest", type: "many_to_one", description: "Dòng sản phẩm thuộc một purchase request." }
+    invariants: []
+
+  - name: "PurchaseRequestConfirmation"
+    type: "entity"
+    description: "Trạng thái chờ vendor xác nhận sau khi garage place order."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "purchase_request_id", type: "BIGINT", required: true }
+      - { name: "purchase_request_code", type: "VARCHAR", required: true }
+      - { name: "status", type: "PurchaseRequestConfirmationStatus", required: true, constraints: ["PENDING | COMPLETE"] }
+    relationships:
+      - { target: "PurchaseRequest", type: "logical_reference", description: "purchase_request_id/code liên kết confirmation với PR." }
+    invariants:
+      - "Checkout prepaid cần confirmation COMPLETE, trừ POST_PAID_QR và COD."
+
+  - name: "PRQuotationRef"
+    type: "entity"
+    description: "Bảng nối logic giữa purchase request và quotation ask."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "pr_id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_id", type: "BIGINT", required: true }
+    relationships:
+      - { target: "PurchaseRequest", type: "logical_reference", description: "pr_id tham chiếu purchase_request.id." }
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_id tham chiếu quotation_asks.id." }
+    invariants: []
+
+  - name: "PRTransitionHistory"
+    type: "entity"
+    description: "Lịch sử transition của purchase request."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "pr_id", type: "BIGINT", required: true }
+      - { name: "previous_stages", type: "JSONB", required: false }
+      - { name: "transition_data", type: "JSONB", required: false }
+    relationships:
+      - { target: "PurchaseRequest", type: "logical_reference", description: "pr_id liên kết history với PR." }
+    invariants: []
+
+  - name: "PurchaseOrder"
+    type: "aggregate_root"
+    description: "Đơn mua hàng legacy/ecommerce/direct, sở hữu stage/status, supplier, payment method, product refs, direct PO audit fields và event receipt-facing."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR", required: false, constraints: ["unique"] }
+      - { name: "source", type: "PurchaseSource", required: false, constraints: ["QUOTATION_ASK | CART | CHAT | DIRECT | ECOMMERCE"] }
+      - { name: "transport_order_id", type: "BIGINT", required: false }
+      - { name: "purchaser_id", type: "BIGINT", required: false }
+      - { name: "supplier_id", type: "BIGINT", required: false }
+      - { name: "supplier_name", type: "VARCHAR", required: false }
+      - { name: "payment_method", type: "PaymentMethod", required: false }
+      - { name: "is_best_price", type: "BOOLEAN", required: false }
+      - { name: "transport_route_id", type: "BIGINT", required: false }
+      - { name: "quotation_ask_code", type: "TEXT", required: false }
+      - { name: "stage", type: "POStage", required: false, constraints: ["WAIT_TO_CONFIRM | OPEN | DELIVERING | DELIVERED | CLOSED | COMPLETED | CANCELLED | RETURNED"] }
+      - { name: "status", type: "POStatusEnum", required: false }
+      - { name: "note", type: "VARCHAR", required: false }
+      - { name: "pr_id", type: "BIGINT", required: false }
+      - { name: "sale_order_code", type: "VARCHAR", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "direct_supplier_id", type: "BIGINT", required: false }
+      - { name: "priority", type: "VARCHAR", required: false, constraints: ["String column — PurchaseOrderPriority enum tồn tại nhưng entity lưu raw String"] }
+      - { name: "related_service_order_code", type: "VARCHAR", required: false }
+      - { name: "expected_delivery_date", type: "DATE", required: false }
+      - { name: "supplier_contact_phone", type: "VARCHAR", required: false }
+      - { name: "supplier_tax_code", type: "VARCHAR", required: false }
+      - { name: "supplier_address", type: "TEXT", required: false }
+      - { name: "notes", type: "TEXT", required: false }
+      - { name: "confirmed_by", type: "VARCHAR", required: false }
+      - { name: "confirmed_at", type: "TIMESTAMP", required: false }
+      - { name: "delivering_by", type: "VARCHAR", required: false }
+      - { name: "delivering_at", type: "TIMESTAMP", required: false }
+      - { name: "delivered_at", type: "TIMESTAMP", required: false }
+      - { name: "completed_by", type: "VARCHAR", required: false }
+      - { name: "closed_by", type: "VARCHAR", required: false }
+      - { name: "closed_at", type: "TIMESTAMP", required: false }
+      - { name: "cancelled_by", type: "VARCHAR", required: false }
+      - { name: "cancelled_at", type: "TIMESTAMP", required: false }
+      - { name: "cancellation_reason", type: "TEXT", required: false }
+      - { name: "returned_by", type: "VARCHAR", required: false }
+      - { name: "returned_at", type: "TIMESTAMP", required: false }
+      - { name: "return_reason", type: "TEXT", required: false }
+      - { name: "version", type: "BIGINT", required: false }
+    relationships:
+      - { target: "PurchaseRequest", type: "logical_reference", description: "pr_id liên kết PO về purchase request nếu được tạo từ PR." }
+      - { target: "PurchaseOrderItem", type: "one_to_many", description: "Một PO có nhiều dòng item chuẩn hóa cho direct/inventory event." }
+      - { target: "PurchaseOrderAttachment", type: "one_to_many", description: "Một direct PO có nhiều attachment." }
+      - { target: "POProduct", type: "one_to_many", description: "Legacy PO product lines gắn với PO." }
+      - { target: "POSupplier", type: "one_to_one", description: "Supplier status snapshot của PO legacy." }
+      - { target: "POQuotationRef", type: "one_to_many", description: "PO có thể tham chiếu nhiều quotation ask code." }
+      - { target: "POTransitionHistory", type: "one_to_many", description: "Lịch sử chuyển stage/status của PO." }
+      - { target: "Supplier", type: "logical_reference", description: "supplier_id/direct_supplier_id tham chiếu supplier theo tenant." }
+    invariants:
+      - "Direct PO phải có source DIRECT và được update qua DirectPurchaseOrderService."
+      - "Direct PO create bắt buộc directSupplierId và ít nhất một item."
+      - "expectedDeliveryDate không được trước ngày hiện tại khi tạo/cập nhật direct PO."
+      - "transitionTo map POStage sang POStatusEnum, validate PurchaseOrderStateMachine và chặn terminal status COMPLETED/CANCELLED/RETURNED."
+      - "CANCELLED bắt buộc cancellationReason; RETURNED bắt buộc returnReason."
+      - "Event inventory chỉ phát khi stage DELIVERING và feature Inventory:InventoryStockV01 bật."
+
+  - name: "PurchaseOrderItem"
+    type: "entity"
+    description: "Dòng hàng chuẩn hóa của purchase order, dùng cho direct PO và payload receipt inventory."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "purchase_order_id", type: "BIGINT", required: true }
+      - { name: "sku", type: "VARCHAR(100)", required: true }
+      - { name: "genuine_code", type: "VARCHAR(100)", required: false }
+      - { name: "product_name", type: "VARCHAR", required: true }
+      - { name: "tier", type: "VARCHAR(50)", required: false }
+      - { name: "origin", type: "VARCHAR(100)", required: false }
+      - { name: "quantity", type: "NUMERIC(10,2)", required: true }
+      - { name: "unit_of_measure", type: "VARCHAR(20)", required: true }
+      - { name: "unit_price", type: "NUMERIC(15,2)", required: true }
+      - { name: "discount_percent", type: "NUMERIC(5,2)", required: false }
+      - { name: "discount_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "tax_rate", type: "NUMERIC(5,2)", required: false }
+      - { name: "tax_amount", type: "NUMERIC(15,2)", required: false }
+      - { name: "line_amount", type: "NUMERIC(15,2)", required: true }
+      - { name: "total_amount", type: "NUMERIC(15,2)", required: true }
+      - { name: "quotation_ask_code", type: "VARCHAR", required: false }
+      - { name: "product_id", type: "BIGINT", required: false }
+    relationships:
+      - { target: "PurchaseOrder", type: "many_to_one", description: "purchase_order_id liên kết item với PO." }
+    invariants:
+      - "Event PurchaseOrderStatusChanged chỉ lấy item có quantity > 0."
+      - "calculateAllAmounts tính amount/tax/total khi thêm hoặc cập nhật item direct PO."
+
+  - name: "PurchaseOrderAttachment"
+    type: "entity"
+    description: "Attachment của direct purchase order."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "purchase_order_id", type: "BIGINT", required: true }
+      - { name: "attachment_url", type: "TEXT", required: true }
+      - { name: "file_name", type: "VARCHAR(255)", required: false }
+      - { name: "file_type", type: "VARCHAR(10)", required: false }
+      - { name: "type", type: "AttachmentType", required: true }
+      - { name: "deleted", type: "BOOLEAN", required: true }
+    relationships:
+      - { target: "PurchaseOrder", type: "logical_reference", description: "purchase_order_id liên kết attachment với PO." }
+    invariants:
+      - "Update attachments của direct PO sync bằng soft delete URL không còn trong request và thêm URL mới."
+
+  - name: "POProduct"
+    type: "entity"
+    description: "Dòng product legacy/ecommerce của purchase order, liên kết quotation ask, supplier và product inventory."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "po_id", type: "BIGINT", required: true }
+      - { name: "product_id", type: "BIGINT", required: true }
+      - { name: "requested_product_name", type: "VARCHAR", required: true }
+      - { name: "quantity", type: "BIGINT", required: false }
+      - { name: "unit_price", type: "NUMERIC", required: false }
+      - { name: "unit", type: "VARCHAR", required: false }
+      - { name: "segment", type: "Segment", required: false }
+      - { name: "supplier_id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_code", type: "VARCHAR", required: false }
+      - { name: "sku", type: "VARCHAR", required: false }
+      - { name: "genuine_code", type: "VARCHAR", required: false }
+    relationships:
+      - { target: "PurchaseOrder", type: "logical_reference", description: "po_id liên kết POProduct với PO." }
+    invariants:
+      - "placeOrder/confirm có thể removeFromPurchase cho product không được chọn."
+
+  - name: "POSupplier"
+    type: "entity"
+    description: "Supplier status snapshot trong purchase order legacy."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "po_id", type: "BIGINT", required: true }
+      - { name: "supplier_id", type: "BIGINT", required: true }
+      - { name: "status", type: "POSupplyStatus", required: true }
+    relationships:
+      - { target: "PurchaseOrder", type: "logical_reference", description: "po_id liên kết supplier snapshot với PO." }
+      - { target: "Supplier", type: "logical_reference", description: "supplier_id liên kết logic tới supplier." }
+    invariants: []
+
+  - name: "POQuotationRef"
+    type: "entity"
+    description: "Reference giữa purchase order và quotation ask code."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "po_id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_code", type: "VARCHAR", required: true }
+    relationships:
+      - { target: "PurchaseOrder", type: "logical_reference", description: "po_id liên kết reference với PO." }
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_code liên kết tới QuotationAsk.code." }
+    invariants: []
+
+  - name: "POTransitionHistory"
+    type: "entity"
+    description: "Lịch sử transition của purchase order."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "po_id", type: "BIGINT", required: true }
+      - { name: "previous_stages", type: "JSONB", required: false }
+      - { name: "transition_data", type: "JSONB", required: false }
+    relationships:
+      - { target: "PurchaseOrder", type: "logical_reference", description: "po_id liên kết history với PO." }
+    invariants: []
+
+  - name: "Supplier"
+    type: "aggregate_root"
+    description: "Nhà cung cấp tenant-scoped dùng cho direct PO và purchase flows."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "supplier_code", type: "VARCHAR(50)", required: true }
+      - { name: "supplier_name", type: "VARCHAR(200)", required: true }
+      - { name: "tax_code", type: "VARCHAR(50)", required: false }
+      - { name: "contact_phone", type: "VARCHAR(20)", required: true }
+      - { name: "address", type: "TEXT", required: false }
+      - { name: "province", type: "TEXT", required: false }
+      - { name: "commune", type: "TEXT", required: false }
+      - { name: "payment_terms", type: "PaymentTerms", required: true, constraints: ["COD | NET_7 | NET_15 | NET_30 | NET_60 | CREDIT"] }
+      - { name: "preferred_warehouse_code", type: "VARCHAR(50)", required: false }
+      - { name: "is_active", type: "BOOLEAN", required: true }
+      - { name: "onboard_source", type: "SupplierOnboardSource", required: true, constraints: ["GARAGE | CARDOCTOR"] }
+      - { name: "private_phone", type: "VARCHAR(20)", required: false }
+    relationships:
+      - { target: "PurchaseOrder", type: "one_to_many", description: "supplier_id/direct_supplier_id trong PO tham chiếu supplier." }
+    invariants:
+      - "Service kiểm tra trùng contactPhone theo tenant khi tạo/cập nhật supplier."
+      - "Supplier code tạo theo NCC-{tenantId}-{supplierId}."
+      - "GARAGE supplier được update hầu hết field trừ supplierCode; CARDOCTOR supplier chỉ cho update một tập field hạn chế."
+      - "Response ẩn contactPhone của CARDOCTOR supplier và trả privatePhone riêng."
+
+  - name: "UserPreference"
+    type: "entity"
+    description: "Preference người dùng theo tenant, hiện dùng lưu payment method gần nhất."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "user_id", type: "VARCHAR", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "subdomain", type: "VARCHAR", required: false }
+      - { name: "preference_key", type: "PreferenceKey", required: true, constraints: ["PAYMENT_METHOD"] }
+      - { name: "value", type: "TEXT", required: false }
+    relationships: []
+    invariants:
+      - "saveUserPreference upsert theo preference_key, user_id và tenant_id ở repository."
+
+  - name: "UserCard"
+    type: "entity"
+    description: "Thẻ người dùng được lưu từ luồng prepaid card callback."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "user_id", type: "VARCHAR", required: true }
+      - { name: "card_brand", type: "VARCHAR", required: true }
+      - { name: "card_masked", type: "VARCHAR", required: true }
+      - { name: "token_num", type: "VARCHAR", required: true }
+      - { name: "token_exp", type: "VARCHAR", required: false }
+      - { name: "card_uid", type: "VARCHAR", required: false }
+      - { name: "deleted", type: "BOOLEAN", required: true }
+    relationships: []
+    invariants:
+      - "createCard bỏ qua nếu thiếu userId/cardBrand/cardMasked/tokenNum/tokenExp."
+      - "Nếu cardUid đã tồn tại với userId và deleted=false thì không tạo bản ghi trùng."
+      - "deleteCard chỉ cho current user và set deleted=true."
+
+  - name: "PaymentOrder"
+    type: "aggregate_root"
+    description: "Payment order nội bộ cho purchase request reconciliation."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "purchase_request_code", type: "VARCHAR", required: false }
+      - { name: "payment_method", type: "PaymentMethod", required: true }
+      - { name: "payment_status", type: "PaymentStatus", required: true, constraints: ["PENDING | PAID"] }
+      - { name: "total_amount", type: "VARCHAR encrypted BigDecimal", required: false }
+      - { name: "currency", type: "Currency", required: true, constraints: ["VND"] }
+      - { name: "payment_time", type: "TIMESTAMPTZ", required: false }
+    relationships:
+      - { target: "PurchaseRequest", type: "logical_reference", description: "purchase_request_code liên kết payment order với PR." }
+      - { target: "PaymentBalance", type: "one_to_many", description: "Một payment order có nhiều balance theo supplier/PO." }
+    invariants:
+      - "Domain constructor mặc định paymentStatus=PENDING."
+      - "PaymentOrderMapper mã hóa totalAmount bằng KMS khi lưu và giải mã khi đọc."
+
+  - name: "PaymentBalance"
+    type: "entity"
+    description: "Phân bổ số tiền thanh toán theo purchaser, supplier, sale order và purchase order."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "payment_order_id", type: "BIGINT", required: false }
+      - { name: "purchaser_id", type: "BIGINT", required: false }
+      - { name: "supplier_id", type: "BIGINT", required: false }
+      - { name: "amount", type: "VARCHAR encrypted BigDecimal", required: false }
+      - { name: "sale_order_code", type: "VARCHAR", required: false }
+      - { name: "purchase_order_code", type: "VARCHAR", required: false }
+    relationships:
+      - { target: "PaymentOrder", type: "many_to_one", description: "payment_order_id liên kết balance với payment order." }
+      - { target: "PurchaseOrder", type: "logical_reference", description: "purchase_order_code liên kết logic với PO." }
+    invariants:
+      - "PaymentBalanceMapper mã hóa amount bằng KMS khi lưu và giải mã khi đọc."
+
+  - name: "OcrVehicleInfoHistory"
+    type: "entity"
+    description: "Lịch sử gọi OCR đăng ký xe cho quotation ask."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "quotation_ask_id", type: "BIGINT", required: false }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "attachment_url", type: "TEXT", required: true }
+      - { name: "status_response", type: "VARCHAR", required: false }
+      - { name: "json_response", type: "TEXT", required: true }
+    relationships:
+      - { target: "QuotationAsk", type: "logical_reference", description: "quotation_ask_id liên kết OCR response với quotation ask nếu có." }
+    invariants:
+      - "Raw OCR response được lưu dạng TEXT trong json_response."
+
+  - name: "InboundMessage"
+    type: "aggregate_root"
+    description: "Inbox message runtime cho inbound retry/idempotency, hiện chưa có business handler active."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "message_key", type: "VARCHAR(500)", required: true }
+      - { name: "message_type", type: "VARCHAR(50)", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "message_code", type: "VARCHAR", required: false }
+      - { name: "payload", type: "JSONB", required: false }
+      - { name: "message_group", type: "VARCHAR(50)", required: false }
+      - { name: "message_step", type: "VARCHAR(50)", required: false }
+      - { name: "origin_tenant_id", type: "BIGINT", required: false }
+      - { name: "status", type: "ProcessingStatus", required: true, constraints: ["PENDING | COMPLETED | FAILED | RETRYING"] }
+      - { name: "attempt_count", type: "INTEGER", required: true }
+      - { name: "last_error", type: "TEXT", required: false }
+      - { name: "is_notified", type: "BOOLEAN", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: false }
+    relationships: []
+    invariants:
+      - "createMessage bắt DataIntegrityViolationException để bỏ qua duplicate message_key nếu DB constraint tồn tại."
+      - "processMessage hiện markCompleted ngay vì switch business handler đang comment."
+
+  - name: "OutboundMessage"
+    type: "aggregate_root"
+    description: "Outbox message runtime cho publish Kafka sau commit và batch retry."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "message_type", type: "OutboundMessageType", required: true, constraints: ["PURCHASE_ORDER_STATUS_CHANGED"] }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "message_code", type: "VARCHAR", required: false }
+      - { name: "payload", type: "JSONB", required: false }
+      - { name: "message_group", type: "VARCHAR(50)", required: false }
+      - { name: "message_step", type: "VARCHAR(50)", required: false }
+      - { name: "origin_tenant_id", type: "BIGINT", required: false }
+      - { name: "status", type: "ProcessingStatus", required: true, constraints: ["PENDING | COMPLETED | FAILED | RETRYING"] }
+      - { name: "attempt_count", type: "INTEGER", required: true }
+      - { name: "last_error", type: "TEXT", required: false }
+      - { name: "is_notified", type: "BOOLEAN", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: false }
+    relationships: []
+    invariants:
+      - "createMessage lưu outbox row rồi publish OutboundMessageCreatedEvent."
+      - "MessageEventListener xử lý outbound AFTER_COMMIT bằng listenerTaskExecutor."
+      - "Lỗi publish tăng attemptCount; đủ max retry thì markFailed."
+
+  - name: "Sequence"
+    type: "sql_table"
+    description: "KHÔNG phải JPA @Entity. Bảng SQL sequences + function get_next_number(schemaName, sequenceName) accessed qua DBUtils.getNextSequence để sinh mã nghiệp vụ — note for parity."
+    attributes:
+      - { name: "sequence_name", type: "VARCHAR(100)", required: true, constraints: ["primary key"] }
+      - { name: "current_value", type: "BIGINT", required: true }
+      - { name: "increment_by", type: "INTEGER", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+    relationships: []
+    invariants:
+      - "DBUtils.getNextSequence gọi function get_next_number(schemaName, sequenceName)."
+      - "Tên sequence dùng trong code gồm purchase_request_id, purchase_order_id, direct_purchase_order_id, supplier_id và các sequence quotation/purchase liên quan."
+
+business_rules:
+  - { id: "BR-GF-PURCHASE-001", description: "QuotationAsk tạo mới ở OPEN, isProcessed=false; khi PR được tạo thì chuyển ORDER_CONFIRMING.", cornerstone: true, enforcement_point: "QuotationAsk constructor + QuotationAsk.prCreated + PurchaseRequestApplicationServiceV2.createPurchaseRequestV2" }
+  - { id: "BR-GF-PURCHASE-002", description: "Không tạo PurchaseRequest từ QuotationAsk có status ORDER_CONFIRMING, CANCELLED hoặc CLOSED.", cornerstone: true, enforcement_point: "PurchaseRequestApplicationServiceV2.validateQuotationAskStatus" }
+  - { id: "BR-GF-PURCHASE-003", description: "Pricing request phải có danh sách quantity hợp lệ: không null, số phần tử khớp số phụ tùng và mọi quantity > 0.", cornerstone: true, enforcement_point: "QuotationAskPricingApplicationServiceV2.validateQuantity" }
+  - { id: "BR-GF-PURCHASE-004", description: "PurchaseRequest V2 tạo code XNDH-{quotationAsk.id}, default payment method COD cho mobile cũ, paymentStatus PENDING và có thể gọi gf-erp-agent khi feature flag v2-purchase-request-call-to-agent bật.", cornerstone: true, enforcement_point: "PurchaseRequestApplicationServiceV2.createPurchaseRequestV2 + supportOlderMobileVersions + callToPurchaseRequestAgent" }
+  - { id: "BR-GF-PURCHASE-005", description: "Cancel PR chỉ hợp lệ khi mọi PO liên quan còn WAIT_TO_CONFIRM; nếu không thì throw lỗi và không hủy.", cornerstone: true, enforcement_point: "PurchaseRequestApplicationServiceV2.cancelService" }
+  - { id: "BR-GF-PURCHASE-006", description: "Đổi payment method sau khi tạo YCDH không còn được hỗ trợ. Controller throw InvalidOperationException unconditionally; service logic (reset paymentStatus, sync PO, lưu user preference) đã bị comment out. Domain method và validation vẫn tồn tại nhưng unreachable.", cornerstone: false, enforcement_point: "PurchaseRequestControllerV2.changePaymentMethod (line 167: throw InvalidOperationException)" }
+  - { id: "BR-GF-PURCHASE-007", description: "Checkout QR chỉ cho PRE_PAID_QR/POST_PAID_QR; checkout CC chỉ cho PRE_PAID_CC; payment method phải nằm trong app.payment.enabled-methods.", cornerstone: true, enforcement_point: "PurchaseRequestApplicationServiceV2.checkoutQR + checkoutCC + validateCheckoutReady" }
+  - { id: "BR-GF-PURCHASE-008", description: "Luồng prepaid (PRE_PAID_QR và PRE_PAID_CC) chỉ được checkout khi PurchaseRequestConfirmation đã COMPLETE.", cornerstone: true, enforcement_point: "PurchaseRequestApplicationServiceV2.validateCheckoutReady" }
+  - { id: "BR-GF-PURCHASE-009", description: "Reconciliation chạy theo Strategy pattern cho COD, POST_PAID_QR, PRE_PAID_QR và PRE_PAID_CC", cornerstone: true, enforcement_point: "ReconciliationApplicationService + app.service.reconciliation.strategy.*" }
+  - { id: "BR-GF-PURCHASE-010", description: "PaymentOrder.totalAmount và PaymentBalance.amount được mã hóa/giải mã bằng KMS mapper khi lưu/đọc.", cornerstone: true, enforcement_point: "PaymentOrderMapper + PaymentBalanceMapper" }
+  - { id: "BR-GF-PURCHASE-011", description: "Direct PO create bắt buộc directSupplierId, ít nhất một item và expectedDeliveryDate không được trước hôm nay.", cornerstone: true, enforcement_point: "DirectPurchaseOrderServiceImpl.validateCreateRequest + validateExpectedDeliveryDate" }
+  - { id: "BR-GF-PURCHASE-012", description: "Direct PO chỉ được chuyển stage qua PurchaseOrder.transitionTo và PurchaseOrderStateMachine; CANCELLED bắt buộc cancellationReason, RETURNED bắt buộc returnReason.", cornerstone: true, enforcement_point: "PurchaseOrder.transitionTo + validateTransitionRequirements + DirectPurchaseOrderServiceImpl.updateStatus" }
+  - { id: "BR-GF-PURCHASE-013", description: "Direct PO source khác DIRECT không được update qua direct purchase order API.", cornerstone: true, enforcement_point: "PurchaseOrder.ensureDirectSource + DirectPurchaseOrderServiceImpl.updatePurchaseOrder/updateAttachments" }
+  - { id: "BR-GF-PURCHASE-014", description: "PurchaseOrderStatusChanged chỉ được publish khi PO stage DELIVERING và feature Inventory:InventoryStockV01 bật; payload chỉ lấy item có quantity > 0.", cornerstone: true, enforcement_point: "DirectPurchaseOrderServiceImpl + PurchaseOrderApplicationServiceV2 + PurchaseOrderEventPublisher" }
+  - { id: "BR-GF-PURCHASE-015", description: "Outbound Kafka event phải đi qua OutboundMessage + AFTER_COMMIT listener hoặc protected batch retry; không publish trực tiếp trong transaction nghiệp vụ.", cornerstone: true, enforcement_point: "OutboundMessageService + MessageEventListener + SimpleMessageService" }
+  - { id: "BR-GF-PURCHASE-016", description: "Supplier contactPhone được kiểm tra trùng theo tenant ở service; GARAGE supplier update rộng hơn CARDOCTOR supplier.", cornerstone: true, enforcement_point: "SupplierApplicationServiceV2.createSupplier/updateSupplier + Supplier domain" }
+  - { id: "BR-GF-PURCHASE-017", description: "UserCard không tạo khi thiếu field bắt buộc hoặc cardUid đã tồn tại cho user và chưa deleted; xóa thẻ chỉ cho current user.", cornerstone: false, enforcement_point: "UserApplicationService.createCard/deleteCard" }
+  - { id: "BR-GF-PURCHASE-018", description: "Tenant isolation phải enforce ở service/repository qua tenant_id, purchaser_id, supplier_id hoặc parent aggregate; không thấy tenant filter tự động ở entity/base repository.", cornerstone: true, enforcement_point: "SecurityUtils current tenant + repositories/specifications + data model isolation note" }
+  - { id: "BR-GF-PURCHASE-019", description: "QuotationAsk code sinh theo format BG-{sequence} (sequence 'quotation_ask_id') qua DBUtils.getNextSequence gọi PostgreSQL function get_next_number trong transaction REQUIRES_NEW.", cornerstone: false, enforcement_point: "QuotationAskApplicationServiceV3.createQuotationAsk + DBUtils.getNextSequence + Constant.QUOTATION_ASK_ID" }
+  - { id: "BR-GF-PURCHASE-020", description: "PurchaseRequest code sinh theo format XNDH-{quotationAsk.id} — dùng QA ID làm định danh, không dùng sequence riêng.", cornerstone: false, enforcement_point: "PurchaseRequestApplicationServiceV2.createPurchaseRequestV2" }
+  - { id: "BR-GF-PURCHASE-021", description: "PurchaseOrder code sinh theo format DMH-{quotationAskId}-{purchaserId}-{supplierId} — composite key từ QA, purchaser và supplier.", cornerstone: false, enforcement_point: "PurchaseOrderApplicationServiceV2 + DBUtils.getNextSequence + Constant.PURCHASE_ORDER_ID" }
+  - { id: "BR-GF-PURCHASE-022", description: "DirectPurchaseOrder code sinh theo format DMH-{sequence}-{directSupplierId} (sequence 'direct_purchase_order_id') qua DBUtils.getNextSequence; dùng thêm sequence 'purchase_order_id' cho PO ID.", cornerstone: false, enforcement_point: "DirectPurchaseOrderServiceImpl.createDirectPurchaseOrder + DBUtils.getNextSequence + Constant.DIRECT_PURCHASE_ORDER_ID" }
+
+workflows: []
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-erp-agent"
+      purpose: "ERP-driven status/stage updates, batch reconcile via /protected/v1/purchase-{orders,requests}/..., /quotations/..., /batch/..."
+    - type: API
+      source: "gf-inventory"
+      purpose: "PO lookup — GET /protected/v1/purchase-orders/code/{code}, GET /protected/v1/purchase-orders/{code}/items"
+    - type: API
+      source: "gf-sales"
+      purpose: "QA lookup — GET /protected/v1/quotation-asks"
+    - type: API
+      source: "gf-shipment"
+      purpose: "PUT /protected/v1/purchase-orders/status — notify PO DELIVERED when shipment closed + isEnough + isLast"
+    - type: API
+      source: "gf-system"
+      purpose: "GET /protected/v1/purchase-orders/transport-routes/{id}/used — check transport route usage"
+    - type: API
+      source: "agg-garage-graph"
+      purpose: "BFF PO/PR/quotation queries"
+
+  outbound:
+    - type: API
+      target: "gf-inventory"
+      purpose: "Product lookup + receipt aggregation — /protected/v1/product/{product-lines,productId,po-summary}"
+    - type: API
+      target: "gf-erp-agent"
+      purpose: "ERP-side quotation + purchase ops — POST /protected/v1/{quotation-asks,pricing,purchases}, PUT /purchases/{cancel,confirm,confirm-received}"
+    - type: API
+      target: "gf-system"
+      purpose: "Tenant invoice info + branch/sequence lookup"
+    - type: API
+      target: "ct-saas-tenant"
+      purpose: "Tenant lookup"
+    - type: API
+      target: "Payment Gateway"
+      purpose: "Payment processing (POSTPAID/PREPAID QR + CC)"
+    - type: API
+      target: "OCR vehicle registration"
+      purpose: "Vehicle OCR"
+    - type: API
+      target: "AWS KMS"
+      purpose: "Encrypt payment card data (UserCardEntity)"
+    - type: EVENT
+      target: "Kafka — purchase-order-events"
+      purpose: "Publish PurchaseOrderStatusChanged via outbox"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho quotation, bid/pricing, PR, PO, supplier, user preference/card, payment reconciliation, inbox/outbox và sequences.", config_ref: "spring.datasource.*, spring.jpa.properties.hibernate.default_schema, DB_SCHEMA" }
+  - { name: "Flyway", type: "database_migration", purpose: "Quản lý schema migrations (15 files V1.0.0__initialize → V1.0.14__add_purchase_orders_transport_route_id_index trong src/main/resources/db/migration/). V1.0.14 thêm 2 partial indexes trên purchase_orders(purchaser_id, transport_route_id) và (tenant_id, transport_route_id).", config_ref: "flyway-core, flyway-database-postgresql, spring.flyway.*" }
+  - { name: "Redis", type: "cache", purpose: "Spring cache cho dashboard, quotation, purchase, user preference/card và invalidation endpoints.", config_ref: "spring.data.redis.*, app.cache.key-prefix, spring.cache.redis.time-to-live" }
+  - { name: "Kafka", type: "broker", purpose: "Publish PurchaseOrderStatusChanged qua outbox tới purchase-order-events.", config_ref: "spring.kafka.bootstrap-servers, spring.kafka.topics.purchase-order-events" }
+  - { name: "AWS KMS", type: "encryption", purpose: "Mã hóa PaymentOrder.totalAmount và PaymentBalance.amount qua KMSUtil; TestingController expose encrypt/decrypt khi app.test-api-enabled=true.", config_ref: "aws.kms.enabled, aws.kms.key-id, PAYMENT_ENCRYPT_KEY" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Dual auth: /protected/* bằng x-api-key (ApiKeyAuthenticationFilter, INTERNAL_API_KEY), /api/* bằng JWT; SecurityUtils cho current user/tenant context và cache keys.", config_ref: "com.actechx.common:spring-security-starter, actechx.security.*" }
+  - { name: "spring-feature-flag-starter", type: "feature_flag", purpose: "Gate: DirectPurchase:DirectPurchaseV01 (DirectPurchaseOrderController class-level + SupplierControllerV2 class-level + PurchaseOrderControllerV3 3 methods), Purchase:PurchaseV02 (PO v3 transport-route-references method-level), Marketplace:QuotationConsultant (QA v2 preliminary-quotation + internal preliminary-quotation), Dashboard:Basicdashboard (DashboardRealTimeController class-level), Inventory:InventoryStockV01 (event publish gate), mobile feature flags, agent-call flag.", config_ref: "feature-flag.*, feature-flags.backend.*, feature-flags.mobile" }
+  - { name: "spring-otlp-starter", type: "observability", purpose: "OTLP tracing/observability theo profile otlp.", config_ref: "spring.profiles.include=otlp" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho REST controllers.", config_ref: "springdoc-openapi-starter-webmvc-ui:2.8.9" }
+
+
+change_log:
+  - { date: "2026-05-19", summary: "Cross-review với INTEG-EXT-gf-purchase.md: sửa integration_ref sai (D2), thêm full integration_consumers (D2); thêm gf-sales và gf-system vào integrations.inbound, mở rộng gf-inventory description (D5); xoá EVENT inbound entry gf-inventory-worker sai hướng — gf-purchase produces event, gf-inventory-worker consumes (D6); sửa spring-security-starter purpose dual auth (D3).", author: "Architecture Authority" }
+  - { date: "2026-05-19", summary: "Source code audit: (H1) Flyway 14→15 files, thêm V1.0.14 transport_route_id indexes; (H2) thêm feature flag gates cho 6+ controllers (SupplierControllerV2 class-level DirectPurchase:DirectPurchaseV01, PurchaseOrderControllerV3 method-level DirectPurchase:DirectPurchaseV01 + Purchase:PurchaseV02, DashboardRealTimeController class-level Dashboard:Basicdashboard, QuotationAskControllerV2 method-level Marketplace:QuotationConsultant); (H3) sửa event meaning bỏ 'source=DIRECT' restriction — event publish cho any PO source khi DELIVERING; (M4) feature flag dependency liệt kê đầy đủ 5 flags. Source code bugs: FeatureFlags.PURCHASE_DIRECT_PURCHASE defined nhưng unused (service dùng FeatureFlagConfig.DIRECT_PURCHASE_V01_KEY).", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Chuẩn hoá thứ tự section: business_rules trước workflows.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "Sync với source: sửa PurchaseOrder.priority (String, không phải enum), thêm 6 audit fields, Sequence dùng sql_table, thêm Flyway/SpringDoc deps, làm rõ MessageStep publish, tinh chỉnh auth APIs.", author: "Architecture Authority" }
+  - { date: "2026-05-13", summary: "Regenerate apis: enumerate đủ V1/V2/V3 (153 endpoints, +86 so với bản trước, đặc biệt là toàn bộ controller V2 và V3); thêm no-longer-used: true cho V1 endpoints có V2 kế thừa, V2 endpoints có V3 kế thừa, cùng các method/class có @Deprecated (CartControllerV2 class-level, QuotationAskPricingControllerV2 class-level, PurchaseRequestControllerV2.confirm+changePaymentMethod, InternalQuotationController.pricingProposals).", author: "Architecture Authority" }
+  - { date: "2026-05-14", summary: "Chuẩn hoá format apis: bỏ thuộc tính `no-longer-used: true`, thay bằng triple `status` + `active_callers` + `replaced_by` (theo RULE-08/09 của template). 153 endpoints: 55 active, 46 deprecated (V1→V2, V2→V3, class/method @Deprecated), 46 internal-only, 6 unused (3 testing dev-only, 1 v2-variables-mobile, 2 v3 PO endpoints không có caller).", author: "Architecture Authority" }
+  - { date: "2026-05-18", summary: "BR-GF-PURCHASE-019/020/021/022 (new): document logic sinh code QuotationAsk (BG-{seq}), PurchaseRequest (XNDH-{qaId}), PurchaseOrder (DMH-{qaId}-{purchaserId}-{supplierId}), DirectPurchaseOrder (DMH-{seq}-{supplierId}) theo version mới nhất (V2/V3). BR-GF-PURCHASE-006: đánh dấu dead code — controller throw InvalidOperationException, service logic commented out, không còn flow đổi payment method sau khi tạo YCDH. Hạ cornerstone → false, cập nhật entity invariants (dead code). Xóa BR-GF-PURCHASE-016 (InboundMessage không có active handler, không phải business rule).", author: "Architecture Authority" }

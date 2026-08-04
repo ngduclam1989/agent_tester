@@ -1,0 +1,64 @@
+	If you are a plugin author, please migrate your plugin to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
+✓ Completed building apk with entrypoint test_bundle.dart (60.6s)
+• Executing tests of apk with entrypoint test_bundle.dart on emulator-5554...
+[33mPrinting flutter steps is disabled in the config. To enable it, set `PatrolTesterConfig(printLogs: true)`.[0m
+🧪 .Users.all_engineer.Projects.lemn.garage_agentic_design.Execution.auto.specs.W03.mobile_e2e.inventory_hub_patrol_test W03 Hub journey: TC-001 render 2 tile -> TC-002 nav+back -> TC-003 Produ
+❌ W03 Hub journey: TC-001 render 2 tile -> TC-002 nav+back -> TC-003 Produ [90m(//Users/all_engineer/Projects/lemn/garage_agentic_design/Execution/auto/specs/W03/mobile_e2e/inventory_hub_patrol_test.dart)[0m [90m(13s)[0m
+[31m══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════[0m
+[31mThe following ArgumentError was thrown running a test:[0m
+[31mInvalid argument(s): `garage-owner` is not one of the supported[0m
+[31mvalues: GARAGE_OWNER, CA[0m
+[31m[0m
+[31mWhen the exception was thrown, this was the stack:[0m
+[31m#0      $enumDecodeNullable (package:json_annotation/src/enum_helpers.dart:37:5)[0m
+[31m#1      _$ProfileResponseFromJson (package:cardoctor_garage_v3/core/models/response/profile/profile_response.g.dart:15:13)[0m
+[31m#2      new ProfileResponse.fromJson (package:cardoctor_garage_v3/core/models/response/profile/profile_response.dart:26:66)[0m
+[31m#3      ProfileRepositoryImpl.getProfile.<anonymous closure>.<anonymous closure> (package:cardoctor_garage_v3/core/repositories/profile/profile_repository.dart:91:80)[0m
+[31m#4      _$nullableGenericFromJson (package:cardoctor_garage_v3/core/common/bases/model/paging/base_response.g.dart:32:37)[0m
+[31m#5      _$BaseResponseFromJson (package:cardoctor_garage_v3/core/common/bases/model/paging/base_response.g.dart:13:9)[0m
+[31m#6      new BaseResponse.fromJson (package:cardoctor_garage_v3/core/common/bases/model/paging/base_response.dart:22:12)[0m
+[31m#7      ProfileRepositoryImpl.getProfile.<anonymous closure> (package:cardoctor_garage_v3/core/repositories/profile/profile_repository.dart:91:11)[0m
+[31m#8      GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:252:20)[0m
+[31m#9      GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)[0m
+[31m<asynchronous suspension>[0m
+[31m#10     ProfileRepositoryImpl.getProfile (package:cardoctor_garage_v3/core/repositories/profile/profile_repository.dart:86:20)[0m
+[31m<asynchronous suspension>[0m
+[31m#11     ProfileCubit._fetchProfile (package:cardoctor_garage_v3/ui/main/bloc/profile_cubit.dart:35:22)[0m
+[31m<asynchronous suspension>[0m
+[31m<asynchronous suspension>[0m
+[31m#13     ProfileCubit.getProfile (package:cardoctor_garage_v3/ui/main/bloc/profile_cubit.dart:29:5)[0m
+[31m<asynchronous suspension>[0m
+[31m(elided one frame from dart:async)[0m
+[31m[0m
+[31mThe test description was:[0m
+[31m  W03 Hub journey: TC-001 render 2 tile -> TC-002 nav+back ->[0m
+[31m  TC-003 Product tile -> TC-004 debounce -> TC-005 regression ->[0m
+[31m  TC-006 hardware back[0m
+--- Raw GraphQL RESPONSE (getCurrentUser) confirmed role value ---
+: DEBUG │ 🐛   }
+: DEBUG │ 🐛 }
+: DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+: DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+: DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+: DEBUG │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:218:12)
+: DEBUG │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+: DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+: DEBUG │ 🐛 {
+: DEBUG │ 🐛   "RESPONSE": {
+: DEBUG │ 🐛     "__typename": "Query",
+: DEBUG │ 🐛     "getCurrentUser": {
+: DEBUG │ 🐛       "__typename": "GetCurrentUserApiResponse",
+: DEBUG │ 🐛       "success": true,
+: DEBUG │ 🐛       "code": "00",
+: DEBUG │ 🐛       "message": "OK",
+: DEBUG │ 🐛       "data": {
+: DEBUG │ 🐛         "__typename": "GetCurrentUserData",
+: DEBUG │ 🐛         "id": 1,
+: DEBUG │ 🐛         "fullName": "Chủ Garage Demo",
+: DEBUG │ 🐛         "emailAddress": "owner@demo.local",
+: DEBUG │ 🐛         "phoneNumber": "+84900000000",
+: DEBUG │ 🐛         "role": "garage-owner",
+: DEBUG │ 🐛         "avatarUrl": null,
+: DEBUG │ 🐛         "iamUserId": null
+: DEBUG │ 🐛       }
+: DEBUG │ 🐛     }

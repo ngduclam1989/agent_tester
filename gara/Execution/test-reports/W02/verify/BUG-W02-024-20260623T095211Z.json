@@ -1,0 +1,5 @@
+ERROR: TC IDs not found in Execution/automated-test-cases/TC-W02-*.md:
+  TC-W02-MOB-UI-DOSSIER-QT-DATA-BINDING (mobile_ui)
+  TC-W02-MOB-UI-DOSSIER-BG-DATA-BINDING (mobile_ui)
+  TC-W02-MOB-UI-DOSSIER-TABLE-3COL (mobile_ui)
+  TC-W02-MOB-E2E-DOSSIER-EXPORT-HAPPY (mobile_e2e)

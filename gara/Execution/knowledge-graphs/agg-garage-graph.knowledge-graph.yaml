@@ -1,0 +1,1800 @@
+# Knowledge Graph — agg-garage-graph
+
+boundary: "agg-garage-graph"
+version: 12
+last_updated: "2026-06-30"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "BFF GraphQL aggregator cho garage-web (và mobile reuse một phần): compose 26 module schemas, resolve qua 16 BE/external service (10 gf-* + ct-saas-tenant + ct-file-storage + cp-cms-index + ac-payment-gateway + policy-agent + Superset). Không own DB — mọi state sống ở BE."
+  tech: { language: "Node.js 22", framework: "Apollo Server 4 + Express", data_store: "none" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/integrations/INTEG-BFF-agg-garage-graph.md"
+  integration_consumers: []
+
+apis:
+  - name: "graphql-public"
+    path: "/graphql/graphql"
+    method: POST
+    purpose: "Apollo Server 4 GraphQL endpoint composed từ 25 module schemas; path = ${GRAPHQL_PUBLIC_PATH}/graphql, default /graphql/graphql"
+    request:
+      schema:
+        query: string
+        variables: object
+        operationName: string
+    response:
+      schema:
+        data: object
+        errors: array
+    operations:
+      campaign:
+        Query:
+          getCampaigns:
+            returns: CampaignListResponse
+            downstream:
+              - { service: gf-marketing, method: GET,  path: "/api/v1/campaigns" }
+          getCampaignById:
+            returns: CampaignSingleResponse
+            downstream:
+              - { service: gf-marketing,    method: GET,  path: "/api/v1/campaigns/{campaignId}" }
+              - { service: gf-marketing,    method: POST, path: "/api/v1/message-templates/search" }
+              - { service: gf-customer,     method: GET,  path: "/api/v1/segments/{id}" }
+              - { service: gf-marketing,    method: POST, path: "/api/v1/voucher-programs/search" }
+              - { service: ct-saas-tenant,  method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getCampaignByCode:
+            returns: CampaignSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET,  path: "/api/v1/campaigns/code/{code}" }
+          searchCampaigns:
+            returns: PagedCampaignSearchResponse
+            downstream:
+              - { service: gf-marketing,   method: POST, path: "/api/v1/campaigns/search" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getCampaignStats:
+            returns: CampaignStatsSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET,  path: "/api/v1/campaigns/{campaignId}/stats" }
+          getCampaignWaves:
+            returns: CampaignWaveListResponse
+            downstream:
+              - { service: gf-marketing, method: GET,  path: "/api/v1/campaigns/{campaignId}/waves" }
+          getCampaignWave:
+            returns: CampaignWaveSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET,  path: "/api/v1/campaigns/{campaignId}/waves/{waveId}" }
+          searchCampaignMessages:
+            returns: PagedCampaignMessageSearchResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns/messages/search" }
+              - { service: gf-customer,  method: POST, path: "/api/v1/customers/search" }
+          getCampaignMessage:
+            returns: CampaignMessageSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET,  path: "/api/v1/campaigns/messages/{messageId}" }
+          getNotificationLimits:
+            returns: NotificationLimitsSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET,  path: "/api/v1/notification-limits" }
+          searchMessageTemplates:
+            returns: PagedMessageTemplateSearchResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/message-templates/search" }
+        Mutation:
+          createCampaign:
+            returns: CampaignSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns" }
+          updateCampaign:
+            returns: CampaignSingleResponse
+            downstream:
+              - { service: gf-marketing, method: PUT,  path: "/api/v1/campaigns/{campaignId}" }
+          deleteCampaign:
+            returns: CampaignStringResponse
+            downstream:
+              - { service: gf-marketing, method: DELETE, path: "/api/v1/campaigns/{campaignId}" }
+          startCampaign:
+            returns: CampaignSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns/{campaignId}/start" }
+          pauseCampaign:
+            returns: CampaignSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns/{campaignId}/pause" }
+          resumeCampaign:
+            returns: CampaignSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns/{campaignId}/resume" }
+          cancelCampaign:
+            returns: CampaignSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns/{campaignId}/cancel" }
+          pauseCampaignWave:
+            returns: CampaignWaveSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns/{campaignId}/waves/{waveId}/pause" }
+          resumeCampaignWave:
+            returns: CampaignWaveSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns/{campaignId}/waves/{waveId}/resume" }
+          cancelCampaignWave:
+            returns: CampaignWaveSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/campaigns/{campaignId}/waves/{waveId}/cancel" }
+      catalog:
+        Query:
+          searchCatalog:
+            returns: CatalogListResponse
+            downstream:
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/inquiry" }
+        Mutation: {}
+      dashboard:
+        Query:
+          getSpendingOverview:
+            returns: GetSpendingOverviewResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/dashboard/spending-overview" }
+          getStats:
+            returns: GetStatsResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/dashboard/stats" }
+          getSpendingChart:
+            returns: GetSpendingChartResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/dashboard/spending-chart" }
+        Mutation: {}
+      direct-purchase-order:
+        Query:
+          getDirectPurchaseOrderByCode:
+            returns: DirectPurchaseOrderSingleResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/direct-purchase-orders/{poCode}" }
+          getPurchaseOrderForReceipt:
+            returns: PurchaseOrderForReceiptSingleResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v2/purchase-order/{code}/for-receipt" }
+          searchDirectPurchaseOrders:
+            returns: PagedDirectPurchaseOrderSearchResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v3/purchase-order/search" }
+        Mutation:
+          createDirectPurchaseOrder:
+            returns: DirectPurchaseOrderSingleResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/direct-purchase-orders" }
+          updateDirectPurchaseOrder:
+            returns: DirectPurchaseOrderSingleResponse
+            downstream:
+              - { service: gf-purchase, method: PUT,  path: "/api/v1/direct-purchase-orders/{poCode}" }
+          updateDirectPurchaseOrderStatus:
+            returns: DirectPurchaseOrderSingleResponse
+            downstream:
+              - { service: gf-purchase, method: PUT,  path: "/api/v1/direct-purchase-orders/{poCode}/status" }
+          updateDirectPurchaseOrderAttachments:
+            returns: DirectPurchaseOrderSingleResponse
+            downstream:
+              - { service: gf-purchase, method: PUT,  path: "/api/v1/direct-purchase-orders/{poCode}/attachments" }
+      enable-payment-method-mobile:
+        Query:
+          getEnablePaymentMethodMobile:
+            returns: GetEnablePaymentMethodResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v2/feature-flags/mobile" }
+        Mutation: {}
+      feature-flags:
+        Query:
+          featureFlags:
+            returns: FeatureFlagResponse
+            downstream: []  # Local static config from process.env flags; no BE call
+        Mutation: {}
+      gf-accounting:
+        Query:
+          searchSettlements:
+            returns: PageResponseSettlementResponse
+            downstream:
+              - { service: gf-accounting, method: POST, path: "/api/v1/settlements/search" }
+              - { service: gf-sales,      method: POST, path: "/api/v3/service-orders/find-by-codes" }
+              - { service: gf-erp-mdm,    method: POST, path: "/api/v1/catalog/find-by-code" }
+          getSettlementByCode:
+            returns: SettlementByCodeResponse
+            downstream:
+              - { service: gf-accounting,  method: GET,  path: "/api/v1/settlements/{code}" }
+              - { service: gf-sales,       method: GET,  path: "/api/v3/service-orders/detail/{code}" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getSettlementsByServiceOrder:
+            returns: SettlementListResponse
+            downstream:
+              - { service: gf-accounting, method: GET, path: "/api/v1/service-orders/{id}/settlement" }
+          exportSettlementToPdf:
+            returns: ExportFileUrlResponse
+            downstream: []  # Pure local URL generation
+        # W01 (EP-INSURANCE-SETTLEMENT): createInsuranceSettlement ĐÃ implement (op mới, contract §3c). createCustomerSettlement không dùng. createSettlement giữ nguyên (legacy). (drift D-2026-05-08-D resolved cho createInsuranceSettlement)
+        Mutation:
+          finalizeServiceOrderAmounts:
+            returns: SettlementVoidResponse
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v1/service-orders/{id}/finalize" }
+          updateActualQuantities:
+            returns: SettlementVoidResponse
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v1/service-orders/{id}/actual-quantities" }
+          createSettlement:
+            returns: InsuranceSettlementResponse
+            downstream:
+              - { service: gf-accounting, method: POST, path: "/api/v1/service-orders/{id}/settlements" }
+          createInsuranceSettlement:   # W01 NEW (EP-INSURANCE-SETTLEMENT, FEAT-INS-STL-DETAIL AC-1) — pull snapshot, passthrough
+            returns: InsuranceSettlementResponse
+            downstream:
+              - { service: gf-accounting, method: POST, path: "/api/v1/service-orders/{id}/settlements" }
+          updateSettlement:
+            returns: SettlementByCodeResponse
+            downstream:
+              - { service: gf-accounting, method: PUT, path: "/api/v1/settlements/{code}" }
+          cancelSettlement:
+            returns: SettlementStringResponse
+            downstream:
+              - { service: gf-accounting, method: POST, path: "/api/v1/settlements/{code}/cancel" }
+      gf-customer:
+        Query:
+          getCustomer:
+            returns: CustomerResponse
+            downstream:
+              - { service: gf-customer, method: GET,  path: "/api/v1/customers/{id}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/get-hierarchy-list" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getCustomerByPhone:
+            returns: CustomerResponse
+            downstream:
+              - { service: gf-customer, method: GET, path: "/api/v1/customers/by-phone/{phone}" }
+          searchCustomers:
+            returns: PagedCustomerResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/search" }
+          getCustomersBirthdayToday:
+            returns: ListCustomerResponse
+            downstream:
+              - { service: gf-customer, method: GET, path: "/api/v1/customers/birthdays-today" }
+          getSegments:
+            returns: PagedSegmentResponse
+            downstream:
+              - { service: gf-customer, method: GET, path: "/api/v1/segments" }
+          searchSegments:
+            returns: PagedSegmentResponse
+            downstream:
+              - { service: gf-customer,    method: POST, path: "/api/v1/segments/search" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getSegment:
+            returns: SegmentResponse
+            downstream:
+              - { service: gf-customer, method: GET,  path: "/api/v1/segments/{id}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getSegmentCustomerCount:
+            returns: SegmentCustomerCountResponse
+            downstream:
+              - { service: gf-customer, method: GET, path: "/api/v1/segments/{id}/customer-count" }
+          previewSegmentCustomers:
+            returns: PagedCustomerPreviewResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/segments/preview" }
+          searchSegmentCustomers:
+            returns: PagedCustomerSegmentResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/segments/customers/search" }
+          getInteraction:
+            returns: InteractionResponse
+            downstream:
+              - { service: gf-customer, method: GET, path: "/api/v1/customers/{customerId}/interactions/{interactionId}" }
+          searchInteractions:
+            returns: PagedInteractionResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/{customerId}/interactions/search" }
+          getCustomerTags:
+            returns: ListTagResponse
+            downstream:
+              - { service: gf-customer, method: GET, path: "/api/v1/customers/{customerId}/tags" }
+          suggestCustomerByPhone:
+            returns: ListCustomerSuggestionResponse
+            downstream:
+              - { service: gf-customer, method: GET, path: "/api/v1/customers/suggest" }
+          suggestCustomerByName:
+            returns: ListCustomerSuggestionResponse
+            downstream:
+              - { service: gf-customer, method: GET, path: "/api/v1/customers/suggest-by-name" }
+          suggestVehicleByPlate:
+            returns: ListVehicleSuggestResponse
+            downstream:
+              - { service: gf-customer, method: GET,  path: "/api/v1/vehicles/suggest" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getVehicle:
+            returns: VehicleDetailResponse
+            downstream:
+              - { service: gf-customer, method: GET,  path: "/api/v1/vehicles/{id}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchVehicles:
+            returns: PagedVehicleSearchResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/vehicles/search" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+        Mutation:
+          createCustomer:
+            returns: CustomerResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers" }
+          updateCustomer:
+            returns: CustomerResponse
+            downstream:
+              - { service: gf-customer, method: PUT, path: "/api/v1/customers/{id}" }
+          deleteCustomer:
+            returns: ApiResponseVoid
+            downstream:
+              - { service: gf-customer, method: DELETE, path: "/api/v1/customers/{id}" }
+          mergeCustomers:
+            returns: CustomerResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/merge" }
+          verifyImportCustomers:
+            returns: VerifyImportCustomerResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/verify-import" }
+          importCustomers:
+            returns: ImportResultResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/import" }
+          createSegment:
+            returns: SegmentResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/segments" }
+          updateSegment:
+            returns: SegmentResponse
+            downstream:
+              - { service: gf-customer, method: PUT, path: "/api/v1/segments/{id}" }
+          deleteSegment:
+            returns: ApiResponseVoid
+            downstream:
+              - { service: gf-customer, method: DELETE, path: "/api/v1/segments/{id}" }
+          evaluateSegment:
+            returns: ApiResponseVoid
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/segments/{id}/evaluate" }
+          updateSegmentRules:
+            returns: SegmentResponse
+            downstream:
+              - { service: gf-customer, method: PUT, path: "/api/v1/segments/{id}/update-rules" }
+          createInteraction:
+            returns: InteractionResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/{customerId}/interactions" }
+          updateInteraction:
+            returns: InteractionResponse
+            downstream:
+              - { service: gf-customer, method: PUT, path: "/api/v1/customers/{customerId}/interactions/{interactionId}" }
+      gf-sales:
+        Query:
+          getBookingById:
+            returns: BookingDetailResponse
+            downstream:
+              - { service: gf-sales,   method: GET,  path: "/api/v2/bookings/{id}" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchBookings:
+            returns: PageResponseBookingResponse
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v2/bookings/search" }
+          checkAvailability:
+            returns: TimeslotAvailabilityResponse
+            downstream:
+              - { service: gf-sales, method: GET, path: "/api/v2/bookings/check-availability" }
+          getBookingByIdV3:
+            returns: BookingDetailV3Response
+            downstream:
+              - { service: gf-sales,   method: GET,  path: "/api/v3/bookings/{id}" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchBookingsV3:
+            returns: PageResponseBookingV3Response
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/bookings/search" }
+          checkAvailabilityV3:
+            returns: TimeslotAvailabilityV3Response
+            downstream:
+              - { service: gf-sales, method: GET, path: "/api/v3/bookings/check-availability" }
+          getServiceOrderById:
+            returns: ServiceOrderDetailResponse
+            downstream:
+              - { service: gf-sales,       method: GET,  path: "/api/v2/service-orders/{id}" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/get-hierarchy" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          searchServiceOrders:
+            returns: ServiceOrderSearchResponse
+            downstream:
+              - { service: gf-sales,   method: POST, path: "/api/v2/service-orders/search" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          getServiceOrderByIdV3:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales,     method: GET,  path: "/api/v3/service-orders/{id}" }
+              - { service: gf-erp-mdm,   method: POST, path: "/api/v1/catalog/get-hierarchy-list" }
+              - { service: gf-erp-mdm,   method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: gf-purchase,  method: GET,  path: "/api/v1/direct-purchase-orders/related-service-order/{serviceOrderCode}" }
+              - { service: gf-inventory, method: POST, path: "/api/v2/deliveries/search" }
+              - { service: gf-accounting, method: POST, path: "/api/v1/settlements/search" }
+              - { service: gf-hrms,      method: GET,  path: "/api/v1/employees/{id}" }
+          getServiceOrderByCode:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales,     method: GET,  path: "/api/v3/service-orders/detail/{code}" }
+              - { service: gf-erp-mdm,   method: POST, path: "/api/v1/catalog/get-hierarchy-list" }
+              - { service: gf-erp-mdm,   method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: gf-purchase,  method: GET,  path: "/api/v1/direct-purchase-orders/related-service-order/{serviceOrderCode}" }
+              - { service: gf-inventory, method: POST, path: "/api/v2/deliveries/search" }
+              - { service: gf-accounting, method: POST, path: "/api/v1/settlements/search" }
+              - { service: gf-hrms,      method: GET,  path: "/api/v1/employees/{id}" }
+          getLatestServiceOrdersByVehicleV3:
+            returns: ListLatestVehicleServiceOrderV3Response
+            downstream:
+              - { service: gf-sales,   method: GET,  path: "/api/v3/service-orders/vehicles/{id}/latest" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchServiceOrdersV3:
+            returns: ServiceOrderSearchV3Response
+            downstream:
+              - { service: gf-sales,   method: POST, path: "/api/v3/service-orders/search" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          getPartsForDeliveryV3:
+            returns: ServiceOrderPartInputableV3Response
+            downstream:
+              - { service: gf-sales,     method: GET,  path: "/api/v3/service-orders/code/{code}/for-delivery" }
+              - { service: gf-inventory, method: POST, path: "/api/v2/products/stock/cost-price" }
+              - { service: gf-erp-mdm,   method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchCompletedVehicleNotesV3:
+            returns: CompletedVehicleNotesV3Response
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/service-orders/completed-vehicle-notes/search" }
+          searchCompletedPartsV3:
+            returns: CompletedPartV3Response
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/service-orders/completed-parts/search" }
+          searchCompletedItemsV3:
+            returns: CompletedItemV3Response
+            downstream:
+              - { service: gf-sales,   method: POST, path: "/api/v3/service-orders/completed-items/search" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          getSalesLinkedServiceOrderByQuotationAskId:
+            returns: LinkedServiceOrderResponse
+            downstream:
+              - { service: gf-sales, method: GET, path: "/api/v2/quotation-asks/by-quotation-ask-id/{quotationAskId}/linked-service-order" }
+          getSalesLinkedServiceOrderByCode:
+            returns: LinkedServiceOrderResponse
+            downstream:
+              - { service: gf-sales, method: GET, path: "/api/v2/quotation-asks/by-code/{code}/linked-service-order" }
+          suggestCustomers:
+            returns: CustomerSuggestionResponse
+            downstream:
+              - { service: gf-sales, method: GET, path: "/api/v2/customers/suggest" }
+          suggestCustomersByName:
+            returns: CustomerSuggestionResponse
+            downstream:
+              - { service: gf-sales, method: GET, path: "/api/v2/customers/suggest-by-name" }
+          suggestVehicles:
+            returns: VehicleSuggestionResponse
+            downstream:
+              - { service: gf-sales,   method: GET,  path: "/api/v2/vehicles/suggest" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          getDashboardRealtime:
+            returns: DashboardRealtimeResponse
+            downstream:
+              - { service: gf-sales,    method: GET, path: "/api/v2/dashboard/realtime/total-so-debt" }
+              - { service: gf-sales,    method: GET, path: "/api/v2/dashboard/realtime/so-in-progress-count" }
+              - { service: gf-sales,    method: GET, path: "/api/v2/dashboard/realtime/booking-arrived-without-so-count" }
+              - { service: gf-purchase, method: GET, path: "/api/v2/dashboard/realtime/quotation-asks-asking-count" }
+              - { service: gf-purchase, method: GET, path: "/api/v2/dashboard/realtime/purchase-orders-delivering-count" }
+        Mutation:
+          createBooking:
+            returns: BookingDetailResponse
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v2/bookings" }
+          updateBooking:
+            returns: BookingDetailResponse
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v2/bookings/{id}" }
+          confirmBooking:
+            returns: BookingDetailResponse
+            downstream:
+              - { service: gf-sales,   method: PUT,  path: "/api/v2/bookings/{id}/confirm" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          declineBooking:
+            returns: BookingDetailResponse
+            downstream:
+              - { service: gf-sales,   method: PUT,  path: "/api/v2/bookings/{id}/decline" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          cancelBooking:
+            returns: BookingDetailResponse
+            downstream:
+              - { service: gf-sales,   method: PUT,  path: "/api/v2/bookings/{id}/cancel" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          arriveBooking:
+            returns: BookingDetailResponse
+            downstream:
+              - { service: gf-sales,   method: PUT,  path: "/api/v2/bookings/{id}/arrive" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          createBookingV3:
+            returns: BookingDetailV3Response
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/bookings" }
+          updateBookingV3:
+            returns: BookingDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/bookings/{id}" }
+          confirmBookingV3:
+            returns: BookingDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/bookings/{id}/confirm" }
+          declineBookingV3:
+            returns: BookingDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/bookings/{id}/decline" }
+          cancelBookingV3:
+            returns: BookingDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/bookings/{id}/cancel" }
+          arriveBookingV3:
+            returns: BookingDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/bookings/{id}/arrive" }
+          createServiceOrder:
+            returns: ServiceOrderDetailResponse
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v2/service-orders" }
+          updateServiceOrder:
+            returns: ServiceOrderDetailResponse
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v2/service-orders/{id}" }
+          startServiceOrder:
+            returns: ServiceOrderDetailResponse
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v2/service-orders/{id}/start" }
+          completeServiceOrder:
+            returns: ServiceOrderDetailResponse
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v2/service-orders/{id}/complete" }
+          cancelServiceOrder:
+            returns: ServiceOrderDetailResponse
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v2/service-orders/{id}/cancel" }
+          recordServiceOrderPayment:
+            returns: ServiceOrderDetailResponse
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v2/service-orders/{id}/payments" }
+          recordServiceOrderPaymentByCode:
+            returns: ServiceOrderDetailResponse
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/service-orders/{code}/record-payments" }
+          ocrCarRegistration:
+            returns: OcrVehicleInformationResponse
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v2/service-orders/ocr/upload" }
+          exportServiceOrderToPdf:
+            returns: ExportFileUrlResponse
+            downstream: []  # Pure local URL generation; no BE call
+          exportServiceOrderToImage:
+            returns: ExportFileUrlResponse
+            downstream: []  # Pure local URL generation; no BE call
+          createServiceOrderV3:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/service-orders" }
+          updateServiceOrderV3:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/service-orders/{id}" }
+          startServiceOrderV3:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/service-orders/{id}/start" }
+          completeServiceOrderV3:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/service-orders/{id}/complete" }
+          cancelServiceOrderV3:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/service-orders/{id}/cancel" }
+          recordServiceOrderPaymentV3:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/service-orders/{id}/payments" }
+          ocrCarRegistrationV3:
+            returns: OcrVehicleInformationV3Response
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/service-orders/ocr/upload" }
+          sendQuotationV3:
+            returns: SendQuotationV3Response   # gửi báo giá tới Driver+ app
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v3/service-orders/{id}/send-quotation" }
+          confirmServiceOrderV3:
+            returns: ServiceOrderDetailV3Response
+            downstream:
+              - { service: gf-sales, method: PUT, path: "/api/v3/service-orders/{id}/confirm" }
+          createSalesQuotationAsk:
+            returns: CreateQuotationAskResponse
+            downstream:
+              - { service: gf-sales, method: POST, path: "/api/v2/quotation-asks" }
+          createSalesCustomer:
+            returns: SalesCustomerSingleResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers" }
+          updateSalesCustomer:
+            returns: SalesCustomerSingleResponse
+            downstream:
+              - { service: gf-customer, method: PUT, path: "/api/v1/customers/{id}" }
+          deleteSalesCustomer:
+            returns: SalesCustomerSingleResponse
+            downstream:
+              - { service: gf-customer, method: DELETE, path: "/api/v1/customers/{id}" }
+          mergeSalesCustomers:
+            returns: SalesCustomerSingleResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/merge" }
+          verifyImportSalesCustomers:
+            returns: SalesVerifyImportCustomerSingleResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/verify-import" }
+          importSalesCustomers:
+            returns: SalesImportResultSingleResponse
+            downstream:
+              - { service: gf-customer, method: POST, path: "/api/v1/customers/import" }
+      gf-system:
+        Query:
+          searchTenantTransporterRegistries:
+            returns: TenantTransporterRegistryPagedResponse
+            downstream:
+              - { service: gf-system, method: POST, path: "/api/v1/system/tenant-transporter-registry/search" }
+          getTenantTransporterRegistryDetail:
+            returns: TenantTransporterRegistrySingleResponse
+            downstream:
+              - { service: gf-system, method: GET, path: "/api/v1/system/tenant-transporter-registry/{id}" }
+          getTenantTransporterRegistryDetailByCopTransporterRegistryId:
+            returns: TenantTransporterRegistrySingleResponse
+            downstream:
+              - { service: gf-system, method: GET, path: "/api/v1/system/tenant-transporter-registry/cop-transporter-registry/{copTransporterRegistryId}" }
+        Mutation:
+          createTenantTransporterRegistry:
+            returns: TenantTransporterRegistrySingleResponse
+            downstream:
+              - { service: gf-system, method: POST, path: "/api/v1/system/tenant-transporter-registry" }
+          updateTenantTransporterRegistry:
+            returns: TenantTransporterRegistrySingleResponse
+            downstream:
+              - { service: gf-system, method: PUT, path: "/api/v1/system/tenant-transporter-registry/{id}" }
+          deleteTenantTransporterRegistry:
+            returns: TenantTransporterRegistryVoidResponse
+            downstream:
+              - { service: gf-system, method: DELETE, path: "/api/v1/system/tenant-transporter-registry/{id}" }
+      hrms:
+        Query:
+          getEmployeeById:
+            returns: GetEmployeeByIdResponse
+            downstream:
+              - { service: gf-hrms,    method: GET,  path: "/api/v1/employees/{id}" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchEmployees:
+            returns: SearchEmployeesResponse
+            downstream:
+              - { service: gf-hrms, method: GET, path: "/api/v1/employees" }
+          getEmployeeByCode:
+            returns: GetEmployeeByCodeResponse
+            downstream:
+              - { service: gf-hrms,    method: GET,  path: "/api/v1/employees/detail/{code}" }
+              - { service: gf-erp-mdm, method: POST, path: "/api/v1/catalog/find-by-code" }
+          hrmsUserById:
+            returns: HrmsGetUserByIdResponse
+            downstream:
+              - { service: gf-hrms, method: GET, path: "/api/v1/users/{id}" }
+          hrmsSearchUsers:
+            returns: HrmsSearchUsersResponse
+            downstream:
+              - { service: gf-hrms, method: GET, path: "/api/v1/users/search" }
+        Mutation:
+          createEmployee:
+            returns: CreateEmployeeResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/employees" }
+          updateEmployee:
+            returns: UpdateEmployeeResponse
+            downstream:
+              - { service: gf-hrms, method: PUT, path: "/api/v1/employees/{id}" }
+          changeEmployeeRole:
+            returns: ChangeEmployeeRoleResponse
+            downstream:
+              - { service: gf-hrms, method: PUT, path: "/api/v1/employees/{id}/role" }
+          terminateEmployee:
+            returns: TerminateEmployeeResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/employees/{id}/terminate" }
+          suspendEmployee:
+            returns: SuspendEmployeeResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/employees/{id}/suspend" }
+          reactivateEmployee:
+            returns: ReactivateEmployeeResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/employees/{id}/reactivate" }
+          provisionEmployeeSso:
+            returns: ProvisionEmployeeSsoResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/employees/{id}/provision-sso" }
+          disableEmployeeSso:
+            returns: DisableEmployeeSsoResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/employees/{id}/disable-sso" }
+          enableEmployeeSso:
+            returns: EnableEmployeeSsoResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/employees/{id}/enable-sso" }
+          hrmsCreateUser:
+            returns: HrmsCreateUserResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/users" }
+          hrmsUpdateUser:
+            returns: HrmsUpdateUserResponse
+            downstream:
+              - { service: gf-hrms, method: PUT, path: "/api/v1/users/{id}" }
+          hrmsRetryIam:
+            returns: HrmsRetryIamResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/users/{id}/retry-iam" }
+          hrmsRetryConversation:
+            returns: HrmsRetryConversationResponse
+            downstream:
+              - { service: gf-hrms, method: POST, path: "/api/v1/users/{id}/retry-conversation" }
+          hrmsToggleUserStatus:
+            returns: HrmsToggleStatusResponse
+            downstream:
+              - { service: gf-hrms, method: PATCH, path: "/api/v1/users/{id}/toggle-status" }
+      mdm:
+        Query:
+          getMdmParts:
+            returns: GetMdmPartsResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v1/mdm-parts" }
+          getMdmPartsGoogleImages:
+            returns: GetMdmPartsGoogleImagesResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v1/mdm-parts/google-images" }
+          searchProducts:
+            returns: SearchProductResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v2/products/search" }
+              - { service: gf-erp-mdm,   method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchGroupedProducts:
+            returns: SearchGroupedProductResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v2/products/search-grouped" }
+              - { service: gf-erp-mdm,   method: POST, path: "/api/v1/catalog/find-by-code" }
+          getReceiptByCode:
+            returns: ReceiptResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/receipts/{code}" }
+              - { service: gf-purchase,    method: POST, path: "/api/v3/purchase-order/supplier-names" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          searchReceipts:
+            returns: SearchReceiptResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/receipts" }
+              - { service: gf-purchase,    method: POST, path: "/api/v3/purchase-order/supplier-names" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getServiceById:
+            returns: GetServiceResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v1/services/{id}" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          searchServices:
+            returns: SearchServicesResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v1/services" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          searchDeliveries:
+            returns: SearchDeliveriesResponse
+            downstream:
+              - { service: gf-inventory,   method: POST, path: "/api/v2/deliveries/search" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+              - { service: gf-sales,       method: POST, path: "/api/v3/service-orders/find-by-codes" }
+              - { service: gf-sales,       method: POST, path: "/api/v3/service-orders/customer-info" }
+          searchDeliveriesMobile:
+            returns: SearchDeliveriesMobileResponse
+            downstream:
+              - { service: gf-inventory,   method: POST, path: "/api/v2/deliveries/mobile/search" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+              - { service: gf-sales,       method: POST, path: "/api/v3/service-orders/customer-info" }
+          getDeliveryByCode:
+            returns: GetDeliveryResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/deliveries/{code}" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+              - { service: gf-sales,       method: GET,  path: "/api/v3/service-orders/detail/{code}" }
+              - { service: gf-sales,       method: POST, path: "/api/v3/service-orders/customer-info" }
+          getMobileDeliveryById:
+            returns: GetMobileDeliveryResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/deliveries/mobile/{code}" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+              - { service: gf-sales,       method: POST, path: "/api/v3/service-orders/customer-info" }
+              - { service: gf-sales,       method: GET,  path: "/api/v3/service-orders/detail/{code}" }
+          getDeliveryItems:
+            returns: GetDeliveryItemsResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v2/deliveries/{id}/items" }
+          searchReceiptsMobile:
+            returns: SearchReceiptsMobileResponse
+            downstream:
+              - { service: gf-inventory, method: GET,  path: "/api/v2/receipts/mobile/search" }
+              - { service: gf-purchase,  method: POST, path: "/api/v3/purchase-order/supplier-names" }
+          getReceiptMobile:
+            returns: GetReceiptMobileResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/receipts/mobile/{code}" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+              - { service: gf-purchase,    method: POST, path: "/api/v3/purchase-order/supplier-names" }
+          searchInventoryStocks:
+            returns: SearchInventoryStocksResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/stocks" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getHistoryStock:
+            returns: GetStockHistoryResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/stocks/history" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          searchInventoryStockMobile:
+            returns: SearchInventoryStockMobileResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v2/stocks/mobile" }
+          getHistoryStockMobileById:
+            returns: SearchHistoryStockMobileResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/stocks/mobile/{id}" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          searchDeliveryProducts:
+            returns: SearchDeliveryProductsResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/deliveries/products/search" }
+          exportDeliveryPdf:
+            returns: ExportDeliveryPdfResponse
+            downstream: []  # Pure local URL generation; no BE call
+          exportReceiptPdf:
+            returns: ExportReceiptPdfResponse
+            downstream: []  # Pure local URL generation; no BE call
+          searchPeriodStocks:
+            returns: SearchPeriodStocksResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v2/period-stocks" }
+          getPeriodStockById:
+            returns: GetPeriodStockByIdResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v2/period-stocks/{id}" }
+          getPeriodStockFilterProducts:
+            returns: GetPeriodStockFilterProductsResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v2/period-stocks/filters/products" }
+          getPeriodStockFilterPeriods:
+            returns: GetPeriodStockFilterPeriodsResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v2/period-stocks/filters/periods" }
+          searchPeriodStocksMobile:
+            returns: SearchPeriodStocksMobileResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/period-stocks/mobile/list" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getPeriodStockDetailMobile:
+            returns: GetPeriodStockDetailMobileResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/period-stocks/mobile/detail" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getTotalStockBySkus:
+            returns: GetTotalStockBySkusResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/products/stock/total-by-skus" }
+        Mutation:
+          createProducts:
+            returns: CreateProductResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/products" }
+          createReceipts:
+            returns: CreateReceiptResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/receipts" }
+          updateReceipts:
+            returns: UpdateReceiptResponse
+            downstream:
+              - { service: gf-inventory, method: PUT,  path: "/api/v2/receipts/{id}" }
+          cancelReceipts:
+            returns: CancelReceiptResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/receipts/{id}/cancel" }
+          completeReceipts:
+            returns: CompleteReceiptResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/receipts/{id}/complete" }
+          reverseReceipts:
+            returns: ReverseReceiptResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/receipts/{id}/reverse" }
+          updateService:
+            returns: UpdateServiceResponse
+            downstream:
+              - { service: gf-inventory, method: PUT,  path: "/api/v1/services/{id}" }
+          createService:
+            returns: CreateServiceResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v1/services" }
+          createDelivery:
+            returns: CreateDeliveryResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/deliveries" }
+          updateDelivery:
+            returns: UpdateDeliveryResponse
+            downstream:
+              - { service: gf-inventory, method: PUT,  path: "/api/v2/deliveries/{id}" }
+          completeDelivery:
+            returns: CompleteDeliveryResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/deliveries/{id}/complete" }
+          cancelDelivery:
+            returns: CancelDeliveryResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/deliveries/{id}/cancel" }
+          reverseDelivery:
+            returns: ReverseDeliveryResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/deliveries/{id}/reverse" }
+          adjustStockQuantity:
+            returns: AdjustStockQuantityResponse
+            downstream:
+              - { service: gf-inventory,   method: PUT,  path: "/api/v2/stocks/adjust" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          updateStockPrice:
+            returns: UpdateStockPriceResponse
+            downstream:
+              - { service: gf-inventory, method: PUT, path: "/api/v2/stocks/prices" }
+      notification:
+        Query:
+          getNotifications:
+            returns: NotificationPagedResponse
+            downstream:
+              - { service: gf-notification, method: GET, path: "/api/v1/notifications" }
+          getUnreadCount:
+            returns: UnreadCountResponse
+            downstream:
+              - { service: gf-notification, method: GET, path: "/api/v1/notifications/unread-count" }
+        Mutation:
+          markAsRead:
+            returns: MarkAsReadResponse
+            downstream:
+              - { service: gf-notification, method: PUT, path: "/api/v1/notifications/{id}/mark-as-read" }
+          markAllAsRead:
+            returns: MarkAllAsReadResponse
+            downstream:
+              - { service: gf-notification, method: PUT, path: "/api/v1/notifications/mark-all-as-read" }
+          markAsReadPush:
+            returns: MarkAsReadPushResponse
+            downstream:
+              - { service: gf-notification, method: PUT, path: "/api/v1/notifications/{requestId}/mark-as-read-push" }
+      order:
+        Query:
+          getCart:
+            returns: CartResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/cart" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchPurchaseRequests:
+            returns: SearchPurchaseRequestsResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/purchase-request/search" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchPurchaseRequestsForWeb:
+            returns: SearchPurchaseRequestsForWebResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v2/purchase-request/search-for-web" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchPurchaseOrders:
+            returns: SearchPurchaseOrdersResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/purchase-order/search" }
+          searchPurchaseOrdersForWeb:
+            returns: SearchPurchaseOrdersForWebResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v2/purchase-order/search-web" }
+          getPurchaseRequestDetail:
+            returns: PurchaseRequestDetailResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/purchase-request/{purchaseId}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getPurchaseRequestDetailByCode:
+            returns: PurchaseRequestDetailResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/purchase-request/detail/{purchaseCode}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getPurchaseOrder:
+            returns: PurchaseOrderResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/purchase-order/{purchaseId}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getPurchaseOrderByCode:
+            returns: PurchaseOrderResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/purchase-order/detail/{purchaseCode}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getPurchaseOrderDetailV3:
+            returns: PurchaseOrderDetailV3Response
+            downstream:
+              - { service: gf-purchase,    method: GET,  path: "/api/v3/purchase-order/detail/{code}" }
+              - { service: gf-erp-mdm,     method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/receipts" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+              - { service: gf-sales,       method: GET,  path: "/api/v3/service-orders/detail/{code}" }
+          getSaasTenant:
+            returns: SaasTenantResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/purchase-request/saas-tenant" }
+          getPurchaseRequestChat:
+            returns: PurchaseRequestChatResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/purchase-request/chat/{code}" }
+        Mutation:
+          addPurchaseRequest:
+            returns: PurchaseRequestResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/purchase-request" }
+          addPurchaseRequestV2:
+            returns: PurchaseRequestV2Response
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v2/purchase-request" }
+          cancelPurchaseRequest:
+            returns: CancelPurchaseRequestResponse
+            downstream:
+              - { service: gf-purchase, method: PUT, path: "/api/v1/purchase-request/cancel" }
+          confirmPurchaseRequest:
+            returns: ConfirmPurchaseRequestResponse
+            downstream:
+              - { service: gf-purchase, method: PUT, path: "/api/v1/purchase-request/confirm/{id}" }
+          confirmReceivedPurchaseOrder:
+            returns: ConfirmReceivedPurchaseOrderResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/purchase-order/{purchaseOrderId}/confirm-received" }
+          confirmReceivedPurchaseOrderByCode:
+            returns: ConfirmReceivedPurchaseOrderResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/purchase-order/confirm-received/{purchaseOrderCode}" }
+          updateCart:
+            returns: UpdateCartResponse
+            downstream:
+              - { service: gf-purchase, method: PUT, path: "/api/v1/cart" }
+          addSparePartToCart:
+            returns: AddSparePartResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/cart/add/{sparePartPriceLineItemId}" }
+          deleteCartItem:
+            returns: DeleteCartResponse
+            downstream:
+              - { service: gf-purchase, method: DELETE, path: "/api/v1/cart/{id}" }
+      payment:
+        Query:
+          getVariables:
+            returns: GetVariablesResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/variables/mobile" }
+          getPreferences:
+            returns: GetPreferencesResponse
+            # Version-dynamic: getEndpointsByVersion picks V1 or V2 based on Garage-App-Version header.
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/user/preferences" }
+              - { service: gf-purchase, method: GET, path: "/api/v2/user/preferences" }
+          getPaymentByPurchase:
+            returns: GetPaymentByPurchaseResponse
+            downstream:
+              - { service: ac-payment-gateway, method: GET, path: "/api/payments/by-purchase/{purchaseCode}" }
+        Mutation:
+          createPayment:
+            returns: CreatePaymentResponse
+            downstream:
+              - { service: ac-payment-gateway, method: POST, path: "/api/payments/create" }
+          changePaymentMethod:
+            returns: ChangePaymentMethodResponse
+            downstream:
+              - { service: gf-purchase, method: PUT, path: "/api/v2/purchase-request/change-payment-method/{id}" }
+      policy-agent:
+        Query:
+          policyClientGetPermissions:
+            returns: PolicyClientPermissionsResponse
+            downstream:
+              - { service: policy-agent, method: GET, path: "/api/v1/policy-client/permissions" }
+          policyRoleById:
+            returns: PolicyRoleDetailResponse
+            downstream:
+              - { service: policy-agent, method: GET, path: "/api/v1/roles/{roleId}" }
+          policyRoleList:
+            returns: PolicyRoleListResponse
+            downstream:
+              - { service: policy-agent, method: GET, path: "/api/v1/roles" }
+          policyResourceTypes:
+            returns: PolicyResourceTypesResponse
+            downstream:
+              - { service: policy-agent, method: GET, path: "/api/v1/resources/resource-types" }
+        Mutation:
+          policyRoleCreate:
+            returns: PolicyRoleCreateResponse
+            downstream:
+              - { service: policy-agent, method: POST, path: "/api/v1/roles" }
+          policyRoleUpdate:
+            returns: PolicyRoleUpdateResponse
+            downstream:
+              - { service: policy-agent, method: PUT, path: "/api/v1/roles/{roleId}" }
+          policyRoleDelete:
+            returns: PolicyRoleDeleteResponse
+            downstream:
+              - { service: policy-agent, method: DELETE, path: "/api/v1/roles/{roleId}" }
+      purchase:
+        Query:
+          prGetPaymentMethods:
+            returns: PrPaymentMethodsResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v2/purchase-request/payment-methods" }
+          getPreliminaryQuotation:
+            returns: PreliminaryQuotationResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v2/quotation-asks/{code}/preliminary-quotation" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+        Mutation:
+          prPlaceOrder:
+            returns: PlaceOrderResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v2/purchase-request/place-order/{prId}" }
+          prCheckoutQR:
+            returns: CheckoutResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v2/purchase-request/checkout/qr/{prId}" }
+          prCheckoutCC:
+            returns: CheckoutResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v2/purchase-request/checkout/cc/{prId}" }
+      quotation:
+        Query:
+          quotationAskById:
+            returns: QuotationAskResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/quotation-asks/detail/{code}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/get-hierarchy" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: gf-sales,    method: GET,  path: "/api/v2/quotation-asks/by-code/{code}/linked-service-order" }
+          quotationAskByCode:
+            returns: QuotationAskResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/quotation-asks/detail/{code}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/get-hierarchy" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: gf-sales,    method: GET,  path: "/api/v2/quotation-asks/by-code/{code}/linked-service-order" }
+          quotationAskByCodeOrId:
+            returns: QuotationAskResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/quotation-asks/detail/{code}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/get-hierarchy" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: gf-sales,    method: GET,  path: "/api/v2/quotation-asks/by-code/{code}/linked-service-order" }
+          quotationAskTenantInvoiceInfo:
+            returns: QuotationAskTenantInvoiceInfoResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v3/quotation-asks/tenant-invoice-info" }
+          quotationAskV3ById:
+            returns: QuotationAskV3Response
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v3/quotation-asks/{id}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/get-hierarchy" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: gf-sales,    method: GET,  path: "/api/v2/quotation-asks/by-quotation-ask-id/{id}/linked-service-order" }
+          quotationAskV3ByCode:
+            returns: QuotationAskV3Response
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v3/quotation-asks/detail/{code}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/get-hierarchy" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+              - { service: gf-sales,    method: GET,  path: "/api/v2/quotation-asks/by-code/{code}/linked-service-order" }
+          searchQuotationAsks:
+            returns: QuotationAskListResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/quotation-asks" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchQuotationAsksForWeb:
+            returns: QuotationAskWebListResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v2/quotation-asks/search-for-web" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          searchSpareParts:
+            returns: SparePartsListResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/quotation-asks/spare-parts" }
+          quotationAskHistories:
+            returns: QuotationAskHistoriesResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/quotation-asks/{quotationAskCode}/histories" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          quotationAskChatByCode:
+            returns: QuotationAskChatResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/quotation-asks/chat/{code}" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+        Mutation:
+          createQuotationAsk:
+            returns: CreateQuotationAskResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/quotation-asks" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          createQuotationAskV3:
+            returns: CreateQuotationAskV3Response
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v3/quotation-asks" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          quotationPricingRequest:
+            returns: QuotationPricingRequestResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/quotation-pricing/request" }
+          ocrUpload:
+            returns: OcrUploadResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v2/quotation-asks/ocr/upload" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+      supper-set:
+        Query:
+          supperSetQuestToken:
+            returns: SupperSetQuestTokenResponse
+            # Multi-hop proxy: admin login → CSRF token → guest token chain.
+            downstream:
+              - { service: Superset, method: POST, path: "/api/v1/security/login" }
+              - { service: Superset, method: GET,  path: "/api/v1/security/csrf_token/" }
+              - { service: Superset, method: POST, path: "/api/v1/security/guest_token/" }
+        Mutation: {}
+      supplier:
+        Query:
+          searchSuppliers:
+            returns: PagedSupplierSearchResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v2/suppliers/search" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getSupplierById:
+            returns: SupplierSingleResponse
+            downstream:
+              - { service: gf-purchase,  method: GET,  path: "/api/v2/suppliers/{supplierId}" }
+              - { service: gf-inventory, method: GET,  path: "/api/v1/warehouses/code/{warehouseCode}" }
+              - { service: gf-erp-mdm,   method: POST, path: "/api/v1/catalog/find-by-code" }
+        Mutation:
+          createSupplier:
+            returns: SupplierSingleResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v2/suppliers" }
+          updateSupplier:
+            returns: SupplierSingleResponse
+            downstream:
+              - { service: gf-purchase, method: PUT, path: "/api/v2/suppliers/{supplierId}" }
+          toggleSupplierStatus:
+            returns: ApiResponseVoid
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v2/suppliers/{supplierId}/toggle-status" }
+      tenant:
+        # Note: handlers in tenant.resolver.ts use getEndpointsByVersion(garageAppVersion) to switch between V1 and V2 paths.
+        # Both V1 and V2 paths are listed below for completeness.
+        Query:
+          getTenantInfo:
+            returns: GetTenantInfoResponse
+            downstream:
+              - { service: gf-purchase, method: GET,  path: "/api/v1/tenant/info" }
+              - { service: gf-purchase, method: GET,  path: "/api/v2/tenant/info" }
+              - { service: gf-erp-mdm,  method: POST, path: "/api/v1/catalog/find-by-code" }
+          getCurrentUser:
+            returns: GetCurrentUserResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v1/tenant/current-user" }
+              - { service: gf-purchase, method: GET, path: "/api/v2/tenant/current-user" }
+          searchUsers:
+            returns: PagedSearchUsersResponse
+            downstream:
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+        Mutation:
+          ecommerceConfirmed:
+            returns: EcommerceConfirmedResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/tenant/ecommerce-confirmed" }
+              - { service: gf-purchase, method: POST, path: "/api/v2/tenant/ecommerce-confirmed" }
+          tcDataPrivacyConfirmed:
+            returns: TcDataPrivacyConfirmedResponse
+            downstream:
+              - { service: gf-purchase, method: POST, path: "/api/v1/tenant/tc-data-privacy-confirmed" }
+              - { service: gf-purchase, method: POST, path: "/api/v2/tenant/tc-data-privacy-confirmed" }
+          deleteUser:
+            returns: DeleteUserResponse
+            downstream:
+              - { service: gf-purchase, method: DELETE, path: "/api/v1/tenant/current-user" }
+              - { service: gf-purchase, method: DELETE, path: "/api/v2/tenant/current-user" }
+      uploadFile:
+        Query: {}
+        Mutation:
+          uploadFiles:
+            returns: UploadFileResponse
+            downstream:
+              - { service: ct-file-storage, method: POST, path: "/images/v1/upload-files" }
+          uploadMultipleFiles:
+            returns: UploadMultipleFilesResponse
+            downstream:
+              - { service: ct-file-storage, method: POST, path: "/api/v1/files/upload-files" }
+          deleteFiles:
+            returns: DeleteFileResponse
+            downstream:
+              - { service: ct-file-storage, method: DELETE, path: "/images/v1/delete-files" }
+          uploadAttachment:
+            returns: UploadAttachmentResponse
+            downstream:
+              - { service: ct-file-storage, method: POST, path: "/images/v1/upload-attachment" }
+          submitDocumentFeedback:
+            returns: DocumentsFeedbackResponse
+            downstream:
+              - { service: ct-file-storage, method: POST, path: "/documents/v1/feedback" }
+      user:
+        Query:
+          getUserCards:
+            returns: GetUserCardsResponse
+            downstream:
+              - { service: gf-purchase, method: GET, path: "/api/v2/user/cards" }
+        Mutation:
+          deleteUserCard:
+            returns: DeleteUserCardResponse
+            downstream:
+              - { service: gf-purchase, method: DELETE, path: "/api/v2/user/cards/{id}" }
+      voucher:
+        Query:
+          searchVoucherPrograms:
+            returns: PagedVoucherProgramSearchResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/voucher-programs/search" }
+          getVoucherProgramById:
+            returns: VoucherProgramSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET, path: "/api/v1/voucher-programs/{voucherProgramId}" }
+          getActiveVoucherPrograms:
+            returns: VoucherProgramListResponse
+            downstream:
+              - { service: gf-marketing, method: GET, path: "/api/v1/voucher-programs/active" }
+          searchVouchers:
+            returns: PagedVoucherSearchResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/vouchers/search" }
+          getVoucherById:
+            returns: VoucherSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET, path: "/api/v1/vouchers/{voucherId}" }
+          voucherRedemption:
+            returns: VoucherRedemptionSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET, path: "/api/v1/vouchers/{voucherCode}/voucher-redemption" }
+          validateVoucher:
+            returns: VoucherSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET, path: "/api/v1/vouchers/validate" }
+          customerDetail:
+            returns: VoucherListResponse
+            downstream:
+              - { service: gf-marketing, method: GET, path: "/api/v1/vouchers/customer/{customerId}" }
+          getVoucherByCode:
+            returns: VoucherSingleResponse
+            downstream:
+              - { service: gf-marketing, method: GET, path: "/api/v1/vouchers/code/{voucherCode}" }
+        Mutation:
+          createVoucherProgram:
+            returns: VoucherProgramSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/voucher-programs" }
+          updateVoucherProgram:
+            returns: VoucherProgramSingleResponse
+            downstream:
+              - { service: gf-marketing, method: PUT, path: "/api/v1/voucher-programs/{voucherProgramId}" }
+          deleteVoucherProgram:
+            returns: VoucherProgramSingleResponse
+            downstream:
+              - { service: gf-marketing, method: DELETE, path: "/api/v1/voucher-programs/{voucherProgramId}" }
+          suspendVoucherProgram:
+            returns: VoucherProgramSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/voucher-programs/{programId}/suspend" }
+          resumeVoucherProgram:
+            returns: VoucherProgramSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/voucher-programs/{programId}/resume" }
+          generateVoucherProgramQr:
+            returns: GenerateVoucherProgramQrSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/voucher-programs/{programId}/generate-qr" }
+          cancelVoucherProgram:
+            returns: VoucherProgramSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/voucher-programs/{programId}/cancel" }
+          activateVoucherProgram:
+            returns: VoucherProgramSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/voucher-programs/{programId}/activate" }
+          claimVoucherByQr:
+            returns: ClaimVoucherByQrSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/voucher-programs/claim-qr" }
+          cancelVouchers:
+            returns: CancelVouchersSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/vouchers/cancel-batch" }
+          redeemVoucherByDriver:
+            returns: VoucherSingleResponse
+            downstream:
+              - { service: gf-marketing, method: POST, path: "/api/v1/vouchers/redeem-by-driver" }
+      warehouse:
+        Query:
+          searchWarehouses:
+            returns: PagedWarehouseResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v1/warehouses" }
+          getWarehouseById:
+            returns: WarehouseSingleResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v1/warehouses/{id}" }
+          getWarehouseByCode:
+            returns: WarehouseSingleResponse
+            downstream:
+              - { service: gf-inventory, method: GET, path: "/api/v1/warehouses/code/{warehouseCode}" }
+        Mutation: {}
+      # W03 EP-INVENTORY-CATALOG (DESIGN — ADR-017/018, contract v7.30): nested namespace
+      # gf-inventory/catalog-v2. 8 Query + 15 Mutation = 23 ops passthrough sang gf-inventory
+      # V2-1..V2-23 + 1 op sang gf-erp-mdm catalog inquiry (Q9 listUnits + UNIT/COUNTRY
+      # enrichment). Reverse-proxy route /api/v2/internal-products/export/:token cho Q7.
+      gf-inventory/catalog-v2:
+        Query:
+          searchMaterialGroups:
+            returns: PagedMaterialGroupResponse
+            downstream:
+              - { service: gf-inventory,   method: POST, path: "/api/v2/material-groups/search" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getMaterialGroupTree:
+            returns: MaterialGroupTreeListResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/material-groups/tree" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          getMaterialGroup:
+            returns: MaterialGroupResponse
+            downstream:
+              - { service: gf-inventory,   method: GET,  path: "/api/v2/material-groups/{id}" }
+              - { service: ct-saas-tenant, method: POST, path: "/api/v1/saas-tenant/tenant-users/search/basic" }
+          searchInternalProducts:
+            returns: PagedInternalProductResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/internal-products/search" }
+              - { service: gf-erp-mdm,   method: POST, path: "/protected/catalog/v1/inquiry" }   # directory=UNIT
+              - { service: gf-erp-mdm,   method: POST, path: "/protected/catalog/v1/inquiry" }   # directory=COUNTRY
+          getInternalProduct:
+            returns: InternalProductResponse
+            downstream:
+              - { service: gf-inventory, method: GET,  path: "/api/v2/internal-products/{id}" }
+              - { service: gf-erp-mdm,   method: POST, path: "/protected/catalog/v1/inquiry" }
+          exportInternalProducts:
+            returns: ExportFileUrlResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/internal-products/export" }   # invoked from reverse-proxy middleware after token redeem
+          searchSkus:
+            returns: PagedSkuSearchResponse
+            downstream:
+              - { service: gf-inventory, method: GET,  path: "/api/v2/skus/search" }
+          listUnits:
+            returns: UnitListResponse
+            downstream:
+              - { service: gf-erp-mdm,   method: POST, path: "/protected/catalog/v1/inquiry" }   # directory=UNIT
+        Mutation:
+          createMaterialGroup:
+            returns: MaterialGroupResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/material-groups" }
+          updateMaterialGroup:
+            returns: MaterialGroupResponse
+            downstream:
+              - { service: gf-inventory, method: PUT,  path: "/api/v2/material-groups/{id}" }
+          deleteMaterialGroup:
+            returns: DeleteResponse
+            downstream:
+              - { service: gf-inventory, method: DELETE, path: "/api/v2/material-groups/{id}" }
+          createInternalProduct:
+            returns: InternalProductResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/internal-products" }
+          updateInternalProduct:
+            returns: InternalProductResponse
+            downstream:
+              - { service: gf-inventory, method: PUT,  path: "/api/v2/internal-products/{id}" }
+          deleteInternalProduct:
+            returns: DeleteResponse
+            downstream:
+              - { service: gf-inventory, method: DELETE, path: "/api/v2/internal-products/{id}" }
+          mapSkuToInternalProduct:
+            returns: InternalProductSkuMappingResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/internal-products/{id}/sku-mappings" }
+          unmapSkuFromInternalProduct:
+            returns: DeleteResponse
+            downstream:
+              - { service: gf-inventory, method: DELETE, path: "/api/v2/internal-products/{id}/sku-mappings/{productId}" }
+          addConversionUnit:
+            returns: InternalProductConversionUnitResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/internal-products/{id}/conversion-units" }
+          updateConversionUnit:
+            returns: InternalProductConversionUnitResponse
+            downstream:
+              - { service: gf-inventory, method: PUT,  path: "/api/v2/internal-products/{id}/conversion-units/{unitId}" }
+          deleteConversionUnit:
+            returns: DeleteResponse
+            downstream:
+              - { service: gf-inventory, method: DELETE, path: "/api/v2/internal-products/{id}/conversion-units/{unitId}" }
+          addInternalProductAttachment:
+            returns: InternalProductAttachmentResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/internal-products/{id}/attachments" }
+          deleteInternalProductAttachment:
+            returns: DeleteResponse
+            downstream:
+              - { service: gf-inventory, method: DELETE, path: "/api/v2/internal-products/{id}/attachments/{attachmentId}" }
+          verifyImportInternalProducts:
+            returns: ImportInternalProductsReportResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/internal-products/verify-import" }
+          importInternalProducts:
+            returns: ImportInternalProductsResultResponse
+            downstream:
+              - { service: gf-inventory, method: POST, path: "/api/v2/internal-products/import" }
+
+  - name: "internal-products-export-proxy"
+    path: "/garage/api/v2/internal-products/export/:token"
+    method: GET
+    purpose: "W03 R22 single-call BFF reverse-proxy cho exportInternalProducts. FE GET URL nhận từ Q7; middleware validate signed-token (60s TTL, single-use) → re-construct V2-22 với forwarded auth → stream binary .xlsx về browser với Content-Disposition pass-through."
+    request:
+      schema:
+        token: string
+    response:
+      schema:
+        binary: stream
+
+  - name: "graphql-internal"
+    path: "/playground"
+    method: POST
+    purpose: "Internal GraphQL endpoint (cùng Apollo Server instance) — không phải Playground UI riêng; dùng cho service-to-service hoặc tests; path = ${GRAPHQL_INTERNAL_PATH}, default /playground"
+    request:
+      schema:
+        query: string
+        variables: object
+        operationName: string
+    response:
+      schema:
+        data: object
+        errors: array
+
+  - name: "health"
+    path: "/health"
+    method: GET
+    purpose: "Liveness probe trả status, timestamp ISO, uptime; trong non-prod còn echo env"
+    request:
+      schema: {}
+    response:
+      schema:
+        status: string
+        timestamp: string
+        uptime: number
+        env: object
+
+  - name: "metrics"
+    path: "/metrics"
+    method: GET
+    purpose: "Prometheus metrics scrape — collectDefaultMetrics + OpenTelemetry auto-instrumentation"
+    request:
+      schema: {}
+    response:
+      schema:
+        prometheus_text: string
+
+  - name: "graphql-download"
+    path: "/graphql/download"
+    method: GET
+    purpose: "File download proxy qua uploadFileHandlers.downloadFile (forward sang ct-file-storage)"
+    request:
+      schema:
+        url: string
+    response:
+      schema:
+        binary: stream
+
+  - name: "service-order-export-pdf"
+    path: "/graphql/api/v2/service-orders/:id/export-pdf"
+    method: GET
+    purpose: "PDF passthrough proxy từ gf-sales (serviceOrderService.exportServiceOrderPdf)"
+    request:
+      schema:
+        id: string
+    response:
+      schema:
+        binary: stream
+
+  - name: "service-order-export-image"
+    path: "/graphql/api/v2/service-orders/:id/export-image"
+    method: GET
+    purpose: "Image passthrough proxy từ gf-sales (serviceOrderService.exportServiceOrderImage)"
+    request:
+      schema:
+        id: string
+    response:
+      schema:
+        binary: stream
+
+  - name: "receipts-export-excel"
+    path: "/graphql/api/v2/receipts/export"
+    method: GET
+    purpose: "Receipt Excel export passthrough từ gf-inventory (receiptService.exportReceiptsExcel)"
+    request:
+      schema:
+        query: object
+    response:
+      schema:
+        binary: stream
+
+  - name: "deliveries-export-excel"
+    path: "/graphql/api/v2/deliveries/export"
+    method: GET
+    purpose: "Delivery Excel export passthrough từ gf-inventory (deliveryService.exportDeliveriesExcel)"
+    request:
+      schema:
+        query: object
+    response:
+      schema:
+        binary: stream
+
+  - name: "delivery-export-pdf"
+    path: "/graphql/api/v2/deliveries/:id/export-pdf"
+    method: GET
+    purpose: "Delivery PDF passthrough từ gf-inventory (deliveryService.exportDeliveryPdf)"
+    request:
+      schema:
+        id: string
+    response:
+      schema:
+        binary: stream
+
+  - name: "receipt-export-pdf"
+    path: "/graphql/api/v2/receipts/:id/export-pdf"
+    method: GET
+    purpose: "Receipt PDF passthrough từ gf-inventory (receiptService.exportReceiptPdf)"
+    request:
+      schema:
+        id: string
+    response:
+      schema:
+        binary: stream
+
+  - name: "settlement-export-pdf"
+    path: "/graphql/api/v1/settlements/:id/export-pdf"
+    method: GET
+    purpose: "Settlement PDF passthrough từ gf-accounting (settlementService.exportSettlementPdf)"
+    request:
+      schema:
+        id: string
+    response:
+      schema:
+        binary: stream
+
+  - name: "superset-proxy"
+    path: "/*"
+    method: ANY
+    purpose: "Catch-all proxy sang Apache Superset (http-proxy-middleware) cho mọi path KHÔNG nằm trong allowlist của checkPath (allowlist: /graphql/*, /playground/*, /health, /download, /metrics, *export-pdf, *export-image, *export). pathRewrite ^/supperset → '' khi forward; xóa x-frame-options/CSP để cho phép embed iframe; target = process.env.SUPERSET_ENDPOINT (default https://superset.nonprod.aggregatoricapaci.com)"
+    request:
+      schema:
+        any: any
+    response:
+      schema:
+        any: any
+
+events:
+  produces: []
+  consumes: []
+
+data:
+  entities: []
+  relationships: []
+
+business_rules:
+  - { id: "BR-AGG-GARAGE-GRAPH-001", description: "Data enrichment: hầu hết queries gọi gf-erp-mdm /api/v1/catalog/find-by-code để map vehicle codes → full names, UoM codes → display names, insurance codes → names, geographic codes → province/ward names. Pattern lặp lại ~30+ resolvers.", cornerstone: true, enforcement_point: "catalogHandlers.findByCode() trong quotation/order/mdm/gf-sales/gf-customer/supplier resolvers" }
+  - { id: "BR-AGG-GARAGE-GRAPH-002", description: "Status normalization: service order status PRICING được map thành CHECKED cho frontend display.", cornerstone: false, enforcement_point: "gf-sales resolvers service order status mapping" }
+  - { id: "BR-AGG-GARAGE-GRAPH-003", description: "Multi-version API routing: header Garage-App-Version switch v1/v2/v3 downstream endpoint. getEndpointsByVersion(garageAppVersion) chọn path phù hợp. Ảnh hưởng tenant, payment, booking, service-order resolvers.", cornerstone: true, enforcement_point: "getEndpointsByVersion() trong tenant/payment/gf-sales resolvers" }
+  - { id: "BR-AGG-GARAGE-GRAPH-004", description: "Token propagation: JWT từ client forwarded verbatim qua Authorization header tới mọi downstream service. BFF KHÔNG validate token — delegation cho backend services.", cornerstone: true, enforcement_point: "ApiClient context.token → Authorization header forwarding" }
+  - { id: "BR-AGG-GARAGE-GRAPH-005", description: "Error handling: ApiClientError wrapper capture backend HTTP errors, ErrorResponse union type cho GraphQL response, distributed tracing context (requestId, traceId) inject vào error payload.", cornerstone: true, enforcement_point: "ApiClientError + ErrorResponse type + GraphQL error formatter" }
+  - { id: "BR-AGG-GARAGE-GRAPH-006", description: "Parallel downstream fetching: Promise.all() cho multi-service aggregation. Example: getServiceOrderByIdV3 gọi song song gf-sales + gf-erp-mdm + gf-purchase + gf-inventory + gf-accounting + gf-hrms.", cornerstone: true, enforcement_point: "Promise.all() trong complex resolvers (gf-sales, mdm, gf-accounting)" }
+
+workflows: []
+
+integrations:
+  inbound:
+    - type: API
+      source: "garage-web frontend"
+      purpose: "All UI queries/mutations via GraphQL POST /graphql"
+    - type: API
+      source: "garage-mobile (if reused)"
+      purpose: "Mobile client GraphQL requests"
+
+  outbound:
+    - type: API
+      target: "gf-sales"
+      purpose: "booking, booking-v3, service-orders, service-orders-v3, customers, vehicles, quotation-ask, dashboard-realtime (gf-sales endpoints: SO debt + SO in-progress + booking arrived) modules"
+    - type: API
+      target: "gf-customer"
+      purpose: "gf-customer module (customer master data resolvers)"
+    - type: API
+      target: "gf-purchase"
+      purpose: "order, purchase, quotation, supplier, payment (partial), user, dashboard, direct-purchase-order, enable-payment-method-mobile, dashboard-realtime (gf-purchase endpoints: QA asking + PO delivering) resolvers"
+    - type: API
+      target: "gf-inventory"
+      purpose: "mdm module (deliveries, receipts, stocks), warehouse module"
+    - type: API
+      target: "gf-accounting"
+      purpose: "gf-accounting module (settlements)"
+    - type: API
+      target: "gf-erp-mdm"
+      purpose: "catalog, mdm (catalog enrichment)"
+    - type: API
+      target: "gf-marketing"
+      purpose: "campaign, voucher modules"
+    - type: API
+      target: "gf-notification"
+      purpose: "notification module"
+    - type: API
+      target: "gf-system"
+      purpose: "gf-system module (tenant-transporter-registry CRUD + search + detail)"
+    - type: API
+      target: "gf-hrms"
+      purpose: "hrms, user modules"
+    - type: API
+      target: "ct-saas-tenant"
+      purpose: "tenant module + gf-system tenant context enrichment"
+    - type: API
+      target: "ct-file-storage"
+      purpose: "uploadFile module (REST + multipart)"
+    - type: API
+      target: "cp-cms-index"
+      purpose: "Configured for /health probe only — no resolver downstream calls cp-cms-index (service instance + healthcheck wiring exists but unused by operations)"
+    - type: API
+      target: "ac-payment-gateway"
+      purpose: "payment module (createPayment, getPaymentByPurchase) — 3rd-party, x-api-key-feedback"
+    - type: API
+      target: "policy-agent"
+      purpose: "policy-agent module (roles, resources, permissions)"
+    - type: API
+      target: "Superset"
+      purpose: "supper-set module (BI guest token via admin user/pass + CSRF cookie chain)"
+
+dependencies:
+  - { name: "Apollo Server 4", type: "framework", purpose: "GraphQL server compose 26 module schemas; expose POST /graphql/graphql; resolve query/mutation tới 14 backend service.", config_ref: "GRAPHQL_PUBLIC_PATH, apolloConfig.*, module-schema loaders" }
+  - { name: "Express", type: "framework", purpose: "HTTP runtime cho Apollo Server, middleware auth, multipart upload, CSRF.", config_ref: "server.port, middleware.*" }
+  - { name: "HTTP client (axios / fetch)", type: "api_client", purpose: "Gọi REST của 12+ backend service (gf-*, ct-saas-tenant, ct-file-storage, ac-payment-gateway, policy-agent, Superset).", config_ref: "<service>.api.host, <service>.api-key, timeout configs" }
+  - { name: "JWT auth", type: "auth", purpose: "Validate access token từ garage-web/mobile; resolve tenant context, permission flags qua policy-agent.", config_ref: "JWT_PUBLIC_KEY, JWT_ISSUER, auth middleware" }
+  - { name: "OpenTelemetry", type: "observability", purpose: "Auto-instrumentation Express + HTTP + GraphQL; trace export OTLP HTTP; metrics export OTLP HTTP.", config_ref: "OTEL_ENABLED, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_SERVICE_NAME" }
+  - { name: "Winston + prom-client", type: "logging_metrics", purpose: "Structured logging với distributed tracing context (requestId); Prometheus metrics tại /metrics endpoint.", config_ref: "LOG_LEVEL, winston.*, prom-client collectDefaultMetrics" }
+  - { name: "http-proxy-middleware", type: "proxy", purpose: "Catch-all proxy sang Apache Superset cho embedded BI dashboard; pathRewrite ^/supperset → ''; xóa x-frame-options/CSP.", config_ref: "SUPERSET_ENDPOINT, proxy allowlist trong checkPath" }
+
+change_log:
+  - { date: "2026-06-30", summary: "W03 (EP-INVENTORY-CATALOG — DESIGN ADR-017/018, contract agg-garage-graph-graphql v7.30) DEV: module mới `gf-inventory/catalog-v2` với 8 Query + 15 Mutation = 23 ops passthrough sang gf-inventory V2-1..V2-23 + gf-erp-mdm `/protected/catalog/v1/inquiry` (Q9 listUnits, directory=UNIT/COUNTRY enrichment). Module file layout: catalog-v2.{schema,resolver,service,types,enrichment}.ts + error-code-map.ts + export-proxy.ts. SDL types mới: `MaterialGroup` (+parentName/createdByName/updatedByName R20/R21), `InternalProduct` (+mainUnitDisplayName/originDisplayName enrichment), `InternalProductConversionUnit/SkuMapping/Attachment`, `Unit`, `SkuSearchResult`, `MaterialGroupTreeNode`, `DeletePayload`, `ExportFileUrlPayload`, `ImportInternalProductsReport/Result/Summary/Row`. Enums: `MaterialGroupStatus`, `InternalProductStatus`, `ProductNature (GOODS|TOOL|SERVICE|OTHER)`, `PricingMethod (PWA|SI|FIFO|MA)`, `SkuMappingStatus`. Enrichment pattern (BR-AGG-GARAGE-GRAPH-001): top-level resolver gom distinct codes/iamUserIds → 1 batch call per directory; shared 5-min in-process cache scoped (directory, tenantId) cho gf-erp-mdm UNIT/COUNTRY; tenant-users không cache cross-request. Defense caps BFF-side: (a) Q2 MAX 1000 nodes → throw ApiClientError `MATERIAL_GROUP_TREE_OVERSIZE` HTTP 413 (hint redirect Q1, mirror backend `ERR-INV-027`); (b) M14/M15 cap 500 rows → `ERR-INV-041` HTTP 400. Export pattern (Q7 R22 Option A): resolver issues short-lived signed token (TTL 60s, single-use, in-memory) → returns `data.downloadUrl: /api/v2/internal-products/export/{token}` → middleware mounted ở `${CONTEXT_PATH}/api/v2/internal-products/export/:token` validate token → replay V2-22 với captured auth → stream binary .xlsx + Content-Disposition pass-through (fallback filename `danh-muc-ma-san-pham-noi-bo-{ts}.xlsx`). Error code map (T15): table ERR-INV-001..047 + ERR-CMN-004..006 → GraphQL `extensions.code` pass-through (BR-AGG-GARAGE-GRAPH-005 — KHÔNG mutate code/message). R29 precision: BFF KHÔNG validate scale conversionRate; backend single source `ERR-INV-047`. Header propagation (additive cross-module): apiClient buildHeaders forward `x-tenant-id` + `x-branch-id` khi caller cung cấp (HEADER_KEYS extended; backward-compat — vẫn null nếu thiếu). Endpoints constants new: MATERIAL_GROUP + INTERNAL_PRODUCT + SKU_SEARCH + GF_ERP_MDM_CATALOG under API_ENDPOINTS_V2. Test: regression `npm run test:catalog-v2-contract` (ts-node self-contained — match precedent W01/W02 insurance.mapper.regression + orchestrator.regression) — 8 scenarios + ~55 assertions all pass: (1) resolver wiring 23 ops, (2/3) TENANT-USERS enrichment paged+single+conditional skip, (4) Q2 tree cap, (5) M14/M15 import cap, (6) UNIT/COUNTRY batch dedup, (7) Q7 token roundtrip + single-use replay 403, (8) error code map pass-through. build+typecheck+lint (new files) PASS. Vitest gap: repo còn chưa có first-party Vitest runner (CLAUDE.md baseline) — coverage ≥80% gate gồm regression chỉ; CR riêng cho Vitest harness deferred (chưa block W03 exit per CLAUDE.md §Build Commands honest-gap rule).", author: "agent-dev-agg-garage-graph (W03)" }
+  - { date: "2026-06-18", summary: "W02 (EP-INSURANCE-SETTLEMENT, FEAT-INS-STL-CREATE + FEAT-INS-DOSSIER-CREATE + FEAT-INS-DOSSIER-VIEW) DEV: Phase A — additive flags trên ServiceOrderDetailV3Data + SettlementByCodeData: `soHasInsurance` (mirror hasInsurance per SO surface; passthrough trên Settlement surface), `customerStillHasInsuranceAllocation` (derived sum 3 khoản transferToCustomer=true > 0 trên SO; passthrough trên Settlement surface), `negativeInsuranceWarn` (insurancePayment < 0 — CR-20260612-02 popup ERR-INS-003 warn-and-allow); `InsuranceAdjustment` thêm 2 scalar `insuranceAmount`/`customerAmount` (CR-20260616-02 — FE render 2-col BH/KH) — derived per BR-INS-SO-ADJ-005 (insuranceAmount = amount; customerAmount = amount khi transferToCustomer=true else 0). Phase B — module MỚI gf-accounting/insurance-dossiers với 1 mutation `exportInsuranceDossier(settlementCode, documentTypes, acceptanceFormData?, authorizationFormData?): DossierExportBatchResponse!` (ORCHESTRATOR 4-phase ADR-016 v11: resolveContext gf-accounting → parallel render N byte[] [gf-sales QT + gf-accounting QT + 2 endpoint Thymeleaf ③④] → parallel upload ct-file-storage folderType=SETTLEMENTS → atomic batch persist gf-accounting) + 1 query `getInsuranceDossierVersions(settlementCode, page, size): InsuranceDossierVersionsResponse!` (passthrough POST /api/v1/insurance-dossiers/search Spring Pageable, default size=10 max 50). KHÔNG signed URL — FE compose download URL bằng env CT_FILE_STORAGE_DOMAIN + fileUrl. SERVER_LIMIT=50mb align stack. Header propagation qua ApiClient (Authorization → JWT-embedded tenantId). SDL backtick trong gql comment fix (TS parser lỗi 697). build+typecheck+regression-mapper+regression-contract pass.", author: "agent-dev-agg-garage-graph (W02)" }
+  - { date: "2026-06-17", summary: "BUG-FIX getSettlementByCode depreciation: sau khi fetch SO bằng `getServiceOrderByCode`, resolver đồng bộ field root `depreciation` từ SO detail đã được `mapServiceOrderInsuranceAdjustment` map, để amount dùng nguồn gf-sales canonical giống Surface A thay vì fallback derive từ snapshot gf-accounting thiếu `depreciationAmount`. Không đổi schema, không đổi downstream endpoint.", author: "Codex" }
+  - { date: "2026-06-07", summary: "CR-FIX CR-1780801481 (agg portion) — contract reconciliation insurance: SDL exposed nhưng resolver KHÔNG map gf-accounting/gf-sales flat REST shapes → SDL (consumer fields resolve null). Thêm canonical mapper `gf-accounting/settlements/insurance.mapper.ts` (pure, passthrough-first): (D4/D5/D6) `getSettlementByCode` map gf-accounting debtPanel `insurancePayableAmount`/`totalPaid`/`remainingReceivable` → SDL `receivableAmount`/`paidAmount`/`remainingAmount`; (D7) enum `SettlementPaymentStatus` thêm `FULLY_PAID`+`OVERPAID` (additive) + map `derivedStatus`→`paymentStatus` 1:1; (D9) nest gf-accounting flat 8-field breakdown → `insurance.breakdownByPayer.{bh,kh}.{service,parts,vat,totalAfterVat}` + composite `InsuranceAllocation` (D3-read: chỉ `amount`/recap value); (D2) `updateServiceOrderV3` map `depreciationByLine[]` input → per-part `depreciationPercent` trên gf-sales items passthrough + strip key. Additive-only, KHÔNG breaking rename/nullability, KHÔNG business logic. Regression: `npm run test:insurance-mapper` (ts-node self-contained, no first-party runner) + `npm run typecheck` script mới. build+typecheck+regression pass.", author: "agent-fix-agg-garage-graph (CR-1780801481)" }
+  - { date: "2026-06-07", summary: "W01 (EP-INSURANCE-SETTLEMENT, FEAT-INS-SO-ADJUSTMENT + FEAT-INS-STL-DETAIL) DEV: (1) mutation MỚI `createInsuranceSettlement(id,input)` trong gf-accounting/settlements → POST /api/v1/service-orders/{id}/settlements (passthrough, pull snapshot, KHÔNG push); (2) GraphQL types MỚI `InsuranceAllocationMode (PERCENT|AMOUNT)`, `InsuranceAllocationInput`, `InsuranceAllocation`, `InsuranceSettlementCostTab`, `InsuranceSettlementHeader`, `InsuranceAdjustmentBlock`, `InsuranceDebtPanel` (module gf-sales/service-orders-v3 + gf-accounting/settlements); (3) additive trên op hiện hữu — `UpdateServiceOrderV3Input` thêm 5 khoản điều chỉnh BH (discountMaterial/discountLabor/claimReduction/depreciationDefault/depreciationByLine/insuranceDeductible) + `ServicePartV3Data.depreciationPercent`; `ServiceOrderDetailV3Data.insuranceAdjustment` (read); `SettlementByCodeData.insurance`+`debtPanel` (read). Passthrough-first, additive-only, KHÔNG breaking rename/nullability. Enum mode enforced ở SDL; `400 INVALID_ALLOCATION_MODE` propagate qua ErrorResponse union hiện hữu. KHÔNG có first-party test runner (gap honest).", author: "agent-dev-agg-garage-graph (W01)" }
+  - { date: "2026-05-19", summary: "Source code audit vs endpoints.ts: (H1) fix outbound gf-sales — bỏ 5 modules sai (dashboard/direct-purchase-order/feature-flags/enable-payment-method-mobile/warehouse không gọi gf-sales); (H2) fix outbound gf-purchase — thêm 3 modules (dashboard/direct-purchase-order/enable-payment-method-mobile); (H3) fix outbound gf-inventory — thêm warehouse module; (M1) fix gf-system outbound bỏ feature-flags (local config, không gọi backend); (M2) thêm 2 gf-system query operations (getTenantTransporterRegistryDetail + getByCopTransporterRegistryId) — confirmed từ transporter.schema.ts; (M3) dashboard-realtime mixed-service noted (gf-sales 3 endpoints + gf-purchase 2 endpoints); (M4) fix Apollo dep 25→26 module schemas. Source typo noted: directory tenant-ransporter-registry (thiếu 't').", author: "Architecture Authority" }
+  - { date: "2026-05-18", summary: "Review update: fix module count 25→26 (thêm purchase-request-detail-v2); thêm 6 BFF business rules (data enrichment, status normalization, multi-version routing, token propagation, error handling, parallel fetching); thêm 3 dependencies (OpenTelemetry, Winston+prom-client, http-proxy-middleware); fix last_updated inconsistency.", author: "BE Lead Agent — review update 2026-05-18" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Reformatted to BFF canonical: thêm `owner_authority`, `metadata` (Apollo Server 4, data_store: none), `business_rules: []` (BFF không own logic), `dependencies` (4 deps: Apollo Server, Express, HTTP client, JWT auth).", author: "Architecture Authority" }

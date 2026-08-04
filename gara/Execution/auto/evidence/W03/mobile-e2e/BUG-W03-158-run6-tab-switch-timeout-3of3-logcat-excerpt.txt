@@ -1,0 +1,121 @@
+07-03 23:44:05.968 I/flutter (14809): DEBUG │ 🐛       "          materialGroupId",
+07-03 23:44:05.968 I/flutter (14809): DEBUG │ 🐛       "          materialGroupName",
+07-03 23:44:05.968 I/flutter (14809): DEBUG │ 🐛       "          mainUnitCode",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          mainUnitDisplayName",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          brand",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "        }",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "        pageInfo {",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          __typename",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          page",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          size",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          totalElements",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          totalPages",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          first",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          last",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          hasNext",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "          hasPrevious",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "        }",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      }",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "    }",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "    ... on ErrorResponse {",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      id",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      code",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      serverResponse",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      message",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      statusCode",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      path",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      timestamp",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "      details",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "    }",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "  }",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "}"
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛     ],
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛     "rootField": "searchInternalProducts",
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛     "variables": {
+07-03 23:44:05.969 I/flutter (14809): DEBUG │ 🐛       "input": {
+07-03 23:44:05.972 I/flutter (14809): DEBUG │ 🐛         "page": 0,
+07-03 23:44:05.973 I/flutter (14809): DEBUG │ 🐛         "size": 20,
+07-03 23:44:05.973 I/flutter (14809): DEBUG │ 🐛         "status": "INACTIVE"
+07-03 23:44:05.973 I/flutter (14809): DEBUG │ 🐛       }
+07-03 23:44:05.973 I/flutter (14809): DEBUG │ 🐛     }
+07-03 23:44:05.973 I/flutter (14809): DEBUG │ 🐛   }
+07-03 23:44:05.973 I/flutter (14809): DEBUG │ 🐛 }
+07-03 23:44:05.973 I/flutter (14809): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:44:05.993 I/flutter (14809): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:44:05.993 I/flutter (14809): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 23:44:05.993 I/flutter (14809): DEBUG │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:218:12)
+07-03 23:44:05.993 I/flutter (14809): DEBUG │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 23:44:05.993 I/flutter (14809): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 23:44:05.993 I/flutter (14809): DEBUG │ 🐛 {
+07-03 23:44:05.993 I/flutter (14809): DEBUG │ 🐛   "RESPONSE": {
+07-03 23:44:05.993 I/flutter (14809): DEBUG │ 🐛     "__typename": "Query",
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛     "searchInternalProducts": {
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛       "__typename": "ApiResponsePageInternalProduct",
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛       "success": true,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛       "code": null,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛       "message": null,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛       "data": {
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛         "__typename": "PageDataInternalProduct",
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛         "content": [],
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛         "pageInfo": {
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "__typename": "PageInfo",
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "page": 1,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "size": 20,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "totalElements": 0,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "totalPages": 0,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "first": true,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "last": true,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "hasNext": false,
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛           "hasPrevious": false
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛         }
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛       }
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛     }
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛   }
+07-03 23:44:05.994 I/flutter (14809): DEBUG │ 🐛 }
+07-03 23:44:05.994 I/flutter (14809): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 23:44:06.206 D/EGL_emulation(14809): app_time_stats: avg=13.54ms min=6.40ms max=46.93ms count=42
+07-03 23:44:06.230 I/flutter (14809): [TIMING] DONE  tapBounded[autoFixA40].pump#2 sau 316ms
+07-03 23:44:06.231 I/flutter (14809): [TIMING] START tapBounded[autoFixA40].pump#3 @ 2026-07-03T23:44:06.231256
+07-03 23:44:06.549 I/flutter (14809): [TIMING] DONE  tapBounded[autoFixA40].pump#3 sau 318ms
+07-03 23:44:06.552 I/flutter (14809): [TIMING] START tapBounded[autoFixA40].pump#4 @ 2026-07-03T23:44:06.551298
+07-03 23:44:06.867 I/flutter (14809): [TIMING] DONE  tapBounded[autoFixA40].pump#4 sau 315ms
+07-03 23:44:06.867 I/flutter (14809): [TIMING] START tapBounded[autoFixA40].pump#5 @ 2026-07-03T23:44:06.867627
+07-03 23:44:07.183 I/flutter (14809): [TIMING] DONE  tapBounded[autoFixA40].pump#5 sau 315ms
+07-03 23:44:07.186 I/flutter (14809): [TIMING] START tapBounded[autoFixA40].pump#6 @ 2026-07-03T23:44:07.186371
+07-03 23:44:07.499 I/flutter (14809): [TIMING] DONE  tapBounded[autoFixA40].pump#6 sau 313ms
+07-03 23:44:07.501 D/EGL_emulation(14809): app_time_stats: avg=212.63ms min=10.57ms max=317.56ms count=6
+07-03 23:44:07.505 I/flutter (14809): [TIMING] START tapBounded[autoFixA41].tap(noSettle) @ 2026-07-03T23:44:07.505709
+07-03 23:44:08.548 D/EGL_emulation(14809): app_time_stats: avg=116.30ms min=114.56ms max=120.14ms count=9
+07-03 23:44:09.619 D/EGL_emulation(14809): app_time_stats: avg=119.00ms min=114.87ms max=131.26ms count=9
+07-03 23:44:10.514 D/BoundBrokerSvc( 1614): onUnbind: Intent { act=com.google.firebase.dynamiclinks.service.START pkg=com.google.android.gms }
+07-03 23:44:10.638 D/BoundBrokerSvc( 1614): onUnbind: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+07-03 23:44:10.640 D/BtGatt.ScanManager(13290): uid 10111 isForeground true scanMode 1
+07-03 23:44:10.640 D/BtGatt.ScanManager(13290): uid 10111 isForeground true scanMode -1
+07-03 23:44:10.665 D/EGL_emulation(14809): app_time_stats: avg=116.26ms min=113.56ms max=118.23ms count=9
+07-03 23:44:11.716 D/EGL_emulation(14809): app_time_stats: avg=116.75ms min=115.25ms max=118.02ms count=9
+07-03 23:44:12.770 D/EGL_emulation(14809): app_time_stats: avg=117.00ms min=113.18ms max=122.17ms count=9
+07-03 23:44:13.817 D/EGL_emulation(14809): app_time_stats: avg=116.33ms min=112.39ms max=121.84ms count=9
+07-03 23:44:13.859 I/wpa_supplicant(13310): wlan0: CTRL-EVENT-BEACON-LOSS 
+07-03 23:44:14.867 D/EGL_emulation(14809): app_time_stats: avg=116.64ms min=111.44ms max=121.75ms count=9
+07-03 23:44:15.914 D/EGL_emulation(14809): app_time_stats: avg=116.18ms min=114.42ms max=117.50ms count=9
+07-03 23:44:16.965 D/EGL_emulation(14809): app_time_stats: avg=116.80ms min=114.82ms max=120.44ms count=9
+07-03 23:44:18.016 D/EGL_emulation(14809): app_time_stats: avg=116.69ms min=114.16ms max=118.43ms count=9
+07-03 23:44:19.048 D/EGL_emulation(14809): app_time_stats: avg=114.67ms min=105.17ms max=117.70ms count=9
+07-03 23:44:20.105 D/EGL_emulation(14809): app_time_stats: avg=117.46ms min=115.03ms max=120.58ms count=9
+07-03 23:44:21.149 D/EGL_emulation(14809): app_time_stats: avg=115.97ms min=109.66ms max=120.06ms count=9
+07-03 23:44:21.797 I/wpa_supplicant(13310): wlan0: CTRL-EVENT-BEACON-LOSS 
+07-03 23:44:22.201 D/EGL_emulation(14809): app_time_stats: avg=116.75ms min=112.06ms max=121.11ms count=9
+07-03 23:44:22.506 I/flutter (14809): [TIMING] *** TIMEOUT *** tapBounded[autoFixA41].tap(noSettle) sau 15000ms (bound=0:00:15.000000) — ENV-HANG-R3 candidate
+07-03 23:44:22.506 I/flutter (14809): [TIMING] ERROR tapBounded[autoFixA41].tap(noSettle) sau 15000ms: TimeoutException: tapBounded[autoFixA41].tap(noSettle) KHÔNG hoàn tất trong 0:00:15.000000 (xem [TIMING] logcat để định vị bước treo)
+07-03 23:44:22.941 I/flutter (14809): ══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+07-03 23:44:22.941 I/flutter (14809): The following TimeoutException was thrown running a test:
+07-03 23:44:22.941 I/flutter (14809): tapBounded[autoFixA41].tap(noSettle) KHÔNG hoàn tất trong 0:00:15.000000 (xem [TIMING] logcat để
+07-03 23:44:22.941 I/flutter (14809): định vị bước treo)
+07-03 23:44:22.941 I/flutter (14809): 
+07-03 23:44:22.941 I/flutter (14809): When the exception was thrown, this was the stack:
+07-03 23:44:22.941 I/flutter (14809): #0      withTimeout.<anonymous closure> (file:///Users/all_engineer/Projects/lemn/garage-agentic-design/Execution/auto/specs/W03/mobile-e2e/_helpers.dart:100:9)
+07-03 23:44:22.941 I/flutter (14809): <asynchronous suspension>
+07-03 23:44:22.941 I/flutter (14809): #4      withTimeout (file:///Users/all_engineer/Projects/lemn/garage-agentic-design/Execution/auto/specs/W03/mobile-e2e/_helpers.dart:94:20)
+07-03 23:44:22.941 I/flutter (14809): <asynchronous suspension>
+07-03 23:44:22.941 I/flutter (14809): #5      tapBounded (file:///Users/all_engineer/Projects/lemn/garage-agentic-design/Execution/auto/specs/W03/mobile-e2e/_helpers.dart:173:3)
+07-03 23:44:22.941 I/flutter (14809): <asynchronous suspension>

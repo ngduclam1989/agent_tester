@@ -1,0 +1,55 @@
+# W02 — Contract scope cho EP-INSURANCE-SETTLEMENT (Phase A → Phase B)
+#
+# Minimal W02 core (6 contracts) — Tier-1 in-play scope:
+# - Producer self-sign + consumer sign per W02 boundaries (gf-accounting, gf-sales, agg-garage-graph, garage-web, garage-mobile).
+# - Tier-2/3 (external APIs, INTEG narrative) defer per planning decision 2026-06-18.
+# - Brownfield ACTIVE-only — không lifecycle DRAFT/RATIFY.
+#
+# Append-only — sửa entry sau khi wave start chỉ qua decision entry trong _decisions.md (PROTOCOL §DEV W1).
+
+wave: W02
+contracts:
+  - path: Architecture/api/gf-accounting-api.md
+    producer: boundaries/gf-accounting
+    consumers:
+      - boundaries/gf-sales
+      - bff-experiences/agg-garage-graph
+    kind: api
+    note: "EP-INSURANCE-SETTLEMENT Phase A extend GET /settlements/{code} (insuranceAdjustment block) + Phase B 4 endpoint mới insurance-dossier (render-pdf×2 + batch + search). Drifted vs gf-sales + agg-garage-graph signatures sau commit 091195f8 — re-sign baseline."
+
+  - path: Architecture/api/gf-sales-api.md
+    producer: boundaries/gf-sales
+    consumers:
+      - boundaries/gf-accounting
+      - bff-experiences/agg-garage-graph
+    kind: api
+    note: "gf-accounting đọc snapshot SO (per CB-INS-002 baseline). agg-garage-graph render PDF quotation phase B (export-pdf?type=QUOTATION). Producer self-sign baseline."
+
+  - path: Architecture/api/agg-garage-graph-graphql.md
+    producer: bff-experiences/agg-garage-graph
+    consumers:
+      - web-experiences/garage-web
+      - mobile-experiences/garage-mobile
+    kind: graphql
+    note: "Phase A extend query insuranceAdjustment block. Phase B 2 ops mới #51 exportInsuranceDossier (mutation 4-phase orchestrator) + #52 getInsuranceDossierVersions (query passthrough). Retry slot 1/2 thêm #53 getInsuranceDossierCurrent. Drifted vs web + mobile signatures sau commit 091195f8 — re-sign baseline."
+
+  - path: Architecture/data/gf-accounting-data-model.md
+    producer: boundaries/gf-accounting
+    consumers: []
+    kind: integration
+    note: "Phase B add 2 entity (insurance_dossier + insurance_dossier_document) + Phase A extend settlement_records 4 column additive (insuranceAllocationSnapshot, insurancePaymentComputed, soHasInsurance, payerBreakdownSnapshot). ddl-auto=update (no Flyway). Internal schema — chỉ producer self-sign baseline, không consumer cross-boundary."
+
+  - path: Architecture/events/gf-accounting-events.md
+    producer: boundaries/gf-accounting
+    consumers:
+      - boundaries/gf-sales
+    kind: event
+    note: "Callback SO 'đã quyết toán' baseline (CB-INS-003) — không có event mới W02. Producer + consumer sign baseline để khoá interface."
+
+  - path: Architecture/integrations/INTEG-BFF-agg-garage-graph.md
+    producer: bff-experiences/agg-garage-graph
+    consumers:
+      - boundaries/gf-accounting
+      - boundaries/gf-sales
+    kind: integration
+    note: "BFF orchestrator 4-phase exportInsuranceDossier (Phase A resolve ctx → B render N PDF qua gf-sales + gf-accounting → C upload ct-file-storage → D batch persist → E aggregate). Narrative pattern doc cho Phase B."

@@ -1,0 +1,6 @@
+ id |          part_name           |   payer   | unit_price | quantity | disc_amt | disc_pct | dep_pct | final_amount 
+----+------------------------------+-----------+------------+----------+----------+----------+---------+--------------
+ 31 | Air Filter Standard Tenant 1 | CUSTOMER  | 1000000.00 |     2.00 |     0.00 |    10.00 |    8.00 |   1890000.00
+ 32 | Spark Plug Iridium Tenant 1  | INSURANCE | 1200000.00 |     2.00 |     0.00 |     5.00 |    5.00 |   2508000.00
+(2 rows)
+

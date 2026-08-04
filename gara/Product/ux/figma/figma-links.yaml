@@ -1,0 +1,471 @@
+# Figma Link Registry — INDEX máy đọc cho Figma URL + node-id (Garage).
+#
+# 2 nguồn URL AUTHORITATIVE:
+#   1. FEAT: `Product/features/FEAT-*.md §UI/UX Reference` (row `| Figma | {platform} | {url} |`,
+#      do Business Authority maintain) → key `FEAT-*` dưới `waves["NN"]`.
+#   2. CR:   `Tracking/CHANGE-REQUESTS.md` row `| **Figma** | {web|mobile} | {slug|null} | {url} |`
+#      + row bắt buộc `| **Wave** | NN |` trong cùng CR section (do CR author maintain)
+#      → key `CR-*` dưới `waves["NN"].crs:`.
+# Registry AUTO-SYNC từ 2 nguồn qua `scripts/sync-figma-links.sh {wave}` — chạy tự động ở **Bước 0**
+# của `/prefetch-figma {platform} {wave}` & `/prefetch-figma-oracle`.
+# `/prefetch-figma` resolve link CHỈ qua registry (không parse FEAT §4 / CR rows trực tiếp).
+# ⚠️ Split-mode (≥2 screen) + `maps` + `wireframe` khai thủ công trong registry được GIỮ qua mỗi sync (upsert non-destructive).
+#   → KHÔNG sửa tay file_key/node_id/url của single-screen (sẽ bị sync ghi đè từ FEAT §4 / CR rows); sửa ở nguồn.
+#
+# ── Schema ──────────────────────────────────────────────────────────────────
+# waves:
+#   "NN":                              # số wave 2 chữ số (zero-padded): "01", "02"
+#     FEAT-XXX:                        # feature id (vd "FEAT-INS-SO-ADJUSTMENT")
+#       feat_file: <path>              # đường dẫn FEAT spec (bắt buộc)
+#       feature_slug: <slug>           # OPTIONAL override; default = FEAT-ID bỏ prefix "FEAT-" + lowercase
+#                                      #   FEAT-INS-SO-ADJUSTMENT → ins-so-adjustment
+#       web:                           # sub-block platform (Garage dual-platform: web + mobile)
+#         file_key: <figma file key>   #   segment sau /design/ trong URL (bắt buộc nếu có screens)
+#         wireframe: <path>            #   OPTIONAL — fallback khi screens: [] → FIGMA_LINK_MISSING
+#         screens:                     #   list screen; số lượng quyết định split mode
+#           - slug: <screen-slug|null> #     null = single-screen (gộp, file KHÔNG có suffix --slug)
+#                                      #       ≥2 entry có slug ⇒ split mode (1 spec file/screen)
+#                                      #       kebab-case, ≤24 char, unique trong feat+platform
+#                                      #       reserved tokens preferred: list, detail, create, edit, settings
+#             node_id: "X:Y"           #     node-id dạng DẤU HAI CHẤM (KHÔNG hyphen — MCP trả empty nếu hyphen)
+#             url: <figma url gốc>     #     URL đầy đủ (giữ nguyên query params như trong Figma share)
+#             maps: [AC-XXX]           #     OPTIONAL — AC mà screen này phục vụ (traceability)
+#       mobile:                        # sub-block mobile (cùng schema web; file_key/node_id KHÁC web)
+#         file_key: ...
+#         screens: [...]
+#     crs:                             # OPTIONAL sub-block — CR-keyed (1 sub-block / wave)
+#       CR-YYYYMMDD-NN:                # CR id (vd "CR-20260616-02") — 2 format: epoch-10 hoặc date-NN
+#         cr_anchor: <path#anchor>     # bắt buộc — link đến CR section (vd Tracking/CHANGE-REQUESTS.md#CR-20260616-02)
+#         cr_slug: cr-{lowercase-id}   # bắt buộc — used cho filename derive (vd cr-20260616-02)
+#         web:                         # platform sub-block giống FEAT (file_key + screens)
+#           file_key: ...
+#           screens: [...]
+#         mobile: ...
+#
+# ── Quy tắc command suy ra (per platform sub-block) ─────────────────────────
+#   FEAT:
+#     • screens có ≥2 entry            → SPLIT: ghi wave{NN}-{feature_slug}--{slug}.md cho mỗi screen
+#     • screens có 1 entry slug=null   → GỘP:   ghi wave{NN}-{feature_slug}.md
+#     • screens: [] + wireframe        → ghi wave{NN}-{feature_slug}.md status=FIGMA_LINK_MISSING
+#     • thiếu cả sub-block platform    → FIGMA_LINK_MISSING (fallback wireframe nếu có)
+#   CR:
+#     • screens có ≥2 entry            → SPLIT: ghi wave{NN}-{cr_slug}--{slug}.md cho mỗi screen
+#     • screens có 1 entry slug=null   → GỘP:   ghi wave{NN}-{cr_slug}.md
+#     • Frontmatter spec thay `feat`/`feat_file` bằng `cr_id`/`cr_anchor` (rest giống FEAT spec)
+#   Common:
+#     • CẤM mix: trong 1 feat/CR + platform KHÔNG được vừa có slug=null vừa có slug khác.
+#     • Output dir theo platform: web → Product/ux/figma-web/ ; mobile → Product/ux/figma-mobile/
+#     • "wave all" mode iterate cả keys FEAT-* lẫn keys dưới `crs:`.
+#
+# Validate: bash scripts/validate-figma-links.sh
+# ────────────────────────────────────────────────────────────────────────────
+#
+# ── NOTES (tối thiểu — chỉ business fact KHÔNG suy ra được từ Figma) ──────────
+# Registry = index máy đọc: chỉ giữ node TỔNG (file_key/node_id/url) + `maps` (AC traceability)
+#   + `wireframe` fallback. KHÔNG mô tả node con / nesting / gap ở đây nữa (2026-06-05):
+#   - Cấu trúc (child frame, sizes, tên) → `/prefetch-figma` tự enumerate qua get_metadata MỖI run.
+#   - Mobile = NO-CACHE (luôn re-fetch) nên spec generated + screenshot + coverage_gaps luôn tươi
+#     → node-map tay chỉ trùng lặp + nhanh stale (vd design đổi 238:*→397:* làm note cũ sai).
+#   ⚠️ ĐẶT Ở HEADER (trước `waves:`) vì sync-figma-links.sh RE-EMIT block `waves:` → comment
+#     inline bị xoá. `maps:` per-screen (structured) được giữ qua sync.
+#
+# Business flags (đính chính designer/metadata dễ gây hiểu sai — DEV cần biết):
+#   • [w01] FEAT-INS-SO-ADJUSTMENT · mobile/web: frame Figma đặt tên "Tạo phiếu dịch vụ" THỰC RA
+#     là màn CHỈNH SỬA (tên legacy). Section "Phân bổ BH" chỉ ở Edit + Detail, KHÔNG ở Tạo (AC-0).
+#   • [w01] FEAT-INS-STL-DETAIL: là biến thể loại BẢO HIỂM của màn "Chi tiết phiếu quyết toán"
+#     baseline — chỉ THÊM phần BH, không dựng màn mới.
+# ────────────────────────────────────────────────────────────────────────────
+
+waves:
+  "01":
+    FEAT-INS-SO-ADJUSTMENT:
+      feat_file: Product/features/FEAT-INS-SO-ADJUSTMENT.md
+      feature_slug: ins-so-adjustment
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        wireframe: Product/ux/UX-FLOW-INSURANCE-SETTLEMENT.md
+        screens:
+          - slug: edit
+            node_id: "13257:469505"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13257-469505&m=dev
+            maps: [AC-1, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8, AC-9, AC-10, AC-11, AC-14]
+          - slug: detail
+            node_id: "13270:206807"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13270-206807&m=dev
+            maps: [AC-1, AC-9, AC-10, AC-11]
+      mobile:
+        file_key: nAoFS33sTWj3ctWjZMUDEl
+        wireframe: Product/ux/UX-FLOW-INSURANCE-SETTLEMENT.md
+        screens:
+          - slug: null
+            node_id: "319:65571"
+            url: https://www.figma.com/design/nAoFS33sTWj3ctWjZMUDEl/App-GMS-v3---New-Design?node-id=319-65571&m=dev
+            maps: [AC-1, AC-3, AC-4, AC-5, AC-6, AC-7, AC-8, AC-9, AC-10, AC-11]
+
+    FEAT-INS-STL-DETAIL:
+      feat_file: Product/features/FEAT-INS-STL-DETAIL.md
+      feature_slug: ins-stl-detail
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        wireframe: Product/ux/UX-FLOW-INSURANCE-SETTLEMENT.md
+        screens:
+          - slug: null
+            node_id: "13255:177002"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13255-177002&m=dev
+      mobile:
+        file_key: nAoFS33sTWj3ctWjZMUDEl
+        wireframe: Product/ux/UX-FLOW-INSURANCE-SETTLEMENT.md
+        screens:
+          - slug: null
+            node_id: "81:39472"
+            url: https://www.figma.com/design/nAoFS33sTWj3ctWjZMUDEl/App-GMS-v3---New-Design?node-id=81-39472&m=dev
+
+  "02":
+    FEAT-INS-DOSSIER-CREATE:
+      feat_file: Product/features/FEAT-INS-DOSSIER-CREATE.md
+      feature_slug: ins-dossier-create
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        wireframe: Product/ux/UX-FLOW-INSURANCE-SETTLEMENT.md
+        screens:
+          - slug: null
+            node_id: "13257:536880"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13257-536880&m=dev
+      mobile:
+        file_key: nAoFS33sTWj3ctWjZMUDEl
+        wireframe: Product/ux/UX-FLOW-INSURANCE-SETTLEMENT.md
+        screens:
+          - slug: null
+            node_id: "437:24051"
+            url: https://www.figma.com/design/nAoFS33sTWj3ctWjZMUDEl/App-GMS-v3---New-Design?node-id=437-24051&m=dev
+
+    FEAT-INS-DOSSIER-VIEW:
+      feat_file: Product/features/FEAT-INS-DOSSIER-VIEW.md
+      feature_slug: ins-dossier-view
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        wireframe: Product/ux/UX-FLOW-INSURANCE-SETTLEMENT.md
+        screens:
+          - slug: null
+            node_id: "13257:480151"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13257-480151&m=dev
+      mobile:
+        file_key: nAoFS33sTWj3ctWjZMUDEl
+        wireframe: Product/ux/UX-FLOW-INSURANCE-SETTLEMENT.md
+        screens:
+          - slug: null
+            node_id: "319:43731"
+            url: https://www.figma.com/design/nAoFS33sTWj3ctWjZMUDEl/App-GMS-v3---New-Design?node-id=319-43731&m=dev
+
+  "03":
+    FEAT-CAT-PROD-CREATE:
+      feat_file: Product/features/FEAT-CAT-PROD-CREATE.md
+      feature_slug: cat-prod-create
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14146:87151"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14146-87151&t=fE3MKR6uAHS9vkKm-4
+
+    FEAT-CAT-PROD-DELETE:
+      feat_file: Product/features/FEAT-CAT-PROD-DELETE.md
+      feature_slug: cat-prod-delete
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14322:176694"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14322-176694&t=fE3MKR6uAHS9vkKm-4
+
+    FEAT-CAT-PROD-DETAIL:
+      feat_file: Product/features/FEAT-CAT-PROD-DETAIL.md
+      feature_slug: cat-prod-detail
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14146:87538"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14146-87538&t=fE3MKR6uAHS9vkKm-4
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21555:24017"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21555-24017&t=4nMPkzz6Vhf93ZCC-4
+
+    FEAT-CAT-PROD-EDIT:
+      feat_file: Product/features/FEAT-CAT-PROD-EDIT.md
+      feature_slug: cat-prod-edit
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14146:87153"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14146-87153&t=fE3MKR6uAHS9vkKm-4
+
+    FEAT-CAT-PROD-IMPORT:
+      feat_file: Product/features/FEAT-CAT-PROD-IMPORT.md
+      feature_slug: cat-prod-import
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14146:87154"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14146-87154&t=fE3MKR6uAHS9vkKm-4
+
+    FEAT-CAT-PROD-LIST:
+      feat_file: Product/features/FEAT-CAT-PROD-LIST.md
+      feature_slug: cat-prod-list
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14329:254775"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14329-254775&t=fE3MKR6uAHS9vkKm-4
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21254:52585"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21254-52585&t=4nMPkzz6Vhf93ZCC-4
+
+    FEAT-CAT-GRP-CREATE:
+      feat_file: Product/features/FEAT-CAT-GRP-CREATE.md
+      feature_slug: cat-grp-create
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14423:88837"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14423-88837&t=g9GrqfVRsuvDYwl3-4
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21555:24247"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21555-24247&t=4nMPkzz6Vhf93ZCC-4
+
+    FEAT-CAT-GRP-DELETE:
+      feat_file: Product/features/FEAT-CAT-GRP-DELETE.md
+      feature_slug: cat-grp-delete
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14423:88840"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14423-88840&t=g9GrqfVRsuvDYwl3-4
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21555:24250"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21555-24250&t=4nMPkzz6Vhf93ZCC-4
+
+    FEAT-CAT-GRP-DETAIL:
+      feat_file: Product/features/FEAT-CAT-GRP-DETAIL.md
+      feature_slug: cat-grp-detail
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14423:88838"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14423-88838&t=g9GrqfVRsuvDYwl3-4
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21555:24248"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21555-24248&t=4nMPkzz6Vhf93ZCC-4
+
+    FEAT-CAT-GRP-EDIT:
+      feat_file: Product/features/FEAT-CAT-GRP-EDIT.md
+      feature_slug: cat-grp-edit
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14423:88839"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14423-88839&t=g9GrqfVRsuvDYwl3-4
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21555:24249"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21555-24249&t=4nMPkzz6Vhf93ZCC-4
+
+    FEAT-CAT-GRP-LIST:
+      feat_file: Product/features/FEAT-CAT-GRP-LIST.md
+      feature_slug: cat-grp-list
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14423:88836"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14423-88836&t=g9GrqfVRsuvDYwl3-4
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21254:52586"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21254-52586&t=4nMPkzz6Vhf93ZCC-4
+
+    FEAT-INV-MOBILE-MENU:
+      feat_file: Product/features/FEAT-INV-MOBILE-MENU.md
+      feature_slug: inv-mobile-menu
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21729:24201"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21729-24201&t=1wyfngHFoc9eXNsZ-4
+
+    crs:
+      CR-20260612-01:
+        cr_anchor: Tracking/CHANGE-REQUESTS.md#CR-20260612-01
+        cr_slug: cr-20260612-01
+        web:
+          file_key: EMGjGsnAJzGoGwTSK7dTuZ
+          screens:
+            - slug: stl-detail-bh
+              node_id: "13256:45155"
+              url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13256-45155&m=dev
+            - slug: stl-detail-kh-with-bh
+              node_id: "13354:56440"
+              url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13354-56440&m=dev
+            - slug: stl-detail-kh-no-bh
+              node_id: "13548:92509"
+              url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13548-92509&m=dev
+
+      CR-20260616-02:
+        cr_anchor: Tracking/CHANGE-REQUESTS.md#CR-20260616-02
+        cr_slug: cr-20260616-02
+        web:
+          file_key: EMGjGsnAJzGoGwTSK7dTuZ
+          screens:
+            - slug: a5-so-edit
+              node_id: "13354:57960"
+              url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13354-57960&m=dev
+            - slug: a5-so-detail
+              node_id: "13354:58368"
+              url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13354-58368&m=dev
+            - slug: fullscreen-a5
+              node_id: "13535:159225"
+              url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=13535-159225&m=dev
+
+  "04":
+    FEAT-OB-LIST:
+      feat_file: Product/features/FEAT-OB-LIST.md
+      feature_slug: ob-list
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14492:89262"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14492-89262&t=W7XJPVvhmdBPtv2c-4
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21632:28894"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21632-28894&t=30dKkXMi0PSOdK7b-4
+
+    FEAT-AP-LIST:
+      feat_file: Product/features/FEAT-AP-LIST.md
+      feature_slug: ap-list
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14492:89259"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14492-89259&t=W7XJPVvhmdBPtv2c-4
+
+    FEAT-AP-CREATE:
+      feat_file: Product/features/FEAT-AP-CREATE.md
+      feature_slug: ap-create
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14146:87555"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14146-87555&t=W7XJPVvhmdBPtv2c-4
+
+    FEAT-AP-DETAIL:
+      feat_file: Product/features/FEAT-AP-DETAIL.md
+      feature_slug: ap-detail
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14146:87552"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14146-87552&t=W7XJPVvhmdBPtv2c-4
+
+    FEAT-AP-EDIT:
+      feat_file: Product/features/FEAT-AP-EDIT.md
+      feature_slug: ap-edit
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14146:87554"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14146-87554&t=W7XJPVvhmdBPtv2c-4
+
+    FEAT-AP-DELETE:
+      feat_file: Product/features/FEAT-AP-DELETE.md
+      feature_slug: ap-delete
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14492:89258"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14492-89258&t=W7XJPVvhmdBPtv2c-4
+
+    FEAT-OB-IMPORT:
+      feat_file: Product/features/FEAT-OB-IMPORT.md
+      feature_slug: ob-import
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14492:89263"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14492-89263&t=W7XJPVvhmdBPtv2c-4
+
+    FEAT-OB-EDIT:
+      feat_file: Product/features/FEAT-OB-EDIT.md
+      feature_slug: ob-edit
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14854:94446"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14854-94446&t=fabmGKlGamljM40l-4
+
+    FEAT-OB-DELETE-LINES:
+      feat_file: Product/features/FEAT-OB-DELETE-LINES.md
+      feature_slug: ob-delete-lines
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14492:89264"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14492-89264&t=W7XJPVvhmdBPtv2c-4
+
+    FEAT-INV-MOBILE-MENU:
+      feat_file: Product/features/FEAT-INV-MOBILE-MENU.md
+      feature_slug: inv-mobile-menu
+      mobile:
+        file_key: 5YU4H3iY726P8KNxI9oCYF
+        screens:
+          - slug: null
+            node_id: "21729:24201"
+            url: https://www.figma.com/design/5YU4H3iY726P8KNxI9oCYF/App-Garage-V3?node-id=21729-24201&t=1wyfngHFoc9eXNsZ-4
+
+    FEAT-CAT-PROD-IMPORT:
+      feat_file: Product/features/FEAT-CAT-PROD-IMPORT.md
+      feature_slug: cat-prod-import
+      web:
+        file_key: EMGjGsnAJzGoGwTSK7dTuZ
+        screens:
+          - slug: null
+            node_id: "14146:87154"
+            url: https://www.figma.com/design/EMGjGsnAJzGoGwTSK7dTuZ/GMS-v.3?node-id=14146-87154&t=fE3MKR6uAHS9vkKm-4

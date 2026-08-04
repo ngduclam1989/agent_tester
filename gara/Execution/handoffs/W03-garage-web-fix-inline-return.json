@@ -1,0 +1,69 @@
+{
+  "mode": "inline",
+  "wave": "W03",
+  "boundary": "garage-web",
+  "scope": "full-wave-batch",
+  "summary": {
+    "total_requested": 30,
+    "resolved": 29,
+    "escalated_cross_boundary": 1
+  },
+  "bugs_fixed_active": [
+    "BUG-W03-117 (P1) — useSearchCatalog(UNIT) swap",
+    "BUG-W03-118 (P2 partial) — wire btnAssignSku + btnAddConversion testid",
+    "BUG-W03-129 (P1) — via 138 cascade + blocked-children dialog state",
+    "BUG-W03-137 (P2) — Toast action prop + retry callback",
+    "BUG-W03-138 (P2) — use-mutation preserve data trong ErrorResponse branch",
+    "BUG-W03-139 (P2) — parentDefaultValue fallback label",
+    "BUG-W03-141 (P3) — filter store global registry + resetAllFilterStores() trong clearUserData",
+    "BUG-W03-142 (P2) — reset filter store on Save",
+    "BUG-W03-143 (P1) — via 138 cascade + blocked-product dialog state",
+    "BUG-W03-145 (P3) — iconsax → lucide-react (Plus/Edit2/Trash2/Upload) per Figma spec §Icon Catalog",
+    "BUG-W03-147 (P2) — pattern={/^[A-Za-z0-9-]$/} block Vietnamese diacritics",
+    "BUG-W03-160 (P2 step1) — createdByName/updatedByName GraphQL selection + Detail render",
+    "BUG-W03-162 (P2) — InputSelect hasTypedSinceFocus state",
+    "BUG-W03-163 (P3) — navigateAfterExit helper Edit→Detail / Create→List",
+    "BUG-W03-164 (P3) — superRefine split mainUnit vs existing dup",
+    "BUG-W03-165 (P2) — DetailPage callsite mainUnitCode prop",
+    "BUG-W03-166 (P3) — SKU column w-48",
+    "BUG-W03-167 (P3) — superRefine 3-branch tiếng Việt"
+  ],
+  "bugs_pre_existing_fix_verified": [
+    "BUG-W03-028 (P1)",
+    "BUG-W03-123 (P3)",
+    "BUG-W03-125 (P3)",
+    "BUG-W03-126 (P2)",
+    "BUG-W03-127 (P2)",
+    "BUG-W03-128 (P2)",
+    "BUG-W03-130 (P2)",
+    "BUG-W03-133 (P2)",
+    "BUG-W03-134 (P2)",
+    "BUG-W03-136 (P3)",
+    "BUG-W03-140 (P2 pending manual QC repro)",
+    "BUG-W03-144 (P3)",
+    "BUG-W03-146 (P2)"
+  ],
+  "bugs_escalated_cross_boundary": [
+    {"bug_id": "BUG-W03-132", "severity": "P2", "reason": "BFF+BE expose hasTransactions", "target": ["gf-inventory", "agg-garage-graph"]}
+  ],
+  "bug_141_fix_details": {
+    "root_cause": "Zustand filter stores in-memory persist qua logout — clearUserData chỉ clear token/localStorage/permissions, không reset filter Zustand stores. User re-login thấy filter/search cũ (cross-tenant scope leak risk).",
+    "fix_approach": "Cross-cutting store registry pattern",
+    "changes": [
+      "src/store/filter.ts — thêm filterStoreResetRegistry (Set<() => void>) + export resetAllFilterStores(). createFilterStore() tự đăng ký reset callback vào registry khi tạo mỗi store.",
+      "src/utils/func.ts — clearUserData() import resetAllFilterStores + gọi cuối cùng sau clearToken/clearAllLocalStorage/resetPermissions."
+    ],
+    "coverage": "Áp dụng cho MỌI feature store dùng createFilterStore: material-group, internal-product (via useMaterialGroupFilterStore keyed stores), service-order, quotation-requests, inventory-receipt, voucher-programs, segment, suppliers, interactions, etc. (~10+ features).",
+    "cross_tab": "Cross-tab logout đã handled bởi auth-sync-manager.tsx (hard reload via window.location.replace). Same-tab logout giờ cũng clear qua clearUserData."
+  },
+  "files_changed": {
+    "count": 19,
+    "diff_stat": "+215/-67"
+  },
+  "verification": {
+    "typecheck": "pass",
+    "build": "pass (16s)",
+    "comment_audit": "pass",
+    "lint": "no new errors on touched files"
+  }
+}

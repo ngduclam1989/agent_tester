@@ -1,0 +1,31 @@
+	If you are a plugin author, please migrate your plugin to Built-in Kotlin using this guide: https://docs.flutter.dev/release/breaking-changes/migrate-to-built-in-kotlin/for-plugin-authors
+✓ Completed building apk with entrypoint test_bundle.dart (67.9s)
+• Executing tests of apk with entrypoint test_bundle.dart on emulator-5554...
+[33mPrinting flutter steps is disabled in the config. To enable it, set `PatrolTesterConfig(printLogs: true)`.[0m
+🧪 .Users.all_engineer.Projects.lemn.garage_agentic_design.Execution.auto.specs.W03.mobile_e2e.material_group_crud_patrol_test W03 Group CRUD journey: TC-008 create -> TC-013+014+015 detail+edi
+❌ W03 Group CRUD journey: TC-008 create -> TC-013+014+015 detail+edi [90m(//Users/all_engineer/Projects/lemn/garage_agentic_design/Execution/auto/specs/W03/mobile_e2e/material_group_crud_patrol_test.dart)[0m [90m(10s)[0m
+[31m══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞═════════════════[0m
+[31mThe following FirebaseException was thrown running a test:[0m
+[31m[firebase_messaging/unknown] A request for permissions is already[0m
+[31mrunning, please wait for it to finish before doing another[0m
+[31mrequest.[0m
+[31m[0m
+[31mWhen the exception was thrown, this was the stack:[0m
+[31m#0      StandardMethodCodec.decodeEnvelope (package:flutter/src/services/message_codecs.dart:653:7)[0m
+[31m#1      MethodChannel._invokeMethod (package:flutter/src/services/platform_channel.dart:366:18)[0m
+[31m<asynchronous suspension>[0m
+[31m#2      MethodChannel.invokeMapMethod (package:flutter/src/services/platform_channel.dart:566:43)[0m
+[31m<asynchronous suspension>[0m
+[31m#3      MethodChannelFirebaseMessaging.requestPermission (package:firebase_messaging_platform_interface/src/method_channel/method_channel_messaging.dart:296:36)[0m
+[31m<asynchronous suspension>[0m
+[31m#4      FirebaseNotificationManager.handleReceivePushNotification.<anonymous closure> (package:cardoctor_garage_v3/core/managers/notifications/firebase_notification_manager.dart:131:15)[0m
+[31m<asynchronous suspension>[0m
+[31m[0m
+[31mThe test description was:[0m
+[31m  W03 Group CRUD journey: TC-008 create -> TC-013+014+015[0m
+[31m  detail+edit -> TC-017+018 validation -> TC-019 dup-code ->[0m
+[31m  TC-020+021 delete -> TC-022 blocked-children -> TC-023[0m
+[31m  blocked-products -> TC-024 cascade[0m
+[31m═════════════════════════════════════════════════════════════════[0m
+[31m[0m
+

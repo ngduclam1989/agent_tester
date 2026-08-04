@@ -1,0 +1,2303 @@
+# =============================================================================
+# Knowledge Graph — garage-mobile
+# =============================================================================
+# Boundary for the CarDoctor Garage Flutter app.
+#
+# OWNERSHIP MODEL (Approach B — section-level):
+#   - ARCHITECTURE sections (entities, business_rules, permissions,
+#     dependencies, integrations) → Architecture Authority owns. Change via
+#     CR MAJOR + Authority approval.
+#   - IMPLEMENTATION section → DEV agent (agent-dev-garage-mobile) owns. Append
+#     per wave when adding pages/components/stores/queries. No CR needed for
+#     append-style updates within boundary; in-place edits to existing items
+#     require wave_history annotation.
+#   - waves[] + execution_history[] → DEV agent appends per wave (immutable
+#     past entries; new wave entry per spin).
+#
+# SYNC RULE: Service repo `garage-mobile/.knowledge-graph.yaml` mirrors this
+# file 1:1 (per CR-002). No template, no separate schema.
+# =============================================================================
+
+metadata:
+  type: knowledge-graph
+  artifact_kind: knowledge-graph
+  status: ACTIVE
+  version: 14
+  last_reviewed: "2026-07-01"
+  tier: T2
+  owner_authority: Architecture Authority
+  project: "GMS Garage"
+  boundary: "garage-mobile"
+  service: "garage-mobile"
+  stack: "mobile"
+  owner: "agent-dev-garage-mobile"
+  hld_ref: "Architecture/hld/garage-mobile-HLD.md"
+  architecture_refs:
+    ui_label_map: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+    apis_produced:
+      - "WebView JavaScript bridge: `FlutterChannel`, `PaymentChannel`, `AuthChannel` để payment/auth pages nhúng trong WebView gửi message và callback vào app."
+      - "WebView callback/deep-link handlers: `app://*`, `payment/ipn`, `oauth/*`, `auth/*` được intercept trong `CreditCardPaymentPage` để app xử lý redirect/payment result."
+      - "Native call/runtime bridge: MethodChannel `com.cometchat.sampleapp` (Android) và `com.cometchat.sampleapp.flutter.ios` (iOS) cho `get_initial_call_intent`, lock-screen/call actions, `saveAppSettings`, `getAppInfo`, `endCall`."
+      - "Document export bridge: MethodChannel `app.documents.channel` cho `saveFileToDownloads` (Android) và `exportFileToFilesApp` (iOS)."
+    apis_consumed:
+      - "agg-garage-graph: Business data — home, notification, quotation, ordering, booking, inventory, service order, settlement, customer, supplier, vehicle management, OCR"
+      - "agg-sso-graph: Auth — login, logout, refresh token, forgot/change password, permission/session data"
+      - "garage-rest-export-api: Export PDF/image service orders, settlements"
+      - "garage-rest-upload-helper: Upload/feedback helper endpoints"
+      - "payment-gateway-pages: Credit-card / online payment via WebView"
+      - "feedback-web-portal: Survey/feedback form via WebView per tenant subdomain"
+      - "Firebase: Messaging (push), Remote Config (force-update), Crashlytics, Analytics"
+      - "CometChat: Realtime chat, unread count, audio/video call, push token registration"
+      - "APNs / PushKit / CallKit: iOS notification + VoIP + incoming-call UX"
+    events_produced:
+      - "PushTokenRegistrationRequested: App đăng ký FCM/APNs token lên agg-sso-graph (`saveToken`) và CometChat PN registry sau notification bootstrap."
+      - "LocalNotificationDisplayed: App chuyển push payload foreground/background thành local notification kèm tap payload để replay điều hướng và mark-as-read."
+      - "IncomingCallUiRequested: App chuyển call payload thành PushKit/CallKit/FlutterCallkitIncoming UX và phát accept/decline/end actions về CometChat/call runtime."
+      - "NotificationReadAcknowledged: App gửi `markAsRead`, `markAllAsRead`, `markAsReadPush` khi user mở hoặc xử lý notification."
+      - "ConversationRefreshRequested: App broadcast `GlobalEvent.conversationsStream` sau forward/gửi media để đồng bộ lại màn conversations."
+      - "PurchaseRequestRefreshRequested: App broadcast `GlobalEvent.refreshPRStream` sau các flow PR detail như cancel/update để màn danh sách reload."
+    events_consumed:
+      - "FirebaseMessageReceived: Foreground/background/terminated push payload"
+      - "LocalNotificationLaunchReplay: Terminated-state relaunch via notification tap"
+      - "VoipPushWakeup: iOS PushKit/CallKit incoming call"
+      - "CometChatCallOrMessageEvent: SDK chat/call runtime events"
+      - "PaymentWebViewCallback: WebView payment callback URL / JS channel"
+    data_models:
+      - "SessionState: accessToken, idToken, refreshToken, identifier, deviceId, cometChatToken, subdomain"
+      - "TenantContextSnapshot: BusinessInfoResponse + tcConfirmed from AppPreferences"
+      - "PermissionSnapshot: policyClientGetPermissions → PermissionGuard, Widget.withPermission"
+      - "FeatureFlagSnapshot: GraphQL feature flags + .ff_cache fallback"
+      - "PaymentFeatureGateSnapshot: KEY_PAYMENT_QR + KEY_SUPPORTED_PAYMENT_QR gate"
+      - "DashboardSnapshot: StatsData, SpendingOverview, SpendingChart, DashboardRealtime"
+      - "NotificationCallBootstrapState: Persisted firebase payload + SessionId/callType hints"
+      - "VehicleRecognitionDraft: Resized image + attachmentUrl + OCR payload"
+      - "PaymentWebViewSession: paymentUrl + URL callback + JS channel messages"
+
+# =============================================================================
+# ARCHITECTURE (Architecture Authority owned — change via CR MAJOR)
+# =============================================================================
+
+entities:
+  - name: "SessionState"
+    type: "value_object"
+    description: "AppPreferences giữ accessToken, idToken, refreshToken, identifier, firstLoginChallenge, deviceId, CometChat token, subdomain và auth-adjacent bootstrap state."
+  - name: "TenantContextSnapshot"
+    type: "value_object"
+    description: "BusinessInfoResponse từ getTenantInfo + tcConfirmed cache trong AppPreferences; dùng để quyết định policy-first routing và tenant-scoped runtime context."
+  - name: "PermissionSnapshot"
+    type: "value_object"
+    description: "Snapshot từ policyClientGetPermissions; dùng cho PermissionGuard, Widget.withPermission và action-level checks."
+  - name: "FeatureFlagSnapshot"
+    type: "value_object"
+    description: "Feature flags từ GraphQL API, cache trong memory + .ff_cache; quyết định bật/tắt CRM, inventory, HRM, direct purchase, dashboard, vehicle management..."
+  - name: "PaymentFeatureGateSnapshot"
+    type: "value_object"
+    description: "KEY_PAYMENT_QR + KEY_SUPPORTED_PAYMENT_QR được tính từ getEnablePaymentMethodMobile(appName, currentVersion) để gate QR/card payment UX."
+  - name: "DashboardSnapshot"
+    type: "value_object"
+    description: "StatsData, SpendingOverview, SpendingChart và DashboardRealtime cho màn hình Trang chủ."
+  - name: "NotificationCallBootstrapState"
+    type: "value_object"
+    description: "Persisted firebase payload + SessionId/callType + local notification launch hints để rehydrate notification/chat/call flows ở foreground/background/terminated state."
+  - name: "VehicleRecognitionDraft"
+    type: "value_object"
+    description: "Ảnh camera/gallery đã resize + attachmentUrl + OCR payload để tự động điền VIN/thông tin xe."
+  - name: "PaymentWebViewSession"
+    type: "value_object"
+    description: "paymentUrl + URL callback + JavaScript channel messages cho PRE_PAID_CC trong WebView."
+
+business_rules:
+  - id: BR-PULSE-MOBILE-001
+    description: "Business/auth/session flow mới phải bám baseline GraphQL-primary; REST chỉ là bounded exception cho upload/export/helper đã được HLD/ADR chấp thuận."
+    cornerstone: true
+    enforcement_point: "GraphQLServiceBase + GraphQLService + GraphQLSSOService + ApiService + repository layer"
+  - id: BR-PULSE-MOBILE-002
+    description: "401/Unauthorized phải đi qua refresh-token flow tập trung; ad-hoc token retry hoặc bỏ qua logout forbidden."
+    cornerstone: true
+    enforcement_point: "GraphQLServiceBase._handleGraphQLResponse + _refreshOrWait()"
+  - id: BR-PULSE-MOBILE-003
+    description: "Permission-gated route/widget/action forbidden nếu không khớp snapshot từ policyClientGetPermissions."
+    cornerstone: true
+    enforcement_point: "PermissionGuard + PermissionWidgetX + AppPreferences.permissionsLocal"
+  - id: BR-PULSE-MOBILE-004
+    description: "V1/V3 flow selection forbidden nếu hardcode theo build; phải resolve bằng feature flags runtime (sales, direct purchase, inventory, CRM, HRM, vehicle management...)."
+    cornerstone: true
+    enforcement_point: "AppFeatureFlag + ServiceOrderResolver + MissionFunctionWidget"
+  - id: BR-PULSE-MOBILE-005
+    description: "Expose Payment QR/credit flow forbidden khi backend toggle hoặc minimum app version chưa cho phép."
+    cornerstone: true
+    enforcement_point: "MainCubit.getEnablePaymentMethodMobile + AppPreferences"
+  - id: BR-PULSE-MOBILE-006
+    description: "Mark payment success chỉ từ UI optimism hoặc local state forbidden; phải chờ payment callback URL hoặc JavaScript channel response trong WebView."
+    cornerstone: true
+    enforcement_point: "CreditCardPaymentPage + purchase request/order detail cubits"
+  - id: BR-PULSE-MOBILE-007
+    description: "Vehicle OCR source-of-truth local-only forbidden; app phải upload attachment rồi dùng backend OCR response để điền dữ liệu."
+    cornerstone: true
+    enforcement_point: "VehicleInfoRecognizerCubit + MediaRepository.uploadImage + MediaRepository.ocrUploadWithoutFile"
+  - id: BR-PULSE-MOBILE-008
+    description: "Offline mutation flow forbidden; repo hiện tại là online-first operational app."
+    cornerstone: true
+    enforcement_point: "AppCheckInternetService + GraphQLServiceBase._execute"
+  - id: BR-PULSE-MOBILE-009
+    description: "Feature/module mới trên mobile phải chứng minh giá trị phone-context; không lấy desktop parity với Web GMS làm baseline kiến trúc."
+    cornerstone: true
+    enforcement_point: "PRD/HLD review + mobile feature design review"
+  - id: BR-PULSE-MOBILE-010
+    description: "Feature page không được gọi trực tiếp native push/call APIs; phải đi qua FirebaseNotificationManager, ApnsNotificationManager, VoipNotificationManager hoặc wrapper tương đương."
+    cornerstone: true
+    enforcement_point: "notification/call manager layer + code review"
+  - id: BR-PULSE-MOBILE-011
+    description: "Bypass policy/T&C confirmation forbidden; session chỉ được vào luồng vận hành sau khi tenant auth state xác nhận `tcConfirmed = true`."
+    cornerstone: true
+    enforcement_point: "ProfileRepository.getTenantInfo + AppPreferences.TC_AUTH + AppCubit.onTcNotYetAuthenticated + PolicyFirstCubit.tcDataPrivacyConfirmed"
+  - id: BR-PULSE-MOBILE-012
+    description: "Cho phép user tiếp tục vào operational flow khi Remote Config yêu cầu update forbidden; app phải hard-gate tại boot và redirect sang store link tương ứng."
+    cornerstone: true
+    enforcement_point: "AppVersionManager.shouldUpdate + AppCubit.openApp + App.showUpdateVersionDialog"
+  - id: BR-PULSE-MOBILE-013
+    description: "Bỏ qua firstLoginChallenge forbidden; user phải hoàn tất firstChangePassword trước khi vào policy-first hoặc main shell."
+    cornerstone: true
+    enforcement_point: "AuthRepository.login + LoginCubit.firstLoginChallenge + ProfileRepository.firstChangePassword"
+
+permissions:
+  model: "App Garage là internal operational channel; quyền thực tế lấy từ permission snapshot và backend authorization, không cố định theo một static role matrix duy nhất ở client."
+  roles:
+    - actor: "garage-staff"
+      access: "Varies per permission snapshot"
+      scope: "Các module được cấp qua permission snapshot: booking, purchaseRequest, purchaseOrder, quotation, serviceOrder, employee, customerServiceChat, role..."
+      enforcement: "PermissionGuard + Widget.withPermission + backend auth"
+    - actor: "authenticated-user"
+      access: "READ_WRITE"
+      scope: "Profile, notifications, chat state, device token registration và dashboard cá nhân"
+      enforcement: "SSO token + app session state"
+  multi_tenancy:
+    scope_field: "JWT custom:sub_domain + backend tenant context"
+    enforcement_point: "AppPreferences.saveIdToken(parseJwt) + server-side authorization"
+
+dependencies:
+  outbound:
+    - boundary: "agg-sso-graph"
+      type: "graphql"
+      endpoints: ["F.graphQLSSOUrl"]
+      purpose: "Login/logout/refresh token, forgot/change password, save device token, CometChat auth token, delete user và SSO-adjacent session flows"
+    - boundary: "agg-garage-graph"
+      type: "graphql"
+      endpoints: ["F.graphQLUrl"]
+      purpose: "Tenant/profile context, feature flags, dashboard, notifications, quotation, purchase, booking, service order, inventory, customer, supplier, employee, vehicle management, settlement, uploadAttachment và OCR"
+    - boundary: "garage-rest-export-api"
+      type: "rest"
+      endpoints: ["F.apiUrl + /api/v2/service-orders/{id}/export-pdf", "F.apiUrl + /api/v2/service-orders/{id}/export-image", "F.apiUrl + /api/v1/settlements/{id}/export-pdf"]
+      purpose: "Bounded REST exception cho export PDF/image tài liệu nghiệp vụ"
+    - boundary: "garage-rest-upload-helper"
+      type: "rest"
+      endpoints: ["F.apiUrlNoAuth + /upload"]
+      purpose: "Bounded REST exception cho feedback upload/helper endpoint"
+    - boundary: "payment-gateway-pages"
+      type: "webview"
+      endpoints: ["paymentUrl opened via WebView", "payment/ipn callback"]
+      purpose: "Credit-card / online payment flow cho purchase request / order"
+    - boundary: "feedback-web-portal"
+      type: "webview"
+      endpoints: ["F.urlFeedback(subdomain)"]
+      purpose: "Survey/feedback form nhúng bằng WebView theo tenant subdomain"
+    - boundary: "Firebase"
+      type: "sdk"
+      endpoints: ["FCM token/device messaging", "Remote Config fetch", "Crashlytics/Analytics SDK"]
+      purpose: "Push notification, force-update/version control, crash reporting, analytics"
+    - boundary: "CometChat"
+      type: "sdk"
+      endpoints: ["Chat/Call SDK APIs + push token registration"]
+      purpose: "CSKH chat, purchase chat, audio/video call"
+    - boundary: "APNs / PushKit / CallKit"
+      type: "native"
+      endpoints: ["iOS notification + VoIP delivery"]
+      purpose: "iOS foreground/background notification và incoming call experience"
+  inbound:
+    - boundary: "garage-staff-devices"
+      type: "ui"
+      endpoints_exposed: ["Flutter app, portrait-only UI"]
+      sla: "Repo hiện tại mô hình online-first; notification/chat/payment responsiveness phụ thuộc GraphQL, Firebase/APNs và CometChat."
+
+integrations:
+  - name: "GraphQLServiceBase"
+    type: "client"
+    purpose: "GraphQL transport, auth header, refresh token single-flight, network guard, retry và shared Hive cache"
+    config_ref: "GraphQLService + GraphQLSSOService"
+  - name: "ApiService"
+    type: "rest-client"
+    purpose: "REST helper bounded exception cho upload/export/non-GraphQL endpoint"
+    config_ref: "Dio + Retrofit + interceptors"
+  - name: "Firebase Messaging"
+    type: "broker"
+    purpose: "Push notification Android + bridge với local notifications"
+    config_ref: ".firebase/*/google-services.json + GoogleService-Info.plist"
+  - name: "Firebase Remote Config"
+    type: "runtime-gate"
+    purpose: "Cưỡng bức update version theo env key garage_<env>_version"
+    config_ref: "AppVersionManager + F.appVersionRemoteConfigKey"
+  - name: "Firebase Crashlytics / Analytics"
+    type: "broker"
+    purpose: "Crash reporting + app analytics"
+    config_ref: "Firebase.initializeApp()"
+  - name: "CometChat"
+    type: "broker"
+    purpose: "Realtime conversation, group chat, unread count, call events và push token registration"
+    config_ref: "CometChatConfig.appId/region/authKey/providerId"
+  - name: "LocalNotificationManager"
+    type: "runtime-bridge"
+    purpose: "Hiển thị local notification, replay launch payload và route user theo tap payload"
+    config_ref: "start() + LocalNotificationManager.handleNotificationTap"
+  - name: "VoipNotificationManager"
+    type: "runtime-bridge"
+    purpose: "Restore incoming-call UX cho Android/iOS background/terminated/lock-screen state"
+    config_ref: "VoipNotificationManager + flutter_callkit_incoming"
+  - name: "ApnsNotificationManager"
+    type: "runtime-bridge"
+    purpose: "iOS APNs/PushKit/CallKit bridge cho notification và incoming-call flow"
+    config_ref: "ApnsNotificationManager + AppDelegate native bridge"
+  - name: "Android call/notification intent runtime"
+    type: "runtime-bridge"
+    purpose: "Full-screen incoming call, accept/decline/end flow và lock-screen behavior trên Android"
+    config_ref: "AndroidManifest.xml + MainActivity.kt + receivers/services"
+  - name: "App Store Connect + Google Play"
+    type: "broker"
+    purpose: "Phân phối app production và update path cho người dùng"
+    config_ref: "flavor bundle/applicationId + store links"
+
+# =============================================================================
+# IMPLEMENTATION (DEV agent owned)
+# Stack: Mobile (Flutter 3 + Dart 3 + flutter_bloc/Cubit)
+# Owner: agent-dev-garage-mobile
+# =============================================================================
+
+implementation:
+
+  # --- 1. TYPES — Client-side Dart types ---
+  # Format:
+  #   TypeName:
+  #     source: "GraphQL → queryName" | "REST → endpoint" | "local"
+  #     fields: [field1, field2, ...]
+  types:
+    # --- W03 Inventory Catalog (BUG-W03-014 fix 2026-07-01) ---
+    MaterialGroup:
+      source: "GraphQL → searchMaterialGroups (list) / getMaterialGroup (detail)"
+      fields: ["id", "code", "name", "description", "status: MaterialGroupStatus", "parentId", "parentName", "createdAt", "createdBy", "createdByName", "updatedAt", "updatedBy", "updatedByName"]
+      dart_ref: "lib/core/models/inventory_catalog/material_group_models.dart (MaterialGroupItem / MaterialGroupDetail)"
+    InternalProduct:
+      source: "GraphQL → searchInternalProducts (list) / getInternalProduct (detail)"
+      fields: ["id", "code", "name", "status: InternalProductStatus", "productType", "materialGroupId", "materialGroupName", "mainUnit", "mainUnitDisplayName", "brand", "origin", "originDisplayName", "description", "specification", "createdAt", "createdBy", "createdByName", "updatedAt", "updatedBy", "updatedByName"]
+      dart_ref: "lib/core/models/inventory_catalog/internal_product_models.dart (InternalProductItem / InternalProductDetail)"
+    MaterialGroupStatus:
+      source: "local enum"
+      fields: ["active", "inactive"]
+      dart_ref: "lib/core/models/inventory_catalog/material_group_status.dart — INACTIVE badge = ORANGE (bgBadgeWarning), khác InternalProductStatus (M-trap-3)"
+    InternalProductStatus:
+      source: "local enum"
+      fields: ["active", "inactive"]
+      dart_ref: "lib/core/models/inventory_catalog/internal_product_status.dart — INACTIVE badge = GREY (bgBadgeOpen/textSecondary), khác MaterialGroupStatus (M-trap-3)"
+
+  # --- 2. PAGES — Routes + permission-gating + dependencies ---
+  # Format:
+  #   page-name:
+  #     route: "/path"
+  #     roles: [ROLE_1, ROLE_2]
+  #     cubit: cubit_name
+  #     features: [feature1, feature2]
+  pages:
+    # Bootstrap & Auth
+    splash:
+      route: "/"
+      roles: ["authenticated-user", "garage-staff"]
+      description: "Boot screen — kiểm tra force-update, persisted auth/tc state, feature flags rồi route về login hoặc main; policy-first được kích hoạt từ login flow khi tenant chưa confirm"
+    login:
+      route: "/login"
+      roles: ["authenticated-user"]
+      description: "SSO login với phone/password"
+    forgot-password:
+      route: "/forgot-password"
+      roles: ["authenticated-user"]
+      description: "Container cho luồng quên mật khẩu — phone number → OTP → create new password"
+    phone-number:
+      route: "/forgot-password/phone-number"
+      roles: ["authenticated-user"]
+      description: "Nhập số điện thoại/identifier để khởi tạo forgot password flow"
+    create-new-password:
+      route: "/forgot-password/create-new-password"
+      roles: ["authenticated-user"]
+      description: "Nhập mật khẩu mới sau khi OTP hợp lệ"
+    otp:
+      route: "/forgot-password/otp"
+      roles: ["authenticated-user"]
+      description: "Nhập OTP xác thực cho forgot password flow"
+    change-password:
+      route: "/change-password"
+      roles: ["authenticated-user"]
+      description: "Đổi mật khẩu khi firstLoginChallenge"
+    change-user-password:
+      route: "/change-user-password"
+      roles: ["garage-staff"]
+      description: "Đổi mật khẩu user từ profile"
+    policy-first:
+      route: "/policy-first"
+      roles: ["garage-staff"]
+      description: "Policy/T&C gate trước khi vào main shell"
+    ecommerce-confirmed:
+      route: "/ecommerce-confirmed"
+      roles: ["garage-staff"]
+      description: "Xác nhận tham gia thương mại điện tử"
+
+    # Main Shell
+    main:
+      route: "/main"
+      roles: ["garage-staff"]
+      description: "Main shell với PersistentTabView: Trang chủ, Chat, Hỏi giá, Thông báo, Tài khoản"
+      guard: "AuthGuard"
+
+    # Home / Dashboard
+    home:
+      route: "/home"
+      roles: ["garage-staff"]
+      description: "Dashboard — StatsData, SpendingOverview, SpendingChart, DashboardRealtime"
+
+    # Quotation
+    create-quotation:
+      route: "/create-quotation"
+      roles: ["garage-staff"]
+      description: "Tạo yêu cầu báo giá (ask quotation), gồm invoice request section với form chi tiết khi purchasePurchaseV02 bật"
+      label_maps:
+        - screen_id: "quotation-create-invoice-request"
+          route: "/create-quotation"
+          label_map_ref: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+          source_status: "implemented"
+          graphql_operations: ["QuotationAskTenantInvoiceInfo", "CreateQuotationAsk", "CreateQuotationAskV3", "CreateSalesQuotationAsk"]
+          labels:
+            - section: "invoice_request"
+              ui_label: "Yêu cầu xuất hóa đơn"
+              ui_element: "checkbox_label"
+              label_kind: "form_control"
+              source_kind: "i18n"
+              source_file: "lib/ui/quotation/create_quotation/create_quotation_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+          dynamic_label_sources:
+            - "Invoice company fields can be prefilled and locked from QuotationAskTenantInvoiceInfo response."
+            - "When purchasePurchaseV02 is off, createQuotation strips invoice detail fields and only preserves isInvoiceRequired in legacy flow."
+          gaps:
+            - "Vehicle selectors, spare-part rows, catalog suggestions, app bar title, and submit CTA are outside this invoice-focused label map."
+    request-quote-list:
+      route: "/request-quote-list"
+      roles: ["garage-staff"]
+      description: "Danh sách yêu cầu báo giá"
+    request-quote-list-search:
+      route: "/request-quote-list/search"
+      roles: ["garage-staff"]
+    request-quote-list-filter:
+      route: "/request-quote-list/filter"
+      roles: ["garage-staff"]
+    quotation-detail:
+      route: "/quotation-detail"
+      roles: ["garage-staff"]
+      description: "Chi tiết báo giá + chat + lịch sử cập nhật"
+    history-update-quotation:
+      route: "/history-update-quotation"
+      roles: ["garage-staff"]
+
+    # Ordering / Purchase
+    list-order:
+      route: "/list-order"
+      roles: ["garage-staff"]
+      description: "Danh sách purchase order V1"
+    list-order-v3:
+      route: "/list-order-v3"
+      roles: ["garage-staff"]
+      description: "Danh sách purchase order V3"
+    search-list-order:
+      route: "/search-list-order"
+      roles: ["garage-staff"]
+    search-list-order-v3:
+      route: "/search-list-order-v3"
+      roles: ["garage-staff"]
+    list-order-filter:
+      route: "/list-order-filter"
+      roles: ["garage-staff"]
+    order-detail:
+      route: "/order-detail"
+      roles: ["garage-staff"]
+      description: "Chi tiết purchase order V1"
+    order-detail-v3:
+      route: "/order-detail-v3"
+      roles: ["garage-staff"]
+      description: "Chi tiết purchase order V3"
+    marketplace-order-detail:
+      route: "/marketplace-order-detail"
+      roles: ["garage-staff"]
+    create-new-order:
+      route: "/create-new-order"
+      roles: ["garage-staff"]
+      description: "Tạo purchase request / direct purchase order"
+    cart:
+      route: "/cart"
+      roles: ["garage-staff"]
+      description: "Giỏ hàng spare parts"
+    confirm-order:
+      route: "/confirm-order"
+      roles: ["garage-staff"]
+      description: "Xác nhận đặt hàng"
+    create-new-product:
+      route: "/create-new-product"
+      roles: ["garage-staff"]
+      description: "Tạo sản phẩm mới trong order"
+    spare-part-selection:
+      route: "/spare-part-selection"
+      roles: ["garage-staff"]
+      description: "Chọn spare part từ catalog"
+    credit-card-payment:
+      route: "/credit-card-payment"
+      roles: ["garage-staff"]
+      description: "Thanh toán credit card qua WebView"
+    list-purchase-request:
+      route: "/list-purchase-request"
+      roles: ["garage-staff"]
+      description: "Danh sách purchase request"
+    list-purchase-request-search:
+      route: "/list-purchase-request/search"
+      roles: ["garage-staff"]
+    list-purchase-request-filter:
+      route: "/list-purchase-request/filter"
+      roles: ["garage-staff"]
+    purchase-request-detail:
+      route: "/purchase-request-detail"
+      roles: ["garage-staff"]
+
+    # Booking
+    booking-list:
+      route: "/booking-list"
+      roles: ["garage-staff"]
+    booking-search:
+      route: "/booking/search"
+      roles: ["garage-staff"]
+    booking-filter:
+      route: "/booking/filter"
+      roles: ["garage-staff"]
+    booking-detail:
+      route: "/booking-detail"
+      roles: ["garage-staff"]
+    booking-create:
+      route: "/booking-create"
+      roles: ["garage-staff"]
+    booking-edit:
+      route: "/booking-edit"
+      roles: ["garage-staff"]
+
+    # Service Order V1
+    service-order-list:
+      route: "/service-order-list"
+      roles: ["garage-staff"]
+    service-order-list-search:
+      route: "/service-order-list/search"
+      roles: ["garage-staff"]
+    service-order-list-filter:
+      route: "/service-order-list/filter"
+      roles: ["garage-staff"]
+    service-order-detail:
+      route: "/service-order-detail"
+      roles: ["garage-staff"]
+    service-order-creation:
+      route: "/service-order-creation"
+      roles: ["garage-staff"]
+    service-order-record-payment:
+      route: "/service-order-record-payment"
+      roles: ["garage-staff"]
+    service-order-print:
+      route: "/service-order-print"
+      roles: ["garage-staff"]
+    create-product:
+      route: "/create-product"
+      roles: ["garage-staff"]
+    add-edit-order:
+      route: "/add-edit-order"
+      roles: ["garage-staff"]
+
+    # Service Order V3
+    service-order-list-v3:
+      route: "/service-order-list-v3"
+      roles: ["garage-staff"]
+    service-order-list-search-v3:
+      route: "/service-order-list-v3/search"
+      roles: ["garage-staff"]
+    service-order-list-filter-v3:
+      route: "/service-order-list-v3/filter"
+      roles: ["garage-staff"]
+    service-order-detail-v3:
+      route: "/service-order-detail-v3"
+      roles: ["garage-staff"]
+    service-order-creation-v3:
+      route: "/service-order-creation-v3"
+      roles: ["garage-staff"]
+    service-order-print-v3:
+      route: "/service-order-print-v3"
+      roles: ["garage-staff"]
+    part-order:
+      route: "/part-order"
+      roles: ["garage-staff"]
+      description: "Part order trong service order V3"
+
+    # Customer
+    customer-list:
+      route: "/customer-list"
+      roles: ["garage-staff"]
+    customer-search:
+      route: "/customer/search"
+      roles: ["garage-staff"]
+    customer-detail:
+      route: "/customer-detail"
+      roles: ["garage-staff"]
+    customer-form:
+      route: "/customer-form"
+      roles: ["garage-staff"]
+      description: "Tạo/sửa customer"
+
+    # Supplier
+    supplier-list:
+      route: "/supplier-list"
+      roles: ["garage-staff"]
+    supplier-search:
+      route: "/supplier/search"
+      roles: ["garage-staff"]
+    supplier-detail:
+      route: "/supplier-detail"
+      roles: ["garage-staff"]
+    supplier-add:
+      route: "/supplier-add"
+      roles: ["garage-staff"]
+    supplier-edit:
+      route: "/supplier-edit"
+      roles: ["garage-staff"]
+    supplier-filter:
+      route: "/supplier/filter"
+      roles: ["garage-staff"]
+
+    # Tenant Transporter Registry
+    tenant-transporter-registry-list:
+      route: "/tenant-transporter-registry-list"
+      roles: ["garage-staff"]
+      description: "Danh sách nhà xe liên kết theo trạng thái, có search/filter và tạo mới"
+      label_maps:
+        - screen_id: "tenant-transporter-registry-list"
+          route: "/tenant-transporter-registry-list"
+          label_map_ref: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+          source_status: "implemented"
+          graphql_operations: ["SearchTenantTransporterRegistries"]
+          labels:
+            - section: "app_bar"
+              ui_label: "Danh sách nhà xe"
+              ui_element: "app_bar_title"
+              label_kind: "static_text"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/list/tenant_transporter_registry_list_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+            - section: "footer_action"
+              ui_label: "Thêm nhà xe liên kết"
+              ui_element: "primary_button"
+              label_kind: "button"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/list/tenant_transporter_registry_list_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+          dynamic_label_sources:
+            - "List item values (transporterName, routeContactPhoneNumber, routeName, shippingAddress) come from SearchTenantTransporterRegistries response."
+          gaps:
+            - "Status badge copy is documented in the shared KG-local ui label map, not duplicated here."
+    tenant-transporter-registry-search:
+      route: "/tenant-transporter-registry/search"
+      roles: ["garage-staff"]
+      description: "Tìm kiếm nhà xe liên kết theo tên, số điện thoại hoặc thông tin tuyến xe"
+      label_maps:
+        - screen_id: "tenant-transporter-registry-search"
+          route: "/tenant-transporter-registry/search"
+          label_map_ref: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+          source_status: "implemented"
+          graphql_operations: ["SearchTenantTransporterRegistries"]
+          labels:
+            - section: "search_input"
+              ui_label: "Tìm theo tên nhà xe, số điện thoại, Thông tin tuyến xe"
+              ui_element: "search_hint"
+              label_kind: "placeholder"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+            - section: "search_guide"
+              ui_label: "Tìm kiếm nhà xe theo từ khoá"
+              ui_element: "guide_title"
+              label_kind: "static_text"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/search/tenant_transporter_registry_search_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+          dynamic_label_sources:
+            - "Search result rows and runtime summary values use SearchTenantTransporterRegistries data plus current keyword/count state."
+          gaps: []
+    tenant-transporter-registry-filter:
+      route: "/tenant-transporter-registry/filter"
+      roles: ["garage-staff"]
+      description: "Lọc danh sách nhà xe liên kết theo trạng thái hoạt động"
+      label_maps:
+        - screen_id: "tenant-transporter-registry-filter"
+          route: "/tenant-transporter-registry/filter"
+          label_map_ref: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+          source_status: "implemented"
+          graphql_operations: ["SearchTenantTransporterRegistries"]
+          labels:
+            - section: "form"
+              ui_label: "Trạng thái"
+              ui_element: "field_label"
+              label_kind: "static_text"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/filter/tenant_transporter_registry_filter_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+            - section: "footer_action"
+              ui_label: "Hiển thị kết quả"
+              ui_element: "primary_button"
+              label_kind: "button"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/filter/tenant_transporter_registry_filter_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+          dynamic_label_sources: []
+          gaps:
+            - "Dropdown option labels are sourced from the mobile enum and detailed in the KG-local ui label map."
+    tenant-transporter-registry-detail:
+      route: "/tenant-transporter-registry-detail"
+      roles: ["garage-staff"]
+      description: "Xem chi tiết nhà xe liên kết, chỉnh sửa và kiểm tra ràng buộc trước khi xóa"
+      label_maps:
+        - screen_id: "tenant-transporter-registry-detail"
+          route: "/tenant-transporter-registry-detail"
+          label_map_ref: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+          source_status: "implemented"
+          graphql_operations: ["GetTenantTransporterRegistryDetail", "GetTenantTransporterRegistryReferences", "DeleteTenantTransporterRegistry"]
+          labels:
+            - section: "app_bar"
+              ui_label: "Chi tiết nhà xe"
+              ui_element: "app_bar_title"
+              label_kind: "static_text"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+            - section: "danger_zone"
+              ui_label: "Xóa nhà xe"
+              ui_element: "danger_button"
+              label_kind: "button"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/detail/tenant_transporter_registry_detail_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+          dynamic_label_sources:
+            - "Detail field values come from GetTenantTransporterRegistryDetail response."
+            - "Blocked-delete purchase request/order codes come from GetTenantTransporterRegistryReferences response."
+          gaps: []
+    tenant-transporter-registry-add:
+      route: "/tenant-transporter-registry-add"
+      roles: ["garage-staff"]
+      description: "Tạo mới nhà xe liên kết với local validation và duplicate phone check"
+      label_maps:
+        - screen_id: "tenant-transporter-registry-add"
+          route: "/tenant-transporter-registry-add"
+          label_map_ref: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+          source_status: "implemented"
+          graphql_operations: ["CreateTenantTransporterRegistry", "SearchTenantTransporterRegistries"]
+          labels:
+            - section: "app_bar"
+              ui_label: "Thêm nhà xe liên kết"
+              ui_element: "app_bar_title"
+              label_kind: "static_text"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+            - section: "footer_action"
+              ui_label: "Lưu"
+              ui_element: "primary_button"
+              label_kind: "button"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+            - section: "toast"
+              ui_label: "Lưu thông tin nhà xe liên kết thành công."
+              ui_element: "toast_message_success"
+              label_kind: "feedback_message"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+          dynamic_label_sources:
+            - "Duplicate phone validation queries SearchTenantTransporterRegistries using current input value."
+          gaps: []
+    tenant-transporter-registry-edit:
+      route: "/tenant-transporter-registry-edit"
+      roles: ["garage-staff"]
+      description: "Chỉnh sửa nhà xe liên kết với prefilled detail và duplicate phone check"
+      label_maps:
+        - screen_id: "tenant-transporter-registry-edit"
+          route: "/tenant-transporter-registry-edit"
+          label_map_ref: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+          source_status: "implemented"
+          graphql_operations: ["UpdateTenantTransporterRegistry", "SearchTenantTransporterRegistries"]
+          labels:
+            - section: "app_bar"
+              ui_label: "Chỉnh sửa nhà xe liên kết"
+              ui_element: "app_bar_title"
+              label_kind: "static_text"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+            - section: "footer_action"
+              ui_label: "Cập nhật"
+              ui_element: "primary_button"
+              label_kind: "button"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_page.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+            - section: "toast"
+              ui_label: "Cập nhật thông tin nhà xe liên kết thành công."
+              ui_element: "toast_message_success"
+              label_kind: "feedback_message"
+              source_kind: "i18n"
+              source_file: "lib/ui/tenant_transporter_registry/form/tenant_transporter_registry_form_cubit.dart"
+              graphql: { operation: null, variable_path: null, response_path: null, enum_value_path: null }
+              product_note: null
+          dynamic_label_sources:
+            - "Prefilled form values come from the selected transporter detail response passed into the route."
+          gaps: []
+
+    # Inventory
+    inventory-list:
+      route: "/inventory-list"
+      roles: ["garage-staff"]
+    inventory-search:
+      route: "/inventory/search"
+      roles: ["garage-staff"]
+    inventory-filter:
+      route: "/inventory/filter"
+      roles: ["garage-staff"]
+    receipt-detail:
+      route: "/receipt-detail"
+      roles: ["garage-staff"]
+    delivery-detail:
+      route: "/delivery-detail"
+      roles: ["garage-staff"]
+    stock-detail:
+      route: "/stock-detail"
+      roles: ["garage-staff"]
+    service-detail:
+      route: "/service-detail"
+      roles: ["garage-staff"]
+    period-stock-detail:
+      route: "/period-stock-detail"
+      roles: ["garage-staff"]
+
+    # Employee / HR
+    employee-list:
+      route: "/employee-list"
+      roles: ["garage-staff"]
+    employee-search:
+      route: "/employee/search"
+      roles: ["garage-staff"]
+    employee-filter:
+      route: "/employee/filter"
+      roles: ["garage-staff"]
+    employee-create:
+      route: "/employee-create"
+      roles: ["garage-staff"]
+    employee-detail:
+      route: "/employee-detail"
+      roles: ["garage-staff"]
+    list-employee-accounts:
+      route: "/list-employee-accounts"
+      roles: ["garage-staff"]
+    filter-employee-accounts:
+      route: "/filter-employee-accounts"
+      roles: ["garage-staff"]
+    detail-employee-accounts:
+      route: "/detail-employee-accounts"
+      roles: ["garage-staff"]
+    search-employee-accounts:
+      route: "/search-employee-accounts"
+      roles: ["garage-staff"]
+
+    # Settlement
+    settlement-list:
+      route: "/settlement-list"
+      roles: ["garage-staff"]
+    settlement-detail:
+      route: "/settlement-detail"
+      roles: ["garage-staff"]
+    settlement-edit:
+      route: "/settlement-edit"
+      roles: ["garage-staff"]
+    settlement-search:
+      route: "/settlement/search"
+      roles: ["garage-staff"]
+    settlement-filter:
+      route: "/settlement/filter"
+      roles: ["garage-staff"]
+    settlement-print:
+      route: "/settlement-print"
+      roles: ["garage-staff"]
+    settlement-create:
+      route: "/settlement-create"
+      roles: ["garage-staff"]
+
+    # Vehicle Management
+    vehicle-management-list:
+      route: "/vehicle-management-list"
+      roles: ["garage-staff"]
+    vehicle-management-search:
+      route: "/vehicle-management/search"
+      roles: ["garage-staff"]
+    vehicle-management-filter:
+      route: "/vehicle-management/filter"
+      roles: ["garage-staff"]
+    vehicle-management-detail:
+      route: "/vehicle-management-detail"
+      roles: ["garage-staff"]
+    vehicle-management-services:
+      route: "/vehicle-management-services"
+      roles: ["garage-staff"]
+    vehicle-management-services-search:
+      route: "/vehicle-management-services/search"
+      roles: ["garage-staff"]
+    vehicle-management-services-filter:
+      route: "/vehicle-management-services/filter"
+      roles: ["garage-staff"]
+    vehicle-management-parts:
+      route: "/vehicle-management-parts"
+      roles: ["garage-staff"]
+    vehicle-management-parts-search:
+      route: "/vehicle-management-parts/search"
+      roles: ["garage-staff"]
+    vehicle-management-parts-filter:
+      route: "/vehicle-management-parts/filter"
+      roles: ["garage-staff"]
+    vehicle-management-technical-notes:
+      route: "/vehicle-management-technical-notes"
+      roles: ["garage-staff"]
+
+    # Vehicle OCR
+    vehicle-info-recognizer:
+      route: "/vehicle-info-recognizer"
+      roles: ["garage-staff"]
+      description: "Chụp/crop ảnh giấy xe → OCR → tự động điền thông tin xe"
+
+    # Chat / Call
+    conversations:
+      route: "/conversations"
+      roles: ["garage-staff"]
+      description: "Danh sách conversations CometChat"
+    message:
+      route: "/message"
+      roles: ["garage-staff"]
+      description: "CometChat message list"
+    chat-thread:
+      route: "/chat-thread"
+      roles: ["garage-staff"]
+    outgoing-call:
+      route: "/outgoing-call"
+      roles: ["garage-staff"]
+    waiting-call:
+      route: "/waiting-call"
+      roles: ["garage-staff"]
+    ongoing-call:
+      route: "/ongoing-call"
+      roles: ["garage-staff"]
+
+    # Notification
+    notification:
+      route: "/notification"
+      roles: ["garage-staff"]
+      description: "Notification inbox"
+
+    # Profile / Account
+    personal-profile:
+      route: "/personal-profile"
+      roles: ["garage-staff"]
+    business-information:
+      route: "/business-information"
+      roles: ["garage-staff"]
+    delivery-address:
+      route: "/delivery-address"
+      roles: ["garage-staff"]
+    affiliated-garage:
+      route: "/affiliated-garage"
+      roles: ["garage-staff"]
+    profile-qr:
+      route: "/profile-qr"
+      roles: ["garage-staff"]
+
+    # Misc
+    transfer-information:
+      route: "/transfer-information"
+      roles: ["garage-staff"]
+    pdf:
+      route: "/pdf"
+      roles: ["garage-staff"]
+      description: "PDF viewer"
+    policy-terms:
+      route: "/policy-terms"
+      roles: ["garage-staff"]
+    feedback:
+      route: "/feedback"
+      roles: ["garage-staff"]
+    survey-form:
+      route: "/survey-form"
+      roles: ["garage-staff"]
+
+    # --- W03 Inventory Catalog (garage-owner + accountant) ---
+    material-group-list:
+      route: "/catalog/material-groups"
+      roles: ["garage-owner", "accountant"]
+      cubit: "MaterialGroupListCubit"
+      description: "FEAT-CAT-GRP-LIST — Flat card list (CR-1782381477, KHÔNG TreeView); 3-tab status + filter parentId + footer 'Thêm nhóm vật tư' (bottomNavigationBar slot, BottomNavigationBarButton canonical); AppBar search + filter action icons"
+    material-group-search:
+      route: "/catalog/material-groups/search"
+      roles: ["garage-owner", "accountant"]
+      cubit: "MaterialGroupSearchCubit"
+      description: "BUG-W03-021 — Full-page search (NOT bottom-sheet), TabBar status filter persists; debounced keyword search via cubit.applyFilter()"
+    material-group-filter:
+      route: "/catalog/material-groups/filter"
+      roles: ["garage-owner", "accountant"]
+      cubit: "MaterialGroupFilterCubit"
+      description: "BUG-W03-021 — Full-page filter (NOT bottom-sheet), single 'Thuộc nhóm' dropdown (parentId), Reset/Áp dụng footer; pops {parentId} map consumed by MaterialGroupListCubit.applyFilter()"
+    material-group-add:
+      route: "/catalog/material-groups/add"
+      roles: ["garage-owner", "accountant"]
+      cubit: "AddMaterialGroupCubit"
+      description: "FEAT-CAT-GRP-CREATE — 5-field form (code/name/parent/status/desc); M1 createMaterialGroup"
+    material-group-detail:
+      route: "/catalog/material-groups/:id"
+      roles: ["garage-owner", "accountant"]
+      cubit: "MaterialGroupDetailCubit"
+      description: "FEAT-CAT-GRP-DETAIL — SummaryHeader + 6 StartInfoRow + footer Xoá/Sửa; Q3 getMaterialGroup"
+    material-group-edit:
+      route: "/catalog/material-groups/:id/edit"
+      roles: ["garage-owner", "accountant"]
+      cubit: "EditMaterialGroupCubit"
+      description: "FEAT-CAT-GRP-EDIT — Form pre-fill (code disabled per BR-CAT-GRP-004); M2 updateMaterialGroup"
+    internal-product-list:
+      route: "/catalog/internal-products"
+      roles: ["garage-owner", "accountant"]
+      cubit: "InternalProductListCubit"
+      description: "FEAT-CAT-PROD-LIST view-only (CR-1782373204) — 3-tab status + search/filter; Q4 searchInternalProducts; KHÔNG Create/Import/Export"
+    internal-product-search:
+      route: "/catalog/internal-products/search"
+      roles: ["garage-owner", "accountant"]
+      cubit: "InternalProductSearchCubit"
+      description: "Search modal with 300ms debounce + curly-quote count header"
+    internal-product-filter:
+      route: "/catalog/internal-products/filter"
+      roles: ["garage-owner", "accountant"]
+      cubit: "InternalProductFilterCubit"
+      description: "Filter modal — productType (4 enum BR-CAT-PROD-019) + materialGroupId"
+    internal-product-detail:
+      route: "/catalog/internal-products/:id"
+      roles: ["garage-owner", "accountant"]
+      cubit: "ProductDetailCubit"
+      description: "FEAT-CAT-PROD-DETAIL view-only — 4 cards scroll (HeaderCard + GeneralInfoCard + TechnicalSpecCard + SpecDescriptionCard); Q5 getInternalProduct; KHÔNG Edit/Delete/Tabs"
+
+    # FEAT-INV-MOBILE-MENU v2 (post-hoc 2026-06-30) — hub điều hướng
+    inventory-hub:
+      route: "/inventory/hub"
+      roles: ["garage-owner", "accountant"]
+      cubit: "InventoryHubCubit"
+      description: "FEAT-INV-MOBILE-MENU v2 (Figma 21519:27371) — hub điều hướng 'Quản lý kho hàng' grid 2-col 6-tile; W03 ship 2 tile visible (Sản phẩm → /catalog/internal-products + Nhóm vật tư → /catalog/material-groups), 4 tile HIDDEN HOÀN TOÀN (Phiếu nhập W05 / Phiếu xuất W05 / Tồn kho W06 / Tồn đầu kỳ W04) per AC-4 BA decision 2026-06-29. Pure client navigation — KHÔNG BFF. LocaleKeys MANDATORY (7 entries inventoryHub_*)."
+
+    # --- inventory-hub wave-fix 2026-06-30 — post-impl integration metadata ---
+    inventory-hub-integration:
+      anchors_to: "inventory-hub (above)"
+      page: "InventoryHubPage"
+      entry_points:
+        - "Home mission widget item 'Quản lý kho hàng' (lib/ui/main/home/widgets/mission_function_widget.dart, FF.inventory) — replaces InventoryListRoute entry"
+      svg_assets:
+        - "assets/icons/inventory-product.svg"
+        - "assets/icons/inventory-group.svg"
+        - "assets/icons/inventory-import.svg (W05 — hidden W03)"
+        - "assets/icons/inventory-export.svg (W05 — hidden W03)"
+        - "assets/icons/inventory-stock.svg (W06 — hidden W03)"
+        - "assets/icons/inventory-opening-stock.svg (W04 — hidden W03)"
+      icon_widget: "SvgPicture.asset 48×48 với màu Figma built-in (designer export 2026-06-30)"
+
+  # --- 3. SHARED COMPONENTS — Reusable across pages ---
+  # Format:
+  #   component-name:
+  #     used_by: [page1, page2]
+  #     description: "..."
+  shared_components:
+    app-button:
+      used_by: ["all pages"]
+      description: "Primary button system — AppButton.text(), .icon(), .textIcon(), .custom() với variants primary/neutral/green/red/blue/orange/purple"
+    app-search-bar:
+      used_by: ["all list pages"]
+      description: "Search bar với debounce input"
+    app-bottom-sheet:
+      used_by: ["all filter pages", "all detail pages"]
+      description: "Bottom sheet chọn options/filter"
+    permission-widget:
+      used_by: ["all feature pages"]
+      description: "Widget.withPermission() gate cho action-level checks"
+    notification-badge:
+      used_by: ["main"]
+      description: "Badge hiển thị unread count trên tab bar"
+    base-page:
+      used_by: ["all pages"]
+      description: "BasePage<Cubit, State> với auto loading/error/retry scaffold"
+    image-picker-sheet:
+      used_by: ["vehicle-info-recognizer", "customer-form", "service-order-creation"]
+      description: "Bottom sheet camera/gallery picker"
+    confirm-dialog:
+      used_by: ["all detail pages"]
+      description: "Dialog xác nhận action (cancel, delete, submit)"
+
+  # --- 4. NAVIGATION — Bottom tab bar ---
+  navigation:
+    garage-staff:
+      - label: "Trang chủ"
+        icon: "icHome"
+        description: "Dashboard — stats, spending overview, charts, realtime"
+      - label: "Chat"
+        icon: "icMessage"
+        description: "CometChat conversations + CSKH + purchase chat"
+      - label: "Hỏi giá"
+        icon: "icMenuBoard"
+        description: "Quick action — tạo yêu cầu báo giá"
+      - label: "Thông báo"
+        icon: "icNotificationBing"
+        description: "Notification inbox + unread badge"
+      - label: "Tài khoản"
+        icon: "icUserSquare"
+        description: "Profile, business info, QR, settings"
+
+  # --- 5. UI LABEL MAPS ---
+  ui_label_map:
+    ref: "Execution/knowledge-graphs/garage-mobile-ui-label-map.yaml"
+    purpose: "KG-local mobile label map. Product/ label-map files are intentionally not used for garage-mobile."
+    coverage_status: "full-project-structural-map; detailed screen labels are expanded by priority flow"
+    contains:
+      - "full gf-garage-app route/domain/source-of-truth map"
+      - "mobile-owned visible labels only: localization keys/values, hardcoded Flutter strings, static constants/enums/common UI labels"
+      - "backend/Graph response text is excluded completely from detailed label ownership"
+    source_repo: "/Users/congvn/Desktop/gf-garage-app"
+    source_priority:
+      - "Flutter UI source under lib/ui/**"
+      - "assets/localizations/vi.json + generated LocaleKeys"
+      - "mobile-owned constants/enums/common UI classes"
+
+  # --- 6. API INTEGRATION ---
+  api:
+    # GraphQL — Business/Auth transport (primary)
+    garage_endpoint: "F.graphQLUrl"
+    garage_provider: "agg-garage-graph"
+    sso_endpoint: "F.graphQLSSOUrl"
+    sso_provider: "agg-sso-graph"
+    # REST — Bounded exceptions
+    rest_endpoint: "F.apiUrl"
+    rest_no_auth_endpoint: "F.apiUrlNoAuth"
+    rest_provider: "garage-rest"
+    auth_provider: "agg-sso-graph"
+    queries:
+      # Auth / SSO
+      - "GetCurrentUser"
+      - "GetTenantInfo"
+      - "GetSaasTenant"
+      - "GetVariables"
+      - "GetEnablePaymentMethodMobile"
+      # Dashboard / Home
+      - "GetStatsApiResponse"
+      - "GetSpendingChartApiResponse"
+      - "CatalogQuery / CatalogListApiResponse"
+      # Notification
+      - "NotificationPagedApiResponse"
+      - "ApiResponseNotificationPaged"
+      # Quotation
+      - "QuotationAskByCode / QuotationAskV3ByCode / QuotationAskV3ById"
+      - "QuotationAskListApiResponse"
+      - "QuotationAskTenantInvoiceInfo"
+      - "QuotationAskChatByCode"
+      - "GetPreliminaryQuotation"
+      # Purchase / Ordering
+      - "CartApiResponse"
+      - "GetPurchaseRequestDetailByCode"
+      - "GetPurchaseRequestChat"
+      - "PurchaseOrderApiResponse / ApiResponsePurchaseOrderDetailV3"
+      - "GetDirectPurchaseOrderByCode"
+      - "PagedApiResponseDirectPurchaseOrderSearchResponse"
+      - "SearchPurchaseRequestsApiResponse"
+      - "SearchPurchaseOrders"
+      - "PrGetPaymentMethods"
+      # Booking
+      - "GetBookingByIdV3"
+      - "SearchBookingsV3"
+      - "CheckAvailability / CheckAvailabilityV3"
+      # Service Order
+      - "GetServiceOrderById / GetServiceOrderByIdV3"
+      - "ApiResponseServiceOrderDetailV3Response / ApiResponseServiceOrderPartInputableV3Response"
+      - "PagedApiResponseServiceOrderV3Response"
+      - "SearchServiceOrders / SearchServiceOrdersV3"
+      - "GetServiceApiResponse / SearchServicesApiResponse"
+      - "GetLatestServiceOrdersByVehicleV3"
+      - "SearchCompletedItemsV3"
+      - "SearchCompletedPartsV3"
+      - "SearchCompletedVehicleNotesV3"
+      # Customer
+      - "GetCustomer"
+      - "SearchCustomers"
+      - "SuggestCustomers / SuggestCustomersByName"
+      - "SuggestCustomerByName / SuggestCustomerByPhone"
+      # Supplier
+      - "GetSupplierById"
+      - "PagedApiResponseSupplierSearchResponse"
+      # Vehicle
+      - "GetVehicle"
+      - "SearchVehicles"
+      - "ApiResponseListVehicleSuggestResponse / ApiResponseListVehicleSuggestion / ApiResponseListVehicleSuggestionResponse"
+      - "SuggestVehicleByPlate"
+      # Employee / HR
+      - "ApiResponseEmployee"
+      - "HrmsUserById"
+      - "ApiResponseHrmsUserPaged"
+      - "SearchEmployees"
+      # Inventory
+      - "GetMdmParts / GetMdmPartsGoogleImages"
+      - "SearchProductApiResponse / SearchGroupedProductApiResponse"
+      - "SearchInventoryStockApiResponse / SearchInventoryStockMobileApiResponse"
+      - "SearchHistoryStockMobileApiResponse"
+      - "SearchPeriodStocksMobileApiResponse"
+      - "GetPeriodStockDetailMobileApiResponse"
+      - "GetMobileDeliveryApiResponse / SearchDeliveriesMobileApiResponse"
+      - "GetReceiptMobileApiResponse / SearchReceiptsMobileApiResponse"
+      - "GetTotalStockBySkus"
+      # Settlement
+      - "ApiResponseSettlementByCodeResponse"
+      - "PageResponseSettlementApiResponse"
+      # Permissions
+      - "ApiResponseUserPermissions"
+      - "ApiResponsePolicyRolePage"
+      # Chat / CometChat
+      - "GroupCoversation"
+      - "SearchInteractions"
+      - "UserTokenOutput"
+      # Transporter
+      - "SearchTenantTransporterRegistries"
+      - "GetTenantTransporterRegistryDetail"
+      - "GetTenantTransporterRegistryReferences"
+      # Feature Flags
+      - "GetFeatureFlags"
+      # Inventory Catalog (W03) — BUG-W03-014 fix 2026-07-01
+      - "searchMaterialGroups"
+      - "getMaterialGroup"
+      - "searchInternalProducts"
+      - "getInternalProduct"
+    mutations:
+      # Auth / SSO
+      - "Login"
+      - "Logout"
+      - "RefreshToken"
+      - "ForgotPasswordConfirm"
+      - "SaveToken"
+      - "DeleteUser"
+      - "TcDataPrivacyConfirmedApiResponse"
+      # Quotation
+      - "CreateQuotationAsk / CreateQuotationAskV3"
+      - "CreateSalesQuotationAsk"
+      - "QuotationPricingRequest"
+      - "SendQuotationV3"
+      # Purchase / Ordering
+      - "AddSparePartToCart"
+      - "UpdateCart"
+      - "DeleteCartItem"
+      - "AddPurchaseRequest / AddPurchaseRequestV2"
+      - "PrPlaceOrder"
+      - "CreateDirectPurchaseOrder"
+      - "UpdateDirectPurchaseOrder"
+      - "UpdateDirectPurchaseOrderAttachments"
+      - "UpdateDirectPurchaseOrderStatus"
+      # Booking
+      - "CreateBooking / CreateBookingV3"
+      - "UpdateBookingV3"
+      - "ArriveBooking / ArriveBookingV3"
+      - "ConfirmBooking / ConfirmBookingV3"
+      - "DeclineBooking / DeclineBookingV3"
+      - "CancelBooking / CancelBookingV3"
+      # Service Order
+      - "CreateServiceOrder / CreateServiceOrderV3"
+      - "UpdateServiceOrder / UpdateServiceOrderV3"
+      - "StartServiceOrder / StartServiceOrderV3"
+      - "ConfirmServiceOrderV3"
+      - "CompleteServiceOrder / CompleteServiceOrderV3"
+      - "CancelServiceOrder / CancelServiceOrderV3"
+      - "RecordServiceOrderPayment / RecordServiceOrderPaymentByCode"
+      # Customer
+      - "CreateCustomer"
+      - "UpdateCustomer"
+      # Supplier
+      - "ToggleSupplierStatus"
+      # Products
+      - "CreateProducts"
+      # Employee
+      - "CreateEmployee / UpdateEmployee"
+      - "ChangeEmployeeRole"
+      - "ProvisionEmployeeSso"
+      - "EnableEmployeeSso / DisableEmployeeSso"
+      - "SuspendEmployee / TerminateEmployee / ReactivateEmployee"
+      # Settlement
+      - "CreateSettlement / UpdateSettlement"
+      - "CancelSettlement"
+      # Vehicle / OCR
+      - "OcrUpload"
+      - "OcrCarRegistrationV3"
+      # Chat / CometChat
+      - "GroupCS / CreateRoomChat"
+      - "EndCall"
+      # Calendar / CS
+      - "AddCS / AddCSWeekend"
+      - "RoutingCandidate"
+      # Notification
+      - "MarkAsRead / MarkAsReadPush"
+      - "MarkAllAsReadApiResponse"
+      # File Upload
+      - "UploadFiles / UploadMultipleFiles"
+      - "DeleteFiles"
+      # Feedback
+      - "SubmitDocumentFeedback"
+      # Transporter
+      - "CreateTenantTransporterRegistry"
+      - "UpdateTenantTransporterRegistry"
+      - "DeleteTenantTransporterRegistry"
+      # Commerce
+      - "EcommerceConfirmed"
+      # Inventory Catalog (W03) — BUG-W03-014 fix 2026-07-01
+      - "createMaterialGroup"
+      - "updateMaterialGroup"
+      - "deleteMaterialGroup"
+    subscriptions: []
+    # REST endpoints (bounded exceptions only)
+    rest_endpoints:
+      - method: POST
+        path: "/upload"
+        purpose: "Upload file/attachment"
+      - method: GET
+        path: "/api/v2/service-orders/{id}/export-pdf"
+        purpose: "Export service order PDF"
+      - method: GET
+        path: "/api/v2/service-orders/{id}/export-image"
+        purpose: "Export service order image"
+      - method: GET
+        path: "/api/v1/settlements/{id}/export-pdf"
+        purpose: "Export settlement PDF"
+
+  # --- 6. STORES — Client-side state persistence ---
+  # Format:
+  #   store-name:
+  #     purpose: "..."
+  #     keys: [key1, key2]
+  stores:
+    app-preferences:
+      purpose: "SharedPreferences — auth/session material, profile snapshot, permission cache, payment gate flags, notification/call bootstrap và permission-denial memoization"
+      keys:
+        - "KEY_AUTH_TOKEN"
+        - "KEY_REFRESH_TOKEN"
+        - "KEY_ID_TOKEN"
+        - "KEY_FIRST_LOGIN_CHALLENGE"
+        - "KEY_IDENTIFIER"
+        - "KEY_DEVICE_TOKEN"
+        - "KEY_COMET_TOKEN"
+        - "PROFILE"
+        - "KEY_PERMISSIONS"
+        - "SUB_DOMAIN"
+        - "TC_AUTH"
+        - "KEY_PAYMENT_QR"
+        - "KEY_SUPPORTED_PAYMENT_QR"
+        - "_deniedPermissionsKey"
+        - "firebase (last notification payload)"
+        - "SessionId / callType (call bootstrap hints)"
+    hive-cache:
+      purpose: "HiveStore for GraphQL cache — query/mutation response caching"
+    feature-flag-cache:
+      purpose: ".ff_cache file in ApplicationSupportDirectory — fallback khi API lỗi"
+    app-cubit:
+      purpose: "Global app boot/auth state — openApp(), force-update gate, unread counters và shared dashboard stats"
+      state:
+        - "authStatus"
+        - "countChat"
+        - "countNotification"
+        - "shouldUpdate"
+        - "statsData"
+    main-cubit:
+      purpose: "Main shell orchestration — notification unread polling, cart bootstrap, payment gate persistence và CometChat listener setup"
+      runtime_flags:
+        - "isRegisterdNotification"
+    profile-cubit:
+      purpose: "Profile/account state — fetch current profile + business info và patch ecommerceConfirmed trong UI"
+      state:
+        - "isLoading"
+        - "businessInfo"
+        - "profile"
+
+  # --- 7. BUSINESS RULES (UI-enforcement layer) ---
+  # Different from top-level business_rules: (architecture/policy).
+  # These describe HOW the UI enforces a rule, not the rule itself.
+  # Format:
+  #   - id: BR-IMPL-PULSE-MOBILE-NNN
+  #     rule: "..."
+  #     enforcement: "Component/Cubit — how enforced in UI"
+  #     architecture_ref: "BR-PULSE-MOBILE-NNN"
+  business_rules:
+    - id: "BR-IMPL-PULSE-MOBILE-001"
+      rule: "Force-update gate — app version < minimum required"
+      enforcement: "AppCubit.openApp + AppVersionManager.shouldUpdate + App.showUpdateVersionDialog"
+      architecture_ref: "BR-PULSE-MOBILE-012"
+    - id: "BR-IMPL-PULSE-MOBILE-002"
+      rule: "First-login challenge — user phải đổi mật khẩu"
+      enforcement: "LoginCubit kiểm tra firstLoginChallenge → route ChangePasswordRoute"
+      architecture_ref: "BR-PULSE-MOBILE-013"
+    - id: "BR-IMPL-PULSE-MOBILE-003"
+      rule: "Policy-first gate — tcConfirmed = false thì block vào main"
+      enforcement: "LoginCubit.getTenantInfo/ProfileRepository.getTenantInfo + AppCubit.onTcNotYetAuthenticated + PolicyFirstCubit.tcDataPrivacyConfirmed"
+      architecture_ref: "BR-PULSE-MOBILE-011"
+    - id: "BR-IMPL-PULSE-MOBILE-004"
+      rule: "Permission-gated navigation — tab/action bị ẩn nếu thiếu quyền"
+      enforcement: "PermissionGuard tại route level + Widget.withPermission tại action level"
+      architecture_ref: "BR-PULSE-MOBILE-003"
+    - id: "BR-IMPL-PULSE-MOBILE-005"
+      rule: "Payment QR/credit hidden khi backend toggle off hoặc version < min"
+      enforcement: "MainCubit.getEnablePaymentMethodMobile → AppPreferences.KEY_PAYMENT_QR visibility gate"
+      architecture_ref: "BR-PULSE-MOBILE-005"
+    - id: "BR-IMPL-PULSE-MOBILE-006"
+      rule: "Network check trước mọi API call"
+      enforcement: "AppCheckInternetService.instance.checkConnection() trong GraphQLServiceBase._execute"
+      architecture_ref: "BR-PULSE-MOBILE-008"
+
+  # --- 8. USE CASES ---
+  # Format:
+  #   - id: UC-PULSE-MOBILE-NN
+  #     name: "..."
+  #     actor: ROLE_NAME
+  #     flow:
+  #       - "Step 1"
+  #       - "Step 2"
+  use_cases:
+    - id: "UC-PULSE-MOBILE-01"
+      name: "Auth Session Routing"
+      actor: "authenticated-user"
+      flow:
+        - "Splash/AppCubit kiểm tra force-update, auth token và tcAuth đã lưu"
+        - "Load feature flags hoặc fallback cache"
+        - "Route về login hoặc main shell từ boot; policy-first được kích hoạt sau login khi tenant chưa confirm"
+        - "Refresh token không chạy proactive lúc boot mà được xử lý lazy ở GraphQLServiceBase khi request đầu tiên gặp 401"
+      compensation: "Clear session và điều hướng về login khi refresh thất bại hoặc token không hợp lệ"
+    - id: "UC-PULSE-MOBILE-02"
+      name: "First Login and Policy Gate"
+      actor: "garage-staff"
+      flow:
+        - "Login → nếu backend trả firstLoginChallenge thì bắt user đổi mật khẩu"
+        - "Nếu không, app gọi getTenantInfo để lấy tcConfirmed"
+        - "Route vào PolicyFirstRoute nếu chưa confirmed, hoặc MainRoute nếu đã confirmed"
+      compensation: "Quay lại login hoặc cho người dùng xác nhận policy rồi tiếp tục"
+    - id: "UC-PULSE-MOBILE-03"
+      name: "Notification and Call Wakeup"
+      actor: "garage-staff"
+      flow:
+        - "FCM/APNs/PushKit/local notification payload đến ở foreground/background/terminated"
+        - "Rehydrate persisted payload/session hints"
+        - "Map payload sang local notification, chat route hoặc call screen"
+      compensation: "Best-effort fallback về home/inbox nếu payload thiếu hoặc session invalid"
+    - id: "UC-PULSE-MOBILE-04"
+      name: "Home Dashboard and Profile Bootstrap"
+      actor: "garage-staff"
+      flow:
+        - "MainRoute mount → MainCubit/ProfileCubit tải getStats, getSpendingOverview, getSpendingChart, getDashboardRealtime, getCurrentUser, getTenantInfo"
+        - "Main shell hiển thị home dashboard, unread notification badge, payment gate và profile snapshot"
+        - "User có thể mở account, personal profile, business information, delivery address, affiliated garage và profile QR"
+      compensation: "Fallback về cached profile/flags hoặc chỉ hiển thị shell tối thiểu nếu một phần widget dashboard lỗi"
+    - id: "UC-PULSE-MOBILE-05"
+      name: "Quotation Request Lifecycle"
+      actor: "garage-staff"
+      flow:
+        - "Mở RequestQuoteListRoute để search/filter danh sách quotation ask"
+        - "Vào CreateQuotationRoute để nhập vehicle info, chọn phụ tùng/dịch vụ, search catalog/part info và gửi requestQuotationPricing"
+        - "Submit createQuotation/createQuotationV3/createSalesQuotation"
+        - "Mở QuotationDetailRoute để xem chi tiết, preliminary quotation, invoice info, pinned chat context và histories"
+      compensation: "Điều chỉnh spare parts, quay lại form hoặc retry pricing/create khi request lỗi"
+    - id: "UC-PULSE-MOBILE-06"
+      name: "Purchase Request Cart and Checkout"
+      actor: "garage-staff"
+      flow:
+        - "Từ quotation hoặc ordering flow, user thêm phụ tùng vào CartRoute bằng addSparePartToCart/updateCart/deleteCartItem"
+        - "Tạo purchase request qua addPurchaseRequest hoặc addPurchaseRequestV2"
+        - "Mở list/detail purchase request để theo dõi, cancel hoặc prPlaceOrder"
+        - "Ở ConfirmOrderRoute, user chọn payment method, xem transfer information, gọi prCheckoutQR hoặc prCheckoutCC"
+      compensation: "Thay đổi payment method, retry checkout, quay lại purchase request detail hoặc huỷ yêu cầu"
+    - id: "UC-PULSE-MOBILE-07"
+      name: "Direct Purchase Order Lifecycle"
+      actor: "garage-staff"
+      flow:
+        - "Mở ListOrderRoute hoặc ListOrderV3Route để search/filter purchase order/direct purchase order"
+        - "Tạo đơn mới ở CreateNewOrderRoute, chọn spare part/product và submit createDirectPurchaseOrder"
+        - "Mở OrderDetailRoute/OrderDetailV3Route/MarketplaceOrderDetailRoute để xem chi tiết"
+        - "Cập nhật đơn, confirm delivered hoặc theo dõi parts for delivery tùy trạng thái"
+      compensation: "Quay lại draft, chỉnh line items hoặc retry update/confirm nếu backend reject"
+    - id: "UC-PULSE-MOBILE-08"
+      name: "Supplier Management"
+      actor: "garage-staff"
+      flow:
+        - "Mở SupplierListRoute để search/filter nhà cung cấp"
+        - "Tạo mới ở SupplierAddRoute hoặc chỉnh sửa ở SupplierEditRoute"
+        - "Mở SupplierDetailRoute để xem thông tin, warehouse/catalog liên quan"
+        - "Toggle trạng thái active/inactive của supplier khi cần"
+      compensation: "Giữ nguyên supplier hiện tại hoặc quay lại list khi validate/update thất bại"
+    - id: "UC-PULSE-MOBILE-09"
+      name: "Tenant Transporter Registry Management"
+      actor: "garage-staff"
+      flow:
+        - "Mở TenantTransporterRegistryListRoute để xem/search/filter danh sách xe liên kết"
+        - "Tạo hoặc chỉnh sửa registry ở form page"
+        - "Mở detail để kiểm tra thông tin và xoá registry khi cần"
+      compensation: "Quay về list hoặc retry create/update/delete nếu request lỗi"
+    - id: "UC-PULSE-MOBILE-10"
+      name: "Customer Management"
+      actor: "garage-staff"
+      flow:
+        - "Mở CustomerListRoute để search/filter khách hàng"
+        - "Tạo mới hoặc cập nhật customer ở CustomerFormRoute"
+        - "Mở CustomerDetailRoute để xem profile và interaction history"
+        - "Các flow booking/service order dùng customer suggestion để prefill thay vì nhập lại"
+      compensation: "Quay lại form, chỉnh dữ liệu hoặc chỉ dùng customer suggestion nếu create/update thất bại"
+    - id: "UC-PULSE-MOBILE-11"
+      name: "Booking V1 and V3 Lifecycle"
+      actor: "service-advisor"
+      flow:
+        - "Mở BookingListRoute để search/filter danh sách booking"
+        - "Tạo mới hoặc chỉnh sửa booking ở BookingCreateRoute/BookingEditRoute với suggest customer/vehicle và checkAvailability V1/V3"
+        - "Mở BookingDetailRoute để confirm, decline, cancel hoặc mark arrive"
+        - "Từ booking detail có thể chuyển tiếp sang tạo service order"
+      compensation: "Giữ booking ở trạng thái cũ, chỉnh lại slot hoặc quay lại search nếu availability/action không hợp lệ"
+    - id: "UC-PULSE-MOBILE-12"
+      name: "Service Order V1 Lifecycle"
+      actor: "service-advisor"
+      flow:
+        - "Mở ServiceOrderListRoute để search/filter danh sách SO V1"
+        - "Tạo mới ở ServiceOrderCreationRoute với các bước customer_vehicle, common_info, service_performed, parts_used, description_note"
+        - "Mở ServiceOrderDetailRoute để start, complete, cancel, add/edit order line và record payment"
+        - "Xuất PDF/image hoặc mở print page khi cần chia sẻ/chốt chứng từ"
+      compensation: "Quay lại draft, chỉnh parts/service hoặc retry lifecycle/payment/export"
+    - id: "UC-PULSE-MOBILE-13"
+      name: "Service Order V3 Lifecycle"
+      actor: "service-advisor"
+      flow:
+        - "Mở ServiceOrderListRouteV3 để search/filter danh sách SO V3"
+        - "Tạo mới hoặc cập nhật ở ServiceOrderCreationV3Route"
+        - "Mở ServiceOrderDetailV3Route để confirm, start, complete, cancel và sendQuotationV3"
+        - "Dùng PartOrderRoute và getTotalStockBySkus/getPartsForDeliveryV3 để hỗ trợ parts planning"
+      compensation: "Fallback về flow V1 nếu feature flag tắt, hoặc chỉnh lại quotation/parts rồi retry action"
+    - id: "UC-PULSE-MOBILE-14"
+      name: "Inventory Browser and Document Detail"
+      actor: "inventory-staff"
+      flow:
+        - "Mở InventoryListRoute để search/filter stock, receipt, delivery, service hoặc period stock"
+        - "Vào StockDetailRoute, ReceiptDetailRoute, DeliveryDetailRoute, ServiceDetailRoute hoặc PeriodStockDetailRoute để xem chi tiết chứng từ/tồn kho"
+        - "Theo dõi lịch sử stock, receipt, delivery, service usage và period stock detail ngay trên mobile"
+      compensation: "Quay về danh sách hoặc đổi filter/search khi không tìm thấy chứng từ mong muốn"
+    - id: "UC-PULSE-MOBILE-15"
+      name: "Employee Management"
+      actor: "manager"
+      flow:
+        - "Mở EmployeeListRoute để search/filter nhân sự"
+        - "Tạo mới nhân sự ở EmployeeCreateRoute hoặc cập nhật trong EmployeeDetailRoute"
+        - "Thực hiện suspend, reactivate, terminate, provisionEmployeeSso, disable/enableEmployeeSso và changeEmployeeRole"
+      compensation: "Không commit thay đổi role/trạng thái nếu validate hoặc backend policy reject"
+    - id: "UC-PULSE-MOBILE-16"
+      name: "Employee Account Directory"
+      actor: "manager"
+      flow:
+        - "Mở ListEmployeeAccountsRoute để search/filter danh sách account"
+        - "Xem detail account ở DetailEmployeeAccountsRoute"
+        - "Tải danh sách roles để đối chiếu account/role assignment"
+      compensation: "Quay lại list hoặc refresh filter/search nếu detail load lỗi"
+    - id: "UC-PULSE-MOBILE-17"
+      name: "Settlement Lifecycle"
+      actor: "cashier-accountant"
+      flow:
+        - "Mở SettlementListRoute để search/filter settlement"
+        - "Tạo mới ở SettlementCreateRoute, chỉnh sửa ở SettlementEditRoute hoặc mở SettlementDetailRoute"
+        - "Từ detail có thể update, cancel, record payment, in hoặc export settlement chứng từ"
+      compensation: "Quay về detail/list, sửa dữ liệu hoặc retry payment/export khi mutation thất bại"
+    - id: "UC-PULSE-MOBILE-18"
+      name: "Vehicle Management History"
+      actor: "garage-staff"
+      flow:
+        - "Mở VehicleManagementListRoute để search/filter xe"
+        - "Mở VehicleManagementDetailRoute để xem hồ sơ xe"
+        - "Chuyển tab sang services, parts và technical notes để xem lịch sử completed service order V3"
+      compensation: "Quay lại list hoặc đổi điều kiện tìm kiếm nếu vehicle history không đủ dữ liệu"
+    - id: "UC-PULSE-MOBILE-19"
+      name: "Vehicle OCR Capture"
+      actor: "garage-staff"
+      flow:
+        - "Camera/gallery → resize ảnh → uploadAttachment → OCR → đổ dữ liệu xe vào draft form"
+        - "User rà soát dữ liệu OCR rồi dùng lại cho quotation/booking/service order hoặc vehicle context"
+      compensation: "Reset scan và chụp/chọn ảnh lại"
+    - id: "UC-PULSE-MOBILE-20"
+      name: "Chat and Call Collaboration"
+      actor: "garage-staff"
+      flow:
+        - "Main shell bootstrap CometChat token và push token"
+        - "Mở ConversationsRoute/MessageRoute/ChatThreadRoute để chat theo purchase request, quotation hoặc support room"
+        - "Tạo room CS, addCS/addCSWeekend hoặc route support qua getRouting"
+        - "Nhận/mở outgoing, waiting hoặc ongoing call screen và đồng bộ endCall khi kết thúc"
+      compensation: "Fallback về conversations/home nếu room/session không hợp lệ hoặc call payload lỗi"
+    - id: "UC-PULSE-MOBILE-21"
+      name: "Credit Card Payment WebView"
+      actor: "garage-staff"
+      flow:
+        - "Khởi tạo paymentUrl từ backend"
+        - "Mở WebView"
+        - "Nghe callback URL hoặc JavaScript channel"
+        - "Trả kết quả về flow mua hàng"
+      compensation: "Đổi payment method, retry payment hoặc quay lại chi tiết đơn"
+    - id: "UC-PULSE-MOBILE-22"
+      name: "Feedback and Survey"
+      actor: "garage-staff"
+      flow:
+        - "Mở FeedbackRoute để vào feedback portal theo tenant subdomain hoặc upload feedback payload"
+        - "Mở SurveyFormRoute để hoàn tất survey form nội bộ khi flow cần"
+        - "App gửi file/attachment kèm feedback nếu người dùng đính kèm minh chứng"
+      compensation: "Giữ dữ liệu local trong form hoặc quay lại portal nếu upload/submit lỗi"
+    - id: "UC-PULSE-MOBILE-23"
+      name: "Change Password and Account Self Service"
+      actor: "garage-staff"
+      flow:
+        - "Từ AccountRoute/PersonalProfileRoute, user mở ChangeUserPasswordRoute để đổi mật khẩu khi đã đăng nhập"
+        - "User có thể xem profile cá nhân, thông tin garage và thực hiện deleteUser từ personal profile nếu flow được expose"
+        - "Sau logout, app clear session và quay lại login shell"
+      compensation: "Giữ session hiện tại hoặc quay lại profile khi đổi mật khẩu/xoá user không thành công"
+    - id: "UC-PULSE-MOBILE-24"
+      name: "Feature Flag and Version Gate"
+      actor: "garage-staff"
+      flow:
+        - "Boot app → fetch Remote Config + feature flags"
+        - "Gate payment QR, V3 flow, direct purchase flow và force-update UX theo env/runtime toggle"
+      compensation: "Dùng cache/fallback defaults và degrade feature nếu config fetch lỗi"
+
+  # --- 9. EXPERIENCE → CROSS BOUNDARY ---
+  experience_cross_boundary:
+    - id: "EXP-MOB-AUTH-BOOT"
+      name: "Auth Session Bootstrap"
+      entry_routes:
+        - "SplashRoute"
+        - "LoginRoute"
+        - "MainRoute"
+        - "ChangePasswordRoute"
+        - "ForgotPasswordRoute"
+        - "PhoneNumberRoute"
+        - "CreateNewPasswordRoute"
+        - "OtpRoute"
+        - "ChangeUserPasswordRoute"
+        - "PolicyFirstRoute"
+      source_files:
+        - "lib/start.dart"
+        - "lib/app/app_cubit.dart"
+        - "lib/core/repositories/auth/auth_repository.dart"
+        - "lib/core/services/graphql/graphql_service_base.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-sso-graph"
+        - "agg-garage-graph"
+        - "Firebase Remote Config"
+        - "CometChat"
+      outbound_operations:
+        - { provider: "agg-sso-graph", operations: ["login", "refreshToken", "logout", "saveToken", "userToken"] }
+        - { provider: "agg-garage-graph", operations: ["getTenantInfo", "featureFlags", "tcDataPrivacyConfirmed", "getCurrentUser"] }
+      source_of_truth: "SSO token + backend tenant/profile context; mobile stores bootstrap hints only"
+      forbidden:
+        - "Do not bypass centralized refresh token flow."
+        - "Do not let user enter operational shell before force-update, firstLoginChallenge, and tcConfirmed gates pass."
+
+    - id: "EXP-MOB-NOTIFICATION-REPLAY"
+      name: "Push Notification Tap and Read Replay"
+      entry_routes: ["SplashRoute", "NotificationRoute", "domain detail routes"]
+      source_files:
+        - "lib/start.dart"
+        - "lib/core/managers/notifications/local_notification_manager.dart"
+        - "lib/ui/main/bloc/main_cubit.dart"
+        - "lib/core/repositories/notification/notification_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "Firebase Messaging"
+        - "Local Notification"
+        - "agg-garage-graph"
+      callbacks:
+        - "FirebaseMessageReceived"
+        - "LocalNotificationLaunchReplay"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["markAsReadPush", "getUnreadCount", "getNotifications"] }
+      source_of_truth: "Backend notification read state; mobile replay payload is only navigation/bootstrap hint"
+
+    - id: "EXP-MOB-OCR-CAPTURE"
+      name: "Vehicle OCR Capture"
+      entry_routes: ["VehicleInfoRecognizerRoute"]
+      source_files:
+        - "lib/ui/vehicle_info_recognizer/**"
+        - "lib/core/repositories/media/media_repository_impl.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "ocr-car-registration"
+        - "file upload storage"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["uploadAttachment", "ocrUpload"] }
+      source_of_truth: "Backend OCR response, not local image parsing"
+      forbidden:
+        - "Do not treat local OCR draft as durable vehicle source of truth."
+
+    - id: "EXP-MOB-PAYMENT-CC"
+      name: "Credit Card Payment WebView"
+      entry_routes: ["CreditCardPaymentRoute"]
+      source_files:
+        - "lib/ui/ordering/credit_card_payment/credit_card_payment_page.dart"
+        - "lib/core/repositories/ordering/ordering_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "payment-gateway-pages"
+        - "payment provider callback"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["prCheckoutCC", "changePaymentMethod", "getPaymentByPurchase"] }
+      callbacks:
+        - "WebView URL callback containing payment/ipn"
+        - "PaymentChannel JavaScript message"
+        - "FlutterChannel JavaScript message"
+        - "AuthChannel JavaScript message"
+      source_of_truth: "Backend/payment gateway status; mobile callback only drives UX and refetch/retry"
+      forbidden:
+        - "Do not mark payment success from local optimistic state alone."
+
+    - id: "EXP-MOB-CHAT-CALL"
+      name: "Chat and Call Collaboration"
+      entry_routes: ["ConversationsRoute", "MessageRoute", "ChatThreadRoute", "WaitingCallRoute", "OutgoingCallRoute", "OngoingCallRoute"]
+      source_files:
+        - "lib/ui/comet_chat/**"
+        - "lib/core/managers/comet_chat/comet_chat_manager.dart"
+        - "lib/core/managers/notifications/voip_notification_manager.dart"
+        - "lib/ui/main/bloc/main_cubit.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-sso-graph"
+        - "CometChat"
+        - "APNs / PushKit / CallKit"
+      outbound_operations:
+        - { provider: "agg-sso-graph", operations: ["userToken", "groupConversationList", "routingCandidate", "endCall", "groupCS", "addCS", "addCSWeekend"] }
+      callbacks:
+        - "CometChatCallOrMessageEvent"
+        - "VoipPushWakeup"
+      source_of_truth: "CometChat runtime + SSO graph conversation routing metadata"
+
+    - id: "EXP-MOB-DASHBOARD-PROFILE-POLICY"
+      name: "Dashboard, Profile, Business Info and Policy"
+      entry_routes:
+        - "HomeRoute"
+        - "PersonalProfileRoute"
+        - "BusinessInformationRoute"
+        - "DeliveryAddressRoute"
+        - "AffiliatedGarageRoute"
+        - "PolicyTermsRoute"
+        - "PolicyFirstRoute"
+        - "ProfileQrRoute"
+        - "EcomerceConfirmedRoute"
+      source_files:
+        - "lib/ui/main/home/**"
+        - "lib/ui/main/account/**"
+        - "lib/ui/main/personal_profile/**"
+        - "lib/ui/main/business_information/**"
+        - "lib/ui/main/delivery_address/**"
+        - "lib/ui/main/affiliated_garage/**"
+        - "lib/ui/main/policy/**"
+        - "lib/ui/main/profile_qr/**"
+        - "lib/core/repositories/home/home_repository.dart"
+        - "lib/core/repositories/profile/profile_repository.dart"
+        - "lib/core/repositories/permission/permission_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "permission snapshot"
+        - "tenant/profile services"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["getStats", "getSpendingOverview", "getSpendingChart", "getDashboardRealtime", "getEnablePaymentMethodMobile"] }
+        - { provider: "agg-garage-graph", operations: ["getCurrentUser", "getTenantInfo", "ecommerceConfirmed", "tcDataPrivacyConfirmed", "policyClientGetPermissions"] }
+      source_of_truth: "Backend profile, tenant, permission and dashboard snapshots; mobile owns presentation/session cache only"
+
+    - id: "EXP-MOB-QUOTATION"
+      name: "Quotation and Request Quote"
+      entry_routes:
+        - "CreateQuotationRoute"
+        - "RequestQuoteListRoute"
+        - "RequestQuoteListSearchRoute"
+        - "RequestQuoteListFilterRoute"
+        - "QuotationDetailRoute"
+        - "HistoryUpdateQuotationRoute"
+      source_files:
+        - "lib/ui/quotation/**"
+        - "lib/core/repositories/quotation/quotation_repository.dart"
+        - "lib/core/repositories/request_quote/request_quote_repository.dart"
+        - "lib/core/repositories/product/product_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "gf-sales"
+        - "gf-erp-mdm"
+        - "supplier/product catalog"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchQuotationAsks", "createQuotationAsk", "createQuotationAskV3", "quotationAskByCode", "quotationAskV3ByCode", "quotationAskTenantInvoiceInfo", "quotationPricingRequest"] }
+        - { provider: "agg-garage-graph", operations: ["searchCatalog", "searchProduct", "getMdmParts", "getPreliminaryQuotation", "createSalesQuotationAsk"] }
+      source_of_truth: "Quotation ask/pricing/catalog data from backend; mobile owns request form state and route orchestration"
+
+    - id: "EXP-MOB-ORDERING-PURCHASE"
+      name: "Cart, Purchase Request and Purchase Order"
+      entry_routes:
+        - "CartRoute"
+        - "ConfirmOrderRoute"
+        - "ListPurchaseRequestRoute"
+        - "ListPurchaseRequestSearchRoute"
+        - "ListPurchaseRequestFilterRoute"
+        - "PurchaseRequestDetailRoute"
+        - "ListOrderRoute"
+        - "SearchListOrderRoute"
+        - "ListOrderV3Route"
+        - "SearchListOrderV3Route"
+        - "ListOrderFilterRoute"
+        - "CreateNewOrderRoute"
+        - "CreateNewProductRoute"
+        - "SparePartSelectionRoute"
+        - "OrderDetailRoute"
+        - "OrderDetailV3Route"
+        - "MarketplaceOrderDetailRoute"
+        - "TransferInformationRoute"
+      source_files:
+        - "lib/ui/ordering/**"
+        - "lib/core/repositories/ordering/ordering_repository.dart"
+        - "lib/core/repositories/direct_purchase/direct_purchase_repository.dart"
+        - "lib/core/repositories/supplier/supplier_repository.dart"
+        - "lib/core/repositories/product/product_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "purchase request/order services"
+        - "direct purchase service"
+        - "supplier/product catalog"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["getCart", "addSparePartToCart", "updateCart", "deleteCartItem", "addPurchaseRequest", "addPurchaseRequestV2"] }
+        - { provider: "agg-garage-graph", operations: ["searchPurchaseRequests", "getPurchaseRequestDetailByCode", "searchPurchaseOrders", "getPurchaseOrderByCode", "prPlaceOrder"] }
+        - { provider: "agg-garage-graph", operations: ["getDirectPurchaseOrderByCode", "createDirectPurchaseOrder", "updateDirectPurchaseOrder", "updateDirectPurchaseOrderStatus"] }
+      source_of_truth: "Purchase/cart/order state from backend; mobile owns transient cart/order form state and navigation"
+
+    - id: "EXP-MOB-BOOKING"
+      name: "Booking Appointment"
+      entry_routes:
+        - "BookingListRoute"
+        - "BookingSearchRoute"
+        - "BookingFilterRoute"
+        - "BookingCreateRoute"
+        - "BookingDetailRoute"
+        - "BookingEditRoute"
+      source_files:
+        - "lib/ui/booking/**"
+        - "lib/core/repositories/booking/booking_repository.dart"
+        - "lib/core/repositories/service_order/suggest_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "gf-sales"
+        - "gf-customer"
+        - "vehicle/customer suggest services"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchBookingsV3", "getBookingByIdV3", "createBooking", "createBookingV3", "updateBookingV3"] }
+        - { provider: "agg-garage-graph", operations: ["confirmBooking", "declineBooking", "cancelBooking", "arriveBooking", "checkAvailability"] }
+        - { provider: "agg-garage-graph", operations: ["suggestCustomers", "suggestCustomerByName", "suggestCustomerByPhone", "suggestVehicleByPlate"] }
+      source_of_truth: "Booking/customer/vehicle suggestions from backend; mobile owns appointment form draft and validation"
+
+    - id: "EXP-MOB-SERVICE-ORDER"
+      name: "Service Order V1/V3, Print, Payment and Parts"
+      entry_routes:
+        - "ServiceOrderListRoute"
+        - "ServiceOrderDetailRoute"
+        - "ServiceOrderCreationRoute"
+        - "ServiceOrderListFilterRoute"
+        - "ServiceOrderListSearchRoute"
+        - "CreateProductRoute"
+        - "ServiceOrderPrintRoute"
+        - "ServiceOrderRecordPaymentRoute"
+        - "AddEditOrderRoute"
+        - "ServiceOrderDetailV3Route"
+        - "ServiceOrderCreationV3Route"
+        - "ServiceOrderListFilterRouteV3"
+        - "ServiceOrderListSearchRouteV3"
+        - "ServiceOrderListRouteV3"
+        - "ServiceOrderPrintV3Route"
+        - "PartOrderRoute"
+      source_files:
+        - "lib/ui/service_order/**"
+        - "lib/ui/service_order_v3/**"
+        - "lib/core/router/service_order_resolver.dart"
+        - "lib/core/repositories/service_order/service_order_repository.dart"
+        - "lib/core/repositories/service_order/suggest_repository.dart"
+        - "lib/core/repositories/media/media_repository_impl.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "garage-rest-export-api"
+        - "garage-rest-upload-helper"
+        - "service order V1/V3 backend"
+        - "inventory stock check"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchServiceOrders", "getServiceOrderById", "createServiceOrder", "updateServiceOrder", "startServiceOrder", "completeServiceOrder", "cancelServiceOrder", "recordServiceOrderPayment"] }
+        - { provider: "agg-garage-graph", operations: ["searchServiceOrdersV3", "getServiceOrderByIdV3", "createServiceOrderV3", "updateServiceOrderV3", "startServiceOrderV3", "completeServiceOrderV3", "cancelServiceOrderV3", "confirmServiceOrderV3", "sendQuotationV3", "getTotalStockBySkus"] }
+        - { provider: "garage-rest-export-api", operations: ["export service order PDF/image"] }
+        - { provider: "garage-rest-upload-helper", operations: ["uploadFiles", "uploadMultipleFiles"] }
+      source_of_truth: "Service order lifecycle and printable/exportable documents from backend; mobile owns V1/V3 routing, draft state and export UX"
+
+    - id: "EXP-MOB-CUSTOMER"
+      name: "Customer Management"
+      entry_routes:
+        - "CustomerListRoute"
+        - "CustomerSearchRoute"
+        - "CustomerDetailRoute"
+        - "CustomerFormRoute"
+      source_files:
+        - "lib/ui/customer/**"
+        - "lib/core/repositories/customer/customer_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "gf-customer"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchCustomers", "createCustomer", "getCustomer", "updateCustomer", "searchInteractions"] }
+      source_of_truth: "Customer profile, vehicle and interaction history from backend; mobile owns form state and local validation"
+
+    - id: "EXP-MOB-SUPPLIER-TRANSPORTER"
+      name: "Supplier and Tenant Transporter Registry"
+      entry_routes:
+        - "SupplierListRoute"
+        - "SupplierSearchRoute"
+        - "SupplierDetailRoute"
+        - "SupplierAddRoute"
+        - "SupplierEditRoute"
+        - "SupplierFilterRoute"
+        - "TenantTransporterRegistryListRoute"
+        - "TenantTransporterRegistrySearchRoute"
+        - "TenantTransporterRegistryFilterRoute"
+        - "TenantTransporterRegistryDetailRoute"
+        - "TenantTransporterRegistryAddRoute"
+        - "TenantTransporterRegistryEditRoute"
+      source_files:
+        - "lib/ui/supplier/**"
+        - "lib/ui/tenant_transporter_registry/**"
+        - "lib/core/repositories/supplier/supplier_repository.dart"
+        - "lib/core/repositories/tenant_transporter_registry/tenant_transporter_registry_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "supplier/catalog service"
+        - "tenant transporter registry service"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchSuppliers", "getSupplierById", "toggleSupplierStatus"] }
+        - { provider: "agg-garage-graph", operations: ["searchTenantTransporterRegistries", "getTenantTransporterRegistryDetail", "getTenantTransporterRegistryReferences", "createTenantTransporterRegistry", "updateTenantTransporterRegistry", "deleteTenantTransporterRegistry"] }
+      source_of_truth: "Supplier/transporter registry data from backend; mobile owns search/filter/form draft state"
+
+    - id: "EXP-MOB-INVENTORY"
+      name: "Inventory, Stock, Receipt, Delivery and Service Catalog"
+      entry_routes:
+        - "InventoryListRoute"
+        - "InventorySearchRoute"
+        - "InventoryFilterRoute"
+        - "ReceiptDetailRoute"
+        - "DeliveryDetailRoute"
+        - "StockDetailRoute"
+        - "ServiceDetailRoute"
+        - "PeriodStockDetailRoute"
+      source_files:
+        - "lib/ui/inventory/**"
+        - "lib/core/repositories/inventory/inventory_repository.dart"
+        - "lib/core/repositories/inventory_stock/inventory_stock_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "inventory service"
+        - "stock/receipt/delivery services"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchInventoryStockMobile", "searchReceiptsMobile", "searchDeliveriesMobile", "searchServices", "searchPeriodStocksMobile"] }
+        - { provider: "agg-garage-graph", operations: ["getReceiptMobile", "getMobileDelivery", "getService", "searchHistoryStockMobile", "getPeriodStockDetailMobile"] }
+      source_of_truth: "Inventory stock/receipt/delivery/service data from backend; mobile owns tab/filter/search presentation state"
+
+    - id: "EXP-MOB-HRM-EMPLOYEE-ACCOUNTS"
+      name: "Human Resource and Employee Account Management"
+      entry_routes:
+        - "EmployeeListRoute"
+        - "EmployeeSearchRoute"
+        - "EmployeeFilterRoute"
+        - "EmployeeCreateRoute"
+        - "EmployeeDetailRoute"
+        - "ListEmployeeAccountsRoute"
+        - "FilterEmployeeAccountsRoute"
+        - "DetailEmployeeAccountsRoute"
+        - "SearchEmployeeAccountsRoute"
+      source_files:
+        - "lib/ui/human_resource/**"
+        - "lib/ui/employee_accounts/**"
+        - "lib/core/repositories/employee/employee_repository.dart"
+        - "lib/core/repositories/employee_accounts/employee_accounts_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "HRM service"
+        - "policy/role service"
+        - "SSO provisioning"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchEmployees", "createEmployee", "updateEmployee", "suspendEmployee", "reactivateEmployee", "terminateEmployee"] }
+        - { provider: "agg-garage-graph", operations: ["provisionEmployeeSso", "disableEmployeeSso", "enableEmployeeSso", "changeEmployeeRole", "hrmsUserById", "policyRolePage"] }
+      source_of_truth: "Employee, role and SSO account state from backend; mobile owns HRM form/search/filter state"
+
+    - id: "EXP-MOB-SETTLEMENT"
+      name: "Settlement, Insurance and Settlement Print"
+      entry_routes:
+        - "SettlementListRoute"
+        - "SettlementDetailRoute"
+        - "SettlementEditRoute"
+        - "SettlementSearchRoute"
+        - "SettlementFilterRoute"
+        - "SettlementPrintRoute"
+        - "SettlementCreateRoute"
+      source_files:
+        - "lib/ui/settlement/**"
+        - "lib/core/repositories/settlement/settlement_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "garage-rest-export-api"
+        - "settlement backend"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchSettlements", "getSettlementByCode", "createSettlement", "updateSettlement", "cancelSettlement", "recordServiceOrderPaymentByCode"] }
+        - { provider: "garage-rest-export-api", operations: ["export settlement PDF/image"] }
+      source_of_truth: "Settlement lifecycle and print/export documents from backend; mobile owns settlement draft and export UX"
+
+    - id: "EXP-MOB-VEHICLE-MANAGEMENT"
+      name: "Vehicle Management, Service History, Parts History and Technical Notes"
+      entry_routes:
+        - "VehicleManagementListRoute"
+        - "VehicleManagementSearchRoute"
+        - "VehicleManagementFilterRoute"
+        - "VehicleManagementDetailRoute"
+        - "VehicleManagementServicesRoute"
+        - "VehicleManagementServicesSearchRoute"
+        - "VehicleManagementServicesFilterRoute"
+        - "VehicleManagementPartsRoute"
+        - "VehicleManagementPartsSearchRoute"
+        - "VehicleManagementPartsFilterRoute"
+        - "VehicleManagementTechnicalNotesRoute"
+      source_files:
+        - "lib/ui/vehicle_management/**"
+        - "lib/core/repositories/vehicle_management/vehicle_management_repository.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "vehicle management service"
+        - "service order history"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["searchVehicles", "getVehicle", "getLatestServiceOrdersByVehicleV3", "searchCompletedVehicleNotesV3", "searchCompletedPartsV3", "searchCompletedItemsV3"] }
+      source_of_truth: "Vehicle profile/history from backend; mobile owns search/filter/detail presentation state"
+
+    - id: "EXP-MOB-FEEDBACK-SURVEY-DOCUMENT"
+      name: "Feedback, Survey, Document Upload and PDF/File Preview"
+      entry_routes:
+        - "FeedbackRoute"
+        - "SurveyFormRoute"
+        - "PDFRoute"
+      source_files:
+        - "lib/ui/feedback/**"
+        - "lib/ui/survey_form/**"
+        - "lib/ui/widgets/pdf/**"
+        - "lib/core/repositories/media/media_repository_impl.dart"
+        - "lib/core/services/file/file_exporter.dart"
+      boundaries:
+        - "garage-mobile"
+        - "agg-garage-graph"
+        - "garage-rest-upload-helper"
+        - "feedback-web-portal"
+        - "Document export MethodChannel"
+      outbound_operations:
+        - { provider: "agg-garage-graph", operations: ["submitDocumentFeedback", "uploadFiles", "uploadMultipleFiles", "deleteFiles"] }
+        - { provider: "feedback-web-portal", operations: ["survey/feedback WebView form"] }
+        - { provider: "native platform", operations: ["saveFileToDownloads", "exportFileToFilesApp"] }
+      source_of_truth: "Uploaded documents and feedback/survey content are backend or web-owned; mobile owns picker/export/WebView bridge state"
+
+  # --- 10. DOMAIN GLOSSARY (mobile terminology) ---
+  domain_glossary:
+    "Flavor": "Build variant cho mỗi môi trường (dev, sit, uat, pt, stag, preprod, prod) — quyết định endpoint, app title, bundle/application id"
+    "BasePage / BaseCubit / BaseState": "Lifecycle shell chuẩn hóa loading/error/processing/retry cho mọi page"
+    "GraphQL-primary": "GraphQL là transport chính cho business/auth flow; REST là bounded exception có kiểm soát"
+    "PermissionGuard": "Route-level guard — chặn navigation nếu user không có quyền tương ứng"
+    "Widget.withPermission": "Widget-level guard — ẩn/disable widget nếu user không có quyền"
+    "Policy-first": "Flow bắt buộc user xác nhận policy/T&C trước khi vào main shell"
+    "PersistentTabView": "Bottom tab bar với state persistence — không rebuild tab khi chuyển tab"
+    "Online-first": "App yêu cầu kết nối mạng cho mọi mutation; không có offline-sync"
+    "V1 / V3 flow": "Service order có 2 flow: V1 (legacy) và V3 (new) — routing được quyết định bởi feature flags runtime"
+    "CometChat bridge": "Native call adapters cho incoming/outgoing call experience trên Android (intent/receiver) và iOS (CallKit)"
+    "Single-flight token refresh": "Nhiều request đồng thời gặp 401 → chỉ 1 request refresh token, các request còn lại đợi kết quả"
+    "Nhóm vật tư hàng hoá (Material Group)": "Danh mục phân nhóm vật tư/hàng hoá, full CRUD trên mobile (CR-1782373204); flat card list KHÔNG TreeView (CR-1782381477)"
+    "Mã sản phẩm nội bộ (Internal Product)": "Danh mục sản phẩm nội bộ, VIEW-ONLY trên mobile (list + detail); Create/Import/Export chỉ trên web (CR-1782373204)"
+    "Inventory Hub": "Màn hub điều hướng 'Quản lý kho hàng' — grid 2-col 6-tile, W03 chỉ ship 2 tile (Sản phẩm + Nhóm vật tư), 4 tile còn lại hidden tới wave sau (FEAT-INV-MOBILE-MENU v2)"
+
+  # --- 11. PERMISSION MATRIX (action → roles) ---
+  permission_matrix:
+    manage-inventory-catalog: ["garage-owner", "accountant"]
+    view-dashboard: ["garage-staff"]
+    manage-booking: ["garage-staff"]
+    manage-quotation: ["garage-staff"]
+    manage-purchase-request: ["garage-staff"]
+    manage-purchase-order: ["garage-staff"]
+    manage-service-order-v1: ["garage-staff"]
+    manage-service-order-v3: ["garage-staff"]
+    manage-customer: ["garage-staff"]
+    manage-supplier: ["garage-staff"]
+    manage-inventory: ["garage-staff"]
+    manage-employee: ["garage-staff"]
+    manage-settlement: ["garage-staff"]
+    manage-vehicle: ["garage-staff"]
+    use-chat: ["garage-staff"]
+    use-call: ["garage-staff"]
+    view-notification: ["garage-staff"]
+    manage-profile: ["authenticated-user", "garage-staff"]
+    submit-feedback: ["garage-staff"]
+
+
+# ─────────────────────────────────────────────────────────────────────────
+# lessons_learned (W01 + W02 mobile incidents — curated 2026-06-29)
+#
+# Patterns DEV agent + reviewer + checklist-gate MUST consult before impl.
+# Each entry: pattern_id, evidence (bug refs), root_cause, prevention,
+# applies_to (FEAT/widget context).
+#
+# Source: Tracking/WAVE0{1,2}/BUGS.md + Execution/bugfixes/BUGFIX-BUG-*.md
+# ─────────────────────────────────────────────────────────────────────────
+lessons_learned:
+  - pattern_id: "LL-MOB-001"
+    title: "Style mobile theo spec web / trí nhớ / text AC thay vì node Figma mobile"
+    evidence: ["BUG-W01-023", "BUG-W01-024", "BUG-W01-025"]
+    severity: P1
+    root_cause: |
+      Agent style widget từ trí nhớ hoặc port từ web code/spec (frontend/gf-gms-web),
+      KHÔNG đọc node Figma mobile canonical. Hậu quả: giá trị tiền render '+540.000đ'
+      xanh/đỏ kèm prefix ± (web style) thay vì đen đậm không prefix; recap leak cross-tab;
+      bottom bar 3 nút ngang bị cắt chữ thay vì 2 nút dọc.
+    prevention: |
+      R-FID-1..4 protocol (agent-dev-garage-mobile.md L191-197): screenshot-first style,
+      mobile design canonical KHÔNG port web, diff element-by-element trước claim done,
+      evidence+test literal. Apply per-screen — KHÔNG style từ trí nhớ.
+    applies_to: ["all mobile UI features", "settlement", "service-order"]
+
+  - pattern_id: "LL-MOB-002"
+    title: "Client-side compute thay vì server snapshot — financial drift risk"
+    evidence: ["BUG-W01-290", "BUG-W01-294", "BUG-W01-295"]
+    severity: P1
+    root_cause: |
+      Mobile compute 'Tổng tiền KH thanh toán' / 'BH thanh toán' client-side từ formula
+      thay vì đọc settlementBalance.{bhPayment,customerPayment} server-authoritative.
+      Risk: mobile formula lệch BE (pre-VAT vs post-VAT) → display vs DB mismatch.
+      Vi phạm AC canonical 'computed server-side, read-only'.
+    prevention: |
+      Server-authoritative discipline — đọc API response field thay vì derive client-side
+      cho mọi monetary/computed field. Mobile binding chỉ format, KHÔNG calculation.
+      Test contract: assert displayed value === API response value (no transform).
+    applies_to: ["settlement", "service-order", "financial fields"]
+
+  - pattern_id: "LL-MOB-003"
+    title: "GraphQL selection set thiếu field → half-open feature (data persist OK, display rỗng)"
+    evidence: ["BUG-W01-295", "BUG-W01-288 (web counterpart)"]
+    severity: P1
+    root_cause: |
+      Mobile GraphQL query 'getInsuranceSettlement' thiếu 'serviceOrder.payments{...}'
+      selection set → tab Lịch sử thanh toán rỗng dù DB có data. BFF resolver return null
+      gracefully, mobile render empty state.
+    prevention: |
+      Cross-platform contract check — khi web có query field nào, mobile phải cover
+      tương đương. Per-FEAT GraphQL ops trong §6 phải verify completeness vs paired
+      BFF SDL (item #17 reviewer enforce). Test: mock response với data → assert render.
+    applies_to: ["graphql_flutter queries", "any feature reading server-derived list"]
+
+  - pattern_id: "LL-MOB-004"
+    title: "Tab state desync sau pull-to-refresh — TabController vs PageController drift"
+    evidence: ["BUG-W01-293"]
+    severity: P2
+    root_cause: |
+      DefaultTabController + local _index + TabBarView/PageController không re-sync sau
+      refresh handler rebuild body subtree. TabBar giữ user's selected index, body reset
+      về tab 0 → user nhìn nhầm context.
+    prevention: |
+      Lift TabController lên State (không dùng DefaultTabController khi có refresh).
+      Refresh handler chỉ fetch data — KHÔNG rebuild TabBarView. Test sync:
+      pump TabController.index = 2 → trigger refresh → assert body still tab 2.
+    applies_to: ["multi-tab detail pages", "TabBar + pull-to-refresh patterns"]
+
+  - pattern_id: "LL-MOB-005"
+    title: "Shared widget cross-screen render thừa khi feature flag không gate"
+    evidence: ["BUG-W01-275", "BUG-W01-292", "BUG-W02-056", "BUG-W02-057"]
+    severity: P2
+    root_cause: |
+      CostSummarySettlementWidget render trên màn 'Tạo phiếu QT BH' nhưng AC chỉ áp
+      cho không-BH variant. Settlement edit page thiếu InsuranceSettlementDetailView panel
+      mà màn Detail/Create đều có. Shared widget cross-screen không gate theo soHasInsurance.
+    prevention: |
+      Mỗi shared widget include trong page phải gate explicit theo feature flag
+      ('if (!cubit.soHasInsurance)' hoặc 'if (cubit.feature == X)'). Cross-screen
+      consistency check: Create/Edit/Detail của cùng entity phải render SAME panels
+      cho SAME flag combinations (không gap).
+    applies_to: ["any feature có 2+ screens cùng share widget", "soHasInsurance gates"]
+
+  - pattern_id: "LL-MOB-006"
+    title: "Sub-detail panel binding gap — column-level vs field-list under-spec"
+    evidence: ["BUG-W01-291"]
+    severity: P2
+    root_cause: |
+      AC chốt column-level (bảng cấp trên render 'Khấu hao VT' cho INSURANCE), nhưng
+      sub-detail panel (expansion/popup row) bind thiếu field. Display-only gap, data
+      persist OK. 3 màn mobile cùng widget shared → cùng gap.
+    prevention: |
+      Spec phải declare cả column-level VÀ sub-detail-panel field list. Reviewer
+      item 19 D-M default-pattern audit + Item 22 mobile pattern catch shared widget
+      gaps. Test golden: render expansion/popup → assert ALL fields visible per AC.
+    applies_to: ["expandable rows", "popup detail panels", "shared widgets in 3+ screens"]
+
+  - pattern_id: "LL-MOB-007"
+    title: "Figma → spec → code 3-link drift (API SDL > Figma fidelity priority)"
+    evidence: ["BUG-W02-049 (omnibus 8 sub-symptoms)"]
+    severity: P1
+    root_cause: |
+      DEV agent priority sai: API SDL > Figma component anatomy → drop field + expand 1-1 nested.
+      Prefetch-figma spec drift vs PNG canonical (3 icons mis-cataloged).
+      DEV paraphrase > verbatim copy default text. Chain: figma-spec-reviewer missed icon
+      visual ingest + checklist-gate Phase 1 only mobile + execution spec author no
+      verbatim-copy guidance + DEV no fidelity check.
+    prevention: |
+      Figma = SSOT visual canonical (icon variant, anatomy, default text). API SDL chỉ
+      contract — KHÔNG override visual. M-22 verbatim label rule + Item 19 D-M
+      + agent-figma-spec-reviewer-mobile BLOCKING gate. DEV: copy default text verbatim,
+      KHÔNG paraphrase. Icon variant verify per PNG (lucide-react/iconsax library variant).
+    applies_to: ["fidelity-critical UI", "form templates", "default content rendering"]
+
+  - pattern_id: "LL-MOB-008"
+    title: "VN layer name leak từ Figma → code → 4 file rename post-DEV (3730 LoC)"
+    evidence: ["BUG-W02-024", "BUG-W02-025", "BUG-W02-026"]
+    severity: P0
+    root_cause: |
+      Figma layer name có Vietnamese romanization (PhieuQuyetToan/BienBan/GiayUyQuyen)
+      propagate xuống code identifier vì execution spec không emit [identifier: PascalCase]
+      annotation. DEV copy verbatim VN → code → 4 file rename post-DEV cycle (3730 LoC rework).
+    prevention: |
+      M-20 (narrative) + M-27 (mechanical) — VN romanization layer PHẢI có
+      '[identifier: <PascalCase>]' annotation per glossary Product/ux/figma-glossary-vn-en.md
+      §1-§4. Reviewer Item 19 + validator R-vn-en enforce. Missing mapping → STOP
+      escalate Business Authority TRƯỚC khi gen, KHÔNG self-translate.
+    applies_to: ["any Figma node với VN layer name", "form widgets", "dialog confirmations"]
+
+  - pattern_id: "LL-MOB-009"
+    title: "AppBar title token sai (textHeadingH3 thay vì textSubtitleS4) — wave03 incident"
+    evidence: ["wave03 incident — 8/8 mobile spec invent class", "5 specs có AppBar token sai"]
+    severity: P1
+    root_cause: |
+      DEV/transform author đoán font từ screenshot ('trông to/đậm hơn → H3') thay vì
+      đọc binding từ get_design_context. AppBar nav-bar canonical = 16/SemiBold/24 =
+      textSubtitleS4 theo design system, nhưng author emit textHeadingH3 (18/Bold/26).
+    prevention: |
+      Transform v9 §1.5a binding-deterministic + M-28 invariant. AppBar title nav-bar
+      hard rule = textSubtitleS4. Reviewer Item 18 catch P0. Parser script trợ giúp:
+      python3 scripts/parse-figma-design-context.py --strict. CẤM font/màu từ pixel.
+    applies_to: ["AppBar title across all features", "CustomAppBar widget"]
+
+  - pattern_id: "LL-MOB-010"
+    title: "Path/router/repo Clean Architecture leak (web pattern → mobile spec) — wave03 incident"
+    evidence: ["wave03 — 7 specs ban đầu emit lib/features/.../presentation/screens/_screen.dart"]
+    severity: P0
+    root_cause: |
+      Author agent default theo template T1 example (lib/features/auth/login_screen.dart)
+      + lack of bundle §G.Z mobile pattern audit → emit web Clean Architecture
+      (presentation/application/data nesting) + go_router + *Screen class + separate
+      _remote_datasource layer — ALL wrong per real Garage mobile (lib/ui/{domain}/
+      {sub_feature}/{name}_page.dart flat 3-level + auto_route + *Page + repository
+      direct GraphQL call no datasource layer).
+    prevention: |
+      4-layer mechanical defense: Template T2 canonical examples + Bundle §G.Z
+      mobile pattern audit + Reviewer Item 22 BLOCKING + Validator R-mobile-path/
+      router/repo. Verify against mobile/gf-garage-app/lib/ui/inventory/inventory_list/
+      exemplar trước impl.
+    applies_to: ["all new mobile FEAT specs", "execution-spec-author output"]
+
+
+change_log:
+  - date: "2026-07-01"
+    author: "orchestrator (main agent) — BUG-W03-021 KG sync"
+    summary: "Registered 2 W03 routes/cubits missing from KG after BUG-W03-021 FIX cycle: material-group-search (MaterialGroupSearchCubit, full-page search route, TabBar status filter persists per Figma) + material-group-filter (MaterialGroupFilterCubit, full-page single-dropdown 'Thuộc nhóm' filter, Reset/Áp dụng footer). Both restore AppBar search+filter action icons on material-group-list (previously stripped behind an un-ratified TODO). Updated material-group-list description to note bottomNavigationBar slot placement (BottomNavigationBarButton canonical, BUG-W03-025) + restored AppBar actions. Bump version 13->14."
+  - date: "2026-06-29"
+    author: "Delivery Authority (sonndt — in-session DEV-side BUGS feedback loop close)"
+    summary: "Append lessons_learned section (10 pattern entries LL-MOB-001..010) — curated từ W01 + W02 mobile BUGFIX root cause analysis. Patterns cover: style leak from web (LL-001), client-side compute drift (LL-002), GraphQL selection set gap (LL-003), TabController desync (LL-004), shared widget render gating (LL-005), sub-detail panel binding (LL-006), Figma 3-link drift (LL-007), VN layer leak (LL-008), AppBar token wave03 (LL-009), Clean Arch path leak wave03 (LL-010). Consumed bởi rules-mobile/SKILL.md §6 + preflight-wave-spec-bundle.py §G.W (mobile tier only). Bump version 9→10."
+  - date: "2026-05-19"
+    author: "agent-dev-garage-mobile"
+    summary: "Added invoice-request-only coverage inside CreateQuotationRoute: page-level label_maps limited to the invoice section/form, plus quotation experience wiring for quotationAskTenantInvoiceInfo. Bump version 8→9."
+  - date: "2026-05-19"
+    author: "agent-dev-garage-mobile"
+    summary: "Documented Tenant Transporter Registry mobile feature in implementation.pages with per-page label_maps, added missing transporter queries and delete-reference experience wiring, and bumped version 7→8."
+  - date: "2026-05-19"
+    author: "agent-dev-garage-mobile"
+    summary: "Expanded experience_cross_boundary to cover all routed gf-garage-app domains: dashboard/profile, quotation, ordering, booking, service order V1/V3, customer, supplier/transporter, inventory, HRM/accounts, settlement, vehicle management, feedback/survey/document. Bump version 6→7."
+  - date: "2026-05-19"
+    author: "agent-dev-garage-mobile"
+    summary: "Tightened ui_label_map rule to include only source-backed mobile labels and exclude backend/Graph response text completely from detailed label maps. Bump version 5→6."
+  - date: "2026-05-19"
+    author: "agent-dev-garage-mobile"
+    summary: "Clarified ui_label_map ownership rule: only mobile-maintained labels are described; backend response text/options/statuses are excluded from detailed label ownership. Bump version 4→5."
+  - date: "2026-05-19"
+    author: "agent-dev-garage-mobile"
+    summary: "Expanded KG-local mobile map from baseline seed to full gf-garage-app structural domain coverage and updated ui_label_map coverage status. Bump version 3→4."
+  - date: "2026-05-19"
+    author: "agent-dev-garage-mobile"
+    summary: "Added KG-local ui_label_map reference and inlined experience_cross_boundary map for mobile cross-boundary journeys. Bump version 2→3."
+  - date: "2026-05-12"
+    author: "agent-dev-garage-mobile"
+    summary: "Repo-sync update: added forgot-password child routes from router.dart, corrected baseline counts (127 routed pages / 120 cubits / 24 GraphQL documents), split ProfileCubit ownership from MainCubit, added missing policy/force-update/first-login architecture rules, and documented F.apiUrlNoAuth in API integration. Bump version 2→3."
+  - date: "2026-05-04"
+    author: "agent-dev-garage-mobile"
+    summary: "Rewrote legacy mobile knowledge graph to match the current CarDoctor Garage mobile app."
+  - date: "2026-05-07"
+    author: "Architecture Authority"
+    summary: "Re-aligned garage-mobile KG with gms-agentic-design naming, actual aggregator boundaries, current bootstrap/payment flows and repo evidence; fixed dependency paths."
+  - date: "2026-05-07"
+    author: "Architecture Authority"
+    summary: "Aligned KG with ADR-011, mobile HLD v3 and INTEG-MOB v3; added refs, runtime events, product boundary and GraphQL-primary transport rules."
+  - date: "2026-05-11"
+    author: "agent-dev-garage-mobile"
+    summary: "Approach B migration: restructured entire KG to match hub-mobile.knowledge-graph.yaml template. Added IMPLEMENTATION section (DEV agent owned, append per wave) with pages, shared_components, navigation, api integration, stores, UI business rules, use cases, domain glossary, and permission matrix. ARCHITECTURE sections preserved from original KG with ownership model. Bump version 2→2 with new structure. Wave 0 = current baseline."
+  - date: "2026-06-30"
+    author: "agent-dev-garage-mobile (W03 Inventory Catalog)"
+    summary: "Append W03 Inventory Catalog pages (8 routes): material-group-{list,add,detail,edit}, internal-product-{list,search,filter,detail}. New cubits: MaterialGroupListCubit, AddMaterialGroupCubit, EditMaterialGroupCubit, MaterialGroupDetailCubit, MaterialGroupDeleteCubit, InternalProductListCubit, InternalProductSearchCubit, InternalProductFilterCubit, ProductDetailCubit. New repository InventoryCatalogRepository wiring 7 ops (Q1 searchMaterialGroups / Q3 getMaterialGroup / Q4 searchInternalProducts / Q5 getInternalProduct + M1 createMaterialGroup / M2 updateMaterialGroup / M3 deleteMaterialGroup). Scope per CR-1782373204 (Product CRUD/Import/Export web-only) + CR-1782381477 (flat card list KHONG TreeView). Status badge convention: GRP INACTIVE=orange, PROD INACTIVE=grey per M-trap-3. Bump version 10->11."
+  - date: "2026-06-30"
+    author: "agent-fix-garage-mobile (W03 Inventory Catalog post-DEV bug-fix)"
+    fix: "inventory-hub-routing-typed + error-to-empty-fallback"
+    summary: "Bug-fix 3 issues tren FEAT-INV-MOBILE-MENU + W03 list pages: (1) Hub tile route field migrated String -> PageRouteInfo (auto_route typed) - InventoryHubTile.route doi type, cubit instantiate const InternalProductListRoute() / const MaterialGroupListRoute(), page push qua context.pushRoute(...) thay vi context.router.pushNamed(...). (2) Register 8 W03 typed routes vao lib/core/router/router.dart (MaterialGroupList/Detail/Add/Edit + InternalProductList/Detail/Search/Filter, all guarded voi AuthGuard()). (3) UX fallback: API error tren list page (material_group + internal_product) -> render LoadEmpty (empty state) thay vi LoadError - isFailure:false + isEmpty:(state.isEmpty || (errorEntity!=null && items.isEmpty)). Deferred: regen router.gr.dart qua 'fvm dart run build_runner build' (subagent KHONG chay codegen). Bump version 11->12."
+  - date: "2026-07-01"
+    author: "agent-fix-garage-mobile (BUG-W03-014 fix)"
+    fix: "kg-domain-entities-and-api-ops-registration"
+    summary: "BUG-W03-014 — completed prior cycle's unfulfilled 'bump version 11->12' promise (metadata.version field was still 11 despite 2026-06-30 change_log entry claiming the bump — root Rule #9/#15 3-in-1 violation) AND registered remaining W03 Inventory Catalog domain metadata missing from KG: (1) §1 TYPES — added MaterialGroup, InternalProduct, MaterialGroupStatus, InternalProductStatus with field lists + dart_ref pointers (material_group_models.dart / internal_product_models.dart / material_group_status.dart / internal_product_status.dart); (2) §6 API INTEGRATION — added 4 queries (searchMaterialGroups, getMaterialGroup, searchInternalProducts, getInternalProduct) + 3 mutations (createMaterialGroup, updateMaterialGroup, deleteMaterialGroup) matching InventoryCatalogRepository verbatim GraphQL op names; (3) §10 DOMAIN GLOSSARY — added 3 terms (Nhóm vật tư hàng hoá / Mã sản phẩm nội bộ / Inventory Hub); (4) §11 PERMISSION MATRIX — added manage-inventory-catalog: [garage-owner, accountant]. Pages/routes/cubits (§2) were already covered by the 2026-06-30 entry — verified via grep, no duplicate append. Added metadata.last_reviewed field (previously absent from this KG's schema entirely). Bump version 12->13. Non-goal: did not touch ARCHITECTURE-owned top-level `entities:`/`business_rules:`/`permissions:` sections (CR-gated, out of BUG-014 scope — this fix only touched `implementation:` sub-sections which are DEV/FIX-agent owned append-style per file's OWNERSHIP MODEL header)."

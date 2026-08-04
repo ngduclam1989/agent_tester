@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Phiếu quyết toán khách hàng chi trả - SETTLEMENT-INSURANCE-001</title>
+  <style>
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: #eef1f5;
+      color: #000;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 12px;
+      line-height: 1.25;
+    }
+    .print-page {
+      width: 794px;
+      min-height: 1123px;
+      margin: 20px auto;
+      background: #fff;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, .14);
+      overflow: hidden;
+      page-break-after: always;
+    }
+    .voucher {
+      width: 606px;
+      margin: 56px auto 0;
+    }
+    .top-line {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      margin-bottom: 20px;
+    }
+    .garage-name {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .garage-address {
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .contact-block {
+      padding-top: 1px;
+      font-size: 11px;
+    }
+    .contact-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 14px;
+      margin-bottom: 4px;
+    }
+    .contact-row strong { font-weight: 800; }
+    .payer-note {
+      font-style: italic;
+      margin-top: 4px;
+    }
+    .title {
+      text-align: center;
+      font-size: 20px;
+      font-weight: 800;
+      line-height: 1;
+      margin: 0 0 8px;
+    }
+    .doc-meta {
+      text-align: center;
+      font-size: 12px;
+      font-style: italic;
+      margin-bottom: 10px;
+    }
+    .section-caption {
+      font-weight: 800;
+      font-size: 14px;
+      margin: 12px 0 5px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #111;
+      padding: 4px 5px;
+      vertical-align: top;
+    }
+    th {
+      background: #e7e8ea;
+      font-weight: 800;
+      text-align: center;
+    }
+    .info-table th,
+    .info-table td {
+      height: 23px;
+      padding: 3px 5px;
+    }
+    .customer-cell {
+      width: 170px;
+      line-height: 1.55;
+    }
+    .vehicle-pay-note {
+      text-align: center;
+      font-style: italic;
+      height: 20px;
+    }
+    .text-center { text-align: center; }
+    .text-right { text-align: right; }
+    .nowrap { white-space: nowrap; }
+    .items-table th,
+    .items-table td {
+      padding: 4px 5px;
+      height: 24px;
+    }
+    .items-table td {
+      text-align: center;
+    }
+    .items-table td.name {
+      text-align: left;
+    }
+    .note-total {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-left: 1px solid #111;
+      border-right: 1px solid #111;
+      border-top: 1px solid #111;
+      min-height: 73px;
+      margin-top: 8px;
+    }
+    .note-box {
+      border-right: 1px solid #111;
+      padding: 7px 6px;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    .total-box {
+      padding: 6px 7px 5px 8px;
+      font-size: 12px;
+    }
+    .total-row {
+      display: grid;
+      grid-template-columns: 1fr 100px;
+      gap: 8px;
+      align-items: baseline;
+      min-height: 19px;
+    }
+    .total-row .label {
+      text-align: right;
+    }
+    .total-row .value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .allocation-heading {
+      margin: 3px 0 1px;
+      font-size: 11px;
+      font-weight: 800;
+      text-align: right;
+    }
+    .allocation-row {
+      min-height: 17px;
+      font-size: 11px;
+    }
+    .allocation-row .label {
+      text-align: right;
+    }
+    .allocation-row .value {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .total-row.final {
+      min-height: 21px;
+      margin-top: 2px;
+      font-weight: 800;
+    }
+    .amount-in-words {
+      border: 1px solid #111;
+      padding: 5px 7px;
+      text-align: right;
+      font-size: 12px;
+    }
+    .amount-in-words strong {
+      font-weight: 800;
+    }
+    .signature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border-left: 1px solid #111;
+      border-right: 1px solid #111;
+      border-bottom: 1px solid #111;
+      min-height: 129px;
+    }
+    .signature-box {
+      padding: 8px 8px;
+      text-align: center;
+    }
+    .signature-box:first-child {
+      border-right: 1px solid #111;
+    }
+    .signature-title {
+      font-size: 15px;
+      font-weight: 800;
+      margin-bottom: 5px;
+    }
+    .signature-sub {
+      font-size: 12px;
+      font-style: italic;
+    }
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    @media print {
+      body { background: #fff; }
+      .print-page {
+        width: 100%;
+        min-height: 100vh;
+        margin: 0;
+        box-shadow: none;
+      }
+      .voucher {
+        margin-top: 56px;
+      }
+    }
+  </style>
+</head>
+<body>
+<section class="print-page" id="customer-print">
+    <div class="voucher">
+      <div class="top-line">
+        <div>
+          <div class="garage-name">Ngọc Như</div>
+          <div class="garage-address">Tầng 10, Tòa nhà Keangnam Landmark 72</div>
+        </div>
+        <div class="contact-block">
+          <div class="contact-row">
+            <span><strong>Liên hệ:</strong> 0311110002 - nhu</span>
+          </div>
+          <div class="contact-row">
+            <span><strong>MST:</strong> tax12345</span>
+            <span><strong>Email:</strong> nhu1234@gmail.com</span>
+          </div>
+          <div class="payer-note">Khách hàng chi trả</div>
+        </div>
+      </div>
+
+      <h1 class="title">PHIẾU QUYẾT TOÁN</h1>
+      <div class="doc-meta">Số: SET-20260416-00007 | Ngày 16 tháng 04 năm 2026</div>
+
+      <table class="info-table">
+        <tr>
+          <th>Thông tin khách hàng</th>
+          <th colspan="4">Thông tin về xe</th>
+        </tr>
+        <tr>
+          <td class="customer-cell" rowspan="5">
+            <strong>Tên KH:</strong> Ngọc Như<br>
+            <strong>SĐT KH:</strong> 0911111111
+          </td>
+          <th>Biển số xe</th>
+          <th>Hãng xe</th>
+          <th>Dòng xe</th>
+          <th>Số km đã chạy</th>
+        </tr>
+        <tr>
+          <td class="text-center">ABC1234</td>
+          <td class="text-center">Toyota</td>
+          <td class="text-center">4 Runner</td>
+          <td class="text-center">1000</td>
+        </tr>
+        <tr>
+          <td class="vehicle-pay-note" colspan="4">Khách hàng chi trả</td>
+        </tr>
+        <tr>
+          <th>Số VIN</th>
+          <th>Năm sản xuất</th>
+          <th>Phiên bản</th>
+          <th>Mức nhiên liệu</th>
+        </tr>
+        <tr>
+          <td class="text-center">123ABC</td>
+          <td class="text-center">1990</td>
+          <td class="text-center">3</td>
+          <td></td>
+        </tr>
+      </table>
+
+      <div class="section-caption">Phụ tùng sử dụng</div>
+      <table class="items-table">
+        <colgroup>
+          <col style="width: 42px">
+          <col>
+          <col style="width: 118px">
+          <col style="width: 76px">
+          <col style="width: 78px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Tên phụ tùng</th>
+            <th>Phân khúc</th>
+            <th>Số lượng</th>
+            <th>Đơn vị</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td class="name">a</td>
+            <td>Hàng liên doanh</td>
+            <td>1.00</td>
+            <td>Cái</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="note-total">
+        <div class="note-box">Ghi chú</div>
+        <div class="total-box">
+          <div class="total-row">
+            <div class="label">Thành tiền dịch vụ:</div>
+            <div class="value">0</div>
+          </div>
+          <div class="total-row">
+            <div class="label">Thành tiền phụ tùng:</div>
+            <div class="value">3.000.000</div>
+          </div>
+          <div class="allocation-heading">Phân bổ bảo hiểm</div>
+          <div class="total-row allocation-row">
+            <div class="label">Giảm trừ bồi thường:</div>
+            <div class="value">+50.000</div>
+          </div>
+          <div class="total-row allocation-row">
+            <div class="label">Khấu hao vật tư / thay mới:</div>
+            <div class="value">+50.000</div>
+          </div>
+          <div class="total-row allocation-row">
+            <div class="label">Khấu trừ BH:</div>
+            <div class="value">+50.000</div>
+          </div>
+          <div class="total-row final">
+            <div class="label">Tổng thanh toán:</div>
+            <div class="value">3.150.000</div>
+          </div>
+        </div>
+      </div>
+      <div class="amount-in-words">Tổng số tiền cần thanh toán bằng chữ: <strong>Ba triệu một trăm năm mươi nghìn đồng</strong></div>
+      <div class="signature-grid">
+        <div class="signature-box">
+          <div class="signature-title">Đại diện khách hàng</div>
+          <div class="signature-sub">Ký / Ghi rõ họ tên</div>
+        </div>
+        <div class="signature-box">
+          <div class="signature-title">Cố vấn dịch vụ</div>
+          <div class="signature-sub">Ký / Ghi rõ họ tên</div>
+        </div>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

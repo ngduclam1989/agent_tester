@@ -1,0 +1,400 @@
+# Knowledge Graph — gf-notification
+
+boundary: "gf-notification"
+version: 4
+last_updated: "2026-05-19"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Tiếp nhận notification request, render nội dung Mustache theo template, fan-out in-app tới user inbox và tạo delivery payload để publish Kafka cho tầng push/provider xử lý tiếp."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Kafka + AWS SDK + Mustache", data_store: "PostgreSQL + DynamoDB" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/integrations/INTEG-EXT-gf-notification.md"
+  integration_consumers: ["agg-garage-graph", "gf-erp-agent", "gf-inventory", "gf-sales"]
+
+apis:
+  # =====================================================================
+  # Public v1 — user inbox (NotificationController). Không có bản v2/v3,
+  # không method nào annotated @Deprecated.
+  # =====================================================================
+  - name: "list-notifications"
+    path: "/api/v1/notifications"
+    method: GET
+    purpose: "Paginated user inbox"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        page: integer
+        size: integer
+        isRead: boolean
+    response:
+      schema:
+        items: array
+
+  - name: "unread-count"
+    path: "/api/v1/notifications/unread-count"
+    method: GET
+    purpose: "Unread count for current user"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        count: integer
+
+  - name: "mark-as-read"
+    path: "/api/v1/notifications/{id}/mark-as-read"
+    method: PUT
+    purpose: "Mark single notification read"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        success: boolean
+
+  - name: "mark-as-read-push"
+    path: "/api/v1/notifications/{requestId}/mark-as-read-push"
+    method: PUT
+    purpose: "Mark by push request id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        requestId: long
+    response:
+      schema:
+        success: boolean
+
+  - name: "mark-all-as-read"
+    path: "/api/v1/notifications/mark-all-as-read"
+    method: PUT
+    purpose: "Mark all read for current user"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        updated: integer
+
+  # =====================================================================
+  # Internal SVC-to-SVC (/protected/v1) — InternalNotificationController.
+  # Không có bản kế thừa, không deprecated.
+  # =====================================================================
+  - name: "internal-create-notification"
+    path: "/protected/v1/notifications"
+    method: POST
+    purpose: "SVC-to-SVC create notification (alternative to Kafka)"
+    status: internal-only
+    active_callers: ["gf-erp-agent", "gf-inventory"]
+    replaced_by: null
+    request:
+      schema:
+        notificationType: NotificationType
+        channel: NotificationChannel
+        placeholders: object
+        campaign: string
+        recipient:
+          specificationsUser:
+            userIds: array
+            userType: TargetClient
+          tenantId: long
+          tenantType: TenantType
+          isBroadcastAllTenant: boolean
+    response:
+      schema:
+        data: "OK"
+
+  - name: "internal-create-template"
+    path: "/protected/v1/notifications/template"
+    method: POST
+    purpose: "Define new notification template (Mustache)"
+    status: internal-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        notificationType: string
+        titleTemplate: string
+        contentTemplate: string
+        targetInfos: array
+    response:
+      schema:
+        data: "OK"
+
+events:
+  produces:
+    - topic: "AC-NONPROD-DEV-NOTIFICATION"
+      payload:
+        title: string
+        content: string
+        userIds: array
+        tenant_id: long
+        tenant_type: string
+        created_at: datetime
+        target_client: string
+        target_route: string
+        route_params: object
+        type: string
+      meaning: "NotificationCreatedDto — direct KafkaTemplate.send (no outbox) from NotificationDeliveryServiceImpl.processPendingDeliveries() (5s scheduled poll); consumed by push pipeline / lambda → FCM/SNS"
+
+  consumes:
+    - topic: "AC-NONPROD-DEV-NOTIFICATION-REQUEST"
+      payload:
+        notification_type: string
+        channel: string
+        audience_type: string
+        user_ids: array
+        tenant_id: long
+        tenant_type: string
+        placeholders: object
+        campaign: string
+      action: "NotificationCreationConsumer (group gf-notification-group, MANUAL_IMMEDIATE ack mode) → InboxService.processIfNotDuplicate → NotificationService.createNotification — render Mustache template, materialize UserNotification, schedule push delivery"
+
+entities:
+  - name: "NotificationRequest"
+    type: "aggregate_root"
+    description: "Input request tạo thông báo từ protected REST hoặc Kafka, giữ tenant scope, loại thông báo, channel, audience và dữ liệu render."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "tenant_type", type: "TenantType", required: false }
+      - { name: "notification_type", type: "NotificationType", required: true, constraints: ["QUOTATION_ASK | QUOTATION_BID | PRICING_REQUEST | PRICING_PROPOSAL | PRICING_STRUCTURE | QUOTATION_ASK_UPDATE | CREATE_PURCHASE_REQUEST | SALE_ORDER | ORDER_CREATED | ORDER_DELIVERING | ORDER_DELIVERED | INVENTORY_RECEIPT_COMPLETED | INVENTORY_RECEIPT_REVERSED | INVENTORY_DELIVERY_COMPLETED | INVENTORY_DELIVERY_REVERSED | PRELIMINARY_QUOTATION_CREATED | PRELIMINARY_QUOTATION_UPDATED | BOOKING_CREATED | BOOKING_CANCELLED_BY_DRIVER | BOOKING_AUTO_CANCELLED_UNCONFIRMED | BOOKING_AUTO_CANCELLED_NO_SHOW | INVENTORY_STOCK_ADJUSTED | QUOTATION_CONFIRMED_BY_DRIVER_PLUS | QUOTATION_DECLINED_BY_DRIVER_PLUS | OTHER"] }
+      - { name: "channel", type: "NotificationChannel", required: true, constraints: ["INAPP | PUSH | BOTH"] }
+      - { name: "audience_type", type: "TargetClient", required: false, constraints: ["DRIVER | VENDOR | GARAGE | CARDOCTOR"] }
+      - { name: "user_ids", type: "JSON Set<String>", required: false }
+      - { name: "placeholders", type: "JSON Map<String,Object>", required: false }
+      - { name: "campaign", type: "VARCHAR(500)", required: false }
+    relationships:
+      - { target: "Notification", type: "one_to_many", description: "Một request có thể tạo notification đã render qua request_id." }
+    invariants:
+      - "notification_type và channel là bắt buộc trong entity; DTO hiện chỉ validate notificationType/placeholders, channel có thể null ở request object nếu caller bỏ qua."
+      - "audience_type được suy ra từ recipient: explicit user type, tenant GARAGE hoặc broadcast GARAGE."
+      - "placeholders lưu JSON dùng để validate và render template Mustache."
+
+  - name: "Notification"
+    type: "aggregate_root"
+    description: "Thông báo đã render nội dung, route target và lifecycle stage để scheduler tạo inbox hoặc hoàn tất push request."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "request_id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "tenant_type", type: "TenantType", required: false }
+      - { name: "title", type: "TEXT", required: false }
+      - { name: "content", type: "TEXT", required: false }
+      - { name: "target_client", type: "TargetClient", required: false, constraints: ["DRIVER | VENDOR | GARAGE | CARDOCTOR"] }
+      - { name: "target_route", type: "TEXT", required: false }
+      - { name: "route_params", type: "JSON Map<String,Object>", required: false }
+      - { name: "next_stage", type: "NotificationStage", required: false, constraints: ["INITIAL | BUILDING_INAPP | PROCESSING | PROCESSED"] }
+    relationships:
+      - { target: "NotificationRequest", type: "many_to_one", description: "Notification thuộc một request qua request_id." }
+      - { target: "NotificationDelivery", type: "one_to_many", description: "Notification có thể tạo delivery row cho push channel." }
+      - { target: "UserNotification", type: "one_to_many", description: "Notification được fan-out thành nhiều inbox row theo user." }
+    invariants:
+      - "INAPP và BOTH đặt next_stage = BUILDING_INAPP để scheduler xử lý."
+      - "PUSH tạo delivery ngay và đặt next_stage = PROCESSED."
+      - "In-app claim query chuyển BUILDING_INAPP sang PROCESSING trước khi service tạo UserNotification."
+
+  - name: "NotificationDelivery"
+    type: "entity"
+    description: "DB queue cho push delivery payload; scheduler claim row rồi publish raw JSON lên Kafka notification topic."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "notification_id", type: "BIGINT", required: true }
+      - { name: "status", type: "DeliveryStatus", required: false, constraints: ["PENDING | SENDING | SENT | FAILED"] }
+      - { name: "data", type: "JSON NotificationCreatedDto", required: false }
+      - { name: "error_message", type: "TEXT", required: false }
+      - { name: "attempt_count", type: "INTEGER", required: false }
+      - { name: "lock_until", type: "TIMESTAMP", required: false }
+      - { name: "sent_at", type: "TIMESTAMP", required: false }
+    relationships:
+      - { target: "Notification", type: "many_to_one", description: "Delivery thuộc một notification qua notification_id." }
+    invariants:
+      - "Entity khởi tạo status PENDING và attempt_count = 0."
+      - "Claim query lấy PENDING hoặc SENDING đã hết lock, set SENDING, tăng attempt_count và lock 30 giây."
+      - "Kafka send thành công mới mark SENT; vượt max attempts thì mark FAILED."
+
+  - name: "NotificationTemplate"
+    type: "aggregate_root"
+    description: "Template global theo notification_type, chứa title/content Mustache và danh sách routing definition."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "notification_type", type: "VARCHAR(255)", required: true, constraints: ["unique"] }
+      - { name: "title_template", type: "TEXT", required: false }
+      - { name: "content_template", type: "TEXT", required: false }
+    relationships:
+      - { target: "NotificationRoutingDefinition", type: "one_to_many", description: "Một template có nhiều route theo client type." }
+    invariants:
+      - "notification_type là unique và không tenant-scoped."
+      - "Template phải tồn tại theo NotificationType.name() trước khi tạo notification."
+      - "title_template và content_template được validate đủ key trước khi render."
+
+  - name: "NotificationRoutingDefinition"
+    type: "entity"
+    description: "Định nghĩa target route và route param keys cho từng template và TargetClient."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "template_id", type: "BIGINT", required: true }
+      - { name: "client_type", type: "TargetClient", required: true, constraints: ["DRIVER | VENDOR | GARAGE | CARDOCTOR"] }
+      - { name: "target_route", type: "VARCHAR(500)", required: false }
+      - { name: "param_keys", type: "JSON Set<String>", required: false }
+    relationships:
+      - { target: "NotificationTemplate", type: "many_to_one", description: "Routing definition thuộc một template qua template_id." }
+    invariants:
+      - "Mỗi param key khai báo trong param_keys phải có trong request placeholders."
+      - "route_params luôn thêm requestId của NotificationRequest trước khi bổ sung param keys từ placeholders."
+
+  - name: "UserNotification"
+    type: "entity"
+    description: "Inbox record của từng IAM user, phục vụ list, unread count và mark read."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "notification_id", type: "BIGINT", required: true }
+      - { name: "user_id", type: "VARCHAR(255)", required: false }
+      - { name: "is_read", type: "BOOLEAN", required: false }
+      - { name: "read_at", type: "TIMESTAMP", required: false }
+    relationships:
+      - { target: "Notification", type: "many_to_one", description: "UserNotification thuộc một notification qua notification_id." }
+    invariants:
+      - "Entity khởi tạo is_read = false."
+      - "List và unread count lọc theo JWT sub được truyền thành user_id."
+      - "markAsReadPush tìm theo current user id và notification request id."
+
+  - name: "Inbox"
+    type: "aggregate_root"
+    description: "Inbox idempotency cho Kafka inbound notification request, dùng messageId làm khóa chính để chống xử lý trùng."
+    attributes:
+      - { name: "id", type: "VARCHAR(255)", required: true, constraints: ["primary key"] }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "source_service", type: "VARCHAR(100)", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "received_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "processed_at", type: "TIMESTAMPTZ", required: false }
+      - { name: "status", type: "VARCHAR(20)", required: true, constraints: ["RECEIVED | PROCESSING | PROCESSED"] }
+    relationships: []
+    invariants:
+      - "id là KafkaMessageWrapper.messageId khi messageId có mặt."
+      - "processIfNotDuplicate tạo status PROCESSING và mark PROCESSED sau callback thành công."
+      - "Cleanup scheduler xóa inbox PROCESSED cũ hơn retention-days."
+
+  - name: "UserDevice"
+    type: "entity"
+    description: "DynamoDB model tra cứu device token theo user, tenant hoặc source system; hiện chưa wire vào delivery path chính."
+    attributes:
+      - { name: "deviceId", type: "String", required: true, constraints: ["partition key"] }
+      - { name: "userId", type: "String", required: false, constraints: ["GSI user_id-index partition key"] }
+      - { name: "sourceSystem", type: "String", required: false, constraints: ["GSI source_system-index partition key"] }
+      - { name: "tenantId", type: "Number", required: false, constraints: ["GSI tenant-index partition key"] }
+      - { name: "tenantType", type: "String", required: false, constraints: ["GSI tenant-index sort key"] }
+      - { name: "fcmToken", type: "String", required: false }
+      - { name: "endpointArn", type: "String", required: false }
+    relationships: []
+    invariants:
+      - "UserDeviceRepository chỉ lookup DynamoDB; source không expose API register/unregister device trong service này."
+
+business_rules:
+  - { id: "BR-GF-NOTIFICATION-001", description: "Mỗi notification request phải tìm được NotificationTemplate theo NotificationType.name() trước khi render và lưu notification.", cornerstone: true, enforcement_point: "NotificationServiceImpl.findAndValidateTemplate" }
+  - { id: "BR-GF-NOTIFICATION-002", description: "Template title/content và routing param_keys phải được validate đủ dữ liệu trong placeholders; thiếu key thì throw InvalidDataException.", cornerstone: true, enforcement_point: "NotificationServiceImpl.validateTemplates + validateRoutingDefinitions + TemplateValidator" }
+  - { id: "BR-GF-NOTIFICATION-003", description: "Audience resolution ưu tiên explicit userIds/userType, sau đó tenantId + tenantType GARAGE, sau đó broadcastAllTenant thành GARAGE; không suy ra được thì throw InvalidDataException.", cornerstone: true, enforcement_point: "NotificationServiceImpl.getAudienceType + extractUserIds" }
+  - { id: "BR-GF-NOTIFICATION-004", description: "Channel PUSH tạo NotificationDelivery ngay và set Notification.nextStage = PROCESSED; channel INAPP hoặc BOTH set BUILDING_INAPP để scheduler xử lý.", cornerstone: true, enforcement_point: "NotificationServiceImpl.handleNotificationChannel + handlePushChannel" }
+  - { id: "BR-GF-NOTIFICATION-005", description: "Channel BOTH chỉ tạo push delivery sau khi in-app fan-out tạo UserNotification theo explicit users hoặc tenant users.", cornerstone: true, enforcement_point: "NotificationServiceImpl.createUserNotificationForSpecificUserIds + createUserNotificationForTenantId + createUserNotificationForCarDoctor" }
+  - { id: "BR-GF-NOTIFICATION-006", description: "In-app scheduler claim batch bằng FOR UPDATE SKIP LOCKED, đổi BUILDING_INAPP sang PROCESSING, rồi gọi createUserNotification cho từng notification.", cornerstone: true, enforcement_point: "NotificationRepository.claimBatchForInAppProcessing + NotificationInAppProcessingJob" }
+  - { id: "BR-GF-NOTIFICATION-007", description: "Delivery scheduler claim PENDING hoặc timed-out SENDING deliveries bằng FOR UPDATE SKIP LOCKED, set lock_until=now()+30s và attempt_count+=1. KafkaTemplate.send().get() sync ack, mark SENT khi thành công. NOTE: failure marking code commented out — failed sends KHÔNG mark FAILED, delivery retry cho đến maxAttempts (default 3) nhưng behavior vượt max không rõ.", cornerstone: true, enforcement_point: "NotificationDeliveryRepository.claimBatch + NotificationDeliveryServiceImpl.processPendingDeliveries" }
+  - { id: "BR-GF-NOTIFICATION-008", description: "Kafka inbound có messageId phải đi qua Inbox idempotency; duplicate messageId bị skip, message thiếu notificationType được ack và bỏ qua.", cornerstone: true, enforcement_point: "NotificationCreationConsumer.consume + InboxService.processIfNotDuplicate" }
+  - { id: "BR-GF-NOTIFICATION-009", description: "Public list, unread count và mark-all-as-read lấy userId từ JWT sub. markAsRead(id) KHÔNG validate user ownership — bất kỳ user nào mark read arbitrary ID. markAsReadPush(requestId) CÓ validate qua findByUserIdAndNotificationRequestId. Asymmetry: push path an toàn, id path thiếu authorization check.", cornerstone: false, enforcement_point: "NotificationController.markAsRead + markAsReadPush + UserNotificationServiceImpl" }
+  - { id: "BR-GF-NOTIFICATION-010", description: "NotificationTemplate là cấu hình global theo notification_type unique; service không có tenant-scoped template.", cornerstone: false, enforcement_point: "NotificationTemplate entity + NotificationTemplateServiceImpl" }
+  - { id: "BR-GF-NOTIFICATION-011", description: "InboxService cleanup scheduled cron (default 0 0 3 * * ? — 3 AM daily) xoá processed inbox records cũ hơn retention-days (default 7 ngày) để ngăn table bloating.", cornerstone: false, enforcement_point: "InboxService.cleanupOldEntries + inbox.retention-days config" }
+  - { id: "BR-GF-NOTIFICATION-012", description: "NotificationCreationConsumer bỏ qua message có notificationType null — acknowledge mà không process, chỉ log warning. Không gây error hay retry.", cornerstone: false, enforcement_point: "NotificationCreationConsumer.consume (null notificationType check)" }
+  - { id: "BR-GF-NOTIFICATION-013", description: "Notification delivery publish trực tiếp qua KafkaTemplate (KHÔNG qua outbox pattern). Reliability dựa vào delivery scheduler retry + sync ack (.get()), không có separate outbox table. Khác biệt architectural so với gf-hrms/gf-marketing dùng outbox.", cornerstone: true, enforcement_point: "NotificationDeliveryServiceImpl.processPendingDeliveries + KafkaTemplate direct send" }
+
+workflows:
+  - name: "NotificationInAppProcessingJob"
+    type: CRON_BATCH_PROCESSOR
+    description: "Scheduled batch claim Notification ở stage BUILDING_INAPP → PROCESSING rồi fan-out UserNotification (inbox row) cho từng IAM user. Không phải outbox relay phụ trợ — đây là cơ chế tạo inbox cốt lõi của service."
+    steps:
+      - step: 1
+        service: "gf-notification"
+        action: "Triggered by Spring @Scheduled (NotificationInAppProcessingJob) định kỳ — claim batch theo BR-006"
+      - step: 2
+        service: "gf-notification"
+        action: "NotificationRepository.claimBatchForInAppProcessing — SELECT FOR UPDATE SKIP LOCKED (next_stage=BUILDING_INAPP) → set PROCESSING (BR-006)"
+      - step: 3
+        service: "gf-notification"
+        action: "NotificationServiceImpl.createUserNotification — fan-out theo explicit users / tenant users / CarDoctor (BR-005)"
+      - step: 4
+        service: "gf-notification"
+        action: "Set next_stage=PROCESSED sau khi inbox tạo xong"
+
+  - name: "NotificationDeliveryJob"
+    type: CRON_BATCH_PROCESSOR
+    description: "Scheduled batch claim NotificationDelivery rồi publish raw NotificationCreatedDto JSON sang Kafka topic notification (push pipeline / lambda → FCM/SNS). Đây là cơ chế delivery cốt lõi của service, không phải outbox relay phụ trợ."
+    steps:
+      - step: 1
+        service: "gf-notification"
+        action: "Triggered by Spring @Scheduled (NotificationDeliveryJob → NotificationDeliveryServiceImpl.processPendingDeliveries). fixedDelay là property-driven default 5000ms (scheduler.notification.delivery-job.fixed-delay trong application.yaml)."
+      - step: 2
+        service: "gf-notification"
+        action: "NotificationDeliveryRepository.claimBatch — SELECT FOR UPDATE SKIP LOCKED (status=PENDING hoặc SENDING với lock_until đã hết) → set SENDING + tăng attempt_count + lock 30s (BR-007)"
+      - step: 3
+        service: "gf-notification → Kafka (notification topic)"
+        action: "KafkaTemplate.send(NotificationCreatedDto).get() (sync ack) — direct send không qua outbox (events.produces.meaning)"
+      - step: 4
+        service: "gf-notification"
+        action: "Mark SENT khi ack thành công. Vượt max attempts: ở tick kế tiếp processPendingDeliveries kiểm tra attemptCount > maxAttempts (guard trước send) và mark FAILED — KHÔNG trong catch block của send exception (bulkMarkFailed trong catch hiện đang comment out)."
+
+integrations:
+  inbound:
+    - type: EVENT
+      source: "gf-sales"
+      purpose: "Request notification dispatch via notification-request Kafka topic (outbox pattern)"
+    - type: API
+      source: "gf-erp-agent / gf-inventory"
+      purpose: "Direct dispatch — POST /protected/v1/notifications (GfNotificationClient / NotificationClient)"
+    - type: API
+      source: "Mobile / Web app"
+      purpose: "User inbox read + mark-as-read via /api/v1/notifications/*"
+    - type: EVENT
+      source: "Push pipeline / lambda"
+      purpose: "Pickup NotificationCreatedDto from notification topic → push via FCM/SNS"
+
+  outbound:
+    - type: API
+      target: "gf-hrms"
+      purpose: "Fetch CARDOCTOR-broadcast employee list — POST /protected/v1/employees/search"
+    - type: API
+      target: "ct-saas-tenant"
+      purpose: "Tenant user list for tenant-broadcast — GET /protected/v1/saas-tenant/users?tenantIds=..."
+    - type: EVENT
+      target: "Kafka — notification topic"
+      purpose: "Publish NotificationCreatedDto for push pipeline (direct, NOT via outbox)"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho notification requests, notifications, deliveries, user inbox, templates, routing definitions và inbox idempotency.", config_ref: "spring.datasource.*, DB_SCHEMA" }
+  - { name: "Flyway", type: "database_migration", purpose: "Migration classpath (10 files V1.0.0__initialize → V1.0.9__insert_quotation_driver_plus_notification_templates trong src/main/resources/db/migration/). LƯU Ý: spring.flyway.enabled=false trong application.yaml — runtime tắt (schema được quản lý ngoài Flyway tự động run), nhưng artifact + migration scripts vẫn trên classpath.", config_ref: "flyway-core, flyway-database-postgresql, spring.flyway.*" }
+  - { name: "DynamoDB", type: "nosql", purpose: "Lookup user device token theo userId, tenantId/tenantType hoặc sourceSystem qua UserDeviceRepository.", config_ref: "dynamo.table.device-token, AWS_REGION" }
+  - { name: "Kafka", type: "broker", purpose: "Consume notification request và publish raw delivery payload cho downstream provider.", config_ref: "kafka.bootstrap-servers, kafka.topics.notification-request, kafka.topics.notification" }
+  - { name: "AWS SNS/SQS", type: "messaging_client", purpose: "AwsConfig tạo SNS/SQS clients và SNS topic ARN config, nhưng source hiện chưa thấy path chính dùng để gửi notification.", config_ref: "spring.cloud.aws.*, aws.sns.topic-arn.notification" }
+  - { name: "Mustache", type: "template_engine", purpose: "Render title/content template từ NotificationTemplate bằng placeholders trong request.", config_ref: "BeanConfig MustacheFactory" }
+  - { name: "Spring Retry", type: "resilience", purpose: "Retry abstraction (spring-retry + spring-aspects) cho call tới external service (HrmClient/TenantClient) và Kafka send.", config_ref: "spring-retry, spring-aspects" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Dual auth: /protected/* bằng x-api-key (ApiKeyAuthenticationFilter, INTERNAL_API_KEY), /api/* bằng JWT; SecurityUtils cho audit trail và tenant context trong JWT context.", config_ref: "com.actechx.common:spring-security-starter, actechx.security.*, internal-service.api-key" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho REST controllers.", config_ref: "springdoc-openapi-starter-webmvc-ui:2.8.9" }
+  - { name: "Actuator + OTLP", type: "observability", purpose: "Expose health/metrics/prometheus và tracing theo Spring Boot actuator/OTLP starter.", config_ref: "spring.profiles.include=otlp, actuator dependencies" }
+
+
+change_log:
+  - { date: "2026-05-19", summary: "Cross-review với INTEG-EXT-gf-notification.md: sửa active_callers internal-create-notification từ [gf-marketing] sang [gf-erp-agent, gf-inventory] (D2/D11 — gf-marketing REST path dead code); active_callers internal-create-template → [] (D11); sửa request schema internal-create-notification theo actual NotificationRequestDto (D3/D5); sửa response schemas cả 2 internal endpoints sang ApiResponse<String> 'OK' (D5); sửa integrations.inbound EVENT source → gf-sales only, API source → gf-erp-agent/gf-inventory (D2); sửa integration_ref → INTEG-EXT, integration_consumers thêm callers (D6); sửa spring-security-starter purpose dual auth (D7).", author: "Architecture Authority" }
+  - { date: "2026-05-18", summary: "BR review fix: sửa BR-007 (delivery failure handling gap — commented out code, lock mechanism details), BR-009 (markAsRead vs markAsReadPush asymmetry); thêm BR-011 (inbox cleanup cron), BR-012 (consumer null notificationType silent drop), BR-013 (direct Kafka send no outbox).", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Thêm 2 workflow entries CRON_BATCH_PROCESSOR (NotificationInAppProcessingJob + NotificationDeliveryScheduler) cho 2 scheduled job cốt lõi.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Sync KG với source: (1) workflow rename NotificationDeliveryScheduler → NotificationDeliveryJob khớp class name; clarify fixedDelay là property-driven default 5000ms và FAILED transition xảy ra ở next-tick attempt-count check (không phải send catch — bulkMarkFailed đang comment out); (2) mark-as-read-push requestId type long thay vì string; (3) AC-NONPROD-DEV-NOTIFICATION payload bổ sung tenant_id/tenant_type/created_at; (4) consumer action method createNotification thay vì create; ack mode MANUAL_IMMEDIATE; (5) bổ sung Flyway/SpringDoc/Spring Retry vào dependencies (Flyway có 10 migration files nhưng spring.flyway.enabled=false runtime).", author: "Architecture Authority" }
+  - { date: "2026-05-14", summary: "Sync apis với source: thêm status/active_callers/replaced_by cho 7 entries theo RULE-08; 5 public /api/v1/notifications/* → status=active, callers=[agg-garage-graph]; 2 internal /protected/v1/notifications + /template → status=internal-only, callers=[gf-marketing]. Sửa list-notifications request schema (page/size/isRead thay vì pagination object) khớp @RequestParam của NotificationController.", author: "Architecture Authority" }

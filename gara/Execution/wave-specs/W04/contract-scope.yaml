@@ -1,0 +1,62 @@
+# W04 — Contract scope cho Inventory V2: Khởi tạo kho (EP-INVENTORY-ACCOUNTING-PERIOD + EP-INVENTORY-OPENING-BALANCE + EP-INVENTORY-CATALOG narrow supplement)
+#
+# Tier-1 in-play scope (7 contracts):
+# - 3 producer-side (Architecture/api/*) — AP + OB + BFF SDL.
+# - 2 data model (internal, producer self-sign) — AP schema + OB + stock-ledger daily snapshot ADR-020.
+# - 2 INTEG narrative — gf-accounting lock-check advisory §6 + gf-inventory OB §13b cascade.
+# - FE INTEG (garage-web + garage-mobile) tracked qua BFF SDL consumer edge — không tách contract riêng (per W02 minimal-core pattern).
+#
+# Brownfield ACTIVE-only — không lifecycle DRAFT/RATIFY.
+# Append-only — sửa entry sau khi wave start chỉ qua decision entry trong _decisions.md (PROTOCOL §DEV W1).
+
+wave: W04
+contracts:
+  - path: Architecture/api/gf-accounting-api.md
+    producer: boundaries/gf-accounting
+    consumers:
+      - bff-experiences/agg-garage-graph
+      - boundaries/gf-inventory
+    kind: api
+    note: "AP module §4 (V4-AP-1..6 CRUD accounting-period tree + V4-AP-LC lock-check advisory S2S x-api-key). BFF consume 5 endpoint FE-facing (V4-AP-2 tree / V4-AP-3 detail / V4-AP-4 update / V4-AP-5 create / V4-AP-6 delete); gf-inventory consume V4-AP-LC S2S internal cho OB write-path lock-check (ADR-021 fail-OPEN). Boundary correction 2026-06-23 — AP master moved từ gf-inventory sang gf-accounting (ADR-019)."
+
+  - path: Architecture/api/gf-inventory-api.md
+    producer: boundaries/gf-inventory
+    consumers:
+      - bff-experiences/agg-garage-graph
+    kind: api
+    note: "OB module §13b (W04-1..W04-7 search/verify-import/import/update/delete-line/delete-lines-bulk) + §13c stock-ledger daily snapshot cascade (ADR-020). BFF passthrough thuần 6 endpoint FE-facing (skip W04-2 template — removed 2026-07-06 → FE bundled asset). Idempotency-Key mandatory cho import (ADR-022). Defense-in-depth cap 500 rows tại BFF (ERR-INV-048)."
+
+  - path: Architecture/api/agg-garage-graph-graphql.md
+    producer: bff-experiences/agg-garage-graph
+    consumers:
+      - web-experiences/garage-web
+      - mobile-experiences/garage-mobile
+    kind: graphql
+    note: "§3e Accounting Period (5 FE-facing ops AP-Q2/Q3/M1/M2/M3 + AP-Q4 S2S internal) + §3g Opening Balance (6 ops W04-Q1/M1..M5). Web GMS consume toàn bộ AP + OB (11 ops). Mobile chỉ consume W04-Q1 view-only (partial per INTEG-MOB §3.4b). @FeatureOn('Inventory:InventoryV2') resolver-level gate. Tree-cap 500-node BFF-enforce (ACCOUNTING_PERIOD_TREE_OVERSIZE). Pattern TENANT-USERS enrichment cho createdByName/updatedByName."
+
+  - path: Architecture/data/gf-accounting-data-model.md
+    producer: boundaries/gf-accounting
+    consumers: []
+    kind: integration
+    note: "AP schema §2ter (accounting_period entity + recursive CTE tree query + CHECK constraint year = EXTRACT(YEAR FROM start_date) + idx_ap_tenant_name Vietnamese collation cho name LIKE unaccent search). Flyway migration V{N+1} additive. Internal schema — producer self-sign baseline, không cross-boundary consumer."
+
+  - path: Architecture/data/gf-inventory-data-model.md
+    producer: boundaries/gf-inventory
+    consumers: []
+    kind: integration
+    note: "OB schema §13b (opening_balance_line + import_history) + §13c stock-ledger daily snapshot ADR-020 (stock_ledger_daily + cascade retroactive khi edit OB backdated). Flyway V{N+1} additive. Internal schema — producer self-sign baseline."
+
+  - path: Architecture/integrations/INTEG-EXT-gf-accounting.md
+    producer: boundaries/gf-accounting
+    consumers:
+      - boundaries/gf-inventory
+      - bff-experiences/agg-garage-graph
+    kind: integration
+    note: "§6 lock-check advisory narrative (V4-AP-LC S2S x-api-key, LRU cache 30s BFF-side, fail-OPEN pattern ADR-021 khi 502/503 → warningLockCheckUnavailable=true bubble lên FE). Consumer chain: gf-inventory OB verify/import gọi V4-AP-LC trước write."
+
+  - path: Architecture/integrations/INTEG-EXT-gf-inventory.md
+    producer: boundaries/gf-inventory
+    consumers:
+      - bff-experiences/agg-garage-graph
+    kind: integration
+    note: "§13b OB verify-import-commit 3-step narrative (BFF idempotency-key propagation X-Idempotency-Key: OB-IMPORT-{tenantId}-{uuid}) + §13c stock-ledger cascade audit trail (StockLedgerCascadeAudit shape trong ImportOpeningBalancesResult.cascadedKeys[])."

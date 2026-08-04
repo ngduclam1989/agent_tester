@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Giấy ủy quyền</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #f2f3f5;
+      color: #000;
+      font-family: "Times New Roman", Times, serif;
+      font-size: 14px;
+      line-height: 1.3;
+    }
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 16px auto;
+      background: #fff;
+      padding: 21mm 33mm 18mm;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, .12);
+    }
+    .national-header {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .national-header .sub { font-weight: 700; }
+    .decor-line {
+      width: 112px;
+      height: 12px;
+      margin: 6px auto 0;
+      border-top: 1px dashed #333;
+    }
+    .decor-line span { display: none; }
+    h1 {
+      margin: 0 0 6px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.25;
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+    .meta {
+      margin: 0 0 16px;
+      text-align: right;
+      font-style: italic;
+    }
+    .section { margin: 8px 0 0; }
+    .section-title {
+      margin: 0 0 3px;
+      font-weight: 700;
+    }
+    .grid-2 {
+      display: block;
+      width: 100%;
+    }
+    .field,
+    .full-field {
+      display: flex;
+      align-items: baseline;
+      min-height: 23px;
+      margin-bottom: 0;
+    }
+    .field .label,
+    .full-field .label {
+      flex: 0 0 auto;
+      padding-right: 2px;
+      font-weight: 400;
+    }
+    .field .label::after,
+    .full-field .label::after { content: ":"; }
+    .field .value,
+    .full-field .value {
+      flex: 1 1 auto;
+      min-width: 72px;
+      min-height: 17px;
+      padding: 0 3px 1px;
+      border-bottom: 1px dotted #666;
+      word-break: break-word;
+    }
+    .meta .full-field {
+      justify-content: flex-end;
+      min-height: 20px;
+    }
+    .meta .full-field .label {
+      font-weight: 400;
+    }
+    .meta .full-field .value {
+      flex: 0 0 auto;
+      min-width: 0;
+      border-bottom: 0;
+    }
+    .paragraph { margin: 8px 0 0; text-align: justify; text-indent: 34px; }
+    ol.terms { margin: 5px 0 0 18px; padding: 0; }
+    ol.terms li { padding-left: 5px; margin: 5px 0; text-align: justify; }
+    .signatures {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 58px;
+      margin-top: 32px;
+      text-align: center;
+    }
+    .signature-title { font-weight: 700; }
+    .signature-note { margin-top: 4px; font-size: 14px; font-style: italic; }
+    .signature-space { height: 90px; }
+    .print-actions { width: 210mm; margin: 12px auto 0; text-align: right; }
+    .print-actions button { border: 1px solid #222; background: #fff; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-weight: 600; }
+
+    @page { size: A4; margin: 0; }
+    @media print {
+      html, body { width: 210mm; min-height: 297mm; background: #fff; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-actions { display: none !important; }
+      .page { margin: 0; width: 210mm; min-height: 297mm; padding: 21mm 33mm 18mm; box-shadow: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="print-actions">
+    <button onclick="window.print()">In phiếu</button>
+  </div>
+
+  <main class="page">
+    <header class="national-header">
+      <div>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</div>
+      <div class="sub">Độc lập - Tự do - Hạnh phúc</div>
+      <div class="decor-line"><span>oOo</span></div>
+    </header>
+
+    <div class="meta">
+      <div class="full-field">
+        <div class="label">Địa danh, ngày lập</div>
+        <div class="value">An Lão, ngày 24/04/2026</div>
+      </div>
+    </div>
+
+    <h1>GIẤY ỦY QUYỀN</h1>
+
+    <section class="section">
+      <div class="section-title">I. Bên ủy quyền</div>
+      <div class="grid-2">
+        <div class="field"><div class="label">Họ tên/Tên đơn vị</div><div class="value">Công ty CP XD Smart Building Việt Nam</div></div>
+        <div class="field"><div class="label">Đại diện / Chức vụ</div><div class="value">Ông: Võ Sơn Quân</div></div>
+        <div class="field"><div class="label">Số CMND/CCCD</div><div class="value">132302342332</div></div>
+        <div class="field"><div class="label">Ngày cấp</div><div class="value">02/12/2023</div></div>
+        <div class="field"><div class="label">Nơi cấp</div><div class="value">Cục Cảnh sát Quản lý hành chính về Trật tự xã hội</div></div>
+        <div class="field"><div class="label">Địa chỉ</div><div class="value">Thôn Úc Gián - Xã Thuận Thiên - Kiến Thụy - Hải Phòng</div></div>
+        <div class="field"><div class="label">Quốc tịch</div><div class="value">Việt Nam</div></div>
+        <div class="field"><div class="label">GCN bảo hiểm tự nguyện / bắt buộc</div><div class="value">BHNTN12-0288390</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">II. Bên được ủy quyền</div>
+      <div class="grid-2">
+        <div class="field"><div class="label">Công ty</div><div class="value">CÔNG TY TNHH TƯ VẤN TM &amp; DV SƠN QUÂN</div></div>
+        <div class="field"><div class="label">Địa chỉ</div><div class="value">Thôn Úc Gián - Xã Thuận Thiên - Kiến Thụy - Hải Phòng</div></div>
+        <div class="field"><div class="label">Mã số thuế</div><div class="value">0201972206</div></div>
+        <div class="field"><div class="label">Đại diện</div><div class="value">Ông: Võ Sơn Quân</div></div>
+        <div class="field"><div class="label">Chức vụ</div><div class="value">Tổng giám đốc</div></div>
+        <div class="field"><div class="label">Số tài khoản</div><div class="value">10131464547018</div></div>
+        <div class="field"><div class="label">Tên ngân hàng</div><div class="value">Techcombank Kiến An</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">III. Nội dung ủy quyền</div>
+      <div class="grid-2">
+        <div class="field"><div class="label">Biển kiểm soát</div><div class="value">30A-123.45</div></div>
+        <div class="field"><div class="label">Loại xe</div><div class="value">Honda Civic TypeR 2021</div></div>
+        <div class="field"><div class="label">Tai nạn ngày</div><div class="value">12/05/2026</div></div>
+        <div class="field"><div class="label">Số tiền bồi thường</div><div class="value">330.000.000đ</div></div>
+        <div class="field"><div class="label">Bằng chữ</div><div class="value">Ba trăm ba mươi triệu đồng</div></div>
+        <div class="field"><div class="label">Nội dung ủy quyền</div><div class="value">Bảo hiểm thanh toán theo hợp đồng</div></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-title">IV. Cam kết</div>
+      <ol class="terms">
+        <li>Hai bên cam kết hoàn toàn chịu trách nhiệm trước pháp luật về mọi thông tin ủy quyền ghi trên giấy này.</li>
+        <li>Chủ xe xác nhận không còn khiếu nại nào liên quan đến vụ tổn thất và đồng ý để garage nhận tiền bồi thường theo nội dung đã ủy quyền.</li>
+        <li>Việc nhận xe và thanh toán được thực hiện theo hồ sơ sửa chữa, quyết toán và giấy ủy quyền này.</li>
+      </ol>
+    </section>
+
+    <section class="signatures">
+      <div>
+        <div class="signature-title">Đại diện bên được ủy quyền</div>
+        <div class="signature-note">(Ký, ghi rõ họ tên)</div>
+        <div class="signature-space"></div>
+      </div>
+      <div>
+        <div class="signature-title">Đại diện bên ủy quyền</div>
+        <div class="signature-note">(Ký, ghi rõ họ tên)</div>
+        <div class="signature-space"></div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,1205 @@
+# Knowledge Graph — gf-customer
+
+boundary: "gf-customer"
+version: 2
+last_updated: "2026-05-18"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Quản lý customer master theo tenant, contact global cross-tenant, vehicle, tag, interaction, customer segment/membership, trigger campaign customer IDs và evaluation segment bất đồng bộ."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + JPA + Kafka + Temporal Java SDK", data_store: "PostgreSQL + Redis" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/integrations/INTEG-BFF-gf-customer.md"
+  integration_consumers: []
+
+
+apis:
+  # Public — Customer (CustomerController, gated CRM_V01)
+  - name: "customer-create"
+    path: "/api/v1/customers"
+    method: POST
+    purpose: "Create customer (gated CRM_V01)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        contact: object
+        code: string
+    response:
+      schema:
+        id: long
+        code: string
+
+  - name: "customer-search"
+    path: "/api/v1/customers/search"
+    method: POST
+    purpose: "Search customers (paginated)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+        pagination: object
+    response:
+      schema:
+        items: array
+
+  - name: "customer-get"
+    path: "/api/v1/customers/{id}"
+    method: GET
+    purpose: "Get customer by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        customer: object
+
+  - name: "customer-update"
+    path: "/api/v1/customers/{id}"
+    method: PUT
+    purpose: "Update customer"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        contact: object
+    response:
+      schema:
+        customer: object
+
+  - name: "customer-birthdays-today"
+    path: "/api/v1/customers/birthdays-today"
+    method: GET
+    purpose: "List customers having birthday today (tenant scope)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        items: array
+
+  - name: "customer-verify-import"
+    path: "/api/v1/customers/verify-import"
+    method: POST
+    purpose: "Pre-validate import list (JSON body, NOT file upload)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        customers: "array of ImportCustomerItem {fullName, phone, email, dateOfBirth, gender, address, city, ward, leadSource, notes}"
+        skipDuplicates: "boolean (optional, default true)"
+    response:
+      schema:
+        report: object
+
+  - name: "customer-import"
+    path: "/api/v1/customers/import"
+    method: POST
+    purpose: "Bulk import customers (JSON body, NOT file upload)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        customers: "array of ImportCustomerItem {fullName, phone, email, dateOfBirth, gender, address, city, ward, leadSource, notes}"
+        skipDuplicates: "boolean (optional, default true)"
+    response:
+      schema:
+        importId: string
+
+  - name: "customer-suggest"
+    path: "/api/v1/customers/suggest"
+    method: GET
+    purpose: "Suggest customers by phone (unaccent)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        phone: string
+        plate: "string (query, optional)"
+    response:
+      schema:
+        items: array
+
+  - name: "customer-suggest-by-name"
+    path: "/api/v1/customers/suggest-by-name"
+    method: GET
+    purpose: "Suggest customers by name (unaccent)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        name: string
+        plate: "string (query, optional)"
+    response:
+      schema:
+        items: array
+
+  # Public — Segment (SegmentController, gated CRM_V01)
+  - name: "segment-create"
+    path: "/api/v1/segments"
+    method: POST
+    purpose: "Create static or dynamic segment"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        name: string
+        segment_type: string
+        rules: object
+    response:
+      schema:
+        id: long
+
+  - name: "segment-search"
+    path: "/api/v1/segments/search"
+    method: POST
+    purpose: "Search segments"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "segment-get"
+    path: "/api/v1/segments/{id}"
+    method: GET
+    purpose: "Get segment"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        segment: object
+
+  - name: "segment-update"
+    path: "/api/v1/segments/{id}"
+    method: PUT
+    purpose: "Update segment"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        name: string
+    response:
+      schema:
+        segment: object
+
+  - name: "segment-update-rules"
+    path: "/api/v1/segments/{id}/update-rules"
+    method: PUT
+    purpose: "Update rules JSON and trigger re-evaluation workflow"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        rules: object
+    response:
+      schema:
+        status: string
+
+  - name: "segment-customers-search"
+    path: "/api/v1/segments/customers/search"
+    method: POST
+    purpose: "Search customers within a segment"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        segmentId: long
+    response:
+      schema:
+        items: array
+
+  - name: "segment-preview"
+    path: "/api/v1/segments/preview"
+    method: POST
+    purpose: "Dry-run segment rules without persisting — returns paginated matching customers"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        rules: object
+    response:
+      schema:
+        items: "paginated array of CustomerPreviewResponse"
+        page: integer
+        totalElements: long
+
+  - name: "segment-customer-count"
+    path: "/api/v1/segments/{id}/customer-count"
+    method: GET
+    purpose: "Member count of segment"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        count: long
+
+  # Public — Vehicle (VehicleController, method-level CUSTOMER_VEHICLE_MANAGEMENT_FFLAG)
+  - name: "vehicle-search"
+    path: "/api/v1/vehicles/search"
+    method: POST
+    purpose: "Search customer vehicles"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+    response:
+      schema:
+        items: array
+
+  - name: "vehicle-get"
+    path: "/api/v1/vehicles/{id}"
+    method: GET
+    purpose: "Get vehicle by id"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        vehicle: object
+
+  - name: "vehicle-suggest"
+    path: "/api/v1/vehicles/suggest"
+    method: GET
+    purpose: "Suggest vehicle by license plate"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        plate: string
+        phone: "string (query, optional)"
+    response:
+      schema:
+        items: array
+
+  # Public — Interaction (InteractionController)
+  - name: "interaction-create"
+    path: "/api/v1/customers/{customerId}/interactions"
+    method: POST
+    purpose: "Log customer interaction"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+        channel: string
+        reference_type: string
+        reference_id: string
+    response:
+      schema:
+        id: long
+
+  - name: "interaction-get"
+    path: "/api/v1/customers/{customerId}/interactions/{interactionId}"
+    method: GET
+    purpose: "Get interaction by id (validates customerId match)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+        interactionId: long
+    response:
+      schema:
+        interaction: object
+
+  - name: "interaction-update"
+    path: "/api/v1/customers/{customerId}/interactions/{interactionId}"
+    method: PUT
+    purpose: "Update interaction (validates customerId match)"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+        interactionId: long
+        body: object
+    response:
+      schema:
+        interaction: object
+
+  - name: "interaction-search"
+    path: "/api/v1/customers/{customerId}/interactions/search"
+    method: POST
+    purpose: "Search interactions of a customer"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+        filters: object
+    response:
+      schema:
+        items: array
+
+  # Public — Tag (TagController, scoped per-customer)
+  - name: "customer-tag-list"
+    path: "/api/v1/customers/{customerId}/tags"
+    method: GET
+    purpose: "List tags of a customer"
+    status: active
+    active_callers: ["agg-garage-graph"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+    response:
+      schema:
+        items: array
+
+  # Internal — Customer (CustomerInternalController, x-api-key)
+  - name: "internal-customer-create"
+    path: "/protected/v1/customers"
+    method: POST
+    purpose: "SVC-to-SVC create customer"
+    status: internal-only
+    active_callers: ["gf-sales", "gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        customer: object
+    response:
+      schema:
+        id: long
+
+  - name: "internal-customer-update"
+    path: "/protected/v1/customers/{id}"
+    method: PUT
+    purpose: "SVC-to-SVC update customer"
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        body: object
+    response:
+      schema:
+        customer: object
+
+  - name: "internal-customer-get"
+    path: "/protected/v1/customers/{id}"
+    method: GET
+    purpose: "SVC-to-SVC get customer by id"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        tenantId: "long (query)"
+    response:
+      schema:
+        customer: object
+
+  - name: "internal-customer-by-phone"
+    path: "/protected/v1/customers/by-phone/{phone}"
+    method: GET
+    purpose: "Lookup customer by phone (tenant scope)"
+    status: internal-only
+    active_callers: ["gf-sales", "gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        phone: string
+        tenantId: "long (query)"
+    response:
+      schema:
+        customer: object
+
+  - name: "internal-customer-batch"
+    path: "/protected/v1/customers/batch"
+    method: POST
+    purpose: "Batch fetch customers by ids"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: "long (query)"
+        ids: "array of Long (body)"
+    response:
+      schema:
+        items: array
+
+  - name: "internal-customer-record-visit"
+    path: "/protected/v1/customers/by-code/{customerCode}/visit"
+    method: PUT
+    purpose: "Update last_visit_at — called when service order completes"
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        customerCode: string
+        tenantId: "long (query)"
+    response:
+      schema:
+        customer: "CustomerResponse object"
+
+  - name: "internal-customer-booking-count-increment"
+    path: "/protected/v1/customers/by-code/{customerCode}/booking-count/increment"
+    method: PUT
+    purpose: "Increment booking_count when booking created"
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        customerCode: string
+        tenantId: "long (query)"
+    response:
+      schema:
+        customer: "CustomerResponse object"
+
+  - name: "internal-customer-booking-count-decrement"
+    path: "/protected/v1/customers/by-code/{customerCode}/booking-count/decrement"
+    method: PUT
+    purpose: "Decrement booking_count when booking cancelled"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        customerCode: string
+        tenantId: "long (query)"
+    response:
+      schema:
+        customer: "CustomerResponse object"
+
+  - name: "internal-customer-update-spent"
+    path: "/protected/v1/customers/by-code/{customerCode}/spent"
+    method: PUT
+    purpose: "Add to total_spent when service order settled"
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        customerCode: string
+        tenantId: "long (query)"
+        amount: "BigDecimal (query)"
+    response:
+      schema:
+        customer: "CustomerResponse object"
+
+  - name: "internal-customer-birthdays-today"
+    path: "/protected/v1/customers/birthdays-today"
+    method: GET
+    purpose: "Birthdays today (for marketing scheduler)"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        tenantId: "long (query)"
+    response:
+      schema:
+        items: array
+
+  - name: "internal-customer-search"
+    path: "/protected/v1/customers/search"
+    method: POST
+    purpose: "SVC-to-SVC paginated customer search"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        filters: object
+        pagination: object
+    response:
+      schema:
+        items: array
+
+  - name: "internal-customer-birthday"
+    path: "/protected/v1/customers/birthday"
+    method: GET
+    purpose: "Paginated customer IDs with birthday on a specific date (for campaign targeting)"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        date: "Instant (query)"
+        tenantId: "long (query)"
+        page: "int (query, default 0)"
+        size: "int (query, default 100)"
+    response:
+      schema:
+        ids: "paginated array of Long (customer IDs)"
+
+  - name: "internal-customer-birthday-by-segment"
+    path: "/protected/v1/customers/birthday/segment/{segmentId}"
+    method: GET
+    purpose: "Paginated customer IDs with birthday on date AND in segment (campaign targeting)"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        segmentId: long
+        date: "Instant (query)"
+        page: "int (query, default 0)"
+        size: "int (query, default 100)"
+    response:
+      schema:
+        ids: "paginated array of Long (customer IDs)"
+
+  - name: "internal-customer-maintenance-due"
+    path: "/protected/v1/customers/maintenance-due"
+    method: GET
+    purpose: "Paginated customer IDs with vehicle maintenance due on a specific date"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        date: "Instant (query)"
+        tenantId: "long (query)"
+        page: "int (query, default 0)"
+        size: "int (query, default 100)"
+    response:
+      schema:
+        ids: "paginated array of Long (customer IDs)"
+
+  - name: "internal-customer-maintenance-due-by-segment"
+    path: "/protected/v1/customers/maintenance-due/segment/{segmentId}"
+    method: GET
+    purpose: "Paginated customer IDs with maintenance due AND in segment"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        segmentId: long
+        date: "Instant (query)"
+        page: "int (query, default 0)"
+        size: "int (query, default 100)"
+    response:
+      schema:
+        ids: "paginated array of Long (customer IDs)"
+
+  - name: "internal-customer-inactive"
+    path: "/protected/v1/customers/inactive"
+    method: GET
+    purpose: "Paginated customer IDs who haven't visited in X days"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        inactiveDays: "int (query)"
+        tenantId: "long (query)"
+        page: "int (query, default 0)"
+        size: "int (query, default 100)"
+    response:
+      schema:
+        ids: "paginated array of Long (customer IDs)"
+
+  - name: "internal-customer-inactive-by-segment"
+    path: "/protected/v1/customers/inactive/segment/{segmentId}"
+    method: GET
+    purpose: "Paginated customer IDs who haven't visited in X days, filtered by segment"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        segmentId: long
+        inactiveDays: "int (query)"
+        page: "int (query, default 0)"
+        size: "int (query, default 100)"
+    response:
+      schema:
+        ids: "paginated array of Long (customer IDs)"
+
+  - name: "internal-customer-ids-by-segment"
+    path: "/protected/v1/customers/{segmentId}/customer-ids"
+    method: GET
+    purpose: "Paginated customer IDs of a segment (campaign fan-out from CustomerInternalController)"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        segmentId: long
+        page: "int (query, default 0)"
+        size: "int (query, default 100)"
+    response:
+      schema:
+        ids: "paginated array of Long (customer IDs)"
+
+  - name: "internal-customer-segments"
+    path: "/protected/v1/customers/{customerId}/segments"
+    method: GET
+    purpose: "Segment IDs a customer belongs to"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+        tenantId: "long (query)"
+    response:
+      schema:
+        ids: "List<Long> — segment IDs (not objects)"
+
+  - name: "internal-customer-count-by-segment"
+    path: "/protected/v1/customers/segment/{segmentId}/count"
+    method: GET
+    purpose: "Customer count of a segment (CustomerInternalController variant)"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        segmentId: long
+    response:
+      schema:
+        count: long
+
+  - name: "internal-customer-upsert-vehicle"
+    path: "/protected/v1/customers/vehicles/upsert"
+    method: POST
+    purpose: "Upsert vehicle for customer (called from gf-sales service-order)"
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+        vehicle: object
+    response:
+      schema:
+        vehicle: object
+
+  # Internal — Interaction (InteractionInternalController, x-api-key)
+  - name: "internal-interaction-create"
+    path: "/protected/v1/customers/{customerId}/interactions"
+    method: POST
+    purpose: "SVC-to-SVC log interaction (used when gf-marketing/gf-sales need to attach interaction without bearer)"
+    status: internal-only
+    active_callers: ["gf-sales"]
+    replaced_by: null
+    request:
+      schema:
+        customerId: long
+        body: object
+    response:
+      schema:
+        id: long
+
+  # Internal — Segment (SegmentInternalController, x-api-key)
+  - name: "internal-segment-get"
+    path: "/protected/v1/segments/{id}"
+    method: GET
+    purpose: "Get segment by id (campaign builder lookup)"
+    status: internal-only
+    active_callers: ["gf-marketing"]
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        tenantId: "long (query)"
+    response:
+      schema:
+        segment: object
+
+  - name: "internal-segment-customer-count"
+    path: "/protected/v1/segments/{id}/customer-count"
+    method: GET
+    purpose: "Member count for marketing campaign targeting"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+    response:
+      schema:
+        count: long
+
+  - name: "internal-segment-customer-ids"
+    path: "/protected/v1/segments/{id}/customer-ids"
+    method: GET
+    purpose: "Paginated customer IDs in segment for campaign fan-out"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        id: long
+        page: "int (query, default 0)"
+        size: "int (query, default 20)"
+    response:
+      schema:
+        ids: "paginated array of Long (customer IDs)"
+
+  # Internal — Validation cache (ValidationCacheController, x-api-key, base /protected/validation-cache no /v1)
+  - name: "internal-validation-cache-evict"
+    path: "/protected/validation-cache/evict"
+    method: POST
+    purpose: "Evict PROVINCE or WARD validation cache from Redis"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        directory: "string (query) — PROVINCE | WARD"
+    response:
+      schema:
+        directory: string
+        cacheSize: integer
+        evicted: boolean
+
+  - name: "internal-validation-cache-reload"
+    path: "/protected/validation-cache/reload"
+    method: POST
+    purpose: "Evict and reload PROVINCE or WARD cache from MDM"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        directory: "string (query) — PROVINCE | WARD"
+    response:
+      schema:
+        directory: string
+        cacheSize: integer
+        evicted: boolean
+
+  - name: "internal-validation-cache-info"
+    path: "/protected/validation-cache/info"
+    method: GET
+    purpose: "Validation cache status — current size for PROVINCE and WARD caches"
+    status: unused  
+    active_callers: []
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        provinceCache: "{directory, cacheSize, evicted}"
+        wardCache: "{directory, cacheSize, evicted}"
+
+events:
+  produces:
+    - topic: "customer.events"
+      payload:
+        event_type: "CustomerMergedEvent"
+        customer_id: long
+        tenant_id: long
+        timestamp: datetime
+      meaning: "CustomerMergedEvent — emitted by CustomerServiceImpl.mergeCustomers via outbox AFTER_COMMIT. Topic-drift-risk: hardcode literal `customer.events` ≠ config default `kafka.topics.customer-events: DEV-CUSTOMER-EVENTS`. CustomerCreatedEvent/UpdatedEvent DTOs exist but producer paths inactive (batchCreateCustomerEvents commented out)."
+
+    - topic: "segment-workflow-events"
+      payload:
+        tenant_id: long
+        segment_id: long
+      meaning: "SegmentWorkflowPayload — self-trigger to start SegmentEvaluationWorkflow via Temporal. Rules KHÔNG nằm trong payload; workflow fetch riêng qua getSegmentRules activity."
+  # Note: kafka.topics.segment-evaluated-events config + SegmentEvaluatedEvent DTO exist
+  # but no producer call-site publishes runtime — stripped per source-of-truth policy.
+
+  consumes:
+    - topic: "segment-workflow-events"
+      payload:
+        tenant_id: long
+        segment_id: long
+      action: "SegmentWorkflowConsumer → start SegmentEvaluationWorkflow on Temporal queue segment-evaluation-queue. Rules KHÔNG nằm trong payload; workflow fetch riêng qua getSegmentRules activity."
+
+    - topic: "message-events"
+      payload:
+        tenantId: long
+        campaignId: long
+        customerId: long
+        channel: string
+        subject: string
+        content: string
+        scheduledAt: Instant
+        recipient: string
+        eventId: "string — dùng làm dedupe key trong inbox_events"
+      action: "InteractionConsumer → InteractionService.create() — record SendMessageEvent as customer_interaction (idempotent via inbox_events; MESSAGE_SEND_2 bị skip vì đã ghi ở MESSAGE_SEND_1)"
+
+entities:
+  - name: "Contact"
+    type: "aggregate_root"
+    description: "Contact global cross-tenant chứa PII cốt lõi, định danh bằng global_id/phone và có thể link Driver+."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "global_id", type: "VARCHAR(50)", required: true, constraints: ["unique"] }
+      - { name: "driver_id", type: "BIGINT", required: false, constraints: ["unique khi có giá trị"] }
+      - { name: "full_name", type: "VARCHAR(200)", required: true }
+      - { name: "phone", type: "VARCHAR(20)", required: true, constraints: ["unique"] }
+      - { name: "email", type: "VARCHAR(200)", required: false }
+      - { name: "date_of_birth", type: "DATE", required: false }
+      - { name: "gender", type: "Gender", required: false, constraints: ["MALE | FEMALE | OTHER"] }
+      - { name: "primary_address", type: "VARCHAR(500)", required: false }
+      - { name: "city", type: "VARCHAR(100)", required: false }
+      - { name: "ward", type: "VARCHAR(100)", required: false }
+      - { name: "avatar_url", type: "VARCHAR(500)", required: false }
+      - { name: "is_verified", type: "BOOLEAN", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: true }
+    relationships:
+      - { target: "Customer", type: "one_to_many", description: "Một contact global có thể được link tới nhiều customer theo tenant qua customers.contact_id." }
+    invariants:
+      - "contacts không có tenant_id; phone, global_id và driver_id là unique toàn cục."
+      - "Contact.create sinh globalId bằng UUID và mặc định isVerified=false."
+      - "linkDriver đặt driver_id và isVerified=true."
+
+  - name: "Customer"
+    type: "aggregate_root"
+    description: "Hồ sơ khách hàng tenant-scoped, gồm mã customer, snapshot profile, lead source, booking count, total spent, last visit và trạng thái active mềm."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "code", type: "VARCHAR(50)", required: true, constraints: ["unique theo tenant_id"] }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "contact_id", type: "BIGINT", required: true }
+      - { name: "full_name", type: "VARCHAR(255)", required: true }
+      - { name: "phone", type: "VARCHAR(20)", required: true, constraints: ["unique theo tenant_id"] }
+      - { name: "email", type: "VARCHAR(255)", required: false }
+      - { name: "date_of_birth", type: "DATE", required: false }
+      - { name: "gender", type: "Gender", required: false, constraints: ["MALE | FEMALE | OTHER"] }
+      - { name: "address", type: "TEXT", required: false }
+      - { name: "city", type: "VARCHAR(100)", required: false }
+      - { name: "ward", type: "VARCHAR(100)", required: false }
+      - { name: "lead_source", type: "LeadSource", required: false, constraints: ["DRIVER_APP | WALK_IN | IMPORT | MANUAL | REFERRAL | MARKETING_CAMPAIGN | QR_SCAN | SELF"] }
+      - { name: "lead_id", type: "VARCHAR(100)", required: false }
+      - { name: "booking_count", type: "INTEGER", required: false }
+      - { name: "total_spent", type: "DECIMAL(15,2)", required: false }
+      - { name: "last_visit_at", type: "TIMESTAMP", required: false }
+      - { name: "is_active", type: "BOOLEAN", required: false }
+      - { name: "notes", type: "TEXT", required: false }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "Contact", type: "many_to_one", description: "Customer bắt buộc tham chiếu contact_id tới Contact global." }
+      - { target: "CustomerVehicle", type: "one_to_many", description: "Một customer có nhiều xe qua customer_vehicles.customer_id." }
+      - { target: "CustomerInteraction", type: "one_to_many", description: "Một customer có nhiều interaction qua customer_interactions.customer_id." }
+      - { target: "CustomerTag", type: "one_to_many", description: "Một customer có nhiều tag qua customer_tags.customer_id." }
+      - { target: "CustomerSegmentMember", type: "one_to_many", description: "Customer tham gia segment qua customer_segment_members.customer_id." }
+    invariants:
+      - "Unique theo (tenant_id, code) và (tenant_id, phone)."
+      - "Mã customer sinh từ TenantSequence CUSTOMER_CODE với prefix KH- trong transaction REQUIRES_NEW và pessimistic lock."
+      - "Public create kiểm tra duplicate phone và bắt buộc có vehicles; internal createAndGetDetail không gọi validateVehicles."
+      - "Nếu isActive null khi create, buildCustomer mặc định softDelete nên is_active=false."
+      - "Update phone bị chặn khi phone đã thuộc customer khác trong cùng tenant."
+      - "Merge customer soft delete các customer bị gộp, cộng totalSpent vào primary và chuyển vehicle, interaction, segment member, tag sang primary."
+
+  - name: "CustomerVehicle"
+    type: "entity"
+    description: "Xe của customer theo tenant, có thông tin nhận dạng, hierarchy catalog, bảo dưỡng và cờ xe chính."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "customer_id", type: "BIGINT", required: true }
+      - { name: "license_plate", type: "VARCHAR(20)", required: false }
+      - { name: "brand", type: "VARCHAR(100)", required: false }
+      - { name: "model", type: "VARCHAR(100)", required: false }
+      - { name: "version", type: "VARCHAR(100)", required: false }
+      - { name: "year", type: "VARCHAR(100)", required: false }
+      - { name: "color", type: "VARCHAR(50)", required: false }
+      - { name: "vin", type: "VARCHAR(50)", required: false }
+      - { name: "engine_number", type: "VARCHAR(50)", required: false }
+      - { name: "next_maintenance_date", type: "DATE", required: false }
+      - { name: "next_maintenance_odo", type: "INTEGER", required: false }
+      - { name: "maintenance_interval_km", type: "INTEGER", required: false }
+      - { name: "maintenance_interval_months", type: "INTEGER", required: false }
+      - { name: "last_odo", type: "INTEGER", required: false }
+      - { name: "is_primary", type: "BOOLEAN", required: true }
+      - { name: "notes", type: "TEXT", required: false }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "Customer", type: "many_to_one", description: "Xe thuộc một customer trong cùng tenant qua customer_id." }
+    invariants:
+      - "license_plate nullable sau migration V5; code public/service-order upper-case licensePlate khi có giá trị."
+      - "Trong request create/update customer, chỉ cho tối đa một xe isPrimary=true; nếu không có primary thì xe đầu tiên được chọn primary."
+      - "createFromServiceOrder tạo xe mới với isPrimary=false và maintenance interval mặc định 5000 km/6 tháng."
+      - "Upsert từ service order tìm xe cùng customer theo licensePlate và chỉ cập nhật field non-empty; không thấy guard khi licensePlate null."
+      - "Vehicle catalog brand/model/year/version được validate qua gf-erp-mdm khi brand có giá trị trong public create/update."
+
+  - name: "CustomerSegment"
+    type: "aggregate_root"
+    description: "Định nghĩa phân khúc customer theo tenant, gồm type STATIC/DYNAMIC, rules JSON, member count và trạng thái evaluation."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "name", type: "VARCHAR(100)", required: true }
+      - { name: "description", type: "TEXT", required: false }
+      - { name: "segment_type", type: "SegmentType", required: true, constraints: ["STATIC | DYNAMIC"] }
+      - { name: "status", type: "SegmentStatus", required: true, constraints: ["ACTIVE | EVALUATING | ARCHIVED"] }
+      - { name: "rules", type: "TEXT SegmentRules JSON", required: false }
+      - { name: "member_count", type: "INTEGER", required: false }
+      - { name: "last_evaluated_at", type: "TIMESTAMP", required: false }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "CustomerSegmentMember", type: "one_to_many", description: "Một segment có nhiều membership qua segment_id." }
+    invariants:
+      - "Service kiểm tra trùng name trong tenant khi create; DB hiện chưa có unique constraint cho name."
+      - "SegmentServiceImpl.create hiện set request.segmentType=STATIC trước khi save dù request có segmentType khác."
+      - "Create, evaluate và updateRules đều tạo OutboxEvent SegmentEvaluateEvent để trigger evaluation bất đồng bộ."
+      - "update/updateRules bị chặn khi gf-marketing báo segment đang link campaign; nếu gf-marketing lỗi thì source log warn và return false."
+      - "Temporal evaluation chuyển ACTIVE -> EVALUATING -> ACTIVE và cập nhật member_count, last_evaluated_at."
+
+  - name: "CustomerSegmentMember"
+    type: "entity"
+    description: "Membership giữa segment và customer, được rebuild bởi SegmentEvaluationWorkflow."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "segment_id", type: "BIGINT", required: true }
+      - { name: "customer_id", type: "BIGINT", required: true }
+      - { name: "added_at", type: "TIMESTAMP", required: true }
+    relationships:
+      - { target: "CustomerSegment", type: "many_to_one", description: "Membership thuộc một segment qua segment_id." }
+      - { target: "Customer", type: "many_to_one", description: "Membership trỏ tới một customer qua customer_id." }
+    invariants:
+      - "Unique theo (segment_id, customer_id)."
+      - "SegmentEvaluationWorkflow clear toàn bộ membership của segment rồi batch insert danh sách customer match rule."
+      - "Merge customer chuyển membership từ customer bị gộp sang primary."
+
+  - name: "CustomerInteraction"
+    type: "entity"
+    description: "Lịch sử tương tác với customer, có type, channel, direction, nội dung và reference nghiệp vụ."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "customer_id", type: "BIGINT", required: true }
+      - { name: "interaction_type", type: "InteractionType", required: true, constraints: ["CALL | SMS | EMAIL | NOTE | BOOKING | SERVICE | FEEDBACK | PUSH | ZALO | VISIT"] }
+      - { name: "channel", type: "InteractionChannel", required: true, constraints: ["PHONE | SMS | EMAIL | APP | IN_PERSON"] }
+      - { name: "direction", type: "VARCHAR(10)", required: false }
+      - { name: "subject", type: "VARCHAR(200)", required: false }
+      - { name: "content", type: "TEXT", required: false }
+      - { name: "reference_id", type: "VARCHAR(100)", required: false }
+      - { name: "reference_type", type: "VARCHAR(50)", required: false, constraints: ["BOOKING | CAMPAIGN | SERVICE_ORDER"] }
+      - { name: "performed_by", type: "VARCHAR(100)", required: false }
+      - { name: "interaction_at", type: "TIMESTAMP", required: true }
+    relationships:
+      - { target: "Customer", type: "many_to_one", description: "Interaction thuộc một customer qua customer_id." }
+    invariants:
+      - "Create/update interaction kiểm tra customer tồn tại trong tenant."
+      - "Get/update interaction kiểm tra interaction.customerId trùng path customerId."
+      - "Inbound SendMessageEvent tạo interaction OUTBOUND, referenceType=CAMPAIGN và dedupe bằng InboxEvent."
+      - "Merge customer chuyển interaction sang primary customer."
+
+  - name: "CustomerTag"
+    type: "entity"
+    description: "Tag gắn trên customer trong tenant."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "customer_id", type: "BIGINT", required: true }
+      - { name: "tag_name", type: "VARCHAR(100)", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "created_by", type: "VARCHAR(100)", required: false }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_by", type: "VARCHAR(100)", required: false }
+    relationships:
+      - { target: "Customer", type: "many_to_one", description: "Tag thuộc một customer qua customer_id." }
+    invariants:
+      - "Unique theo (customer_id, tag_name)."
+      - "Update customer thay thế tag theo request; merge customer chuyển tag sang primary."
+
+  - name: "TenantSequence"
+    type: "aggregate_root"
+    description: "Sequence theo tenant dùng cấp mã customer."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "tenant_id", type: "BIGINT", required: true }
+      - { name: "sequence_name", type: "VARCHAR(50)", required: true }
+      - { name: "current_value", type: "BIGINT", required: true }
+      - { name: "created_at", type: "TIMESTAMPTZ", required: true }
+      - { name: "updated_at", type: "TIMESTAMPTZ", required: true }
+    relationships: []
+    invariants:
+      - "Unique theo (tenant_id, sequence_name)."
+      - "SequenceServiceImpl dùng findByTenantIdAndSequenceNameWithLock và transaction REQUIRES_NEW để tránh duplicate code khi concurrent."
+      - "CUSTOMER_CODE sinh theo format KH-{nextValue}."
+
+  - name: "OutboxEvent"
+    type: "aggregate_root"
+    description: "Outbox bền vững để publish Kafka sau commit và retry."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "aggregate_type", type: "VARCHAR(100)", required: true }
+      - { name: "aggregate_id", type: "VARCHAR(100)", required: true }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "payload", type: "TEXT", required: true }
+      - { name: "topic", type: "VARCHAR(200)", required: false }
+      - { name: "status", type: "OutboxStatus", required: true, constraints: ["PENDING | PROCESSING | SENT | FAILED"] }
+      - { name: "retry_count", type: "INTEGER", required: false }
+      - { name: "error_message", type: "TEXT", required: false }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: false }
+    relationships: []
+    invariants:
+      - "OutboxEventListener xử lý OutboxEventCreatedEvent ở AFTER_COMMIT, mark PROCESSING, publish Kafka sync rồi mark SENT hoặc FAILED."
+      - "OutboxProcessor scheduled retry PENDING/stale PROCESSING với RedisLockRegistry key gf-customer-outbox-processor."
+      - "markAsFailed tăng retry_count và chuyển FAILED khi retry_count >= 3."
+      - "Outbox không có tenant_id; tenant scope phải nằm trong payload/header event."
+
+  - name: "InboxEvent"
+    type: "aggregate_root"
+    description: "Inbox chống xử lý trùng inbound Kafka event."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "event_id", type: "VARCHAR(100)", required: true, constraints: ["unique"] }
+      - { name: "event_type", type: "VARCHAR(100)", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: true }
+    relationships: []
+    invariants:
+      - "InboxService bỏ qua processor nếu event_id đã tồn tại."
+      - "processIfNotDuplicate insert inbox trước khi chạy processor và mark processed sau khi processor thành công."
+
+
+business_rules:
+  - { id: "BR-GF-CUSTOMER-001", description: "Contact là global cross-tenant, không có tenant_id và unique toàn cục theo phone/global_id/driver_id.", cornerstone: true, enforcement_point: "V1__create_customer_tables.sql + Contact aggregate + ContactRepository" }
+  - { id: "BR-GF-CUSTOMER-002", description: "Customer unique theo tenant_id+code và tenant_id+phone; duplicate phone bị chặn khi create/update.", cornerstone: true, enforcement_point: "V1__create_customer_tables.sql + CustomerServiceImpl.validateDuplicatePhone*" }
+  - { id: "BR-GF-CUSTOMER-003", description: "Customer code sinh theo TenantSequence CUSTOMER_CODE với prefix KH- dưới pessimistic lock và transaction REQUIRES_NEW.", cornerstone: true, enforcement_point: "SequenceServiceImpl + TenantSequenceRepository.findByTenantIdAndSequenceNameWithLock" }
+  - { id: "BR-GF-CUSTOMER-004", description: "Public customer create bắt buộc có vehicle và validate hierarchy vehicle qua gf-erp-mdm khi brand được truyền.", cornerstone: true, enforcement_point: "CustomerServiceImpl.create + validateVehicles + GfErpMdmClient.getHierarchyCodeByModelCodes" }
+  - { id: "BR-GF-CUSTOMER-005", description: "Một request customer chỉ được có tối đa một primary vehicle; nếu không truyền primary thì xe đầu tiên là primary.", cornerstone: true, enforcement_point: "CustomerServiceImpl.validatePrimaryVehicle + determinePrimary" }
+  - { id: "BR-GF-CUSTOMER-006", description: "Customer delete/merge dùng soft delete qua is_active=false; merge chuyển vehicle, interaction, segment member và tag sang primary customer.", cornerstone: true, enforcement_point: "Customer.softDelete + CustomerServiceImpl.mergeCustomers" }
+  - { id: "BR-GF-CUSTOMER-007", description: "Booking count decrement không được xuống dưới 0; spent update cộng dồn vào total_spent thay vì thay thế.", cornerstone: true, enforcement_point: "CustomerServiceImpl.decrementBookingCount + updateTotalSpent" }
+  - { id: "BR-GF-CUSTOMER-008", description: "Segment name phải không trùng trong tenant ở service layer; create/evaluate/updateRules đều trigger SegmentEvaluateEvent qua outbox.", cornerstone: true, enforcement_point: "SegmentServiceImpl.create + evaluate + updateRules + triggerEvaluationWorkflow" }
+  - { id: "BR-GF-CUSTOMER-009", description: "Segment update hoặc updateRules bị chặn nếu gf-marketing báo segment đang linked campaign; khi gf-marketing lỗi, source hiện fail-open và cho phép tiếp tục.", cornerstone: true, enforcement_point: "SegmentServiceImpl.isSegmentLinkedToCampaign" }
+  - { id: "BR-GF-CUSTOMER-010", description: "SegmentEvaluationWorkflow rebuild membership theo tenant+segment bằng clear members rồi batch insert customer match rules, sau đó set status ACTIVE và cập nhật member_count.", cornerstone: true, enforcement_point: "SegmentEvaluationWorkflowImpl + SegmentEvaluationActivitiesImpl" }
+  - { id: "BR-GF-CUSTOMER-011", description: "Inbound SendMessageEvent tạo interaction phải đi qua InboxService dedupe bằng eventId; MESSAGE_SEND_2 bị skip vì interaction đã ghi ở MESSAGE_SEND_1.", cornerstone: true, enforcement_point: "InteractionConsumer.handleMessage + InboxService" }
+  - { id: "BR-GF-CUSTOMER-012", description: "Outbound Kafka event đang chạy phải đi qua OutboxEvent và OutboxEventListener/OutboxProcessor để publish sau commit và retry.", cornerstone: true, enforcement_point: "SegmentServiceImpl + CustomerServiceImpl.mergeCustomers + OutboxEventListener + OutboxProcessor" }
+  - { id: "BR-GF-CUSTOMER-013", description: "Public API lấy tenant từ SecurityUtils; protected API nhận tenantId trong path/query/body; contacts, outbox_events và inbox_events không có tenant_id.", cornerstone: true, enforcement_point: "Controllers + repositories + migrations" }
+  - { id: "BR-GF-CUSTOMER-014", description: "Phone bắt buộc 10 chữ số và phải bắt đầu bằng '0' (pattern ^0\\d{9}$). Vi phạm trả về lỗi validation (không phải BusinessException) trước khi vào service layer.", cornerstone: true, enforcement_point: "@Pattern(regexp = \"^0\\\\d{9}$\") trên CreateCustomerRequest.phone" }
+  - { id: "BR-GF-CUSTOMER-015", description: "License plate nếu có giá trị chỉ được chứa chữ hoa và số (pattern ^[A-Z0-9]*$); service tự uppercase licensePlate trước khi lưu. Field nullable ở DB (migration V5) nên rule chỉ áp dụng khi client truyền giá trị.", cornerstone: true, enforcement_point: "@Pattern(regexp = \"^[A-Z0-9]*$\") trên VehicleRequest.licensePlate + CustomerServiceImpl uppercase logic. Note: CUSTOMER_004 DUPLICATE_LICENSE_PLATE và CUSTOMER_008 LICENSE_PLATE_REQUIRED tồn tại trong BusinessMessage nhưng hiện chưa có throw-site — dead code cần wire hoặc xóa." }
+  - { id: "BR-GF-CUSTOMER-016", description: "Segment.update() từ chối silently (no-op, trả về segment hiện tại không thay đổi, không throw error) khi request.status=EVALUATING — trạng thái này chỉ được set bởi SegmentEvaluationWorkflow, không phải API client. SEGMENT_NOT_ACTIVE (SEGMENT_004) tồn tại trong BusinessMessage nhưng hiện chưa có throw-site.", cornerstone: true, enforcement_point: "SegmentServiceImpl.update() — early return khi SegmentStatus.EVALUATING.equals(request.getStatus())" }
+  - { id: "BR-GF-CUSTOMER-017", description: "SegmentServiceImpl.create() luôn force segmentType=STATIC bất kể giá trị client truyền vào; DYNAMIC type hiện chưa được hỗ trợ.", cornerstone: true, enforcement_point: "SegmentServiceImpl.create() — request.setSegmentType(SegmentType.STATIC)" }
+  - { id: "BR-GF-CUSTOMER-018", description: "City/ward validation trong CreateCustomerRequest dùng Redis-cached MDM data: city phải tồn tại (@ValidCity), ward phải tồn tại (@ValidWard), và ward phải thuộc đúng city (@ValidWardCity class-level). Vi phạm trả về lỗi validation trước service layer.", cornerstone: true, enforcement_point: "@ValidCity + @ValidWard + @ValidWardCity trên CreateCustomerRequest + CityValidator / WardValidator / WardCityValidator sử dụng ValidationCacheService (Redis)" }
+
+workflows:
+  - name: "SegmentEvaluationWorkflow"
+    type: TEMPORAL
+    description: "Evaluate dynamic segment rules against customers, refresh segment membership, publish SegmentEvaluatedEvent — task queue segment-evaluation-queue, 1h workflow timeout, 10m per activity, 3× exponential retry"
+    steps:
+      - step: 1
+        service: "gf-customer"
+        action: "Started by SegmentServiceImpl.triggerEvaluationWorkflow via WorkflowClient.start khi segment create / evaluate / updateRules (BR-GF-CUSTOMER-008)"
+      - step: 2
+        service: "gf-customer"
+        action: "markSegmentAsEvaluating(tenantId, segmentId) — set segment status = EVALUATING"
+      - step: 3
+        service: "gf-customer"
+        action: "getSegmentRules(tenantId, segmentId) — fetch rules JSON"
+      - step: 4
+        service: "gf-customer"
+        action: "evaluateCustomersAgainstRules(tenantId, rulesJson) — query matching customer ids via SegmentRuleEvaluator (JPA Specifications)"
+      - step: 5
+        service: "gf-customer"
+        action: "clearSegmentMembers(tenantId, segmentId) — wipe existing members"
+      - step: 6
+        service: "gf-customer"
+        action: "addCustomersToSegment(tenantId, segmentId, customerIds) — JDBC batch insert (1000 rows/batch)"
+      - step: 7
+        service: "gf-customer"
+        action: "updateSegmentStatus(tenantId, segmentId, memberCount) — set ACTIVE + cập nhật member_count (SegmentEvaluatedEvent KHÔNG được publish — xem note line 642-643)"
+
+
+integrations:
+  inbound:
+    - type: API
+      source: "agg-garage-graph"
+      purpose: "Customer/segment queries for UI"
+    - type: API
+      source: "gf-marketing"
+      purpose: "GET /protected/v1/segments/{id}/customer-{count|ids} for campaign targeting"
+    - type: EVENT
+      source: "gf-marketing"
+      purpose: "SendMessageEvent on message-events → InteractionConsumer"
+    - type: API
+      source: "gf-sales"
+      purpose: "Customer + vehicle lookup, POST /upsert-vehicle from service order"
+
+  outbound:
+    - type: API
+      target: "gf-erp-mdm"
+      purpose: "Address + vehicle hierarchy lookup — /protected/catalog/v1/{verify-existed,inquiry,get-hierarchy-codes}"
+    - type: API
+      target: "gf-marketing"
+      purpose: "Check segment-campaign link before deleting segment — GET /protected/v1/campaigns/segments/{segmentId}/linked"
+    - type: API
+      target: "gf-sales"
+      purpose: "Aggregate service-order summaries for vehicle — POST /protected/v1/service-orders/{tenantId}/vehicle-summaries"
+    - type: EVENT
+      target: "Kafka — customer-events"
+      purpose: "Publish CustomerCreated/Updated/Merged events"
+    - type: EVENT
+      target: "Kafka — segment-workflow-events"
+      purpose: "Self-trigger Temporal segment evaluation"
+    - type: EVENT
+      target: "Kafka — segment-evaluated-events"
+      purpose: "Configured (kafka.topics.segment-evaluated-events) + SegmentEvaluatedEvent DTO exists, NHƯNG hiện không có producer call-site nào publish runtime. Giữ entry để track dep + dev intent; cần wire hoặc xóa config nếu không dùng."
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho contacts, customers, vehicles, segments, segment members, interactions, tags, tenant sequences, outbox và inbox.", config_ref: "spring.datasource.*, DB_SCHEMA, Flyway V1-V6" }
+  - { name: "Redis", type: "cache_lock", purpose: "Validation cache cho province/ward và RedisLockRegistry cho OutboxProcessor multi-replica.", config_ref: "REDIS_HOST, REDIS_PORT, app.cache.key-prefix, DistributedLockConfig" }
+  - { name: "Kafka", type: "broker", purpose: "Publish customer/segment events qua outbox và consume message-events/segment-workflow-events.", config_ref: "KAFKA_BOOTSTRAP_SERVERS, kafka.topics.*" }
+  - { name: "Temporal", type: "workflow", purpose: "Chạy SegmentEvaluationWorkflow trên task queue segment-evaluation-queue.", config_ref: "spring.temporal.*, SegmentEvaluationWorkflowImpl.TASK_QUEUE" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Cung cấp tenant/user context cho public API và security starter config.", config_ref: "actechx.security.*" }
+  - { name: "spring-feature-flag-starter", type: "feature_flag", purpose: "Gate CRM:CRMV01 và Customer:VehicleManagementV01.", config_ref: "feature-flag.*, feature-flags.json" }
+  - { name: "Actuator + OTLP", type: "observability", purpose: "Expose health/metrics/prometheus và tracing/logging starter.", config_ref: "management.endpoints.*, spring.profiles.include=otlp" }
+
+
+change_log:
+  - { date: "2026-05-18", summary: "BR audit vs source code: (A) Sai/stale — xóa field 'rules: object' stale khỏi events.consumes[segment-workflow-events].payload (đã bỏ từ 2026-05-13 nhưng chưa sync consumes section); sửa CustomerInteraction.channel required: false → true (source @NotNull). (B) Bổ sung 5 BR còn thiếu: BR-014 phone format ^0\\d{9}$; BR-015 license plate format ^[A-Z0-9]*$ + auto-uppercase + ghi nhận CUSTOMER_004/008 là dead code; BR-016 segment.update() silent no-op khi request.status=EVALUATING + ghi nhận SEGMENT_NOT_ACTIVE là dead code; BR-017 segmentType luôn force STATIC khi create; BR-018 city/ward validation qua Redis-cached MDM (@ValidCity/@ValidWard/@ValidWardCity).", author: "Architecture Authority — source audit 2026-05-18" }
+  - { date: "2026-05-14", summary: "RULE-08 wiring: thêm status/active_callers/replaced_by cho toàn bộ 53 API. 25 public → agg-garage-graph. Internal: gf-sales gọi 9 endpoint (create/update/by-phone/record-visit/booking-count-increment/update-spent/upsert-vehicle/internal-interaction-create + internal-customer-update); gf-marketing gọi 13 endpoint (campaign targeting birthday/maintenance-due/inactive ± segment, ids-by-segment, count-by-segment, segments, internal-segment-get, customer-batch, customer-get, customer-by-phone, customer-create). 8 endpoint không có caller → mark unused + TODO: internal-customer-booking-count-decrement, internal-customer-birthdays-today, internal-customer-search, internal-segment-customer-count, internal-segment-customer-ids, 3× validation-cache.", author: "Architecture Authority — RULE-08 audit 2026-05-14" }
+  - { date: "2026-05-13", summary: "Source audit: (1) customer-verify-import + customer-import: request đổi từ file-upload sang JSON body ImportCustomerRequest {customers[], skipDuplicates}; (2) customer-suggest + suggest-by-name: thêm optional plate param; (3) segment-preview: response đổi từ {count:long} sang paginated CustomerPreviewResponse; (4) vehicle-suggest: param đổi từ query → plate + optional phone; (5) internal-customer-get/by-phone/batch/birthdays-today/segments: thêm tenantId query param bị thiếu; (6) internal-customer-record-visit: xóa visitedAt không tồn tại, thêm tenantId, sửa response từ status→CustomerResponse; (7) internal-customer-booking-count-increment/decrement + update-spent: thêm tenantId, sửa response từ scalar→CustomerResponse; (8) internal-customer-birthday/birthday-by-segment/maintenance-due/maintenance-due-by-segment/inactive/inactive-by-segment/ids-by-segment: thêm date(Instant)/inactiveDays/tenantId/pagination params, sửa response sang paginated Long IDs; (9) internal-segment-get: thêm tenantId; internal-segment-customer-ids: thêm pagination; (10) validation-cache-evict/reload: đổi request từ {keys}/empty sang {directory:string(query)}, sửa response thành CacheInfo; validation-cache-info: sửa response thành {provinceCache,wardCache}; (11) events: bỏ rules khỏi SegmentWorkflowPayload; sửa SendMessageEvent payload (bỏ external_id/status, thêm campaignId/subject/content/scheduledAt/recipient/eventId).", author: "Architecture Authority — source audit 2026-05-13" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Swap section order workflows ↔ business_rules để khớp canonical (BR trước workflows); thêm step 1 trigger explicit cho SegmentEvaluationWorkflow.", author: "Architecture Authority" }

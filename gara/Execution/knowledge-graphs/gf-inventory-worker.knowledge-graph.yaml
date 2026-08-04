@@ -1,0 +1,367 @@
+# Knowledge Graph — gf-inventory-worker
+
+boundary: "gf-inventory-worker"
+version: 5
+last_updated: "2026-05-21"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Stateless Temporal worker điều phối async workflows cho inventory: receipt/delivery fulfillment, reservation TTL, period stock closure. Không own DB — mọi state mutation gọi REST sang gf-inventory (Fat API / Thin Worker pattern, ADR-008)."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + Temporal Java SDK", data_store: "none" }
+  epics: []
+  features: []
+  integration_consumers: []
+
+apis:
+  - name: "reservation-expiry-start"
+    path: "/protected/workflows/reservation-expiry/start"
+    method: POST
+    purpose: "Start ReservationExpiryWorkflow (caller gf-inventory.WorkerClient)"
+    status: internal-only
+    active_callers: ["gf-inventory"]
+    replaced_by: null
+    request:
+      schema:
+        tenantId: long
+        reservationCode: string
+        deliveryCode: string
+        warehouseCode: string
+        sourceType: string
+        ttlMinutes: integer
+        expiresAt: instant
+        salesOrderCode: string
+        serviceOrderCode: string
+    response:
+      schema:
+        success: boolean
+
+  - name: "reservation-expiry-release"
+    path: "/protected/workflows/reservation-expiry/{deliveryCode}/release"
+    method: POST
+    purpose: "Signal release on existing ReservationExpiryWorkflow"
+    status: internal-only
+    active_callers: ["gf-inventory"]
+    replaced_by: null
+    request:
+      path_params:
+        deliveryCode: string
+      schema:
+        tenantId: long
+        userId: string
+        reason: string
+    response:
+      schema:
+        success: boolean
+
+  - name: "reservation-expiry-fulfill"
+    path: "/protected/workflows/reservation-expiry/{deliveryCode}/fulfill"
+    method: POST
+    purpose: "Signal fulfill on existing ReservationExpiryWorkflow"
+    status: internal-only
+    active_callers: ["gf-inventory"]
+    replaced_by: null
+    request:
+      path_params:
+        deliveryCode: string
+      schema:
+        tenantId: long
+        userId: string
+    response:
+      schema:
+        success: boolean
+
+  - name: "period-closure-trigger"
+    path: "/protected/v2/period-closure/operator/trigger"
+    method: POST
+    purpose: "Manual start of PeriodClosureCoordinatorWorkflow"
+    status: unused  # TODO: admin-only manual trigger
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        periodCode: string
+    response:
+      schema:
+        workflowId: string
+
+  - name: "period-closure-status"
+    path: "/protected/v2/period-closure/operator/status/{workflowId}"
+    method: GET
+    purpose: "Query workflow execution status"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        workflowId: string
+    response:
+      schema:
+        status: object
+
+  - name: "period-closure-result"
+    path: "/protected/v2/period-closure/operator/result/{workflowId}"
+    method: GET
+    purpose: "Query workflow result"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        workflowId: string
+    response:
+      schema:
+        result: object
+
+  - name: "period-closure-stats"
+    path: "/protected/v2/period-closure/operator/stats"
+    method: GET
+    purpose: "Aggregate stats for period closure runs"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      query_params:
+        periodCode: string
+    response:
+      schema:
+        stats: object
+
+  - name: "period-closure-cancel"
+    path: "/protected/v2/period-closure/operator/cancel/{workflowId}"
+    method: POST
+    purpose: "Cancel running workflow (sends cancel signal — workflow stops spawning new batches)"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      path_params:
+        workflowId: string
+    response:
+      schema:
+        workflowId: string
+        status: string
+        message: string
+
+  - name: "period-closure-mark-for-retry"
+    path: "/protected/v2/period-closure/operator/mark-for-retry"
+    method: POST
+    purpose: "Mark single failed warehouse for retry (sets status PENDING_RETRY)"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        periodCode: string
+        tenantId: long
+        warehouseCode: string
+    response:
+      schema:
+        periodCode: string
+        tenantId: long
+        warehouseCode: string
+        newStatus: string
+        success: boolean
+        message: string
+
+  - name: "period-closure-mark-all-failed"
+    path: "/protected/v2/period-closure/operator/mark-all-failed"
+    method: POST
+    purpose: "Mark all FAILED warehouses of a period for retry (ops bulk reset)"
+    status: unused  # TODO: admin-only
+    active_callers: []
+    replaced_by: null
+    request:
+      schema:
+        periodCode: string
+    response:
+      schema:
+        periodCode: string
+        markedCount: integer
+        message: string
+
+events:
+  produces: []
+
+  consumes:
+    - topic: "dev-inventory-purchase-order-events"
+      payload:
+        message_group: string
+        message_step: string
+        tenant_id: long
+        purchase_order_code: string
+        source: string
+      meaning: "PurchaseOrderEventListener.handlePurchaseOrderEvent — route MessageGroup=PO + MessageStep=DELIVERED.2 → start ReceiptFulfillmentWorkflow (workflowId receipt-fulfillment-{tenantId}-{purchaseOrderCode}); gated by feature Inventory:InventoryStockV01 (global toggle, không per-tenant — xem BR-003)"
+
+    - topic: "dev-inventory-service-order-events"
+      payload:
+        message_group: string
+        message_step: string
+        tenant_id: long
+        service_order_code: string
+        order_type: string
+      meaning: "ServiceOrderEventListener.handleServiceOrderEvent — route MessageGroup=SERVICE_ORDER → start DeliveryFulfillmentWorkflow (workflowId delivery-fulfillment-{tenantId}-{serviceOrderCode}). Trigger phụ thuộc order_type: RETAIL → MessageStep=CONFIRMED; SERVICE → MessageStep=IN_PROGRESS. Cũng hỗ trợ legacy format: event_type=ServiceOrderStatusChanged (double-encoded JSON, snake_case/camelCase fallbacks)"
+
+entities:
+  note: "Stateless pure Temporal worker — KHÔNG own DB (Fat API / Thin Worker pattern, ADR-008). Mọi state persistence sống ở gf-inventory; service này chỉ host workflow + activity, gọi gf-inventory qua REST `/protected/...` cho mọi mutation. Các `entities` dưới đây là transient in-memory value objects (workflow inputs/outputs, signals, query results, Kafka event payloads, outbound REST request DTOs) — không persist; field type dùng Java type (không phải SQL DDL) vì không có schema."
+
+business_rules:
+  - { id: "BR-GF-INVENTORY-WORKER-001", description: "Fat API / Thin Worker (ADR-008) — mọi state mutation phải gọi REST gf-inventory qua activities (ReceiptActivity, DeliveryActivity, ReservationActivity, periodStockClosureActivity, inventoryDeliveryActivity); không persist local.", cornerstone: true, enforcement_point: "Activities/* + InventoryClient REST adapter" }
+  - { id: "BR-GF-INVENTORY-WORKER-002", description: "Workflow ID phải đảm bảo idempotency theo nghiệp vụ: receipt-fulfillment-{tenantId}-{purchaseOrderCode}, delivery-fulfillment-{tenantId}-{serviceOrderCode}, reservation-expiry-{tenantId}-{deliveryCode}, period-stock-closure-{periodCode}-{timestamp}.", cornerstone: true, enforcement_point: "PurchaseOrderEventListener + ServiceOrderEventListener + WorkerClient + PeriodClosureCoordinatorWorkflow" }
+  - { id: "BR-GF-INVENTORY-WORKER-003", description: "ReceiptFulfillmentWorkflow chỉ start khi PurchaseOrderEvent có MessageGroup=PO + MessageStep=DELIVERED.2 và feature flag Inventory:InventoryStockV01 enabled GLOBAL (không per-tenant). DeliveryFulfillmentWorkflow start khi ServiceOrderEvent có MessageGroup=SERVICE_ORDER — trigger status phụ thuộc order_type: RETAIL → MessageStep=CONFIRMED; SERVICE → MessageStep=IN_PROGRESS. Cũng hỗ trợ legacy format event_type=ServiceOrderStatusChanged (double-encoded JSON, snake_case/camelCase fallbacks). Note: FeatureFlagHelper.isEnabledForTenant() helper tồn tại nhưng listener hiện gọi isEnabled() không tenant arg.", cornerstone: true, enforcement_point: "PurchaseOrderEventListener.handlePurchaseOrderEvent + ServiceOrderEventListener.handleServiceOrderEvent + featureFlagHelper.isEnabled(FeatureFlags.INVENTORY_STOCK)" }
+  - { id: "BR-GF-INVENTORY-WORKER-004", description: "PeriodClosureCoordinatorWorkflow giới hạn child WarehouseBatchWorkflow đồng thời qua semaphore PERIOD_CLOSURE_MAX_CONCURRENT (default 2), batch 15 warehouses; coordinator track progress qua signal onChildCompleted.", cornerstone: true, enforcement_point: "PeriodClosureCoordinatorWorkflow + WarehouseBatchWorkflow" }
+  - { id: "BR-GF-INVENTORY-WORKER-005", description: "RetryBatchWorkflow được khởi động bởi PeriodClosureRetryCronJob (Spring @Scheduled, cron PERIOD_CLOSURE_RETRY_CRON=`0 */5 * * * *`), tối đa 5 lần retry per warehouse (gf-inventory lọc qua retry_count >= PERIOD_CLOSURE_MAX_RETRY_ATTEMPTS=5); khi activity fail → saga rollbackClosure. CronJob có conflict prevention: query Temporal check prefix 'period-stock-closure-' (excluding '-retry-') — nếu coordinator đang chạy thì SKIP toàn bộ retry execution để tránh xung đột dữ liệu.", cornerstone: true, enforcement_point: "PeriodClosureRetryCronJob + RetryBatchWorkflow + periodStockClosureActivity.rollbackClosure" }
+  - { id: "BR-GF-INVENTORY-WORKER-006", description: "Period closure dùng atomicCloseAndCreateNext với idempotency key + saga rollback support; updateDeliveryItemCostPrices backfill sau khi close thành công, updateHistoryStatus finalize cuối cùng.", cornerstone: true, enforcement_point: "periodStockClosureActivity.atomicCloseAndCreateNext + inventoryDeliveryActivity.updateDeliveryItemCostPrices" }
+  - { id: "BR-GF-INVENTORY-WORKER-007", description: "ReceiptFulfillment signal complete/cancel KHÔNG gọi activity — gf-inventory API đã update DB/stock trước khi gửi signal, workflow chỉ set status và đóng. DeliveryFulfillment signal complete/cancel GỌI activity completeDelivery/cancelDelivery — workflow delegate action cho API.", cornerstone: true, enforcement_point: "ReceiptFulfillmentWorkflowImpl.complete + cancel (no activity) vs DeliveryFulfillmentWorkflowImpl.complete + cancel (calls activity)" }
+  - { id: "BR-GF-INVENTORY-WORKER-008", description: "ReceiptFulfillment timeout → SKIPPED_INVALID_STATUS (auto-approval disabled). DeliveryFulfillment timeout → SKIPPED_TIMEOUT (auto-completion disabled). Cả hai cần manual intervention sau timeout — code path cho auto-approve/complete tồn tại nhưng cố ý disabled.", cornerstone: true, enforcement_point: "ReceiptFulfillmentWorkflowImpl.execute (timeout branch) + DeliveryFulfillmentWorkflowImpl.execute (timeout branch)" }
+  - { id: "BR-GF-INVENTORY-WORKER-009", description: "ReservationExpiry signal release/fulfill → workflow set status và đóng, KHÔNG gọi activity (gf-inventory đã update state trước khi gửi signal). Chỉ khi TTL hết mà không có signal → gọi reservationActivity.expireReservation để release stock.", cornerstone: true, enforcement_point: "ReservationExpiryWorkflowImpl.release + fulfill (no activity) vs timeout (calls expireReservation)" }
+
+workflows:
+  - name: "ReceiptFulfillmentWorkflow"
+    type: TEMPORAL
+    description: "Tự động tạo phiếu nhập kho (receipt) khi đơn mua hàng (PO) giao thành công. Workflow ID receipt-fulfillment-{tenantId}-{purchaseOrderCode}; timeout 72h (+30m buffer). Luồng end-to-end: gf-purchase publish PO DELIVERED.2 → Kafka → gf-inventory-worker listener → start workflow → gọi gf-inventory tạo receipt → chờ signal từ UI (qua gf-inventory API) → đóng workflow."
+    steps:
+      - step: 1
+        service: "gf-purchase → Kafka"
+        action: "gf-purchase publish PurchaseOrderEvent lên topic purchase-order-events khi PO chuyển trạng thái DELIVERING (MessageGroup=PO, MessageStep=DELIVERED.2, source=DIRECT). Event chứa tenant_id, purchase_order_code."
+      - step: 2
+        service: "Kafka → gf-inventory-worker"
+        action: "PurchaseOrderEventListener.handlePurchaseOrderEvent nhận event, filter MessageGroup=PO + MessageStep=DELIVERED.2. Kiểm tra feature flag Inventory:InventoryStockV01 (global toggle, KHÔNG per-tenant — gọi isEnabled() không truyền tenant arg). Nếu flag tắt → skip, không start workflow."
+      - step: 3
+        service: "gf-inventory-worker → gf-inventory"
+        action: "Start Temporal workflow (ID: receipt-fulfillment-{tenantId}-{purchaseOrderCode}, đảm bảo idempotent — PO gửi lại event không tạo workflow trùng). Gọi ReceiptActivity.createReceipt → POST /protected/receipts tới gf-inventory. gf-inventory tạo receipt trạng thái PENDING, sinh receipt code qua sequence table, trả về receiptCode."
+      - step: 4
+        service: "gf-inventory-worker"
+        action: "Workflow chờ tối đa 72h cho signal complete(userId) hoặc cancel(userId, reason). Hỗ trợ query getStatus() để UI poll trạng thái hiện tại."
+      - step: 5a
+        service: "gf-inventory → gf-inventory-worker"
+        action: "Kịch bản DUYỆT: gọi gf-inventory API /api/v2/receipts/{id}/complete → gf-inventory tự cập nhật receipt status=COMPLETED, tăng stock per item (quantity + costPrice) trong DB → SAU ĐÓ gf-inventory gửi signal complete(userId) tới workflow. Workflow KHÔNG gọi thêm activity — chỉ set status COMPLETED và đóng (xem BR-007: bất đối xứng so với DeliveryFulfillment)."
+      - step: 5b
+        service: "gf-inventory → gf-inventory-worker"
+        action: "Kịch bản HỦY: gọi gf-inventory API /api/v2/receipts/{id}/cancel → gf-inventory tự cập nhật receipt status=CANCELLED → gửi signal cancel(userId, reason). Workflow KHÔNG gọi activity — chỉ set status CANCELLED và đóng."
+      - step: 5c
+        service: "gf-inventory-worker"
+        action: "Kịch bản TIMEOUT: Không có action trong 72h  → workflow đóng với status SKIPPED_INVALID_STATUS."
+
+  - name: "DeliveryFulfillmentWorkflow"
+    type: TEMPORAL
+    description: "Tự động tạo phiếu xuất kho (delivery) khi SO đạt trạng thái trigger — phụ thuộc order_type: RETAIL (bán lẻ) trigger khi CONFIRMED, SERVICE (sửa chữa) trigger khi IN_PROGRESS. Workflow ID delivery-fulfillment-{tenantId}-{serviceOrderCode}; timeout 24h (+1h buffer). Luồng end-to-end: gf-sales publish SO status event → Kafka → gf-inventory-worker listener → start workflow → gọi gf-inventory tạo delivery → chờ signal từ UI → gọi activity complete/cancel → đóng workflow. Khác biệt cốt lõi so với ReceiptFulfillment: signal complete/cancel CÓ GỌI activity (workflow delegate action cho API thay vì gf-inventory tự xử lý trước)."
+    steps:
+      - step: 1
+        service: "gf-sales → Kafka"
+        action: "gf-sales publish ServiceOrderStatusChangedEvent lên topic service-order-events (MessageGroup=SERVICE_ORDER). Thời điểm publish phụ thuộc order_type: (1) RETAIL (bán lẻ phụ tùng) — publish khi SO chuyển sang CONFIRMED, tức kế toán xác nhận đơn bán lẻ → hệ thống tạo phiếu xuất kho ngay (MessageStep=CONFIRMED); (2) SERVICE (sửa chữa) — publish khi SO chuyển sang IN_PROGRESS, tức kỹ thuật viên bắt đầu thực hiện sửa chữa, phụ tùng cần xuất kho để phục vụ công việc (MessageStep=IN_PROGRESS). Chỉ publish khi SO có active parts source=INVENTORY (SO thuần dịch vụ không có phụ tùng thì không trigger xuất kho). Cờ delivery_event_sent trên SO ngăn phát lại event cho cùng SO. Payload chứa tenant_id, service_order_code, order_type, items (sku, quantity, sellingPrice)."
+      - step: 2
+        service: "Kafka → gf-inventory-worker"
+        action: "ServiceOrderEventListener.handleServiceOrderEvent nhận event, hỗ trợ 2 format: (1) Embedded headers mới: filter MessageGroup=SERVICE_ORDER + MessageStep theo order_type (RETAIL→CONFIRMED, SERVICE→IN_PROGRESS); (2) Legacy format: event_type=ServiceOrderStatusChanged (double-encoded JSON, snake_case/camelCase fallbacks). Không có feature flag gate riêng (khác với ReceiptFulfillment cần Inventory:InventoryStockV01)."
+      - step: 3
+        service: "gf-inventory-worker → gf-inventory"
+        action: "Start Temporal workflow (ID: delivery-fulfillment-{tenantId}-{serviceOrderCode}, idempotent). Gọi DeliveryActivity.createDelivery → POST /protected/deliveries tới gf-inventory. gf-inventory tạo delivery trạng thái PENDING, trả về deliveryCode."
+      - step: 4
+        service: "gf-inventory-worker"
+        action: "Workflow chờ tối đa 24h cho signal complete(userId) hoặc cancel(userId, reason). Hỗ trợ query getStatus() để UI poll trạng thái."
+      - step: 5a
+        service: "gf-inventory-worker → gf-inventory"
+        action: "Kịch bản DUYỆT: gửi signal complete(userId) → workflow GỌI DeliveryActivity.completeDelivery → POST /protected/deliveries/complete tới gf-inventory. gf-inventory thực hiện: (a) validate SO theo AC-8 — gọi gf-sales GET /protected/v1/service-orders/{tenantId}/detail/{code} kiểm tra SO tồn tại + chưa hủy + items khớp SKU/quantity (trả 200 với mismatch flag, KHÔNG trả 400); (b) giảm stock per item; (c) cập nhật delivery status=COMPLETED. Workflow đóng với status COMPLETED."
+      - step: 5b
+        service: "gf-inventory-worker → gf-inventory"
+        action: "Kịch bản HỦY: gửi signal cancel(userId, reason) → workflow GỌI DeliveryActivity.cancelDelivery → POST /protected/deliveries/cancel tới gf-inventory. gf-inventory cập nhật delivery status=CANCELLED. Workflow đóng với status CANCELLED."
+      - step: 5c
+        service: "gf-inventory-worker"
+        action: "Kịch bản TIMEOUT: Không có action trong 24h →  workflow đóng với status SKIPPED_TIMEOUT."
+
+  - name: "ReservationExpiryWorkflow"
+    type: TEMPORAL
+    description: "Reservation TTL — workflow ID reservation-expiry-{tenantId}-{deliveryCode}; TTL + 5m buffer"
+    steps:
+      - step: 1
+        service: "gf-inventory → gf-inventory-worker"
+        action: "Triggered by gf-inventory WorkerClient REST call → POST /protected/workflows/reservation-expiry/start (workflowId reservation-expiry-{tenantId}-{deliveryCode})"
+      - step: 2
+        service: "gf-inventory-worker"
+        action: "Workflow.await(ttlMinutes) — chờ signal release / fulfill hoặc hết TTL"
+      - step: 3
+        service: "gf-inventory-worker"
+        action: "Nếu nhận signal release hoặc fulfill: gf-inventory đã update state trước khi gửi signal → workflow chỉ đóng, KHÔNG gọi activity. Nếu TTL hết mà không có signal: gọi ReservationActivity.expireReservation — POST /protected/reservations/{code}/expire"
+
+  - name: "PeriodClosureCoordinatorWorkflow"
+    type: TEMPORAL
+    description: "Coordinate end-of-month period stock closure — workflow ID period-stock-closure-{periodCode}-{timestamp}; cron 0 0 1 * * Asia/Ho_Chi_Minh; semaphore concurrency PERIOD_CLOSURE_MAX_CONCURRENT (default 2)"
+    steps:
+      - step: 1
+        service: "gf-inventory-worker"
+        action: "Triggered by Temporal Schedule cron `0 0 1 * * Asia/Ho_Chi_Minh` (1st of month 00:00 ICT) hoặc manual REST POST /protected/v2/period-closure/operator/trigger"
+      - step: 2
+        service: "gf-inventory-worker → gf-inventory"
+        action: "periodStockClosureActivity.initClosureHistory — bulk insert tất cả warehouses vào history table với status PENDING"
+      - step: 3
+        service: "gf-inventory-worker → gf-inventory"
+        action: "periodStockClosureActivity.getNextPendingPage — fetch next page of PENDING warehouses (loop)"
+      - step: 4
+        service: "gf-inventory-worker"
+        action: "Spawn WarehouseBatchWorkflow children (max PERIOD_CLOSURE_MAX_CONCURRENT=2 concurrent, batch PERIOD_CLOSURE_BATCH_SIZE=15 warehouses per child)"
+      - step: 5
+        service: "gf-inventory-worker"
+        action: "Track child completion via Promise.anyOf/allOf pattern (KHÔNG dùng signal; onChildCompleted signal tồn tại nhưng unused). Khi child done: cập nhật activeCount, lấy BatchResult. cancel() signal: set cancelled=true, dừng spawn children mới"
+
+  - name: "WarehouseBatchWorkflow"
+    type: TEMPORAL
+    description: "Child workflow spawned by PeriodClosureCoordinatorWorkflow — closes a batch of warehouses for the period; activity timeout 30m, retry 3x"
+    steps:
+      - step: 1
+        service: "gf-inventory-worker"
+        action: "Spawned by PeriodClosureCoordinatorWorkflow via Async.function(childWorkflow::execute, batch); child workflow ID: period-stock-closure-{period}-{timestamp}-{batchId}"
+      - step: 2
+        service: "gf-inventory-worker → gf-inventory"
+        action: "Per warehouse (sequential, no fail-fast): (a) updateHistoryStatus(RUNNING); (b) atomicCloseAndCreateNext(idempotencyKey=closure-{period}-{tenantId}-{warehouseCode}-{workflowId}); (c) updateHistoryStatus(SUCCESS/FAILED); (d) deliveryActivity.updateDeliveryItemCostPrices — NON-BLOCKING (lỗi chỉ log, không fail closure). Khi fail: saga.compensate() → rollbackClosure"
+      - step: 3
+        service: "gf-inventory-worker"
+        action: "Return BatchResult (successCount, failedCount, results) — coordinator track qua Promise, không cần signal"
+
+  - name: "RetryBatchWorkflow"
+    type: TEMPORAL
+    description: "Retry failed period-closure warehouses — triggered bởi Spring @Scheduled PeriodClosureRetryCronJob (PERIOD_CLOSURE_RETRY_CRON=0 */5 * * * *); max 5 attempts (gf-inventory lọc warehouses vượt PERIOD_CLOSURE_MAX_RETRY_ATTEMPTS)"
+    steps:
+      - step: 1
+        service: "gf-inventory-worker"
+        action: "Triggered bởi PeriodClosureRetryCronJob (@Scheduled Spring cron, KHÔNG phải Temporal Schedule). CronJob: check feature flag → check không có coordinator đang chạy → fetch PENDING_RETRY warehouses từ gf-inventory → group by periodCode → start RetryBatchWorkflow (ID: period-stock-closure-retry-{period}-{timestamp})"
+      - step: 2
+        service: "gf-inventory-worker → gf-inventory"
+        action: "Per warehouse (sequential): (a) incrementRetryCount; (b) updateHistoryStatus(RUNNING); (c) atomicCloseAndCreateNext(idempotencyKey=retry-closure-{period}-{tenantId}-{warehouseCode}-{workflowId}); (d) updateHistoryStatus(SUCCESS/FAILED). Khi fail: saga.compensate() → rollbackClosure"
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-inventory"
+      purpose: "/protected/workflows/reservation-expiry/{start,release,fulfill} — WorkerClient calls from gf-inventory to start/signal reservation flow"
+    - type: API
+      source: "Admin / operator"
+      purpose: "/protected/v2/period-closure/operator/* — manual trigger / status / retry"
+    - type: EVENT
+      source: "gf-purchase"
+      purpose: "purchase-order-events Kafka — trigger receipt fulfillment when PO DELIVERED.2 + DIRECT"
+    - type: EVENT
+      source: "gf-sales"
+      purpose: "service-order-events Kafka — trigger delivery fulfillment (RETAIL→CONFIRMED, SERVICE→IN_PROGRESS)"
+    - type: API
+      source: "Temporal Schedule"
+      purpose: "Cron — period closure (1st month 00:00 ICT) + retry (5min)"
+
+  outbound:
+    - type: API
+      target: "gf-inventory"
+      purpose: "/protected/{receipts,deliveries,reservations,v2/period-closure}/... — every state mutation via Fat API pattern (InventoryClient)"
+
+dependencies:
+  - { name: "Temporal Java SDK", type: "workflow", purpose: "Runtime cho 6 workflow (Receipt/Delivery Fulfillment, ReservationExpiry, PeriodClosureCoordinator, WarehouseBatch, RetryBatch); host signal/query handlers, child workflows, Temporal Schedule cron.", config_ref: "TEMPORAL_CONNECTION_TARGET, TEMPORAL_NAMESPACE, spring.temporal.*, PERIOD_CLOSURE_MAX_CONCURRENT, PERIOD_CLOSURE_RETRY_CRON" }
+  - { name: "Kafka", type: "broker", purpose: "Consume purchase-order-events (PO DELIVERED.2 → ReceiptFulfillmentWorkflow) và service-order-events (RETAIL CONFIRMED / SERVICE IN_PROGRESS → DeliveryFulfillmentWorkflow; listener hỗ trợ cả embedded-headers format và legacy event_type format).", config_ref: "KAFKA_BOOTSTRAP_SERVERS, kafka.topics.purchase-order-events (env: KAFKA_TOPIC_PO_EVENTS, default dev-inventory-purchase-order-events), kafka.topics.service-order-events (env: KAFKA_TOPIC_SO_EVENTS, default dev-inventory-service-order-events)" }
+  - { name: "Spring Boot 3.5.0 + Web", type: "framework", purpose: "Host REST controllers /protected/workflows/reservation-expiry/* và /protected/v2/period-closure/operator/* (start/signal/status/cancel/retry).", config_ref: "spring.application.name, server.servlet.context-path" }
+  - { name: "gf-inventory REST client (InventoryClient)", type: "api_client", purpose: "Mọi state mutation Fat API: /protected/{receipts,deliveries,reservations,v2/period-closure}/... — invoke từ activities.", config_ref: "gf-inventory.api.base-url (env: GF_INVENTORY_URL), gf-inventory.api.internal-key (env: INTERNAL_API_KEY)" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Bảo vệ /protected/* bằng x-api-key/JWT theo chuẩn platform.", config_ref: "com.actechx.common:spring-security-starter, actechx.security.*" }
+  - { name: "SpringDoc OpenAPI", type: "api_documentation", purpose: "Expose OpenAPI UI cho 10 REST endpoint workflow management.", config_ref: "springdoc-openapi-starter-webmvc-ui, OpenApiConfig" }
+
+change_log:
+  - { date: "2026-05-21", summary: "Mô tả chi tiết ReceiptFulfillmentWorkflow và DeliveryFulfillmentWorkflow: expand workflow steps từ 4 bước thành 5+ bước với cross-service context đầy đủ. Fix DeliveryFulfillmentWorkflow trigger status: trạng thái SO trigger phiếu xuất kho phụ thuộc order_type — RETAIL → CONFIRMED (kế toán xác nhận đơn bán lẻ), SERVICE → IN_PROGRESS (kỹ thuật viên bắt đầu sửa chữa) — không phải DELIVERED chung. Bổ sung: event publishing conditions (SO cần parts source=INVENTORY, delivery_event_sent guard), feature flag gate (InventoryStockV01 global), dual format listener (embedded+legacy), SO validation AC-8, bất đối xứng signal handling (Receipt: no activity vs Delivery: calls activity), 3 kịch bản kết thúc (duyệt/hủy/timeout). Thêm order_type vào event payload.", author: "Architecture Authority — workflow detail + trigger fix 2026-05-21" }
+  - { date: "2026-05-18", summary: "BR review fix: sửa BR-003 (thêm SO listener dual format embedded+legacy), BR-005 (thêm conflict prevention — skip retry khi coordinator running); thêm BR-007 (Receipt vs Delivery signal asymmetry), BR-008 (auto-approval/completion disabled → SKIPPED status), BR-009 (ReservationExpiry signal no-activity vs expire-calls-activity); fix events.consumes SO legacy format.", author: "BE Lead Agent — review fix 2026-05-18" }
+  - { date: "2026-05-14", summary: "RULE-08 wiring: thêm status/active_callers/replaced_by cho 10 internal API. 3 reservation-expiry workflow endpoint → gf-inventory (WorkerClient.startReservationExpiry/release/fulfill từ InventoryDeliveryService). 7 period-closure operator endpoint không có SVC caller → mark unused + TODO admin-only manual trigger.", author: "Architecture Authority — RULE-08 audit 2026-05-14" }
+  - { date: "2026-05-13", summary: "2026-05-13 — Audit source code toàn diện: (1) Fix 9 API schemas sai (reservation-expiry request/response, period-closure stats/cancel/mark-for-retry/mark-all-failed); (2) Fix workflow steps — signal release/fulfill không gọi activity, ReceiptFulfillment timeout=DISABLED; (3) Fix PeriodClosureCoordinator dùng Promise.anyOf không phải signal; (4) WarehouseBatchWorkflow expand steps (updateHistoryStatus+deliveryCostPrices per warehouse); (5) RetryBatchWorkflow trigger là Spring @Scheduled không phải Temporal Schedule; (6) Fix config_ref keys (kafka.topics.purchase-order-events, gf-inventory.api.base-url/internal-key); (7) Update BR-005.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Fix BR-003 + events.consumes drift: clarify Inventory:InventoryStockV01 là GLOBAL flag (PurchaseOrderEventListener.java:95 và PeriodClosureRetryCronJob.java:69 đều gọi isEnabled() không tenant arg), không per-tenant như mô tả cũ. Note FeatureFlagHelper.isEnabledForTenant() helper tồn tại nhưng chưa wire.", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Reformatted to BE canonical: thêm `metadata`, `business_rules` (6 rule Temporal-specific grounded từ workflows/events/entities note), `dependencies` (6 deps: Temporal SDK, Kafka, Spring Boot Web, gf-inventory REST client, spring-security-starter, SpringDoc OpenAPI).", author: "Architecture Authority" }

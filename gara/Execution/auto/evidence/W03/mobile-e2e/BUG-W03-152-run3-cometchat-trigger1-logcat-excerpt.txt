@@ -1,0 +1,120 @@
+07-03 13:08:38.460 I/flutter ( 4946): DEBUG │ 🐛 }
+07-03 13:08:38.460 I/flutter ( 4946): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 13:08:39.041 I/flutter ( 4946): 00:12 +1: .Users.all_engineer.Projects.lemn.gf_garage_app.integration_test._run_reach_home_test REACH HOME: login -> Home renders [E]
+07-03 13:08:39.042 I/flutter ( 4946):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+07-03 13:08:39.044 I/flutter ( 4946):   dart:core-patch/errors_patch.dart 67:4         _AssertionError._doThrowNew
+07-03 13:08:39.044 I/flutter ( 4946):   dart:core-patch/errors_patch.dart 49:5         _AssertionError._throwNew
+07-03 13:08:39.044 I/flutter ( 4946):   package:flutter_test/src/binding.dart 1911:9   TestWidgetsFlutterBinding._runTest.handleUncaughtError
+07-03 13:08:39.044 I/flutter ( 4946):   package:flutter_test/src/binding.dart 1920:13  TestWidgetsFlutterBinding._runTest.<fn>
+07-03 13:08:39.044 I/flutter ( 4946):   dart:async/zone.dart 482:14                    _Zone._processUncaughtError
+07-03 13:08:39.044 I/flutter ( 4946):   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 13:08:39.044 I/flutter ( 4946):   dart:async/future_impl.dart 848:24             Future._propagateToListeners
+07-03 13:08:39.044 I/flutter ( 4946):   dart:async/future_impl.dart 738:5              Future._completeErrorObject
+07-03 13:08:39.044 I/flutter ( 4946):   dart:async/future_impl.dart 742:5              Future._completeError
+07-03 13:08:39.044 I/flutter ( 4946):   
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:218:12)
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG │ 🐛 {
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG │ 🐛   "RESPONSE": {
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG │ 🐛     "__typename": "Query",
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG │ 🐛     "getCurrentUser": {
+07-03 13:08:39.051 I/flutter ( 4946): DEBUG │ 🐛       "__typename": "GetCurrentUserApiResponse",
+--
+07-03 13:08:39.170 I/flutter ( 4946): DEBUG │ 🐛 }
+07-03 13:08:39.170 I/flutter ( 4946): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 13:08:39.509 D/OomAdjuster(  505): Not killing cached processes
+07-03 13:08:39.527 I/flutter ( 4946):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+07-03 13:08:39.528 I/flutter ( 4946):   dart:core-patch/errors_patch.dart 67:4         _AssertionError._doThrowNew
+07-03 13:08:39.528 I/flutter ( 4946):   dart:core-patch/errors_patch.dart 49:5         _AssertionError._throwNew
+07-03 13:08:39.528 I/flutter ( 4946):   package:flutter_test/src/binding.dart 1911:9   TestWidgetsFlutterBinding._runTest.handleUncaughtError
+07-03 13:08:39.528 I/flutter ( 4946):   package:flutter_test/src/binding.dart 1920:13  TestWidgetsFlutterBinding._runTest.<fn>
+07-03 13:08:39.528 I/flutter ( 4946):   dart:async/zone.dart 482:14                    _Zone._processUncaughtError
+07-03 13:08:39.528 I/flutter ( 4946):   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 13:08:39.528 I/flutter ( 4946):   dart:async/future_impl.dart 848:24             Future._propagateToListeners
+07-03 13:08:39.528 I/flutter ( 4946):   dart:async/future_impl.dart 738:5              Future._completeErrorObject
+07-03 13:08:39.528 I/flutter ( 4946):   dart:async/future_impl.dart 742:5              Future._completeError
+07-03 13:08:39.528 I/flutter ( 4946):   
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:218:12)
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG │ 🐛 {
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG │ 🐛   "RESPONSE": {
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG │ 🐛     "__typename": "Query",
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG │ 🐛     "getSpendingChart": {
+07-03 13:08:39.535 I/flutter ( 4946): DEBUG │ 🐛       "__typename": "GetSpendingChartApiResponse",
+--
+07-03 13:09:17.715 D/EGL_emulation( 4946): app_time_stats: avg=20.38ms min=8.48ms max=76.67ms count=13
+07-03 13:09:18.773 D/EGL_emulation( 4946): app_time_stats: avg=13.81ms min=6.60ms max=71.17ms count=13
+07-03 13:09:19.841 D/EGL_emulation( 4946): app_time_stats: avg=14.75ms min=1.50ms max=86.78ms count=13
+07-03 13:09:20.178 I/flutter ( 4946):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+07-03 13:09:20.179 I/flutter ( 4946):   dart:core-patch/errors_patch.dart 67:4         _AssertionError._doThrowNew
+07-03 13:09:20.179 I/flutter ( 4946):   dart:core-patch/errors_patch.dart 49:5         _AssertionError._throwNew
+07-03 13:09:20.179 I/flutter ( 4946):   package:flutter_test/src/binding.dart 1911:9   TestWidgetsFlutterBinding._runTest.handleUncaughtError
+07-03 13:09:20.179 I/flutter ( 4946):   package:flutter_test/src/binding.dart 1920:13  TestWidgetsFlutterBinding._runTest.<fn>
+07-03 13:09:20.179 I/flutter ( 4946):   dart:async/zone.dart 482:14                    _Zone._processUncaughtError
+07-03 13:09:20.179 I/flutter ( 4946):   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 13:09:20.179 I/flutter ( 4946):   dart:async/future_impl.dart 886:24             Future._propagateToListeners
+07-03 13:09:20.179 I/flutter ( 4946):   dart:async/future_impl.dart 738:5              Future._completeErrorObject
+07-03 13:09:20.179 I/flutter ( 4946):   dart:async/future_impl.dart 742:5              Future._completeError
+07-03 13:09:20.179 I/flutter ( 4946):   
+07-03 13:09:20.257 D/BtGatt.ScanManager(  783): uid 10111 isForeground true scanMode -1
+07-03 13:09:20.257 D/OomAdjuster(  505): Not killing cached processes
+07-03 13:09:20.259 D/BoundBrokerSvc( 1614): onBind: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+07-03 13:09:20.259 D/BoundBrokerSvc( 1614): Loading bound service for intent: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+07-03 13:09:20.280 D/BoundBrokerSvc( 1278): onBind: Intent { act=com.google.android.gms.scheduler.ACTION_PROXY_SCHEDULE dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+07-03 13:09:20.280 D/BoundBrokerSvc( 1278): Loading bound service for intent: Intent { act=com.google.android.gms.scheduler.ACTION_PROXY_SCHEDULE dat=chimera-action:/... cmp=com.google.android.gms/.chimera.PersistentApiService }
+07-03 13:09:20.843 D/EGL_emulation( 4946): app_time_stats: avg=34.59ms min=7.15ms max=99.97ms count=12
+07-03 13:09:21.892 D/EGL_emulation( 4946): app_time_stats: avg=14.18ms min=6.54ms max=53.34ms count=13
+07-03 13:09:22.977 D/EGL_emulation( 4946): app_time_stats: avg=20.69ms min=8.38ms max=80.41ms count=13
+07-03 13:09:23.347 I/flutter ( 4946): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+--
+07-03 13:31:24.856 I/flutter ( 6417): DEBUG └─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 13:31:24.898 D/EGL_emulation(  710): app_time_stats: avg=71.08ms min=6.31ms max=2513.83ms count=41
+07-03 13:31:25.255 I/flutter ( 6417): 00:12 +1: .Users.all_engineer.Projects.lemn.garage_agentic_design.Execution.auto.specs.W03.mobile_e2e.inventory_hub_patrol_test W03 Hub journey: TC-001 render 2 tile -> TC-002 nav+back -> TC-003 Product tile -> TC-004 debounce -> TC-005 regression -> TC-006 hardware back [E]
+07-03 13:31:25.255 I/flutter ( 6417):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+07-03 13:31:25.256 I/flutter ( 6417):   dart:core-patch/errors_patch.dart 67:4         _AssertionError._doThrowNew
+07-03 13:31:25.256 I/flutter ( 6417):   dart:core-patch/errors_patch.dart 49:5         _AssertionError._throwNew
+07-03 13:31:25.256 I/flutter ( 6417):   package:flutter_test/src/binding.dart 1911:9   TestWidgetsFlutterBinding._runTest.handleUncaughtError
+07-03 13:31:25.256 I/flutter ( 6417):   package:flutter_test/src/binding.dart 1920:13  TestWidgetsFlutterBinding._runTest.<fn>
+07-03 13:31:25.256 I/flutter ( 6417):   dart:async/zone.dart 482:14                    _Zone._processUncaughtError
+07-03 13:31:25.256 I/flutter ( 6417):   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 13:31:25.256 I/flutter ( 6417):   dart:async/future_impl.dart 848:24             Future._propagateToListeners
+07-03 13:31:25.256 I/flutter ( 6417):   dart:async/future_impl.dart 738:5              Future._completeErrorObject
+07-03 13:31:25.256 I/flutter ( 6417):   dart:async/future_impl.dart 742:5              Future._completeError
+07-03 13:31:25.256 I/flutter ( 6417):   
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG │ #1   GraphQLServiceBase._handleGraphQLResponse (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:218:12)
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG │ #2   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:154:18)
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG │ 🐛 {
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG │ 🐛   "RESPONSE": {
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG │ 🐛     "__typename": "Query",
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG │ 🐛     "getStats": {
+07-03 13:31:25.258 I/flutter ( 6417): DEBUG │ 🐛       "__typename": "GetStatsApiResponse",
+--
+07-03 13:31:25.552 D/BtGatt.ScanManager(  783): uid 10111 isForeground true scanMode -1
+07-03 13:31:25.557 D/BoundBrokerSvc( 1614): onBind: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+07-03 13:31:25.557 D/BoundBrokerSvc( 1614): Loading bound service for intent: Intent { act=com.google.android.gms.measurement.START pkg=com.google.android.gms }
+07-03 13:31:25.802 I/flutter ( 6417):   'package:flutter_test/src/binding.dart': Failed assertion: line 1911 pos 9: '_pendingExceptionDetails != null': A test overrode FlutterError.onError but either failed to return it to its original state, or had unexpected additional errors that it could not handle. Typically, this is caused by using expect() before restoring FlutterError.onError.
+07-03 13:31:25.802 I/flutter ( 6417):   dart:core-patch/errors_patch.dart 67:4         _AssertionError._doThrowNew
+07-03 13:31:25.802 I/flutter ( 6417):   dart:core-patch/errors_patch.dart 49:5         _AssertionError._throwNew
+07-03 13:31:25.802 I/flutter ( 6417):   package:flutter_test/src/binding.dart 1911:9   TestWidgetsFlutterBinding._runTest.handleUncaughtError
+07-03 13:31:25.802 I/flutter ( 6417):   package:flutter_test/src/binding.dart 1920:13  TestWidgetsFlutterBinding._runTest.<fn>
+07-03 13:31:25.802 I/flutter ( 6417):   dart:async/zone.dart 482:14                    _Zone._processUncaughtError
+07-03 13:31:25.802 I/flutter ( 6417):   dart:async/zone.dart 703:5                     _CustomZone.handleUncaughtError
+07-03 13:31:25.802 I/flutter ( 6417):   dart:async/future_impl.dart 848:24             Future._propagateToListeners
+07-03 13:31:25.802 I/flutter ( 6417):   dart:async/future_impl.dart 738:5              Future._completeErrorObject
+07-03 13:31:25.802 I/flutter ( 6417):   dart:async/future_impl.dart 742:5              Future._completeError
+07-03 13:31:25.802 I/flutter ( 6417):   
+07-03 13:31:25.813 D/EGL_emulation( 6417): app_time_stats: avg=156.17ms min=17.27ms max=461.45ms count=7
+07-03 13:31:25.816 I/flutter ( 6417): DEBUG ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+07-03 13:31:25.817 I/flutter ( 6417): DEBUG │ #0   PrefixPrinter.log (package:cardoctor_garage_v3/core/logger/logger.dart:43:10)
+07-03 13:31:25.817 I/flutter ( 6417): DEBUG │ #1   GraphQLServiceBase._execute (package:cardoctor_garage_v3/core/services/graphql/graphql_service_base.dart:137:12)
+07-03 13:31:25.817 I/flutter ( 6417): DEBUG │ #2   <asynchronous suspension>
+07-03 13:31:25.817 I/flutter ( 6417): DEBUG ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄

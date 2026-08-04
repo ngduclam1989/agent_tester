@@ -1,0 +1,496 @@
+# Knowledge Graph — gf-erp-agent
+
+boundary: "gf-erp-agent"
+version: 2
+last_updated: "2026-05-18"
+owner_authority: "Architecture Authority"
+
+metadata:
+  purpose: "Durable message bridge giữa Garage và ERP/COP: nhận protected REST command, lưu outbound_message, publish Kafka, consume inbound Kafka, lưu inbound_message, gọi downstream Garage services, fanout notification và hỗ trợ batch retry thủ công."
+  tech: { language: "Java 21", framework: "Spring Boot 3.5.0 + Spring Data JPA + Kafka", data_store: "PostgreSQL" }
+  epics: []
+  features: []
+  integration_ref: "Architecture/api/gf-erp-agent-api.md"
+  integration_consumers: []
+
+
+apis:
+  - name: "batch-inbound"
+    path: "/protected/v1/batch/inbound"
+    method: POST
+    purpose: "Cron-triggered batch processing of pending inbound_message rows (called from gf-worker every 10–15s)"
+    status: internal-only  
+    active_callers: ["gf-worker"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: array  # List<BatchResponse>{key: string, success: boolean}
+
+  - name: "batch-outbound"
+    path: "/protected/v1/batch/outbound"
+    method: POST
+    purpose: "Cron-triggered batch publish of pending outbound_message rows"
+    status: internal-only  
+    active_callers: ["gf-worker"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: array  # List<BatchResponse>{key: string, success: boolean}
+
+  - name: "batch-inbound-notification"
+    path: "/protected/v1/batch/inbound-notification"
+    method: POST
+    purpose: "Cron-triggered notification dispatch for processed inbound messages"
+    status: internal-only  
+    active_callers: ["gf-worker"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: array  # List<BatchResponse>{key: string, success: boolean}
+
+  - name: "batch-outbound-notification"
+    path: "/protected/v1/batch/outbound-notification"
+    method: POST
+    purpose: "Cron-triggered notification dispatch for processed outbound messages"
+    status: internal-only  
+    active_callers: ["gf-worker"]
+    replaced_by: null
+    request:
+      schema: {}
+    response:
+      schema:
+        data: array  # List<BatchResponse>{key: string, success: boolean}
+
+  - name: "purchase-create"
+    path: "/protected/v1/purchases"
+    method: POST
+    purpose: "Create CreatePurchaseRequest outbound message → publish to ERP Kafka"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        tenant_id: long
+        purchase: object
+    response:
+      schema:
+        data: string  # Hardcoded "OK" — không expose persisted OutboundMessage ID. Source: ResponseUtil.success("OK").
+
+  - name: "purchase-confirm"
+    path: "/protected/v1/purchases/confirm"
+    method: POST
+    purpose: "Create ConfirmPurchaseRequest (PRIORITY) — published immediately AFTER_COMMIT"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        tenant_id: long
+        purchase_code: string
+    response:
+      schema:
+        data: string  # Hardcoded "OK" — không expose persisted OutboundMessage ID. Source: ResponseUtil.success("OK").
+
+  - name: "purchase-cancel"
+    path: "/protected/v1/purchases/cancel"
+    method: PUT
+    purpose: "Create CancelPurchaseRequest outbound message"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        tenant_id: long
+        purchase_code: string
+        reason: string
+    response:
+      schema:
+        data: string  # Hardcoded "OK" — không expose persisted OutboundMessage ID. Source: ResponseUtil.success("OK").
+
+  - name: "purchase-confirm-received"
+    path: "/protected/v1/purchases/confirm-received"
+    method: POST
+    purpose: "Create DeliveredOrderRequest outbound message"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        tenant_id: long
+        purchase_code: string
+    response:
+      schema:
+        data: string  # Hardcoded "OK" — không expose persisted OutboundMessage ID. Source: ResponseUtil.success("OK").
+
+  - name: "quotation-ask-create"
+    path: "/protected/v1/quotation-asks"
+    method: POST
+    purpose: "Create QuotationAsk outbound message → publish to ERP"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        tenant_id: long
+        quotation: object
+    response:
+      schema:
+        data: string  # Hardcoded "OK" — không expose persisted OutboundMessage ID. Source: ResponseUtil.success("OK").
+
+  - name: "pricing-create"
+    path: "/protected/v1/pricing"
+    method: POST
+    purpose: "Create PricingRequest outbound message → publish to ERP"
+    status: internal-only
+    active_callers: ["gf-purchase"]
+    replaced_by: null
+    request:
+      schema:
+        tenant_id: long
+        pricing: object
+    response:
+      schema:
+        data: string  # Hardcoded "OK" — không expose persisted OutboundMessage ID. Source: ResponseUtil.success("OK").
+
+events:
+  produces:
+    - topic: "AC-DEV-QUOTATION-ASK"
+      payload:
+        message_key: string
+        tenant_id: long
+        origin_tenant_id: long
+        quotation: object
+      meaning: "QuotationAskMessage — REST POST /protected/v1/quotation-asks → outbound_message → publish to ERP"
+
+    - topic: "AC-DEV-PRICING"
+      payload:
+        message_key: string
+        tenant_id: long
+        pricing: object
+      meaning: "PricingRequestMessage — REST POST /protected/v1/pricing"
+
+    - topic: "AC-DEV-PURCHASE-REQUEST"
+      payload:
+        message_key: string
+        tenant_id: long
+        purchase: object
+        message_step: string
+      meaning: "CreatePurchaseRequestMessage — REST POST /protected/v1/purchases qua CreatePurchaseRequestPublisher (topic kafka.topics.purchase-request)"
+
+    - topic: "AC-DEV-ORDER-STAGE-UPDATE"
+      payload:
+        message_key: string
+        tenant_id: long
+        purchase_code: string
+        reason: string
+      meaning: "CancelPurchaseRequestMessage — REST PUT /protected/v1/purchases/cancel qua CancelPurchaseRequestPublisher. ⚠ SUSPECT SOURCE BUG: CancelPurchaseRequestPublisher.java:20 dùng kafka.topics.order-stage-update thay vì kafka.topics.purchase-request (như CreatePurchaseRequestPublisher). Git commit 9c2d196 (Aug 2025) refactor SNS→Kafka có copy-paste error — KG hiện reflect runtime, cần dev confirm intent + có thể fix source để CANCEL về cùng topic với CREATE."
+
+    - topic: "AC-DEV-ORDER-STAGE-UPDATE"
+      payload:
+        message_key: string
+        tenant_id: long
+        purchase_code: string
+      meaning: "ConfirmPurchaseRequestMessage (PRIORITY_PROCESSING) — published AFTER_COMMIT via UpdateOrderStagePublisher tới topic kafka.topics.order-stage-update (chia sẻ topic với UpdateOrderStage events khác). Source: UpdateOrderStagePublisher.java:21."
+
+    - topic: "shipment-order-delivered"
+      payload:
+        message_key: string
+        tenant_id: long
+        shipment_order: object
+      meaning: "DeliveredShipmentOrderMessage — DeliveredOrderRequestPublisher"
+
+  consumes:
+    - topic: "AC-DEV-TENANT-ACTIVATION"
+      payload:
+        message_group: string
+        message_step: string
+        tenant_type: string
+        tenant_id: long
+        location: object
+      action: "LocationMessageHandler — filter tenantType=GARAGE + step=ACTIVATED.1 → call gf-inventory POST /protected/v1/locations to create default location"
+
+    - topic: "AC-DEV-QUOTATION-BID"
+      payload:
+        message_key: string
+        tenant_id: long
+        quotation_bid: object
+      action: "QuotationBidMessageHandler — step BID_1 → POST gf-purchase /protected/v1/quotation-bids"
+
+    - topic: "AC-DEV-QUOTATION-ASK-UPDATE"
+      payload:
+        message_key: string
+        tenant_id: long
+        quotation: object
+      action: "QuotationAskUpdatedMessageHandler — PUT gf-purchase /protected/v1/quotation-asks"
+
+    - topic: "AC-DEV-PRICING"
+      payload:
+        message_key: string
+        tenant_id: long
+        proposal: object
+      action: "PricingProposalMessageHandler — POST gf-purchase /protected/v1/pricing-proposals"
+
+    - topic: "AC-DEV-SALE-ORDER"
+      payload:
+        message_key: string
+        message_step: string
+        sale_order: object
+      action: "SaleOrderMessageHandler — handle SALE_ORDER_CONFIRMATION/CHANGE/CANCELLATION → forward to gf-purchase"
+
+    - topic: "AC-DEV-ORDER-STAGE-UPDATE"
+      payload:
+        message_key: string
+        purchase_order_code: string
+        stage: string
+      action: "OrderStateUpdatedMessageHandler — step=OPEN.1 → ORDER_OPEN (→ gfPurchaseClient.updatePurchaseOrderStatus); step=WAIT_TO_CONFIRM_1_1 → VENDOR_CONFIRMED (PRIORITY_PROCESSING, immediate processing sau commit → gfPurchaseClient.receiveVendorConfirmation). Các step khác bị log + silent-skip (BR-013)."
+
+    - topic: "AC-NONPROD-DEV-TO-INFO"
+      payload:
+        message_key: string
+        shipment_order: object
+      action: "ShipmentOrderMessageHandler — POST gf-shipment /protected/v1/shipment-orders"
+
+    - topic: "AC-NONPROD-DEV-TO-STAGE"
+      payload:
+        message_key: string
+        shipment_order_code: string
+        stage: string
+      action: "ShipmentOrderStageMessageHandler — forward shipment stage to gf-shipment"
+
+    - topic: "AC-DEV-PRELIMINARY-QUOTATION-TOPIC"
+      payload:
+        message_key: string
+        tenant_id: long
+        preliminary_quotation: object
+      action: "PreliminaryQuotationMessageHandler — handle PRELIMINARY_QUOTATION_CREATED/UPDATED → forward to gf-purchase"
+
+    - topic: "AC-DEV-PAYMENT-ORDER-GARAGE"
+      payload:
+        message_key: string
+        tenant_id: long
+        payment_order: object
+      action: "PaymentOrderGaragePrepaidMessageHandler — handle PR_PREPAID payment orders"
+
+    - topic: "AC-DEV-PAYMENT-ORDER-POST-PAID"
+      payload:
+        message_key: string
+        tenant_id: long
+        payment_order: object
+      action: "PaymentOrderGaragePostpaidMessageHandler — handle PR_POSTPAID payment orders"
+
+    - topic: "AC-NONPROD-DEV-O-STAGE"
+      payload:
+        message_key: string
+        tenant_id: long
+        purchase_order: object
+        stage: string
+      action: "PurchaseOrderStageMessageHandler (config kafka.topics.delivered-order) — DELIVERING_PO khi type=RECEIPT+stage=DELIVERING; DELIVERED_COD_PO khi source=COP+type=DELIVERY+stage=CLOSED+paymentMethod=COD; DELIVERED_PO khi source=COP+type=DELIVERY+stage=CLOSED không COD. Messages không match bị log + silent-skip, KHÔNG tạo InboundMessage row (BR-013). ⚠ VENDOR_CONFIRMED và ORDER_OPEN KHÔNG đến từ topic này — xem AC-DEV-ORDER-STAGE-UPDATE."
+
+entities:
+  - name: "InboundMessage"
+    type: "aggregate_root"
+    description: "Durable queue cho message nhận từ Kafka trước khi dispatch sang gf-purchase, gf-shipment, gf-inventory và notification fanout."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "message_key", type: "VARCHAR(500)", required: true }
+      - { name: "message_type", type: "InboundMessageType", required: true, constraints: ["QUOTATION_BID | QUOTATION_ASK_UPDATE | PRICING_PROPOSAL | SALE_ORDER_CONFIRMATION | SALE_ORDER_CHANGE | SALE_ORDER_CANCELLATION | LOCATION | SHIPMENT_ORDER | SHIPMENT_ORDER_STAGE | DELIVERING_PO | DELIVERED_PO | PR_PREPAID | PR_POSTPAID | ORDER_OPEN | VENDOR_CONFIRMED | DELIVERED_COD_PO | PRELIMINARY_QUOTATION_CREATED | PRELIMINARY_QUOTATION_UPDATED"] }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "message_code", type: "VARCHAR(255)", required: false }
+      - { name: "payload", type: "JSON", required: false }
+      - { name: "message_group", type: "VARCHAR(50)", required: false }
+      - { name: "message_step", type: "VARCHAR(50)", required: false }
+      - { name: "origin_tenant_id", type: "BIGINT", required: false }
+      - { name: "status", type: "ProcessingStatus", required: true, constraints: ["PENDING | PRIORITY_PROCESSING | COMPLETED | FAILED | RETRYING"] }
+      - { name: "attempt_count", type: "INTEGER", required: true }
+      - { name: "last_error", type: "TEXT", required: false }
+      - { name: "is_notified", type: "BOOLEAN", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: false }
+    relationships:
+      - { target: "OutboundMessage", type: "logical_reference", description: "Có thể tương quan logical qua message_code, message_group, message_step, tenant_id và origin_tenant_id; không có foreign key vật lý." }
+    invariants:
+      - "Kafka handler phải persist InboundMessage trước khi acknowledge; downstream REST side effect chạy ở batch processor hoặc immediate processor."
+      - "Inbound message chỉ được route khi có headers MessageGroup, MessageStep, OriginTenantId và OriginMessageCode."
+      - "VENDOR_CONFIRMED được tạo với status PRIORITY_PROCESSING và xử lý ngay sau commit; lỗi immediate thì revertToPending để batch retry."
+      - "Batch claim dùng FOR UPDATE SKIP LOCKED trên status PENDING hoặc RETRYING."
+      - "Unique constraint trên message_key đã bị drop ở migration V1.0.7; source vẫn catch DataIntegrityViolationException và findByMessageKey nếu DB ném lỗi duplicate."
+
+  - name: "OutboundMessage"
+    type: "aggregate_root"
+    description: "Durable queue cho command nhận từ protected REST API trước khi publish sang Kafka topic ERP/COP."
+    attributes:
+      - { name: "id", type: "BIGINT", required: true }
+      - { name: "message_type", type: "OutboundMessageType", required: true, constraints: ["QUOTATION_ASK | PRICING_REQUEST | CREATE_PURCHASE_REQUEST | CONFIRM_PURCHASE_REQUEST | CANCEL_PURCHASE_REQUEST | DELIVERED_SHIPMENT_ORDER"] }
+      - { name: "tenant_id", type: "BIGINT", required: false }
+      - { name: "message_code", type: "VARCHAR(255)", required: false }
+      - { name: "payload", type: "JSON", required: false }
+      - { name: "message_group", type: "VARCHAR(50)", required: false }
+      - { name: "message_step", type: "VARCHAR(50)", required: false }
+      - { name: "origin_tenant_id", type: "BIGINT", required: false }
+      - { name: "status", type: "ProcessingStatus", required: true, constraints: ["PENDING | PRIORITY_PROCESSING | COMPLETED | FAILED | RETRYING"] }
+      - { name: "attempt_count", type: "INTEGER", required: true }
+      - { name: "last_error", type: "TEXT", required: false }
+      - { name: "is_notified", type: "BOOLEAN", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+      - { name: "processed_at", type: "TIMESTAMP", required: false }
+    relationships:
+      - { target: "InboundMessage", type: "logical_reference", description: "Có thể tương quan logical qua message_code, message_group, message_step, tenant_id và origin_tenant_id; không có foreign key vật lý." }
+    invariants:
+      - "Protected REST command chỉ tạo OutboundMessage; Kafka publish chạy qua OutboundMessageService processor."
+      - "CONFIRM_PURCHASE_REQUEST được tạo với status PRIORITY_PROCESSING và xử lý ngay sau commit; lỗi immediate thì revertToPending để batch retry."
+      - "Publisher dựng lại headers MessageGroup, MessageStep, OriginTenantId và OriginMessageCode từ row trước khi publish."
+      - "Notification outbound chỉ xử lý sau khi status COMPLETED và is_notified=false."
+
+  - name: "Sequence"
+    type: "entity"
+    description: "Bảng tiện ích giữ counter theo sequence_name trong schema PostgreSQL; code hiện gọi function get_next_number qua DBUtils."
+    attributes:
+      - { name: "sequence_name", type: "VARCHAR(100)", required: true, constraints: ["primary key"] }
+      - { name: "current_value", type: "BIGINT", required: true }
+      - { name: "increment_by", type: "INTEGER", required: true }
+      - { name: "created_at", type: "TIMESTAMP", required: true }
+      - { name: "updated_at", type: "TIMESTAMP", required: true }
+    relationships: []
+    invariants:
+      - "Sequence không có tenant_id; cô lập bằng PostgreSQL schema và sequence_name."
+      - "get_next_number(schemaName, sequenceName) update trước, nếu chưa có row thì insert với ON CONFLICT để lấy số kế tiếp."
+
+business_rules:
+  - { id: "BR-GF-ERP-AGENT-001", description: "Outbound command phải persist OutboundMessage trước khi publish Kafka.", cornerstone: true, enforcement_point: "QuotationAskController + PricingRequestController + PurchaseRequestController + SimpleMessagingApplicationService + OutboundMessageService" }
+  - { id: "BR-GF-ERP-AGENT-002", description: "Inbound Kafka message phải persist InboundMessage trước; Kafka acknowledgement xảy ra sau handleRawMessage, còn downstream REST chạy trong processor.", cornerstone: true, enforcement_point: "adapter.client.aws.sqs.*MessageHandler + InboundMessageService" }
+  - { id: "BR-GF-ERP-AGENT-003", description: "Batch processing chỉ claim message status PENDING hoặc RETRYING bằng FOR UPDATE SKIP LOCKED; lỗi tăng attemptCount, quá max retry thì mark FAILED.", cornerstone: true, enforcement_point: "InboundMessageRepository + OutboundMessageRepository + InboundMessageService + OutboundMessageService" }
+  - { id: "BR-GF-ERP-AGENT-004", description: "Chỉ CONFIRM_PURCHASE_REQUEST outbound và VENDOR_CONFIRMED inbound là priority message; xử lý immediate sau commit, lỗi thì revertToPending. VENDOR_CONFIRMED đến từ topic order-stage-update với step=WAIT_TO_CONFIRM_1_1 (OrderStateUpdatedMessageHandler) và downstream là gfPurchaseClient.receiveVendorConfirmation().", cornerstone: true, enforcement_point: "PriorityMessageTypes + ImmediateOutboundMessageProcessor + ImmediateInboundMessageProcessor + OrderStateUpdatedMessageHandler" }
+  - { id: "BR-GF-ERP-AGENT-005", description: "Routing inbound/outbound phụ thuộc headers MessageGroup, MessageStep, OriginTenantId và OriginMessageCode.", cornerstone: true, enforcement_point: "InboundMessageService.createMessage + OutboundMessageService.processMessage + Kafka message wrappers" }
+  - { id: "BR-GF-ERP-AGENT-006", description: "Notification fanout chỉ chạy cho message COMPLETED và is_notified=false; lỗi notification tăng attemptCount và ghi lastError nhưng không rollback xử lý downstream đã hoàn tất.", cornerstone: true, enforcement_point: "InboundMessageService.processNotifications + OutboundMessageService.processNotifications + NotificationMessageService" }
+  - { id: "BR-GF-ERP-AGENT-007", description: "Service không tự schedule định kỳ; batch inbound/outbound và notification được trigger qua protected REST endpoints.", cornerstone: true, enforcement_point: "InternalBatchController + SimpleMessageScheduler" }
+  - { id: "BR-GF-ERP-AGENT-008", description: "LOCATION inbound chỉ tạo message khi MessageStep là ACTIVATED.1 và payload tenantType là GARAGE.", cornerstone: true, enforcement_point: "LocationMessageHandler" }
+  - { id: "BR-GF-ERP-AGENT-009", description: "Delivered-order inbound map RECEIPT/DELIVERING thành DELIVERING_PO; COP DELIVERY/CLOSED thành DELIVERED_PO hoặc DELIVERED_COD_PO theo paymentMethod COD. Messages không match các điều kiện này bị silent-skip — xem BR-013.", cornerstone: true, enforcement_point: "PurchaseOrderStageMessageHandler" }
+  - { id: "BR-GF-ERP-AGENT-010", description: "Pricing, purchase confirm và confirm-received endpoints giả định list/object đầu tiên tồn tại; request rỗng sẽ lỗi trước khi tạo outbound message.", cornerstone: false, enforcement_point: "PricingRequestController + PurchaseRequestController" }
+  - { id: "BR-GF-ERP-AGENT-011", description: "Inbound duplicate handling trong code dựa vào DataIntegrityViolationException rồi findByMessageKey, nhưng migration hiện đã drop unique constraint message_key.", cornerstone: false, enforcement_point: "InboundMessageService.createMessage + V1.0.7__Clean_old_tables.sql" }
+  - { id: "BR-GF-ERP-AGENT-012", description: "Max retry có thể override per-message-type qua custom.retries.configs JSON map: InboundMessageService dùng getInboundMaxRetries(messageType, globalDefault), OutboundMessageService dùng getOutboundMaxRetries(messageType, globalDefault). Per-type config thắng global default scheduler.simple.messaging.max-retry-attempts:5.", cornerstone: true, enforcement_point: "MessageRetryProperties + InboundMessageService.processMessage:110 + OutboundMessageService.processMessage:98,167" }
+  - { id: "BR-GF-ERP-AGENT-013", description: "OrderStateUpdatedMessageHandler và PurchaseOrderStageMessageHandler có silent-skip: message không match điều kiện handler (sai step hoặc sai type/stage/source combination) bị log và bỏ qua hoàn toàn, KHÔNG tạo InboundMessage row và KHÔNG throw error.", cornerstone: true, enforcement_point: "OrderStateUpdatedMessageHandler.handleMessage else-branch + PurchaseOrderStageMessageHandler.handleMessage else-branch" }
+
+workflows:
+  - name: "InboundMessageBatchProcessor"
+    type: CRON_BATCH_PROCESSOR
+    description: "Batch processor xử lý InboundMessage status PENDING/RETRYING — claim row, dispatch sang gf-purchase/gf-shipment/gf-inventory rồi mark COMPLETED hoặc tăng attempt_count. Service không tự schedule (BR-007); tick đến từ gf-worker qua REST."
+    steps:
+      - step: 1
+        service: "gf-erp-agent"
+        action: "Triggered by gf-worker cron HTTP every ~10–15s → POST /protected/v1/batch/inbound (InternalBatchController)"
+      - step: 2
+        service: "gf-erp-agent"
+        action: "InboundMessageRepository.claimBatch — SELECT FOR UPDATE SKIP LOCKED (status PENDING|RETRYING); set RETRYING + lock (BR-003)"
+      - step: 3
+        service: "gf-erp-agent → gf-purchase / gf-shipment / gf-inventory"
+        action: "InboundMessageService.processMessage — route theo headers MessageGroup/MessageStep/OriginTenantId/OriginMessageCode (BR-005), gọi REST downstream tương ứng"
+      - step: 4
+        service: "gf-erp-agent"
+        action: "Mark COMPLETED + processed_at hoặc tăng attempt_count + last_error; vượt max retry → FAILED (BR-003)"
+
+  - name: "OutboundMessageBatchProcessor"
+    type: CRON_BATCH_PROCESSOR
+    description: "Batch processor publish OutboundMessage status PENDING/RETRYING sang Kafka topic ERP/COP. Service không tự schedule (BR-007); tick đến từ gf-worker qua REST."
+    steps:
+      - step: 1
+        service: "gf-erp-agent"
+        action: "Triggered by gf-worker cron HTTP every ~10–15s → POST /protected/v1/batch/outbound (InternalBatchController)"
+      - step: 2
+        service: "gf-erp-agent"
+        action: "OutboundMessageRepository.claimBatch — SELECT FOR UPDATE SKIP LOCKED (BR-003)"
+      - step: 3
+        service: "gf-erp-agent → Kafka (ERP/COP topics)"
+        action: "OutboundMessageService.processMessage — dựng lại headers MessageGroup/MessageStep/OriginTenantId/OriginMessageCode rồi publish (BR-001, BR-005)"
+      - step: 4
+        service: "gf-erp-agent"
+        action: "Mark COMPLETED hoặc tăng attempt_count + last_error; vượt max retry → FAILED"
+
+  - name: "InboundNotificationBatchProcessor"
+    type: CRON_BATCH_PROCESSOR
+    description: "Batch processor fanout notification cho InboundMessage đã COMPLETED và is_notified=false. Service không tự schedule (BR-007); tick đến từ gf-worker qua REST."
+    steps:
+      - step: 1
+        service: "gf-erp-agent"
+        action: "Triggered by gf-worker cron HTTP → POST /protected/v1/batch/inbound-notification (InternalBatchController)"
+      - step: 2
+        service: "gf-erp-agent"
+        action: "InboundMessageRepository — query message COMPLETED + is_notified=false"
+      - step: 3
+        service: "gf-erp-agent → gf-notification"
+        action: "InboundMessageService.processNotifications → NotificationMessageService gọi notification API/event (BR-006)"
+      - step: 4
+        service: "gf-erp-agent"
+        action: "Set is_notified=true khi thành công; lỗi notification tăng attempt_count + last_error nhưng không rollback downstream đã hoàn tất (BR-006)"
+
+  - name: "OutboundNotificationBatchProcessor"
+    type: CRON_BATCH_PROCESSOR
+    description: "Batch processor fanout notification cho OutboundMessage đã COMPLETED và is_notified=false. Service không tự schedule (BR-007); tick đến từ gf-worker qua REST."
+    steps:
+      - step: 1
+        service: "gf-erp-agent"
+        action: "Triggered by gf-worker cron HTTP → POST /protected/v1/batch/outbound-notification (InternalBatchController)"
+      - step: 2
+        service: "gf-erp-agent"
+        action: "OutboundMessageRepository — query message COMPLETED + is_notified=false"
+      - step: 3
+        service: "gf-erp-agent → gf-notification"
+        action: "OutboundMessageService.processNotifications → NotificationMessageService"
+      - step: 4
+        service: "gf-erp-agent"
+        action: "Set is_notified=true khi thành công; lỗi notification tăng attempt_count + last_error"
+
+
+integrations:
+  inbound:
+    - type: API
+      source: "gf-worker"
+      purpose: "POST /protected/v1/batch/* — cron batch processing trigger every 10–15s"
+    - type: API
+      source: "gf-purchase"
+      purpose: "Send outbound to ERP via /protected/v1/{purchases,quotation-asks,pricing}"
+    - type: EVENT
+      source: "External ERP / COP"
+      purpose: "12 inbound Kafka topics ingested via @KafkaListener handlers"
+    - type: EVENT
+      source: "ct-saas-tenant"
+      purpose: "tenant-activation topic — LocationMessageHandler create default location when tenant activated"
+
+  outbound:
+    - type: API
+      target: "gf-purchase"
+      purpose: "Forward inbound events to purchase domain — /protected/v1/{quotation-bids,quotation-asks,pricing-proposals,purchase-orders[/stage,/cod-delivered],purchase-requests/{status,prepaid,postpaid,receive-vendor-confirmation},preliminary-quotation}"
+    - type: API
+      target: "gf-shipment"
+      purpose: "Forward shipment events — POST /protected/v1/shipment-orders[/status]"
+    - type: API
+      target: "gf-inventory"
+      purpose: "Create location when tenant activated — POST /protected/v1/locations"
+    - type: API
+      target: "gf-notification"
+      purpose: "Notify user after inbound/outbound message processed — POST /protected/v1/notifications"
+    - type: EVENT
+      target: "Kafka — 6 ERP topics"
+      purpose: "Publish outbound messages (quotation-ask, pricing, purchase-request, confirm/cancel, delivered shipment order) to ERP"
+
+dependencies:
+  - { name: "PostgreSQL", type: "database", purpose: "System of record cho inbound_message, outbound_message và sequences.", config_ref: "spring.datasource.*, spring.jpa.properties.hibernate.default_schema, DB_SCHEMA" }
+  - { name: "Flyway", type: "migration", purpose: "Quản lý schema message tables và sequence function với ddl-auto=none.", config_ref: "spring.flyway.*" }
+  - { name: "Kafka", type: "broker", purpose: "Publish 6 outbound event types và consume 18 inbound message types với manual ack.", config_ref: "KAFKA_BOOTSTRAP_SERVERS, kafka.topics.*, kafka.consumer.*" }
+  - { name: "common-classes messaging", type: "library", purpose: "KafkaMessagePublisher, KafkaMessageHandler, MessagePayload, JsonUtils và ApiResponse dùng cho bridge envelope.", config_ref: "com.actechx.common:common-classes" }
+  - { name: "spring-security-starter", type: "auth", purpose: "Disable public API và bảo vệ protected endpoints bằng x-api-key.", config_ref: "actechx.security.public-api.enabled, internal-service.api-key" }
+  - { name: "spring-otlp-starter + spring-logging-starter", type: "observability", purpose: "Actuator, logging và OTLP profile cho health/metrics/tracing.", config_ref: "spring.profiles.include=otlp" }
+
+
+change_log:
+  - { date: "2026-05-18", summary: "BR audit vs source code: (A) Sai/stale — sửa events.consumes[AC-NONPROD-DEV-O-STAGE].action: xóa VENDOR_CONFIRMED và ORDER_OPEN sai (2 type này do OrderStateUpdatedMessageHandler trên order-stage-update topic xử lý, không phải PurchaseOrderStageMessageHandler trên delivered-order); sửa events.consumes[AC-DEV-ORDER-STAGE-UPDATE].action: thêm step mapping rõ ràng (OPEN.1→ORDER_OPEN, WAIT_TO_CONFIRM_1_1→VENDOR_CONFIRMED PRIORITY). (B) Bổ sung 2 BR: BR-012 per-type retry override qua custom.retries.configs; BR-013 silent-skip behavior của OrderStateUpdatedMessageHandler và PurchaseOrderStageMessageHandler. (C) Mở rộng BR-004: thêm VENDOR_CONFIRMED topic/step/downstream detail; BR-009: thêm silent-skip cross-ref.", author: "Architecture Authority — source audit 2026-05-18" }
+  - { date: "2026-05-14", summary: "RULE-08 wiring: thêm status/active_callers/replaced_by cho 10 internal API. 6 endpoint purchase/quotation/pricing → gf-purchase (AgentClient via PurchaseRequestApplicationService/QuotationAskApplicationService/PurchaseOrderApplicationService). 4 batch endpoint không có HTTP caller → mark unused + TODO (Kafka inbound từ gf-worker là channel khác, không phải REST).", author: "Architecture Authority — RULE-08 audit 2026-05-14" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Fix 3 drift cluster: (1) topic 'purchase-request-priority' không tồn tại → đổi sang AC-DEV-ORDER-STAGE-UPDATE; (2) split CANCEL_PURCHASE_REQUEST ra producer entry riêng + flag suspect source bug ở CancelPurchaseRequestPublisher.java:20 (commit 9c2d196); (3) sửa response schema của 10 endpoints (4 batch trả List<BatchResponse>{key,success}, 6 command trả ApiResponse<String> 'OK', không phải message_id/processed/published/notified như cũ).", author: "Architecture Authority" }
+  - { date: "2026-05-11", summary: "2026-05-11 — Thêm 4 workflow entries CRON_BATCH_PROCESSOR (InboundMessageBatchProcessor, OutboundMessageBatchProcessor, InboundNotificationBatchProcessor, OutboundNotificationBatchProcessor); swap section order workflows ↔ business_rules.", author: "Architecture Authority" }

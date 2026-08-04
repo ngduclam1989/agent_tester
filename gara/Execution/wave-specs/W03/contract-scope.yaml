@@ -1,0 +1,80 @@
+# W03 — Contract scope cho <EPIC_OR_THEME>
+#
+# Liệt kê các cross-boundary contract trong wave + producer + consumer list.
+# Đọc bởi:
+#   - scripts/contract-sign.py verify <consumer> [<contract-path>]  → /dev-handoff gate
+#   - scripts/hooks/check-contract-drift.sh                          → PreToolUse warn
+# Append-only — sửa entry sau khi wave start chỉ qua decision entry trong _decisions.md (PROTOCOL §DEV W1).
+#
+# === Schema ===
+#
+# wave: W03                          # required — wave key matching folder
+# contracts:                            # required — array of contract entries
+#   - path: <relative-from-repo-root>  # required — contract file (Architecture/api/*.md, events/*.md, integrations/INTEG-*.md)
+#     producer: <consumer path>         # required — boundary path that OWNS (writes) contract
+#     consumers: [<consumer paths>]     # required — array; consumers that READ (depend on) contract
+#     kind: api | event | integration | graphql   # required
+#     note: <free text>                 # optional — tại sao trong scope wave này
+#
+# Consumer path convention (matches contract-sign.py CONSUMER_PREFIXES):
+#   boundaries/<service>            (gf-* backend service)
+#   bff-experiences/<bff>           (agg-garage-graph, ...)
+#   web-experiences/<web>           (garage-web)
+#   mobile-experiences/<mobile>     (garage-mobile)
+#
+# === Authoring guidance (PLANNING stage) ===
+#
+# Cho mỗi cross-boundary contract trong wave scope:
+# 1. Liệt kê producer (boundary OWN file). 1 contract = 1 producer.
+# 2. Walk Architecture/integrations/INTEG-*.md để map consumers (REST clients, Kafka subscribers, GraphQL FE).
+# 3. Distinguish kind:
+#      - api       → REST endpoint contract (sync call)
+#      - event     → Kafka topic schema
+#      - integration → INTEG narrative (BFF orchestration steps, multi-step flow)
+#      - graphql   → BFF SDL surface schema
+# 4. Append vào file này.
+# 5. Run: `python3 scripts/contract-sign.py sign <consumer> <path>` cho mỗi (consumer, contract) pair
+#    để baseline ACTIVE entry trong consumer/tracking/contract-signatures.json.
+# 6. Commit + log decision row vào _decisions.md (PROTOCOL §DEV W1 mandatory).
+#
+# === Verification ===
+#
+#   python3 scripts/contract-sign.py verify <consumer>            # all contracts for 1 consumer
+#   python3 scripts/contract-sign.py audit --drift                # wave-wide drift scan
+#   python3 scripts/contract-sign.py cascade <contract-path>      # list consumers affected by contract edit
+#
+# === Examples ===
+#
+# Reference đầy đủ: Execution/wave-specs/W02/contract-scope.yaml (6 contracts, EP-INSURANCE-SETTLEMENT).
+#
+
+wave: W03
+contracts:
+  - path: Architecture/api/gf-inventory-api.md
+    producer: boundaries/gf-inventory
+    consumers:
+      - bff-experiences/agg-garage-graph
+    kind: api
+    note: "EP-INVENTORY-CATALOG — 23 V2 endpoint (V2-1..V2-23 minus V2-9) cho material_group + internal_product CRUD + SKU mapping + UoM conversion + attachment + import/export. BFF consumer qua REST sync"
+
+  - path: Architecture/api/agg-garage-graph-graphql.md
+    producer: bff-experiences/agg-garage-graph
+    consumers:
+      - web-experiences/garage-web
+      - mobile-experiences/garage-mobile
+    kind: graphql
+    note: "EP-INVENTORY-CATALOG — inventory-catalog.gql SDL: 9 query (V2-Q1..Q9) + 15 mutation (V2-M1..M15) = 24 ops. Web consume full 24; Mobile partial 7 ops (Q1/Q3/Q4/Q5 + M1/M2/M3) per CR-1782373204"
+
+  - path: Architecture/integrations/INTEG-EXT-gf-inventory.md
+    producer: boundaries/gf-inventory
+    consumers:
+      - bff-experiences/agg-garage-graph
+    kind: integration
+    note: "External integration narrative — gf-inventory ↔ gf-erp-mdm (UNIT/COUNTRY catalog lookup R18) + ct-file-storage (attachment ADR-016) + ct-saas-tenant (TENANT-USERS R20 displayName enrichment)"
+
+  - path: Architecture/api/gf-erp-mdm-api.md
+    producer: boundaries/gf-erp-mdm
+    consumers:
+      - bff-experiences/agg-garage-graph
+    kind: api
+    note: "R18 + R20 BFF batch enrichment — agg-garage-graph DataLoader gọi POST /protected/catalog/v1/inquiry directory=UNIT (originDisplayName R18) + directory=COUNTRY (mainUnitDisplayName R18). Pattern reuse từ W02 settlement enrichment"
