@@ -1,5 +1,5 @@
 ---
-name: RBT Manual Testing
+name: rbt_manual_testing
 description: Skill sinh manual test cases với 2 modes — QUICK (sinh nhanh từ requirements) và FULL RBT (quy trình AI-RBT 6 bước có đánh giá rủi ro). Có reference ISTQB/RBT và optional grill review bổ trợ nhưng giữ nguyên schema mẫu TC cũ.
 ---
 # RBT Manual Testing
@@ -190,8 +190,8 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 > [!NOTE]
 > **2 luồng sử dụng riêng biệt:**
 >
-> - **Luồng Antigravity (slash command):** Agent thực hiện theo hướng dẫn tổng quát bên dưới và **phải đọc prompt template tương ứng trong `plans/manual/` trước mỗi bước** để giữ đủ checklist chi tiết. User không cần tự copy-paste prompt.
-> - **Luồng Copy-Paste (ChatGPT/Claude):** QA team tự copy nội dung `prompt.txt` trong từng thư mục con của `plans/manual/` vào chat AI, từng bước một.
+> - **Luồng Claude Code (slash command):** Agent thực hiện theo hướng dẫn tổng quát bên dưới và **phải đọc prompt template tương ứng trong `plans/manual/` trước mỗi bước** để giữ đủ checklist chi tiết. User không cần tự copy-paste prompt.
+> - **Luồng Copy-Paste (ChatGPT/Claude khác):** QA team tự copy nội dung `prompt.txt` trong từng thư mục con của `plans/manual/` vào chat AI, từng bước một.
 
 ### Bước 1: Context & Role-play (Khởi tạo ngữ cảnh & Tĩnh kiểm thử)
 
@@ -318,7 +318,7 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 > **Rẽ nhánh theo Scope (tự động, dựa trên phân loại UI/API/BOTH đã xác định ở Bước 1 — không hỏi lại user trừ khi phân loại còn mơ hồ):**
 >
 > - **UI-only** → thực hiện quy trình bên dưới (không đổi gì).
-> - **API-only** → **rẽ hẳn sang skill `api_test_design`** (`.claude/skills/api_test_design/SKILL.md`): chạy quy trình 5 bước 4-phase để sinh Test Design (Markmap), **chờ user confirm Test Design**, rồi chạy tiếp bước sinh Test Case (schema 19 cột) theo `references/API-Gen-TC-From-TD-v4.txt` của skill đó, convert sang `.md`+`.xlsx` và xóa file `.tsv` trung gian (xem mục "Lưu trữ" của `api_test_design`). **Bỏ qua toàn bộ quy trình UI bên dưới** cho module này — TC API dùng schema/định dạng riêng (19 cột), không phải bảng Markdown 9 cột của RBT UI.
+> - **API-only** → **rẽ hẳn sang skill `api_test_design`** (`.claude/skills/api_test_design/SKILL.md`): chạy quy trình 5 bước 4-phase để sinh Test Design (Markmap), **chờ user confirm Test Design**, rồi chạy tiếp bước sinh Test Case (schema 19 cột) theo `references/API-Gen-TC-From-TD-v4.md` của skill đó, convert sang `.md`+`.xlsx` và xóa file `.tsv` trung gian (xem mục "Lưu trữ" của `api_test_design`). **Bỏ qua toàn bộ quy trình UI bên dưới** cho module này — TC API dùng schema/định dạng riêng (19 cột), không phải bảng Markdown 9 cột của RBT UI.
 > - **BOTH** → xử lý **tuần tự, API trước — UI sau** (không làm song song):
 >   1. Chạy nhánh API-only ở trên trước → ra file TC API (`.md`+`.xlsx`, TSV trung gian đã xóa) → **chờ user confirm xong TC API**.
 >   2. Sau khi TC API đã confirm, mới tiếp tục quy trình UI bên dưới cho phần UI của cùng feature.

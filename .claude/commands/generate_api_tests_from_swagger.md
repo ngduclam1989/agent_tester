@@ -41,8 +41,8 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 ### Bước 1: Tiếp nhận & Phân tích Spec (Parse & Analyze)
 
 1. **Thu thập Swagger/OpenAPI spec** từ user:
-   - **URL trực tiếp** (VD: `https://api.example.com/swagger.json`) → dùng `read_url_content` để fetch
-   - **File local** (JSON/YAML) → dùng `view_file` để đọc
+   - **URL trực tiếp** (VD: `https://api.example.com/swagger.json`) → dùng `WebFetch` để fetch
+   - **File local** (JSON/YAML) → dùng `Read` để đọc
    - **Swagger UI URL** → trích xuất URL spec gốc (thường là `/v2/api-docs` hoặc `/v3/api-docs`)
    - **Scalar API Reference URL** → inspect HTML để tìm `data-configuration` chứa URL spec (thường là `/swagger/json`, `/reference/json`, hoặc relative path trong attribute `url`). VD: `https://book.anhtester.com/swagger` → spec tại `https://book.anhtester.com/swagger/json`
    - **Các dạng API Doc khác** (Redoc, Stoplight, RapiDoc) → tìm URL spec trong page source hoặc network requests
@@ -305,12 +305,12 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 
 > Chỉ thực hiện khi ở **Mode FULL**
 
-1. **Chạy test** bằng `run_command`:
+1. **Chạy test** bằng `Bash`:
    - REST Assured: `mvn test -Dtest=<TestClass>`
    - Playwright: `npx playwright test tests/api/`
    - Pytest: `python -m pytest tests/api/`
 
-2. **Theo dõi** kết quả qua `command_status`:
+2. **Theo dõi** kết quả qua output trả về của `Bash`:
    - Nếu **PASS** → cập nhật artifact, báo cáo kết quả
    - Nếu **FAIL** → áp dụng vòng lặp Auto-Heal:
 
@@ -323,7 +323,7 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
         - 404/405 → kiểm tra lại endpoint path/method
         - Timeout → tăng timeout hoặc kiểm tra server
         - Data conflict → thay test data unique mới
-     3. Sửa code bằng `replace_file_content` hoặc `multi_replace_file_content`
+     3. Sửa code bằng `Edit`
      4. Chạy lại test
      5. Lặp cho đến khi PASS (tối đa 5 vòng)
    ```

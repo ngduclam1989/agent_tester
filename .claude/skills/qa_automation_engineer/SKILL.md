@@ -1,5 +1,5 @@
 ---
-name: QA Automation Engineer
+name: qa_automation_engineer
 description: Skill hỗ trợ agent thực hiện QA automation testing: generate automation scripts, API/a11y/regression tests, UI recon, locators, flaky analysis, test data và framework handoff. Dùng reference Playwright/Selenium/API bổ trợ khi cần.
 ---
 

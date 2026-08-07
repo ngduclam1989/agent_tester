@@ -1,5 +1,5 @@
 ---
-name: Framework Architect
+name: framework_architect
 description: Skill thiết kế và scaffold automation framework hoàn chỉnh cho Playwright, Selenium, và Appium — bao gồm project structure, base classes, config management, reporting, và CI/CD integration.
 ---
 

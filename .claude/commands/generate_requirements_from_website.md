@@ -18,7 +18,7 @@ Workflow này giúp bạn phân tích một module hoặc trang web được cun
    - Nếu cần thiết, hỏi người dùng về thông tin đăng nhập hoặc các trạng thái đặc biệt cần lưu ý.
 
 2. **Khảo sát hệ thống (Recon & Investigation):**
-   - Sử dụng các công cụ duyệt web (Browser tools/MCP) hoặc `read_url_content` để truy cập vào module trang web được yêu cầu.
+   - Sử dụng các công cụ duyệt web (Playwright MCP) hoặc `WebFetch` để truy cập vào module trang web được yêu cầu.
    - Inspect kỹ lưỡi cấu trúc HTML, DOM, các form nhập liệu, các nút tương tác (buttons, links), và các thông báo lỗi (validation messages).
    - *Lưu ý: Không tự đoán các trường thông tin nếu không nhìn thấy trên giao diện thực tế.*
 

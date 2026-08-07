@@ -217,7 +217,7 @@ Nếu user chưa cung cấp đủ → hỏi:
 
 ### Bước 4: Chạy Test & Tự sửa lỗi (Execution & Auto-Heal)
 
-1. **Chạy test** bằng `run_command`:
+1. **Chạy test** bằng `Bash`:
    ```bash
    # Playwright TS
    npx playwright test <test_file> --headed
@@ -229,7 +229,7 @@ Nếu user chưa cung cấp đủ → hỏi:
    mvn test -Dtest=<TestClass>
    ```
 
-2. **Theo dõi kết quả** qua `command_status`:
+2. **Theo dõi kết quả** qua output trả về của `Bash`:
    - Nếu **PASS** → chuyển sang verify stability
    - Nếu **FAIL** → vào vòng lặp Auto-Heal:
 
@@ -241,7 +241,7 @@ Nếu user chưa cung cấp đủ → hỏi:
         - Timing issue → thêm smart wait hoặc adjust assertion timeout
         - Page state sai → kiểm tra flow, thêm wait cho navigation
         - Test data conflict → sinh data mới (unique)
-     3. Sửa code bằng replace_file_content / multi_replace_file_content
+     3. Sửa code bằng `Edit`
      4. Chạy lại test
    ```
 

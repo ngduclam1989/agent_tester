@@ -1,5 +1,5 @@
 ---
-name: UI Debug Agent
+name: ui_debug_agent
 description: Skill inspect web/mobile applications bằng browser tools, phân tích DOM elements, xác định locators ổn định, debug UI automation failures, và hỗ trợ sinh Page Object classes.
 ---
 

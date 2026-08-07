@@ -1,7 +1,9 @@
-# Prompt Version: 1.2.0 | Last Updated: 2026-06-10
-# NEW FILE — Cấu phần 4 hoàn toàn mới trong v1.2.0
-# Mục đích: kiểm tra cấu trúc và tính chính xác của dữ liệu API trả về.
-================= LỆNH THỰC THI - CẤU PHẦN 4: KIỂM THỬ PHẢN HỒI (RESPONSE VALIDATION) =================
+# Lệnh Thực Thi - Cấu Phần 4: Kiểm Thử Phản Hồi (Response Validation)
+
+> **Prompt Version:** 1.2.0 | **Last Updated:** 2026-06-10
+>
+> NEW FILE — Cấu phần 4 hoàn toàn mới trong v1.2.0.
+> Mục đích: kiểm tra cấu trúc và tính chính xác của dữ liệu API trả về.
 
 Sử dụng toàn bộ kiến thức, tài liệu (RSD & PTTK) và quy tắc Markmap đã ghi nhớ ở PROMPT 0.
 Hãy thực thi sinh Test Design cho API chỉ định trong:
@@ -9,9 +11,9 @@ Mục III. GLOBAL RULES → 5. Giới hạn phạm vi dữ liệu (SCOPE LIMITAT
 
 ---
 
-## CẤU HÌNH KIỂM SOÁT CẤU PHẦN (ĐỌC TRƯỚC KHI THỰC THI)
+## Cấu Hình Kiểm Soát Cấu Phần (đọc trước khi thực thi)
 
-```
+```text
 RSP_SCHEMA_CHECK : [DEFAULT]
 # Giá trị hợp lệ : DEFAULT | ON | OFF
 # DEFAULT / ON    : Verify response body của Success response có đầy đủ fields theo PTTK.
@@ -48,97 +50,101 @@ RSP_CONTENT_TYPE_CHECK : [DEFAULT]
 
 ---
 
-## I. MỤC TIÊU VÀ ĐỘ PHỦ
+## I. Mục Tiêu Và Độ Phủ
 
 Giả định: Mọi request đã PASS Cấu phần 1, 2, 3. Mục tiêu: kiểm tra "những gì API TRẢ VỀ"
 có đúng hợp đồng (contract) định nghĩa trong PTTK hay không.
 
 5 lớp kiểm thử Response:
 
-**[RSP-Schema] Response Schema Validation:**
+**`[RSP-Schema]` Response Schema Validation:**
 Verify response body Success có đúng cấu trúc định nghĩa trong PTTK:
+
 - Đầy đủ fields: không thiếu field, không có field thừa không định nghĩa.
 - Đúng kiểu dữ liệu cho từng field (string, number, boolean, array, object).
 - Giá trị nullable hợp lệ (field có thể null thì được trả null; field không null thì không được null).
 
-**[RSP-Data] Response Data Accuracy:**
+**`[RSP-Data]` Response Data Accuracy:**
 Verify dữ liệu trả về phản ánh chính xác input đã gửi và/hoặc trạng thái trong DB:
+
 - Field trả về = field đã gửi vào (round-trip accuracy).
 - Trạng thái (status) trong response khớp với trạng thái lưu trong DB.
 - Timestamp, ID được sinh đúng và nhất quán.
 
-**[RSP-Error] Error Response Consistency:**
+**`[RSP-Error]` Error Response Consistency:**
 Verify mọi loại lỗi đều trả về cùng một cấu trúc JSON nhất quán:
+
 - BẮT BUỘC có: HTTP Status Code đúng, error code (string), error message (string).
 - KHÔNG được: trả về HTML error page, stack trace, hoặc raw exception message.
 - Kiểm tra ít nhất 3 loại lỗi đại diện: 400 (Validation), 401/403 (Auth), 404 (Not Found).
 
-**[RSP-Pagination] Pagination Response (chỉ cho List/Search API):**
+**`[RSP-Pagination]` Pagination Response (chỉ cho List/Search API):**
 Verify response pagination có đầy đủ metadata và data:
+
 - Fields bắt buộc: `total` (tổng số record), `page` (trang hiện tại), `size` (số record/trang),
   `data` (mảng dữ liệu). Tên field theo PTTK.
 - `data` trả về đúng số lượng record theo `size`.
 - `total` phản ánh đúng tổng số record trong DB (không phải số record trong trang).
-- Edge case: trang cuối (data.length < size) và trang rỗng (page vượt total_pages).
+- Edge case: trang cuối (`data.length < size`) và trang rỗng (page vượt total_pages).
 
-**[RSP-Content-Type] Response Content-Type Header:**
-Verify header Content-Type trong response đúng với PTTK (thường là application/json; charset=utf-8).
+**`[RSP-Content-Type]` Response Content-Type Header:**
+Verify header Content-Type trong response đúng với PTTK (thường là `application/json; charset=utf-8`).
 
-## II. LỆNH CẤM
+## II. Lệnh Cấm
 
 1. KHÔNG test lại logic nghiệp vụ hay schema request (đã có ở Cấu phần 2, 3).
-2. KHÔNG Verify Database ở đây ngoại trừ khi RSP_DATA_CHECK cần đối chiếu.
+2. KHÔNG Verify Database ở đây ngoại trừ khi `RSP_DATA_CHECK` cần đối chiếu.
 3. KHÔNG sinh case cho HTTP 500 — đây là bug, không phải test condition.
-4. Với RSP_SCHEMA_CHECK: KHÔNG tự bịa cấu trúc response nếu PTTK không định nghĩa.
-   Nếu PTTK không có Response Schema → ghi [ASSUMPTION: Dựa trên Happy Path response thực tế].
-5. Với RSP_PAGINATION_CHECK: Chỉ áp dụng khi API thực sự trả về danh sách.
+4. Với `RSP_SCHEMA_CHECK`: KHÔNG tự bịa cấu trúc response nếu PTTK không định nghĩa.
+   Nếu PTTK không có Response Schema → ghi `[ASSUMPTION: Dựa trên Happy Path response thực tế]`.
+5. Với `RSP_PAGINATION_CHECK`: Chỉ áp dụng khi API thực sự trả về danh sách.
    KHÔNG áp dụng cho API Create/Update/Delete trả về single object.
 
-## III. THUẬT TOÁN TƯ DUY (INTERNAL ALGORITHM)
+## III. Thuật Toán Tư Duy (Internal Algorithm)
 
-- Bước 0: Đọc CẤU HÌNH. Ghi nhớ tất cả tham số.
-  Phân loại API: là List/Search API hay Single-Record API (ảnh hưởng RSP_PAGINATION_CHECK).
-- Bước 1: **[RSP-Schema]** — Áp dụng RSP_SCHEMA_CHECK.
-  ON/DEFAULT: Quét phần "Response" trong PTTK.
-  a) Sinh TD_001: Happy Path — verify response body có đúng cấu trúc đầy đủ.
-  b) Sinh case Missing field trong response: nếu PTTK định nghĩa field X là bắt buộc trong
-     response nhưng logic có thể bỏ sót → verify field X luôn có mặt.
-  c) Sinh case Type mismatch trong response: field Y trong response phải là Number nhưng
-     implementation có thể trả về String → verify kiểu dữ liệu.
-  OFF: Bỏ qua.
+- **Bước 0:** Đọc CẤU HÌNH. Ghi nhớ tất cả tham số.
+  Phân loại API: là List/Search API hay Single-Record API (ảnh hưởng `RSP_PAGINATION_CHECK`).
+- **Bước 1: `[RSP-Schema]`** — Áp dụng `RSP_SCHEMA_CHECK`.
+  - ON/DEFAULT: Quét phần "Response" trong PTTK.
+    a) Sinh TD_001: Happy Path — verify response body có đúng cấu trúc đầy đủ.
+    b) Sinh case Missing field trong response: nếu PTTK định nghĩa field X là bắt buộc trong
+       response nhưng logic có thể bỏ sót → verify field X luôn có mặt.
+    c) Sinh case Type mismatch trong response: field Y trong response phải là Number nhưng
+       implementation có thể trả về String → verify kiểu dữ liệu.
+  - OFF: Bỏ qua.
 
-- Bước 2: **[RSP-Data]** — Áp dụng RSP_DATA_CHECK.
-  ON/DEFAULT: Xác định 3-5 field quan trọng nhất (amount, status, id, created_at...).
-  Sinh case: Gửi request với giá trị cụ thể → verify field đó trong response khớp chính xác.
-  Đặc biệt: verify status trong response = status trong DB (không chỉ HTTP 200).
-  OFF: Bỏ qua.
+- **Bước 2: `[RSP-Data]`** — Áp dụng `RSP_DATA_CHECK`.
+  - ON/DEFAULT: Xác định 3-5 field quan trọng nhất (amount, status, id, created_at...).
+    Sinh case: Gửi request với giá trị cụ thể → verify field đó trong response khớp chính xác.
+    Đặc biệt: verify status trong response = status trong DB (không chỉ HTTP 200).
+  - OFF: Bỏ qua.
 
-- Bước 3: **[RSP-Error]** — Áp dụng RSP_ERROR_CHECK.
-  ON/DEFAULT: Chọn 3 loại lỗi đại diện (HTTP 400, HTTP 401/403, HTTP 404).
-  Với mỗi loại: verify response body có đúng cấu trúc error nhất quán (code + message).
-  Verify: KHÔNG có HTML, stack trace, hay raw Java/Python exception.
-  OFF: Bỏ qua.
+- **Bước 3: `[RSP-Error]`** — Áp dụng `RSP_ERROR_CHECK`.
+  - ON/DEFAULT: Chọn 3 loại lỗi đại diện (HTTP 400, HTTP 401/403, HTTP 404).
+    Với mỗi loại: verify response body có đúng cấu trúc error nhất quán (code + message).
+    Verify: KHÔNG có HTML, stack trace, hay raw Java/Python exception.
+  - OFF: Bỏ qua.
 
-- Bước 4: **[RSP-Pagination]** — Áp dụng RSP_PAGINATION_CHECK.
-  AUTO: Kiểm tra PTTK. Nếu API là List/Search → tiếp tục. Nếu không → bỏ qua.
-  ON: Tiếp tục.
-  Sinh các case:
-  a) Page hợp lệ giữa — verify data.length = size, total > 0.
-  b) Trang cuối — verify data.length < size (khi tổng record không chia hết cho size).
-  c) Page vượt quá total_pages — verify data = [] và total = số thực tế.
-  d) size=0 hoặc size âm — verify API trả về lỗi hoặc default size.
-  OFF: Bỏ qua.
+- **Bước 4: `[RSP-Pagination]`** — Áp dụng `RSP_PAGINATION_CHECK`.
+  - AUTO: Kiểm tra PTTK. Nếu API là List/Search → tiếp tục. Nếu không → bỏ qua.
+  - ON: Tiếp tục.
+    Sinh các case:
+    a) Page hợp lệ giữa — verify `data.length` = size, `total` > 0.
+    b) Trang cuối — verify `data.length` < size (khi tổng record không chia hết cho size).
+    c) Page vượt quá total_pages — verify `data` = [] và `total` = số thực tế.
+    d) size=0 hoặc size âm — verify API trả về lỗi hoặc default size.
+  - OFF: Bỏ qua.
 
-- Bước 5: **[RSP-Content-Type]** — Áp dụng RSP_CONTENT_TYPE_CHECK.
-  ON/DEFAULT: Sinh 1 case verify response header Content-Type là application/json
-  (hoặc giá trị PTTK quy định). Kiểm tra với cả Success và Error response.
-  OFF: Bỏ qua.
+- **Bước 5: `[RSP-Content-Type]`** — Áp dụng `RSP_CONTENT_TYPE_CHECK`.
+  - ON/DEFAULT: Sinh 1 case verify response header Content-Type là application/json
+    (hoặc giá trị PTTK quy định). Kiểm tra với cả Success và Error response.
+  - OFF: Bỏ qua.
 
-## IV. VÍ DỤ MẪU OUTPUT (GOLDEN SAMPLE)
+## IV. Ví Dụ Mẫu Output (Golden Sample)
 
-Ví dụ cho: POST /v1/trans/minval — tạo yêu cầu cập nhật ngưỡng (Single-Record API).
+Ví dụ cho: `POST /v1/trans/minval` — tạo yêu cầu cập nhật ngưỡng (Single-Record API).
 
-```
+```markdown
 ## Response Validation
 <!-- Happy Path này chỉ verify lớp Response. Không thay thế HP ở C1, C2, C3. -->
 
@@ -196,9 +202,9 @@ Ví dụ cho: POST /v1/trans/minval — tạo yêu cầu cập nhật ngưỡng 
   'application/json; charset=utf-8'. Không được trả 'text/html' hoặc 'text/plain'.
 ```
 
-Ví dụ bổ sung cho List/Search API khi RSP_PAGINATION_CHECK=AUTO/ON:
+Ví dụ bổ sung cho List/Search API khi `RSP_PAGINATION_CHECK=AUTO/ON`:
 
-```
+```markdown
 <!-- BƯỚC 4: RSP-PAGINATION (chỉ khi là List/Search API) -->
 ### TD_P4_010 - [RSP-Pagination] - Trang giữa: data.length = size và total chính xác
 - **Steps**: Gọi API với page=1, size=10. DB có 25 records.
@@ -213,27 +219,28 @@ Ví dụ bổ sung cho List/Search API khi RSP_PAGINATION_CHECK=AUTO/ON:
 - **Expected**: `data` = [] (mảng rỗng), `total` = 25. KHÔNG trả HTTP 404 hoặc HTTP 400.
 ```
 
-## V. THỰC THI CUỐI
+## V. Thực Thi Cuối
 
-1. Self-Audit:
+1. **Self-Audit:**
    - Có test lại logic nghiệp vụ Request không? (Xóa ngay — thuộc C2, C3).
-   - RSP_SCHEMA_CHECK=ON/DEFAULT nhưng không verify kiểu dữ liệu field nào? (Bổ sung).
-   - RSP_DATA_CHECK=ON/DEFAULT nhưng chỉ kiểm HTTP 200 không kiểm data value? (Bổ sung).
-   - RSP_ERROR_CHECK=ON/DEFAULT nhưng thiếu ít nhất 1 trong 3 loại lỗi đại diện? (Bổ sung).
-   - RSP_PAGINATION_CHECK=AUTO nhưng không phát hiện đây là List API khi PTTK có mảng
+   - `RSP_SCHEMA_CHECK=ON/DEFAULT` nhưng không verify kiểu dữ liệu field nào? (Bổ sung).
+   - `RSP_DATA_CHECK=ON/DEFAULT` nhưng chỉ kiểm HTTP 200 không kiểm data value? (Bổ sung).
+   - `RSP_ERROR_CHECK=ON/DEFAULT` nhưng thiếu ít nhất 1 trong 3 loại lỗi đại diện? (Bổ sung).
+   - `RSP_PAGINATION_CHECK=AUTO` nhưng không phát hiện đây là List API khi PTTK có mảng
      data trả về? (Kiểm tra lại PTTK và sinh case nếu cần).
-   - RSP_CONTENT_TYPE_CHECK=ON/DEFAULT nhưng không có case verify Content-Type? (Bổ sung).
+   - `RSP_CONTENT_TYPE_CHECK=ON/DEFAULT` nhưng không có case verify Content-Type? (Bổ sung).
    - Case RSP-Error có verify cả Success và Error đều trả Content-Type đúng không?
-   - Happy Path dùng [ST] thay vì [Smoke]? (Sửa ngay).
-   - Có tự bịa cấu trúc Response khi PTTK không định nghĩa không? (Thêm [ASSUMPTION]).
-2. Rendering: MỘT FILE MARKDOWN DUY NHẤT trong code fence. Không có văn bản ngoài luồng.
+   - Happy Path dùng `[ST]` thay vì `[Smoke]`? (Sửa ngay).
+   - Có tự bịa cấu trúc Response khi PTTK không định nghĩa không? (Thêm `[ASSUMPTION]`).
+2. **Rendering:** MỘT FILE MARKDOWN DUY NHẤT trong code fence. Không có văn bản ngoài luồng.
 
 ---
 
-## VI. GHI CHÚ TÍCH HỢP
+## VI. Ghi Chú Tích Hợp
 
 Cấu phần 4 là lớp cuối cùng trong bộ 4-phase. Khi chạy đầy đủ cả 4 cấu phần, mỗi cấu phần
 verify một lớp độc lập:
+
 - C1: Giao thức & quyền truy cập (Gateway layer).
 - C2: Cấu trúc request (Parser/Validator layer).
 - C3: Nghiệp vụ & trạng thái (Business Logic layer).

@@ -5,7 +5,7 @@ description: Kỹ năng phân tích trang web/module và sinh ra tài liệu Yê
 
 # Kỹ năng Phân tích Yêu cầu (Requirements Analyzer)
 
-Kỹ năng này cung cấp các hướng dẫn chi tiết để AI (Antigravity) có thể chuyển đổi giao diện UI hoặc cấu trúc DOM/HTML của một trang web thành các tài liệu Yêu cầu rõ ràng, chi tiết, phục vụ trực tiếp cho QA, Tester và Developer.
+Kỹ năng này cung cấp các hướng dẫn chi tiết để AI (Claude Code) có thể chuyển đổi giao diện UI hoặc cấu trúc DOM/HTML của một trang web thành các tài liệu Yêu cầu rõ ràng, chi tiết, phục vụ trực tiếp cho QA, Tester và Developer.
 
 ## 1. Mục tiêu cốt lõi
 - Xây dựng tài liệu yêu cầu bám sát thực tế hệ thống đang chạy.

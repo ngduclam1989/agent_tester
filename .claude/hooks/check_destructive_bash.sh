@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse hook cho Bash — chặn lệnh phá hủy dữ liệu theo RULE_GLOBAL.md
+# PreToolUse hook cho Bash — chặn lệnh phá hủy dữ liệu theo CLAUDE.md
 # (rm -rf, DROP TABLE, DELETE FROM, Remove-Item -Recurse -Force) và yêu cầu
 # xác nhận rõ ràng từ user thay vì để agent tự ý chạy.
 set -euo pipefail
@@ -13,7 +13,7 @@ if echo "$cmd" | grep -qiE "$pattern"; then
     hookSpecificOutput: {
       hookEventName: "PreToolUse",
       permissionDecision: "ask",
-      permissionDecisionReason: "Lệnh khớp pattern phá hủy dữ liệu theo RULE_GLOBAL.md (rm -rf / DROP TABLE / DELETE FROM / Remove-Item -Recurse -Force). Cần xác nhận rõ ràng từ user trước khi thực thi."
+      permissionDecisionReason: "Lệnh khớp pattern phá hủy dữ liệu theo CLAUDE.md (rm -rf / DROP TABLE / DELETE FROM / Remove-Item -Recurse -Force). Cần xác nhận rõ ràng từ user trước khi thực thi."
     }
   }'
 else

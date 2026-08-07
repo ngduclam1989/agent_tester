@@ -1,5 +1,5 @@
 ---
-description: Convert manual test cases into automation scripts autonomously using the 6-step AI-RBT Framework via Antigravity Capabilities.
+description: Convert manual test cases into automation scripts autonomously using the 6-step AI-RBT Framework.
 skills:
   - qa_automation_engineer
   - ui_debug_agent
@@ -55,8 +55,8 @@ Nếu user chưa cung cấp đủ → hỏi trước khi bắt đầu.
 ### Bước 1: Khởi tạo, Phân tích & Lên Kế Hoạch (Context & Analysis)
 
 1. **Đọc file test cases** do user cung cấp:
-   - File local → `view_file`
-   - URL (Google Sheets, Confluence, etc.) → `read_url_content`
+   - File local → `Read`
+   - URL (Google Sheets, Confluence, etc.) → `WebFetch`
    - Xác định format: Markdown table, Excel, JSON, hoặc free-form text
 
 2. **Parse test cases** và trích xuất:
@@ -134,7 +134,7 @@ Nếu user chưa cung cấp đủ → hỏi trước khi bắt đầu.
    - Mỗi page/screen trong test flow → 1 Page class
    - Xem xét tạo `BasePage` nếu chưa có trong project
 
-2. **Sinh Page Object classes** bằng `write_to_file`:
+2. **Sinh Page Object classes** bằng `Write`:
 
    **Cấu trúc mỗi Page class:**
    ```
@@ -212,7 +212,7 @@ Nếu user chưa cung cấp đủ → hỏi trước khi bắt đầu.
 
 ### Bước 6: Chạy Thử Nghiệm & Tự Sửa Lỗi (Execution & Auto-Heal — RULE E3)
 
-1. **Chạy test** bằng `run_command`:
+1. **Chạy test** bằng `Bash`:
    ```bash
    # Playwright TS
    npx playwright test <test_file> --headed
@@ -224,7 +224,7 @@ Nếu user chưa cung cấp đủ → hỏi trước khi bắt đầu.
    mvn test -Dtest=<TestClass>
    ```
 
-2. **Theo dõi kết quả** qua `command_status`:
+2. **Theo dõi kết quả** qua output trả về của `Bash` (dùng `run_in_background` nếu lệnh chạy lâu):
 
    **Nếu PASS:**
    - Chạy lại **1 lần nữa** để confirm stability
@@ -248,7 +248,7 @@ Nếu user chưa cung cấp đủ → hỏi trước khi bắt đầu.
         | Test data conflict | Sinh data unique mới |
         | Import/compile error | Sửa import, check class name |
 
-     3. Sửa code bằng replace_file_content / multi_replace_file_content
+     3. Sửa code bằng `Edit`
      4. Chạy lại test
      5. Ghi log vào task.md: "Vòng 2: Fix locator XYZ → PASS"
    ```

@@ -62,9 +62,9 @@ skills:
 ### Bước 1: Đọc & Parse Ma Trận Kết Hợp
 
 1. **Đọc file ma trận** từ user cung cấp:
-   - File local → `view_file`
+   - File local → `Read`
    - Inline trong chat → parse trực tiếp
-   - URL → `read_url_content`
+   - URL → `WebFetch`
 
 2. **Parse và validate:**
    - Xác định danh sách dimensions (D1, D2, D3...)

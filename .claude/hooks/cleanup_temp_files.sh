@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Stop hook — dọn dẹp file tạm/debug ở workspace root + thư mục con cấp 1
-# theo RULE_GLOBAL.md (mục "Cleanup Temp & Debug Files").
+# theo CLAUDE.md (mục "Cleanup Temp & Debug Files").
 set -uo pipefail
 
 ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"

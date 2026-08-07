@@ -1,12 +1,14 @@
-# Prompt Version: 1.2.1 | Last Updated: 2026-06-10
-# Changelog v1.2.1:
-#   - Removed SQL/XSS Injection from [EG] scope entirely
-#   - EG_CHECK: removed INJECTION_ONLY option
-#   - EG_CHECK DEFAULT: now Emoji only (was Injection + Emoji)
-#   - EG_CHECK FULL: now Emoji + Whitespace (was Injection + Emoji + Whitespace)
-#   - Removed TD_P3_014 (SQL Injection golden sample case)
-#   - Updated algorithm and Self-Audit accordingly
-================= LỆNH THỰC THI - CẤU PHẦN 3: KIỂM THỬ NGHIỆP VỤ, LOGIC CHÉO & DATABASE =================
+# Lệnh Thực Thi - Cấu Phần 3: Kiểm Thử Nghiệp Vụ, Logic Chéo & Database
+
+> **Prompt Version:** 1.2.1 | **Last Updated:** 2026-06-10
+>
+> **Changelog v1.2.1:**
+> - Removed SQL/XSS Injection from [EG] scope entirely
+> - `EG_CHECK`: removed `INJECTION_ONLY` option
+> - `EG_CHECK` DEFAULT: now Emoji only (was Injection + Emoji)
+> - `EG_CHECK` FULL: now Emoji + Whitespace (was Injection + Emoji + Whitespace)
+> - Removed TD_P3_014 (SQL Injection golden sample case)
+> - Updated algorithm and Self-Audit accordingly
 
 Sử dụng toàn bộ kiến thức, tài liệu (RSD & PTTK) và quy tắc Markmap đã ghi nhớ ở PROMPT 0.
 Hãy thực thi sinh Test Design cho API chỉ định trong:
@@ -14,9 +16,9 @@ Mục III. GLOBAL RULES → 5. Giới hạn phạm vi dữ liệu (SCOPE LIMITAT
 
 ---
 
-## CẤU HÌNH KIỂM SOÁT CẤU PHẦN (ĐỌC TRƯỚC KHI THỰC THI)
+## Cấu Hình Kiểm Soát Cấu Phần (đọc trước khi thực thi)
 
-```
+```text
 BVA_MODE : [DEFAULT]
 # NEW v1.2.0
 # Giá trị hợp lệ : DEFAULT | FULL | OFF
@@ -40,65 +42,69 @@ EG_CHECK : [DEFAULT]
 # OFF               : Bỏ qua toàn bộ Error Guessing.
 ```
 
-> **Lưu ý:** [ECP], [DT], [ST] KHÔNG có tham số kiểm soát — BẮT BUỘC sinh đầy đủ.
+> **Lưu ý:** `[ECP]`, `[DT]`, `[ST]` KHÔNG có tham số kiểm soát — BẮT BUỘC sinh đầy đủ.
 
 ---
 
-## I. MỤC TIÊU VÀ ĐỘ PHỦ
+## I. Mục Tiêu Và Độ Phủ
 
 Giả định: Request đã PASS Cấu phần 1 và 2. Mục tiêu: bẻ gãy Business Rules trong RSD.
 
 ### 1. Lớp đơn trường (Single-Field)
 
-**[BVA] Boundary Value Analysis:**
+**`[BVA]` Boundary Value Analysis:**
 Phân tích giá trị biên cho Số học, Ngày tháng, Số tiền.
 
-> **Quy tắc [BVA/ECP] khi Min = 0:**
+> **Quy tắc `[BVA/ECP]` khi Min = 0:**
 > Nếu Min = 0 thì Min-1 = -1 trùng với ECP số âm.
-> Chỉ sinh 1 case duy nhất với tag [BVA/ECP]. KHÔNG sinh 2 case riêng lẻ.
+> Chỉ sinh 1 case duy nhất với tag `[BVA/ECP]`. KHÔNG sinh 2 case riêng lẻ.
 
 > **[NEW v1.2.0] Quy tắc đặc biệt cho field kiểu Date / DateTime:**
 > Ngoài BVA Min-1/Max+1 thông thường, Date fields PHẢI kiểm thêm:
-> - Ngày không hợp lệ về lịch: 30/02, 31/04, 31/11, 31/09 → tag [BVA] (invalid calendar)
-> - Năm nhuận: 29/02 của năm không nhuận (VD: 29/02/2023) → tag [BVA]
-> - Ngày quá khứ/tương lai nếu RSD có ràng buộc thời gian → tag [ECP]
+> - Ngày không hợp lệ về lịch: 30/02, 31/04, 31/11, 31/09 → tag `[BVA]` (invalid calendar)
+> - Năm nhuận: 29/02 của năm không nhuận (VD: 29/02/2023) → tag `[BVA]`
+> - Ngày quá khứ/tương lai nếu RSD có ràng buộc thời gian → tag `[ECP]`
+>
 > BẮT BUỘC sinh các case này cho mỗi Date field có business rule.
 
-**[ECP] Equivalence Class Partitioning:**
+**`[ECP]` Equivalence Class Partitioning:**
 Phân vùng invalid: số âm, sai enum, sai format nghiệp vụ, ID không tồn tại.
 
-> **[NEW v1.2.0] Quy tắc [IDOR] cho field ID:**
-> Với field ID (account_id, user_id, resource_id...) ngoài case ID không tồn tại [ECP],
-> BẮT BUỘC sinh thêm case [IDOR]: ID hợp lệ và tồn tại trong DB nhưng thuộc về
+> **[NEW v1.2.0] Quy tắc `[IDOR]` cho field ID:**
+> Với field ID (account_id, user_id, resource_id...) ngoài case ID không tồn tại `[ECP]`,
+> BẮT BUỘC sinh thêm case `[IDOR]`: ID hợp lệ và tồn tại trong DB nhưng thuộc về
 > user/resource KHÁC với người đang gọi API.
 > Expected: HTTP 403 'ERR_FORBIDDEN' hoặc HTTP 404 'ERR_NOT_FOUND' (tùy thiết kế bảo mật).
-> [ASSUMPTION nếu PTTK không định nghĩa behavior]: expect HTTP 403.
+> `[ASSUMPTION nếu PTTK không định nghĩa behavior]`: expect HTTP 403.
 
-**[EG] Error Guessing — chỉ cho field Text tự do:**
+**`[EG]` Error Guessing — chỉ cho field Text tự do:**
 
 > **Định nghĩa "Text tự do":**
 > String/Text KHÔNG có ràng buộc format cố định. Không có regex, không phải enum, không
 > phải ID/code có cấu trúc.
-> ✅ ĐÚ LÀ Text tự do: reason, description, note, comment, address_detail, remark.
+> ✅ ĐÚNG LÀ Text tự do: reason, description, note, comment, address_detail, remark.
 > ❌ KHÔNG phải Text tự do: phone_number, email, account_id, status (enum),
 >    transaction_code, date, otp_code, currency_code.
 
-EG cases theo thứ tự (áp dụng EG_CHECK):
-1. [EG] Emoji và ký tự Unicode đặc biệt.
-2. [Whitespace] Chuỗi chỉ chứa khoảng trắng "   " (min 3 spaces). (NEW)
+EG cases theo thứ tự (áp dụng `EG_CHECK`):
+
+1. `[EG]` Emoji và ký tự Unicode đặc biệt.
+2. `[Whitespace]` Chuỗi chỉ chứa khoảng trắng `"   "` (min 3 spaces). (NEW)
    Expected: HTTP 400 'ERR_INVALID_INPUT' HOẶC HTTP 200 với giá trị được trim/rejected.
-   Lý do: "   " (whitespace only) không phải Empty nhưng thường fail business validation.
+   Lý do: `"   "` (whitespace only) không phải Empty nhưng thường fail business validation.
 
 ### 2. Lớp đa trường & Trạng thái (Cross-Field & State)
 
-**[DT] Decision Table:**
+**`[DT]` Decision Table:**
 Logic ràng buộc chéo ≥2 trường. Với ≥3 trường phụ thuộc: áp dụng quy trình tổ hợp 4 bước:
+
 1. Liệt kê N trường, 2 trạng thái: VALID(V) / INVALID(I).
 2. Tổ hợp lý thuyết 2^N. Loại bỏ tổ hợp không có nghĩa nghiệp vụ.
 3. Chỉ giữ combination có Expected Result KHÁC NHAU thực tế.
-4. Mỗi combination giữ lại → 1 test condition [DT].
+4. Mỗi combination giữ lại → 1 test condition `[DT]`.
 
 Ví dụ bảng tổ hợp 3 trường (min_value, max_value, daily_limit):
+
 | Combination | min_value | max_value | daily_limit | Giữ lại? | Lý do |
 |---|---|---|---|---|---|
 | C1 | V | V | V | ✓ | Happy Path |
@@ -107,15 +113,15 @@ Ví dụ bảng tổ hợp 3 trường (min_value, max_value, daily_limit):
 | C4 | V | V | I(limit<min) | ✓ | Vi phạm rule limit>=min |
 | C5-C8 | ≥2 Invalid | | | ✗ | Không thêm coverage, không định vị được nguyên nhân |
 
-**[ST] State Transition:**
+**`[ST]` State Transition:**
 Điều kiện tiền quyết hệ thống/DB (VD: User phải Active, chưa có Pending request).
-Tag [ST] CHỈ cho state pre-condition. KHÔNG dùng cho Happy Path.
+Tag `[ST]` CHỈ cho state pre-condition. KHÔNG dùng cho Happy Path.
 
 > **Phân biệt tag quan trọng:**
-> [ST] = State Transition (điều kiện tiền quyết hệ thống) — Cấu phần 3.
-> [Smoke] = Happy Path — TẤT CẢ cấu phần. TUYỆT ĐỐI KHÔNG nhầm lẫn.
+> `[ST]` = State Transition (điều kiện tiền quyết hệ thống) — Cấu phần 3.
+> `[Smoke]` = Happy Path — TẤT CẢ cấu phần. TUYỆT ĐỐI KHÔNG nhầm lẫn.
 
-## II. LỆNH CẤM
+## II. Lệnh Cấm
 
 1. CẤM test Header (Authorization, Token, Content-Type).
 2. CẤM test lại lỗi Schema (Missing, Empty, Type, Max Length — đã có ở Cấu phần 2).
@@ -123,36 +129,36 @@ Tag [ST] CHỈ cho state pre-condition. KHÔNG dùng cho Happy Path.
 4. BẮT BUỘC Verify DB cho Happy Path (TD_001) — mô tả rõ bảng, status, dữ liệu thay đổi.
 5. HTTP 500 KHÔNG phải expected error trong Test Design. Nếu xảy ra → đây là bug.
 
-## III. THUẬT TOÁN TƯ DUY (INTERNAL ALGORITHM)
+## III. Thuật Toán Tư Duy (Internal Algorithm)
 
-- Bước 0: Đọc CẤU HÌNH. Ghi nhớ BVA_MODE và EG_CHECK.
-- Bước 1: Sinh TD_001 Happy Path [Smoke] + DB verification chi tiết.
-- Bước 2: Vòng lặp Field-by-Field. Với mỗi field:
+- **Bước 0:** Đọc CẤU HÌNH. Ghi nhớ `BVA_MODE` và `EG_CHECK`.
+- **Bước 1:** Sinh TD_001 Happy Path `[Smoke]` + DB verification chi tiết.
+- **Bước 2:** Vòng lặp Field-by-Field. Với mỗi field:
   a) Đối chiếu Business Rules trong RSD:
-     - Có Min/Max (số hoặc ngày) → sinh BVA theo BVA_MODE.
-       BVA_MODE=DEFAULT: sinh [BVA] Min-1 và Max+1.
-       BVA_MODE=FULL: sinh đủ 6 case ([BVA] Min-1, [BVA+] Min, [BVA+] Min+1,
-                      [BVA+] Max-1, [BVA+] Max, [BVA] Max+1).
-       [BVA/ECP]: nếu Min=0 → gộp Min-1 và ECP âm thành 1 case.
+     - Có Min/Max (số hoặc ngày) → sinh BVA theo `BVA_MODE`.
+       - `BVA_MODE=DEFAULT`: sinh `[BVA]` Min-1 và Max+1.
+       - `BVA_MODE=FULL`: sinh đủ 6 case (`[BVA]` Min-1, `[BVA+]` Min, `[BVA+]` Min+1,
+         `[BVA+]` Max-1, `[BVA+]` Max, `[BVA]` Max+1).
+       - `[BVA/ECP]`: nếu Min=0 → gộp Min-1 và ECP âm thành 1 case.
      - Field là Date/DateTime → thêm date-specific BVA cases (invalid calendar, leap year).
-     - Có Enum/Format/Existence rule → sinh [ECP].
-     - Có ID field (account_id, user_id...) → sinh [ECP] (ID không tồn tại)
-       VÀ sinh [IDOR] (ID tồn tại nhưng thuộc user khác). (NEW)
-  b) Field là Text tự do → áp dụng EG_CHECK:
-     DEFAULT: 1 case Emoji.
-     EMOJI_ONLY: 1 case Emoji (tương đương DEFAULT).
-     WHITESPACE_ONLY: 1 case Whitespace.
-     FULL: 2 case theo thứ tự Emoji → Whitespace.
-     OFF: không sinh case [EG].
-- Bước 3: Global Scan — Logic Chéo & Trạng thái:
-  + Tìm "Điều kiện tiền quyết" trong RSD → sinh [ST].
+     - Có Enum/Format/Existence rule → sinh `[ECP]`.
+     - Có ID field (account_id, user_id...) → sinh `[ECP]` (ID không tồn tại)
+       VÀ sinh `[IDOR]` (ID tồn tại nhưng thuộc user khác). (NEW)
+  b) Field là Text tự do → áp dụng `EG_CHECK`:
+     - DEFAULT: 1 case Emoji.
+     - EMOJI_ONLY: 1 case Emoji (tương đương DEFAULT).
+     - WHITESPACE_ONLY: 1 case Whitespace.
+     - FULL: 2 case theo thứ tự Emoji → Whitespace.
+     - OFF: không sinh case `[EG]`.
+- **Bước 3:** Global Scan — Logic Chéo & Trạng thái:
+  + Tìm "Điều kiện tiền quyết" trong RSD → sinh `[ST]`.
   + Tìm rules "Nếu... thì...", "phụ thuộc vào":
-    2 trường phụ thuộc → sinh [DT] trực tiếp.
-    ≥3 trường → áp dụng tổ hợp 4 bước ở Mục I → sinh [DT] cho combination giữ lại.
+    - 2 trường phụ thuộc → sinh `[DT]` trực tiếp.
+    - ≥3 trường → áp dụng tổ hợp 4 bước ở Mục I → sinh `[DT]` cho combination giữ lại.
 
-## IV. VÍ DỤ MẪU OUTPUT (GOLDEN SAMPLE)
+## IV. Ví Dụ Mẫu Output (Golden Sample)
 
-```
+```markdown
 ## Value, Business Logic, Cross Logic
 <!-- Happy Path này verify Business Logic và DB. Không thay thế HP ở C1, C2, C4. -->
 ### TD_P3_001 - [Smoke] - Happy Path (Dữ liệu và Trạng thái hợp lệ)
@@ -234,20 +240,20 @@ Tag [ST] CHỈ cho state pre-condition. KHÔNG dùng cho Happy Path.
 - **Expected**: HTTP 400, Code 'ERR_DAILY_LIMIT_TOO_LOW'.
 ```
 
-## V. THỰC THI CUỐI
+## V. Thực Thi Cuối
 
-1. Self-Audit:
+1. **Self-Audit:**
    - Xóa hết case lỗi Schema (Missing/Empty/Type/MaxLen)?
    - Có verify DB cho case lỗi? (Xóa ngay).
-   - Happy Path dùng [ST] thay vì [Smoke]? (Sửa ngay).
-   - [NEW] BVA_MODE=FULL nhưng thiếu case [BVA+] POSITIVE? (Bổ sung ngay).
-   - [NEW] ID field thiếu case [IDOR]? (Bổ sung ngay).
-   - [NEW] EG_CHECK=FULL nhưng thiếu case [Whitespace]? (Bổ sung ngay).
-   - Có case [EG] nào đang test SQL/XSS Injection? (Nếu có → Xóa ngay. Injection đã bị loại bỏ khỏi [EG] từ v1.2.1).
-   - EG_CHECK=DEFAULT/FULL nhưng có nhiều hơn 1 case [EG] cho Emoji? (Mỗi mode chỉ sinh 1 Emoji case).
+   - Happy Path dùng `[ST]` thay vì `[Smoke]`? (Sửa ngay).
+   - [NEW] `BVA_MODE=FULL` nhưng thiếu case `[BVA+]` POSITIVE? (Bổ sung ngay).
+   - [NEW] ID field thiếu case `[IDOR]`? (Bổ sung ngay).
+   - [NEW] `EG_CHECK=FULL` nhưng thiếu case `[Whitespace]`? (Bổ sung ngay).
+   - Có case `[EG]` nào đang test SQL/XSS Injection? (Nếu có → Xóa ngay. Injection đã bị loại bỏ khỏi `[EG]` từ v1.2.1).
+   - `EG_CHECK=DEFAULT/FULL` nhưng có nhiều hơn 1 case `[EG]` cho Emoji? (Mỗi mode chỉ sinh 1 Emoji case).
    - [NEW] Date field thiếu invalid calendar / leap year BVA? (Bổ sung ngay).
-   - Min=0 nhưng sinh cả [BVA] và [ECP] số âm riêng lẻ? (Gộp thành [BVA/ECP]).
-   - [EG] áp dụng sai cho non-Text-tự-do (phone, email, enum, ID, date)? (Xóa ngay).
-   - [DT] với ≥3 trường chạy tổ hợp 4 bước và loại combination dư thừa chưa?
-   - Còn thiếu case [BVA], [ECP], [DT], [ST] nào? (Bổ sung ngay).
-2. Rendering: MỘT FILE MARKDOWN DUY NHẤT trong code fence. Không có văn bản ngoài luồng.
+   - Min=0 nhưng sinh cả `[BVA]` và `[ECP]` số âm riêng lẻ? (Gộp thành `[BVA/ECP]`).
+   - `[EG]` áp dụng sai cho non-Text-tự-do (phone, email, enum, ID, date)? (Xóa ngay).
+   - `[DT]` với ≥3 trường chạy tổ hợp 4 bước và loại combination dư thừa chưa?
+   - Còn thiếu case `[BVA]`, `[ECP]`, `[DT]`, `[ST]` nào? (Bổ sung ngay).
+2. **Rendering:** MỘT FILE MARKDOWN DUY NHẤT trong code fence. Không có văn bản ngoài luồng.

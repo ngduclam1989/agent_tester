@@ -62,7 +62,7 @@ skills:
 
 #### Mode DOCUMENT:
 
-1. **Đọc tài liệu** user cung cấp (file local → `view_file`, URL → `read_url_content`, inline → parse trực tiếp)
+1. **Đọc tài liệu** user cung cấp (file local → `Read`, URL → `WebFetch`, inline → parse trực tiếp)
 2. **Extract danh sách modules** từ tài liệu:
    - Tìm các phần (sections) mô tả từng bước/module trong luồng
    - Xác định thứ tự modules (module nào trước, module nào sau)

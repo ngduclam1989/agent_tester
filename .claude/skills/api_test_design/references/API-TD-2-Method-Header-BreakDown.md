@@ -1,9 +1,11 @@
-# Prompt Version: 1.2.0 | Last Updated: 2026-06-10
-# Changelog v1.2.0:
-#   - Added ACCEPT_HEADER_CHECK config parameter
-#   - Added Step 4 (Accept header) in algorithm between Format and Basic
-#   - Updated Self-Audit with Accept header check
-================= LỆNH THỰC THI - CẤU PHẦN 1: KIỂM THỬ PHƯƠNG THỨC & HEADER (MARKMAP FORMAT) =================
+# Lệnh Thực Thi - Cấu Phần 1: Kiểm Thử Phương Thức & Header (Markmap Format)
+
+> **Prompt Version:** 1.2.0 | **Last Updated:** 2026-06-10
+>
+> **Changelog v1.2.0:**
+> - Added `ACCEPT_HEADER_CHECK` config parameter
+> - Added Step 4 (Accept header) in algorithm between Format and Basic
+> - Updated Self-Audit with Accept header check
 
 Sử dụng toàn bộ kiến thức, tài liệu (RSD & PTTK) và quy tắc Markmap đã ghi nhớ ở PROMPT 0.
 Hãy thực thi sinh Test Design cho API chỉ định trong:
@@ -11,9 +13,9 @@ Mục III. GLOBAL RULES → 5. Giới hạn phạm vi dữ liệu (SCOPE LIMITAT
 
 ---
 
-## CẤU HÌNH KIỂM SOÁT CẤU PHẦN (ĐỌC TRƯỚC KHI THỰC THI)
+## Cấu Hình Kiểm Soát Cấu Phần (đọc trước khi thực thi)
 
-```
+```text
 AUTH_REQUIRED      : [DEFAULT]
 # Giá trị hợp lệ  : DEFAULT | YES | NO
 # DEFAULT          : Tự động phát hiện từ PTTK.
@@ -44,56 +46,57 @@ ACCEPT_HEADER_CHECK : [DEFAULT]
 ```
 
 > **Lưu ý:**
-> - Custom Headers ([Basic]) BẮT BUỘC sinh đầy đủ, không có tham số kiểm soát.
-> - AUTH_REQUIRED=NO chỉ tắt [Security]. [Basic] vẫn BẮT BUỘC.
-> - ACCEPT_HEADER_CHECK kiểm tra header Accept trong request (phía client gửi lên),
+> - Custom Headers (`[Basic]`) BẮT BUỘC sinh đầy đủ, không có tham số kiểm soát.
+> - `AUTH_REQUIRED=NO` chỉ tắt `[Security]`. `[Basic]` vẫn BẮT BUỘC.
+> - `ACCEPT_HEADER_CHECK` kiểm tra header Accept trong request (phía client gửi lên),
 >   không phải Content-Type trong response (đó là việc của Cấu phần 4).
 
 ---
 
-## I. MỤC TIÊU VÀ ĐỘ PHỦ
+## I. Mục Tiêu Và Độ Phủ
 
 Giả định Request Body đã hợp lệ hoàn toàn. Focus 100% vào giao thức & quyền truy cập:
-- [Protocol]  HTTP Method: Gọi sai phương thức.
-- [Security]  Authorization: Token Missing, Invalid, Expired, Forbidden.
-- [Format]    Content-Type: Sai Media Type request.
-- [Accept]    Accept Header: Client yêu cầu format response không được hỗ trợ. (NEW)
-- [Basic]     Custom Headers: Missing và Invalid Format cho header bắt buộc khác.
 
-## II. LỆNH CẤM
+- `[Protocol]`  HTTP Method: Gọi sai phương thức.
+- `[Security]`  Authorization: Token Missing, Invalid, Expired, Forbidden.
+- `[Format]`    Content-Type: Sai Media Type request.
+- `[Accept]`    Accept Header: Client yêu cầu format response không được hỗ trợ. (NEW)
+- `[Basic]`     Custom Headers: Missing và Invalid Format cho header bắt buộc khác.
+
+## II. Lệnh Cấm
 
 1. CẤM test field trong Request Body/Payload (dành cho Cấu phần 2).
 2. CẤM test logic nghiệp vụ, giá trị biên, logic chéo (dành cho Cấu phần 3).
 3. CẤM Verify Database (request bị chặn tại Gateway, không chạm DB).
 
-## III. THUẬT TOÁN TƯ DUY (INTERNAL ALGORITHM)
+## III. Thuật Toán Tư Duy (Internal Algorithm)
 
-- Bước 0: Đọc CẤU HÌNH. Ghi nhớ AUTH_REQUIRED, METHOD_CHECK, CONTENT_TYPE_CHECK,
-  ACCEPT_HEADER_CHECK.
-- Bước 1: Quét PTTK → xác định HTTP Method chuẩn và danh sách Header yêu cầu.
-  Khởi tạo TD_001 Happy Path [Smoke].
-- Bước 2: **[Protocol]** — Áp dụng METHOD_CHECK.
-  ON/DEFAULT: sinh case sai Method (HTTP 405/404).
-  OFF: bỏ qua.
-- Bước 3: **[Security]** — Áp dụng AUTH_REQUIRED.
-  DEFAULT: tự kiểm PTTK. Nếu có Auth → sinh 4 case: Missing(401), Invalid-format(401),
-           Expired(401), Forbidden(403). Nếu không có → bỏ qua.
-  YES: bắt buộc sinh đủ 4 case trên.
-  NO: bỏ qua. Thêm comment <!-- [Public API - No Auth Required] -->.
-- Bước 4: **[Format]** — Áp dụng CONTENT_TYPE_CHECK.
-  ON/DEFAULT: sinh case Content-Type sai (HTTP 415).
-  OFF: bỏ qua.
-- Bước 4.5: **[Accept]** — Áp dụng ACCEPT_HEADER_CHECK. (NEW)
-  DEFAULT: tự kiểm PTTK. Nếu API chỉ trả JSON hoặc PTTK định nghĩa Accept →
-           sinh case Accept: text/xml hoặc Accept: text/plain (HTTP 406 Not Acceptable).
-  ON: bắt buộc sinh case.
-  OFF: bỏ qua.
-- Bước 5: **[Basic]** — BẮT BUỘC (không phụ thuộc AUTH_REQUIRED).
+- **Bước 0:** Đọc CẤU HÌNH. Ghi nhớ `AUTH_REQUIRED`, `METHOD_CHECK`, `CONTENT_TYPE_CHECK`,
+  `ACCEPT_HEADER_CHECK`.
+- **Bước 1:** Quét PTTK → xác định HTTP Method chuẩn và danh sách Header yêu cầu.
+  Khởi tạo TD_001 Happy Path `[Smoke]`.
+- **Bước 2: `[Protocol]`** — Áp dụng `METHOD_CHECK`.
+  - ON/DEFAULT: sinh case sai Method (HTTP 405/404).
+  - OFF: bỏ qua.
+- **Bước 3: `[Security]`** — Áp dụng `AUTH_REQUIRED`.
+  - DEFAULT: tự kiểm PTTK. Nếu có Auth → sinh 4 case: Missing(401), Invalid-format(401),
+    Expired(401), Forbidden(403). Nếu không có → bỏ qua.
+  - YES: bắt buộc sinh đủ 4 case trên.
+  - NO: bỏ qua. Thêm comment `<!-- [Public API - No Auth Required] -->`.
+- **Bước 4: `[Format]`** — Áp dụng `CONTENT_TYPE_CHECK`.
+  - ON/DEFAULT: sinh case Content-Type sai (HTTP 415).
+  - OFF: bỏ qua.
+- **Bước 4.5: `[Accept]`** — Áp dụng `ACCEPT_HEADER_CHECK`. (NEW)
+  - DEFAULT: tự kiểm PTTK. Nếu API chỉ trả JSON hoặc PTTK định nghĩa Accept →
+    sinh case Accept: text/xml hoặc Accept: text/plain (HTTP 406 Not Acceptable).
+  - ON: bắt buộc sinh case.
+  - OFF: bỏ qua.
+- **Bước 5: `[Basic]`** — BẮT BUỘC (không phụ thuộc `AUTH_REQUIRED`).
   Duyệt Custom Header khác trong PTTK. Sinh case Missing và Invalid-format cho mỗi header.
 
-## IV. VÍ DỤ MẪU OUTPUT (GOLDEN SAMPLE)
+## IV. Ví Dụ Mẫu Output (Golden Sample)
 
-```
+```markdown
 # POST /v1/trans/minval - Tạo yêu cầu cập nhật ngưỡng
 ## Method & Header
 <!-- Happy Path này chỉ verify lớp Gateway/Protocol.
@@ -141,14 +144,14 @@ Giả định Request Body đã hợp lệ hoàn toàn. Focus 100% vào giao th�
 - **Expected**: HTTP 400, Code 'ERR_INVALID_CLIENT_ID'.
 ```
 
-## V. THỰC THI CUỐI
+## V. Thực Thi Cuối
 
-1. Self-Audit:
+1. **Self-Audit:**
    - Có field Request Body nào bị test không? (Nếu có → Xóa ngay).
    - Có dòng verify DB không? (Nếu có → Xóa ngay).
-   - AUTH_REQUIRED=NO nhưng còn case [Security]? (Nếu có → Xóa ngay).
-   - AUTH_REQUIRED=DEFAULT/YES nhưng thiếu 1 trong 4 case? (Nếu có → Bổ sung).
-   - ACCEPT_HEADER_CHECK=DEFAULT/ON nhưng không có case [Accept]? (Nếu có → Bổ sung).
-   - Happy Path dùng [ST] thay vì [Smoke]? (Nếu có → Sửa ngay).
-   - Còn thiếu case [Basic] nào? (Nếu có → Bổ sung).
-2. Rendering: MỘT FILE MARKDOWN DUY NHẤT trong code fence. Không có văn bản ngoài luồng.
+   - `AUTH_REQUIRED=NO` nhưng còn case `[Security]`? (Nếu có → Xóa ngay).
+   - `AUTH_REQUIRED=DEFAULT/YES` nhưng thiếu 1 trong 4 case? (Nếu có → Bổ sung).
+   - `ACCEPT_HEADER_CHECK=DEFAULT/ON` nhưng không có case `[Accept]`? (Nếu có → Bổ sung).
+   - Happy Path dùng `[ST]` thay vì `[Smoke]`? (Nếu có → Sửa ngay).
+   - Còn thiếu case `[Basic]` nào? (Nếu có → Bổ sung).
+2. **Rendering:** MỘT FILE MARKDOWN DUY NHẤT trong code fence. Không có văn bản ngoài luồng.

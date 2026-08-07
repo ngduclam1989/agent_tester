@@ -1,5 +1,5 @@
 ---
-name: Flaky Test Analyzer
+name: flaky_test_analyzer
 description: Skill phân tích và khắc phục các automation test không ổn định (flaky tests), xác định root cause và đề xuất fix.
 ---
 

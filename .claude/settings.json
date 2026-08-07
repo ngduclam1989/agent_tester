@@ -8,7 +8,7 @@
             "type": "command",
             "command": "bash .claude/hooks/check_destructive_bash.sh",
             "timeout": 10,
-            "statusMessage": "Kiểm tra lệnh có khả năng phá hủy dữ liệu (RULE_GLOBAL.md)..."
+            "statusMessage": "Kiểm tra lệnh có khả năng phá hủy dữ liệu (CLAUDE.md)..."
           }
         ]
       }
@@ -33,7 +33,7 @@
             "type": "command",
             "command": "bash .claude/hooks/cleanup_temp_files.sh",
             "timeout": 30,
-            "statusMessage": "Dọn dẹp file tạm/debug (RULE_GLOBAL.md)..."
+            "statusMessage": "Dọn dẹp file tạm/debug (CLAUDE.md)..."
           }
         ]
       }

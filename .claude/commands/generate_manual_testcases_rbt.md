@@ -14,7 +14,7 @@ skills:
 Workflow này sử dụng **Mode FULL RBT** của skill `rbt_manual_testing` — quy trình **AI-RBT (AI-Driven Risk-Based Testing)** gồm 6 bước tuần tự để sinh manual test cases từ tài liệu yêu cầu.
 
 > [!NOTE]
-> **Luồng này dành cho Antigravity (slash command).** Agent tự đọc skill và **phải đọc prompt template tương ứng trong `plans/manual/` trước mỗi bước** để giữ đủ độ chi tiết.
+> **Luồng này dành cho Claude Code (slash command).** Agent tự đọc skill và **phải đọc prompt template tương ứng trong `plans/manual/` trước mỗi bước** để giữ đủ độ chi tiết.
 > QA team không cần tự copy-paste prompt nếu dùng slash command; agent sẽ tự dùng các prompt đó làm checklist thực thi.
 
 ## ⚠️ Nguyên tắc thực thi
@@ -68,7 +68,7 @@ Thực hiện theo hướng dẫn chi tiết trong skill `rbt_manual_testing` �
 
 > **Rẽ nhánh theo Scope (tự động, dựa trên phân loại UI/API/BOTH ở Bước 1):**
 > - **UI-only** → làm theo các bước bên dưới, không đổi.
-> - **API-only** → rẽ sang skill `api_test_design` (`.claude/skills/api_test_design/SKILL.md`): sinh Test Design 4-phase → chờ confirm → sinh TC (TSV 19 cột) theo `references/API-Gen-TC-From-TD-v4.txt`. Bỏ qua các bước UI bên dưới.
+> - **API-only** → rẽ sang skill `api_test_design` (`.claude/skills/api_test_design/SKILL.md`): sinh Test Design 4-phase → chờ confirm → sinh TC (TSV 19 cột) theo `references/API-Gen-TC-From-TD-v4.md`. Bỏ qua các bước UI bên dưới.
 > - **BOTH** → làm API trước (theo nhánh trên, chờ confirm TC API) rồi mới làm UI (các bước bên dưới). TC API (`.tsv`) và TC UI (`.md`/`.xlsx`) là 2 file riêng biệt, không gộp.
 
 1. **Đánh giá Risk Level (High/Medium/Low) cho mỗi Module:**

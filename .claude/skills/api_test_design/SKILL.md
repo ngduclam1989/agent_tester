@@ -34,11 +34,11 @@ Skill sinh **Test Design** — danh sách Test Condition dạng Markmap, độ p
 
 | Bước | File tham chiếu | Nội dung |
 |---|---|---|
-| 0. Setup Context | `references/API-TD-1-Setup-Context.txt` | Nạp PTTK/RSD/DB, ghi nhớ 4-phase strategy, global rules (ưu tiên tài liệu, xử lý strikethrough = bỏ qua, chuyển "Backend Check" → "Input Data"), format Markmap chuẩn + bảng glossary tag. Sau khi nạp xong, hỏi user xác nhận đúng 1 API (Tên + Endpoint) trước khi sinh bất kỳ Test Condition nào |
-| 1. Cấu phần 1 — Method & Header | `references/API-TD-2-Method-Header-BreakDown.txt` | `[Protocol]` `[Security]` `[Format]` `[Accept]` `[Basic]` — lớp Gateway/quyền truy cập |
-| 2. Cấu phần 2 — Schema Validation | `references/API-TD-3-Schema-Validation-BreakDown.txt` | `[Missing]` `[Empty]` `[Type]` `[Max Length]` `[Malformed]` `[Extra-Fields]` — lớp Parser/Validator cấu trúc request |
-| 3. Cấu phần 3 — Business/Cross-Logic/DB | `references/API-TD-4-Value-Business-Cross-Logic-BreakDown.txt` | `[BVA]` `[BVA+]` `[ECP]` `[IDOR]` `[EG]` `[Whitespace]` `[DT]` `[ST]` — lớp Business Logic & trạng thái |
-| 4. Cấu phần 4 — Response Validation | `references/API-TD-5-Response-Validation-BreakDown.txt` | `[RSP-Schema]` `[RSP-Data]` `[RSP-Error]` `[RSP-Pagination]` `[RSP-Content-Type]` — lớp phản hồi |
+| 0. Setup Context | `references/API-TD-1-Setup-Context.md` | Nạp PTTK/RSD/DB, ghi nhớ 4-phase strategy, global rules (ưu tiên tài liệu, xử lý strikethrough = bỏ qua, chuyển "Backend Check" → "Input Data"), format Markmap chuẩn + bảng glossary tag. Sau khi nạp xong, hỏi user xác nhận đúng 1 API (Tên + Endpoint) trước khi sinh bất kỳ Test Condition nào |
+| 1. Cấu phần 1 — Method & Header | `references/API-TD-2-Method-Header-BreakDown.md` | `[Protocol]` `[Security]` `[Format]` `[Accept]` `[Basic]` — lớp Gateway/quyền truy cập |
+| 2. Cấu phần 2 — Schema Validation | `references/API-TD-3-Schema-Validation-BreakDown.md` | `[Missing]` `[Empty]` `[Type]` `[Max Length]` `[Malformed]` `[Extra-Fields]` — lớp Parser/Validator cấu trúc request |
+| 3. Cấu phần 3 — Business/Cross-Logic/DB | `references/API-TD-4-Value-Business-Cross-Logic-BreakDown.md` | `[BVA]` `[BVA+]` `[ECP]` `[IDOR]` `[EG]` `[Whitespace]` `[DT]` `[ST]` — lớp Business Logic & trạng thái |
+| 4. Cấu phần 4 — Response Validation | `references/API-TD-5-Response-Validation-BreakDown.md` | `[RSP-Schema]` `[RSP-Data]` `[RSP-Error]` `[RSP-Pagination]` `[RSP-Content-Type]` — lớp phản hồi |
 
 **Bắt buộc:** đọc đúng file tham chiếu tương ứng trước khi thực thi từng bước — không tự nhớ lại quy tắc của cấu phần trước để áp cho cấu phần sau (mỗi cấu phần có LỆNH CẤM riêng, tránh lẫn lộn phạm vi).
 
@@ -46,11 +46,11 @@ Mỗi cấu phần có Happy Path (`[Smoke]`) riêng — Happy Path của cấu 
 
 ## Checkpoint bắt buộc
 
-Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1 file Test Design duy nhất** (Markmap, theo đúng format ở `references/API-TD-1-Setup-Context.txt` mục IV) → trình cho user review → **CHỜ user confirm** trước khi sang bước sinh Test Case. Tuyệt đối không tự ý generate TC khi chưa có xác nhận Test Design.
+Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1 file Test Design duy nhất** (Markmap, theo đúng format ở `references/API-TD-1-Setup-Context.md` mục IV) → trình cho user review → **CHỜ user confirm** trước khi sang bước sinh Test Case. Tuyệt đối không tự ý generate TC khi chưa có xác nhận Test Design.
 
 ## Bước tiếp theo (sau khi TD được confirm): Gen Manual Test Case từ Test Design
 
-Đây là một **prompt/bước riêng biệt**, dùng file tham chiếu `references/API-Gen-TC-From-TD-v4.txt` — đọc toàn bộ file này trước khi thực thi, không tự suy diễn lại từ trí nhớ.
+Đây là một **prompt/bước riêng biệt**, dùng file tham chiếu `references/API-Gen-TC-From-TD-v4.md` — đọc toàn bộ file này trước khi thực thi, không tự suy diễn lại từ trí nhớ.
 
 **Input:** Test Design Markdown vừa confirm (Primary Input — nguồn coverage duy nhất) + tài liệu RSD/PTTK (nguồn dữ liệu chi tiết hóa: JSON body, endpoint, DB schema, error code/message, response structure) + tài liệu DB connection (nếu có).
 
@@ -94,7 +94,7 @@ Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1
 
 ## Cross-reference
 
-- Không có Swagger → dùng skill này (`api_test_design`), 2 bước: sinh Test Design (5 sub-step) → sinh TC (theo `API-Gen-TC-From-TD-v4.txt`)
+- Không có Swagger → dùng skill này (`api_test_design`), 2 bước: sinh Test Design (5 sub-step) → sinh TC (theo `API-Gen-TC-From-TD-v4.md`)
 - Có Swagger → dùng `qa_automation_engineer` (`/generate_api_tests_from_swagger`) — schema TC khác (bảng Markdown, không phải schema 19 cột này), có thể tự sinh automation script luôn
 
 ## Rules References

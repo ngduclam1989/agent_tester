@@ -45,13 +45,13 @@ Agent cần ít nhất **1 trong các input** sau từ user:
 
 ### Bước 1: Thu thập thông tin & Tái hiện lỗi (Detect & Reproduce)
 
-1. **Đọc test file** bằng `view_file`:
+1. **Đọc test file** bằng `Read`:
    - Xác định framework (Playwright / Selenium / Appium / Pytest / TestNG)
    - Ghi nhận cấu trúc: Page Objects, fixtures, helper functions
    - Đánh dấu các vùng code nghi ngờ (waits, locators, assertions, setup/teardown)
 
 2. **Chạy test** để tái hiện lỗi (nếu chưa có error log):
-   - Chạy test **3 lần liên tiếp** bằng `run_command`:
+   - Chạy test **3 lần liên tiếp** bằng `Bash`:
      ```bash
      # Playwright
      npx playwright test <test_file> --retries=0 --reporter=list
@@ -178,7 +178,7 @@ Agent cần ít nhất **1 trong các input** sau từ user:
    - Loại bỏ dependency giữa các test cases
    - Đảm bảo mỗi test tự tạo precondition riêng
 
-2. **Sử dụng** `replace_file_content` hoặc `multi_replace_file_content` để áp dụng thay đổi
+2. **Sử dụng** `Edit` để áp dụng thay đổi
 3. **Ghi chú** mỗi thay đổi vào artifact `flaky_analysis.md`
 
 ### Bước 5: Verify & Đảm bảo ổn định (Verify Stability)
