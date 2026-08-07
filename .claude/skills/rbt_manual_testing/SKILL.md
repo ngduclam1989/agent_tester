@@ -119,7 +119,7 @@ Sinh test cases **nhanh, đủ chất lượng** từ requirements/user stories 
 6. **Sinh test cases** với đầy đủ fields:
    - TC ID (format: `[DỰ_ÁN]_[MODULE]_TC_[SỐ]`)
    - Module
-   - Test Scenario
+   - Test Scenario (**BẮT BUỘC theo convention đặt tên** — xem mục "Quy tắc đặt tên Test Title/Test Scenario" bên dưới)
    - Pre-conditions
    - Test Steps (đánh số)
    - Expected Results (đánh số tương ứng)
@@ -134,6 +134,32 @@ Sinh test cases **nhanh, đủ chất lượng** từ requirements/user stories 
 ```
 
 > Đây là schema QUICK mode cố định. Không thêm/xóa/sửa cột nếu user không yêu cầu rõ.
+
+## Quy tắc đặt tên Test Title / Test Scenario (BẮT BUỘC — áp dụng cả QUICK và FULL RBT)
+
+Cột "Test Scenario" (QUICK) và "Test Title" (FULL RBT) **PHẢI** luôn viết theo đúng khuôn:
+
+```
+Kiểm tra <hành động cụ thể> <đối tượng/chức năng> với <loại dữ liệu/điều kiện>
+```
+
+Trong đó `<hành động cụ thể>` phải nêu rõ **kết quả kỳ vọng** (thành công/thất bại/validate/chặn...), không chỉ mô tả thao tác UI thô.
+
+```
+❌ Sai (cụt lủn, chỉ mô tả thao tác, không nói kỳ vọng gì):
+"Filter 'Ngày thực hiện' — executedFrom > executedTo"
+"Bấm 'Xem' điều hướng đúng Detail"
+"Feature flag OFF"
+
+✅ Đúng (nêu rõ hành động + đối tượng + điều kiện/data):
+"Kiểm tra validate filter 'Ngày thực hiện' thất bại khi executedFrom > executedTo"
+"Kiểm tra điều hướng thành công sang màn Detail khi bấm icon 'Xem'"
+"Kiểm tra chặn truy cập route PRC-LIST thành công khi feature flag Inventory:InventoryV2 đang OFF"
+```
+
+Lý do bắt buộc: Test Title là thứ đầu tiên người review/tester đọc để phân biệt case này khác case kia — tên cụt lủn kiểu mô tả UI (không nói rõ kỳ vọng PASS gì) khiến việc quét nhanh cả trăm TC để tìm case cần chạy/review trở nên rất chậm và dễ nhầm.
+
+`scripts/validate_testcases/validate_tc.py` tự động kiểm tra Test Title (cột thứ 4 của schema FULL RBT) có bắt đầu bằng "Kiểm tra" hay không — FAIL nếu thiếu, hook `validate_testcases_on_write.sh` sẽ cảnh báo ngay khi ghi file.
 
 ## Quy tắc Test Data (áp dụng cho cả 2 modes)
 
@@ -451,6 +477,7 @@ File Markdown phải chứa TOÀN BỘ các thông tin sau:
 *Các cột bắt buộc trong Bảng Test Cases:* `TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data`
 
 - Đây là schema FULL RBT / Excel mapping cố định. Không thêm/xóa/sửa cột nếu user không yêu cầu rõ.
+- **Quy tắc Test Title:** Bắt buộc theo convention "Kiểm tra <hành động> <đối tượng> với <loại dữ liệu>" — xem mục "Quy tắc đặt tên Test Title/Test Scenario" ở Mode QUICK phía trên (áp dụng chung cho cả 2 mode). `validate_tc.py` tự động FAIL nếu Test Title không bắt đầu bằng "Kiểm tra".
 - **Quy tắc TC ID:** Bắt buộc tuân thủ nghiêm ngặt định dạng **`[DỰ_ÁN]_[MODULE]_TC_[SỐ]`** (Ví dụ: `CARDOCTOR_ONBOARD_TC_001`). Đánh số tuần tự, liên tiếp từ `001` đến hết cho toàn bộ test cases (không chèn thêm các ký tự phụ như `VAL`, `UI` giữa các nhóm test cases).
 - **Phân nhóm trong Excel:** Để tạo các dòng tiêu đề phân nhóm trực quan trong file Excel Excel, hãy chèn một hàng rỗng chứa tiêu đề in đậm vào cột `TC ID` tại đầu mỗi nhóm, các cột khác để trống. Ví dụ:
   `| **NHÓM FUNCTION** | | | | | | | | |`

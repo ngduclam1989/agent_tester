@@ -27,6 +27,11 @@ GROUP_HEADER_RE = re.compile(r'^\|\s*\*\*NH[ÓO]M\s+(.+?)\s*(?:—|-)\s*(\S+)')
 ANY_TC_ID_RE = re.compile(r'\b([A-Z][A-Z0-9]*_[A-Z0-9\-]+_TC_\d+)\b')
 TOTAL_DECLARED_RE = re.compile(r'\|\s*T[ổo]ng s[ốo] TC\s*\|\s*(\d+)\s*\|')
 PRIORITY_TABLE_START_RE = re.compile(r'\|\s*Priority\s*\|\s*S[ốo] l[ưu][ợo]ng\s*\|')
+TITLE_PREFIX_RE = re.compile(r'^ki[ểe]m tra\b', re.IGNORECASE)
+VAGUE_EXPECTED_RE = re.compile(
+    r'need confirmation|ch[uư]a r[oõ]|ch[uư]a quy đ[iị]nh r[oõ]|ghi nh[aậ]n h[aà]nh vi th[uự]c t[eế]|\btbd\b|t[uù]y (?:th[uự]c t[eế]|BE|FE)',
+    re.IGNORECASE,
+)
 
 
 def fail(errors, msg):
@@ -90,6 +95,24 @@ def validate_file(path):
 
         priority = cells[7] if len(cells) > 7 else "?"
         priority_counter[priority] += 1
+
+        title = cells[3] if len(cells) > 3 else ""
+        if not TITLE_PREFIX_RE.match(title):
+            fail(
+                errors,
+                f"Dòng {i+1}: Test Title '{title}' không bắt đầu bằng 'Kiểm tra ...'. "
+                "Convention bắt buộc: 'Kiểm tra <hành động: thêm mới/thất bại/validate/xóa/phân quyền ...> "
+                "<đối tượng> với <loại dữ liệu>' — không viết cụt lủn kiểu cụm từ mô tả UI thô.",
+            )
+
+        expected_result = cells[6] if len(cells) > 6 else ""
+        vm = VAGUE_EXPECTED_RE.search(expected_result)
+        if vm:
+            fail(
+                errors,
+                f"Dòng {i+1}: Expected Result chứa cụm mơ hồ '{vm.group(0)}' — không thể verify PASS/FAIL rõ ràng. "
+                "Phải chọn 1 default cụ thể và gắn nhãn '[ASSUMPTION: ...]' thay vì để ngỏ.",
+            )
 
         if current_group:
             group_counts[current_group] += 1
