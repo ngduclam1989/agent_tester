@@ -12,15 +12,30 @@ Catches the class of bugs found in practice on Wave 6:
   - TC ID sequence gaps/duplicates
   - Table rows with wrong column count
 
+Also supports the "tách file theo sub-module" (multi-file) convention: a
+rollup file (`TC_[MODULE].md`) that has no TC table of its own but instead
+a "Danh sách file con" table listing sibling `TC_[MODULE]-[SUBMODULE].md`
+files. In that case, this script validates every child file and cross-checks
+declared totals / TC ID continuity across the whole set.
+
 Usage:
     python3 scripts/validate_testcases/validate_tc.py <path/to/TC_*.md> [more files...]
 
 Exit code 0 = all checks passed. Non-zero = at least one failure found.
 """
 
+import os
 import re
 import sys
 from collections import Counter, defaultdict
+
+# Windows pipes/redirects stdout through the system ANSI codepage (not UTF-8)
+# unless told otherwise, which crashes on the ✓/✗/⚠ symbols below — reconfigure
+# defensively so this works both interactively and when captured by the
+# PostToolUse hook (`output=$(python3 ... 2>&1)`).
+for _stream in (sys.stdout, sys.stderr):
+    if hasattr(_stream, "reconfigure"):
+        _stream.reconfigure(encoding="utf-8")
 
 TC_ROW_RE = re.compile(r'^\|\s*([A-Z][A-Z0-9]*_[A-Z0-9\-]+_TC_(\d+))\s*\|')
 GROUP_HEADER_RE = re.compile(r'^\|\s*\*\*NH[ÓO]M\s+(.+?)\s*(?:—|-)\s*(\S+)')
@@ -32,43 +47,56 @@ VAGUE_EXPECTED_RE = re.compile(
     r'need confirmation|ch[uư]a r[oõ]|ch[uư]a quy đ[iị]nh r[oõ]|ghi nh[aậ]n h[aà]nh vi th[uự]c t[eế]|\btbd\b|t[uù]y (?:th[uự]c t[eế]|BE|FE)',
     re.IGNORECASE,
 )
+PRECOND_SKIP_RE = re.compile(r'^(—|-|n/a)$', re.IGNORECASE)
+PRECOND_USER_ANCHOR_RE = re.compile(
+    r'@|garage-owner|accountant|admin|đăng nh[aậ]p|user\s*[ab]\b|session|kh[oô]ng c[aầ]n đăng nh[aậ]p|k[eế] th[uừ]a',
+    re.IGNORECASE,
+)
+PRECOND_SCREEN_ANCHOR_RE = re.compile(
+    r'm[aà]n |màn hình|screen|route|/inventory|url|trang ',
+    re.IGNORECASE,
+)
+PRECOND_DATA_ANCHOR_RE = re.compile(r'\d|id\s*=')
+
+CHILD_TABLE_HEADER_RE = re.compile(r'^\|\s*File\s*\|\s*Sub-module\s*\|')
+CHILD_ROW_ID_NUM_RE = re.compile(r'_TC_(\d+)')
+
+
+def is_ui_tc_file(path):
+    normalized = path.replace("\\", "/")
+    return "/ui/" in normalized
 
 
 def fail(errors, msg):
     errors.append(msg)
 
 
-def validate_file(path):
+def _validate_single(path, lines):
+    """Validate a normal (non-rollup) TC file. Returns (errors, warnings, stats|None)."""
     errors = []
     warnings = []
 
-    with open(path, encoding="utf-8") as f:
-        lines = f.read().splitlines()
-
-    # ---- Locate main TC table ----
     header_idx = None
     for i, line in enumerate(lines):
         if line.strip().startswith("| TC ID | Module | Risk Level"):
             header_idx = i
             break
     if header_idx is None:
-        fail(errors, "Không tìm thấy header bảng TC chính ('| TC ID | Module | Risk Level ...') — có thể sai schema hoặc chưa tới Bước 6.")
-        return errors, warnings
+        return None  # caller decides: not a single-file TC table
 
     expected_cols = lines[header_idx].count("|") - 1
+    check_precond = is_ui_tc_file(path)
 
-    tc_rows = []          # (id, number, module, risk_group, priority, raw_line, line_no)
-    current_group = None  # (module, group_name)
+    tc_rows = []
+    current_group = None
     group_counts = defaultdict(int)
     priority_counter = Counter()
     id_prefix_counter = Counter()
+    precond_gap_ids = []
 
     for i in range(header_idx + 1, len(lines)):
         line = lines[i]
         if not line.startswith("|"):
-            # table ended
-            if line.strip() and not line.strip().startswith("#") and not line.strip().startswith(">"):
-                pass
             continue
         stripped = line.strip()
         if set(stripped) <= set("|-: "):
@@ -114,6 +142,19 @@ def validate_file(path):
                 "Phải chọn 1 default cụ thể và gắn nhãn '[ASSUMPTION: ...]' thay vì để ngỏ.",
             )
 
+        if check_precond and len(cells) > 4:
+            precond = cells[4]
+            if not PRECOND_SKIP_RE.match(precond):
+                missing = []
+                if not PRECOND_USER_ANCHOR_RE.search(precond):
+                    missing.append("user")
+                if not PRECOND_SCREEN_ANCHOR_RE.search(precond):
+                    missing.append("màn hình")
+                if not PRECOND_DATA_ANCHOR_RE.search(precond):
+                    missing.append("dữ liệu cụ thể")
+                if missing:
+                    precond_gap_ids.append((tc_id, missing))
+
         if current_group:
             group_counts[current_group] += 1
 
@@ -121,13 +162,11 @@ def validate_file(path):
 
     if not tc_rows:
         fail(errors, "Không tìm thấy dòng TC nào khớp pattern ID trong bảng — kiểm tra định dạng TC ID [DỰ_ÁN]_[MODULE]_TC_[SỐ].")
-        return errors, warnings
+        return errors, warnings, None
 
-    # ---- Check: single consistent ID prefix (or report the split if project has 2 files by design) ----
     if len(id_prefix_counter) > 1:
         warnings.append(f"File có nhiều prefix TC ID khác nhau trong cùng bảng: {dict(id_prefix_counter)} — xác nhận đây là chủ đích (vd nhóm cross-module) chứ không phải lỗi gõ nhầm.")
 
-    # ---- Check: sequence per prefix — no gaps, no duplicates ----
     by_prefix = defaultdict(list)
     for tc_id, tc_num, prefix, *_ in tc_rows:
         by_prefix[prefix].append(tc_num)
@@ -145,13 +184,11 @@ def validate_file(path):
 
     total_actual = len(tc_rows)
 
-    # ---- Check: declared "Tổng số TC" matches actual ----
     declared_totals = [int(m.group(1)) for l in lines[:header_idx] for m in [TOTAL_DECLARED_RE.match(l.strip())] if m]
     for d in declared_totals:
         if d != total_actual:
             fail(errors, f"'Tổng số TC' khai báo = {d}, nhưng đếm thật trong bảng = {total_actual}. Cần tính lại và sửa dòng khai báo.")
 
-    # ---- Check: declared Priority stats table matches recount ----
     prio_table_idx = None
     for i, line in enumerate(lines[:header_idx]):
         if PRIORITY_TABLE_START_RE.match(line.strip()):
@@ -182,17 +219,209 @@ def validate_file(path):
     else:
         warnings.append("Không tìm thấy bảng 'Priority | Số lượng' (mục 6) để đối chiếu — bỏ qua check này.")
 
-    # ---- Check: every TC ID referenced in prose (outside the table) resolves to a real row ----
     real_ids = {tc_id for tc_id, *_ in tc_rows}
     for i, line in enumerate(lines):
-        if header_idx is not None and i > header_idx and TC_ROW_RE.match(line):
+        if i > header_idx and TC_ROW_RE.match(line):
             continue  # this line IS a table row, skip — we only care about prose references
         for m in ANY_TC_ID_RE.finditer(line):
             ref_id = m.group(1)
             if ref_id not in real_ids:
                 fail(errors, f"Dòng {i+1}: tham chiếu '{ref_id}' trong văn xuôi nhưng KHÔNG tồn tại dòng TC nào có ID này (có thể trích sai ID hoặc quên cập nhật sau khi renumber).")
 
+    if check_precond and precond_gap_ids:
+        examples = ", ".join(f"{tid} (thiếu {'/'.join(m)})" for tid, m in precond_gap_ids[:5])
+        more = f" (+{len(precond_gap_ids) - 5} dòng khác)" if len(precond_gap_ids) > 5 else ""
+        warnings.append(
+            f"{len(precond_gap_ids)} dòng Pre-Condition (UI) thiếu ít nhất 1 trong 3 thành phần bắt buộc "
+            f"(user / màn hình / dữ liệu cụ thể) — xem rule manual_testcase_quality_rules.md mục 9. "
+            f"Ví dụ: {examples}{more}."
+        )
+
+    stats = {
+        "total": total_actual,
+        "priority_counter": priority_counter,
+        "by_prefix": {p: sorted(set(nums)) for p, nums in by_prefix.items()},
+        "real_ids": real_ids,
+    }
+    return errors, warnings, stats
+
+
+def _parse_child_table(lines, header_idx):
+    """Parse the 'Danh sách file con' table starting right after its header row."""
+    rows = []
+    i = header_idx + 1
+    # skip the markdown separator row (---|---|...)
+    if i < len(lines) and set(lines[i].strip()) <= set("|-: "):
+        i += 1
+    while i < len(lines) and lines[i].strip().startswith("|"):
+        line = lines[i]
+        if set(line.strip()) <= set("|-: "):
+            i += 1
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) >= 2 and cells[0]:
+            file_cell = cells[0].strip("`").strip()
+            submodule = cells[1] if len(cells) > 1 else ""
+            range_cell = cells[2] if len(cells) > 2 else ""
+            total_cell = cells[3] if len(cells) > 3 else ""
+            rows.append((file_cell, submodule, range_cell, total_cell, i + 1))
+        i += 1
+    return rows
+
+
+def _validate_rollup(path, lines, child_table_idx):
+    errors = []
+    warnings = []
+    base_dir = os.path.dirname(os.path.abspath(path))
+
+    children = _parse_child_table(lines, child_table_idx)
+    if not children:
+        fail(errors, "Tìm thấy bảng 'Danh sách file con' nhưng không đọc được dòng nào — kiểm tra format bảng (mỗi dòng phải có cột File không rỗng).")
+        return errors, warnings
+
+    all_nums_by_prefix = defaultdict(list)
+    total_actual_sum = 0
+    priority_sum = Counter()
+    all_real_ids = set()
+
+    for file_cell, submodule, range_cell, total_cell, line_no in children:
+        child_path = os.path.join(base_dir, file_cell)
+        if not os.path.isfile(child_path):
+            fail(errors, f"Dòng {line_no} (Danh sách file con): file con '{file_cell}' không tồn tại tại đường dẫn '{child_path}'.")
+            continue
+
+        with open(child_path, encoding="utf-8") as f:
+            child_lines = f.read().splitlines()
+
+        result = _validate_single(child_path, child_lines)
+        if result is None:
+            fail(errors, f"Dòng {line_no}: file con '{file_cell}' không có header bảng TC hợp lệ ('| TC ID | Module | Risk Level ...').")
+            continue
+        c_errors, c_warnings, stats = result
+        for e in c_errors:
+            errors.append(f"[{file_cell}] {e}")
+        for w in c_warnings:
+            warnings.append(f"[{file_cell}] {w}")
+        if stats is None:
+            continue
+
+        total_actual_sum += stats["total"]
+        priority_sum.update(stats["priority_counter"])
+        all_real_ids |= stats["real_ids"]
+
+        for prefix, nums in stats["by_prefix"].items():
+            all_nums_by_prefix[prefix].extend(nums)
+
+            actual_min, actual_max = min(nums), max(nums)
+            range_nums = CHILD_ROW_ID_NUM_RE.findall(range_cell)
+            if len(range_nums) == 2:
+                decl_min, decl_max = int(range_nums[0]), int(range_nums[1])
+                if decl_min != actual_min or decl_max != actual_max:
+                    fail(
+                        errors,
+                        f"Dòng {line_no} (Danh sách file con): khai TC ID range '{range_cell}' cho '{file_cell}', "
+                        f"nhưng thực tế file con có {prefix}_TC_{actual_min:03d} – {prefix}_TC_{actual_max:03d}.",
+                    )
+            elif range_cell.strip():
+                warnings.append(f"Dòng {line_no}: không parse được TC ID range '{range_cell}' — kiểm tra format (vd `PREFIX_TC_001` – `PREFIX_TC_027`).")
+
+        if total_cell.strip().isdigit() and int(total_cell.strip()) != stats["total"]:
+            fail(
+                errors,
+                f"Dòng {line_no} (Danh sách file con): khai Tổng TC = {total_cell} cho '{file_cell}', "
+                f"nhưng đếm thật trong file con = {stats['total']}.",
+            )
+
+    # ---- Cross-file TC ID continuity (no gaps/dups spanning the whole module) ----
+    for prefix, nums in all_nums_by_prefix.items():
+        dup = [n for n, c in Counter(nums).items() if c > 1]
+        if dup:
+            fail(errors, f"Prefix {prefix}: TC ID bị TRÙNG số GIỮA các file con: {sorted(dup)}")
+        uniq = sorted(set(nums))
+        if uniq and uniq[0] != 1:
+            warnings.append(f"Prefix {prefix}: số TC đầu tiên xuyên suốt các file con là {uniq[0]}, không bắt đầu từ 1.")
+        missing = [n for n in range(uniq[0], uniq[-1] + 1) if n not in uniq] if uniq else []
+        if missing:
+            fail(errors, f"Prefix {prefix}: THIẾU số TC ID xuyên suốt các file con (gap giữa 2 file con, hoặc quên đánh số): {missing}")
+
+    # ---- Rollup's own declared "Tổng số TC" vs sum of children ----
+    declared_totals = [int(m.group(1)) for l in lines[:child_table_idx] for m in [TOTAL_DECLARED_RE.match(l.strip())] if m]
+    for d in declared_totals:
+        if d != total_actual_sum:
+            fail(errors, f"'Tổng số TC' khai báo ở rollup = {d}, nhưng tổng đếm thật từ tất cả file con = {total_actual_sum}.")
+
+    # ---- Rollup's Priority summary table vs aggregated children ----
+    prio_table_idx = None
+    for i, line in enumerate(lines[:child_table_idx]):
+        if PRIORITY_TABLE_START_RE.match(line.strip()):
+            prio_table_idx = i
+            break
+    if prio_table_idx is not None:
+        declared_prio = {}
+        for line in lines[prio_table_idx + 2:]:
+            if not line.strip().startswith("|"):
+                break
+            cells = [c.strip() for c in line.strip().strip("|").split("|")]
+            if len(cells) < 2:
+                continue
+            key = cells[0].strip("*").strip()
+            val = cells[1].strip("*").strip()
+            if key.lower() in ("tổng", "total") or not val.isdigit():
+                continue
+            declared_prio[key] = int(val)
+        for key, actual_count in priority_sum.items():
+            declared_count = declared_prio.get(key)
+            if declared_count is None:
+                fail(errors, f"Bảng Priority (rollup) THIẾU dòng cho giá trị Priority thực tế '{key}' (tổng đếm từ file con = {actual_count}).")
+            elif declared_count != actual_count:
+                fail(errors, f"Bảng Priority (rollup): '{key}' khai {declared_count}, tổng đếm thật từ file con {actual_count}.")
+        for key in declared_prio:
+            if key not in priority_sum:
+                warnings.append(f"Bảng Priority (rollup) khai '{key}' nhưng không có TC nào ở bất kỳ file con nào mang giá trị này.")
+    else:
+        warnings.append("Không tìm thấy bảng 'Priority | Số lượng' (mục 6) trong rollup để đối chiếu — bỏ qua check này.")
+
+    # ---- TC IDs referenced in rollup prose must resolve to a real row in some child ----
+    for i, line in enumerate(lines):
+        for m in ANY_TC_ID_RE.finditer(line):
+            ref_id = m.group(1)
+            if ref_id not in all_real_ids:
+                fail(errors, f"Dòng {i+1} (rollup): tham chiếu '{ref_id}' trong văn xuôi nhưng KHÔNG tồn tại dòng TC nào có ID này ở bất kỳ file con nào.")
+
     return errors, warnings
+
+
+def validate_file(path):
+    with open(path, encoding="utf-8") as f:
+        lines = f.read().splitlines()
+
+    header_idx = None
+    for i, line in enumerate(lines):
+        if line.strip().startswith("| TC ID | Module | Risk Level"):
+            header_idx = i
+            break
+
+    if header_idx is not None:
+        result = _validate_single(path, lines)
+        errors, warnings, _stats = result
+        return errors, warnings
+
+    child_table_idx = None
+    for i, line in enumerate(lines):
+        if CHILD_TABLE_HEADER_RE.match(line):
+            child_table_idx = i
+            break
+
+    if child_table_idx is not None:
+        return _validate_rollup(path, lines, child_table_idx)
+
+    return (
+        [
+            "Không tìm thấy header bảng TC chính ('| TC ID | Module | Risk Level ...') và cũng không tìm thấy "
+            "bảng 'Danh sách file con' (rollup) — có thể sai schema, chưa tới Bước 6, hoặc thiếu header đúng format."
+        ],
+        [],
+    )
 
 
 def main():

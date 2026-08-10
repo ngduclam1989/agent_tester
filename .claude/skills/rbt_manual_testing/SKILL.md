@@ -161,6 +161,31 @@ Lý do bắt buộc: Test Title là thứ đầu tiên người review/tester đ
 
 `scripts/validate_testcases/validate_tc.py` tự động kiểm tra Test Title (cột thứ 4 của schema FULL RBT) có bắt đầu bằng "Kiểm tra" hay không — FAIL nếu thiếu, hook `validate_testcases_on_write.sh` sẽ cảnh báo ngay khi ghi file.
 
+## Quy tắc nội dung Pre-Condition (UI) — BẮT BUỘC
+
+> Áp dụng cho mọi TC thuộc phạm vi **UI (Web/Mobile)** — cả QUICK và FULL RBT. Rule ra đời sau khi rà soát `TC_PRC.md` (Wave 6) phát hiện Pre-Condition viết theo kiểu mô tả trạng thái trừu tượng ("Tenant có ≥1 log PRC đã chạy", "Bảng có dòng id=4521", "3 log ở 3 trạng thái khác nhau") — người chạy test không biết phải setup cụ thể ra sao, và không biết Test Steps bắt đầu từ đâu vì Test Steps thường viết tắt thao tác trực tiếp trên UI (vd "Bấm icon 'Xem' ở dòng id=4521") mà không nói rõ **đang đứng ở màn nào, đăng nhập bằng ai**.
+
+Cột Pre-Condition **PHẢI** nêu đủ 3 thành phần sau (viết gộp 1-2 câu, không cần tách dòng):
+
+1. **User được sử dụng** — tài khoản/role cụ thể đang đăng nhập (hoặc "Không cần đăng nhập" nếu guest). Không viết chung chung "user hợp lệ".
+2. **Màn hình đang đứng** — route/màn hình UI ngay trước khi Test Steps bắt đầu chạy (vì Test Steps thực hiện thao tác trực tiếp, không lặp lại bước điều hướng). Không viết "—" nếu Test Steps không có bước điều hướng riêng.
+3. **Dữ liệu cần thiết phải có** — giá trị/ID/số lượng **cụ thể** đã tồn tại sẵn trong hệ thống trước khi test, không dùng định lượng mơ hồ ("≥1", "nhiều", "một vài", "3 log ở 3 trạng thái khác nhau" mà không nói rõ log nào/trạng thái nào).
+
+```
+❌ Sai: "Tenant có ≥1 log PRC đã chạy"
+✅ Đúng: "Đăng nhập garage-owner (owner_test_20260804@gara.test); đang ở màn PRC-LIST (/inventory/price-calc-runs); đã tồn tại sẵn 1 log PRC id=4519, kỳ=Tháng 07/2026, kho=Kho Chính - CN Quận 1, trạng thái SUCCEEDED"
+
+❌ Sai: "Bảng có dòng id=4521"
+✅ Đúng: "Đăng nhập garage-owner; đang ở màn PRC-LIST; bảng có sẵn dòng log id=4521 (kỳ=Tháng 07/2026, kho=Kho Chính - CN Quận 1)"
+
+❌ Sai: "3 log ở 3 trạng thái khác nhau"
+✅ Đúng: "Đăng nhập garage-owner; đang ở màn PRC-LIST; đã tồn tại sẵn 3 log: id=4520 (PENDING), id=4521 (SUCCEEDED), id=4522 (COMPLETED_WITH_ERRORS)"
+```
+
+Nếu 1 TC kế thừa dữ liệu/session từ TC ngay trước đó trong cùng nhóm (tránh lặp lại toàn bộ setup), ghi rõ "Kế thừa dữ liệu/session từ `<TC ID>`" thay vì để trống — vẫn phải nêu rõ đang ở màn nào nếu khác với TC trước.
+
+`scripts/validate_testcases/validate_tc.py` có cảnh báo (WARNING, không block) khi phát hiện nhiều dòng Pre-Condition trong file thuộc thư mục `.../ui/` thiếu 1 trong 3 thành phần trên — xem chi tiết trong output hook `validate_testcases_on_write.sh`.
+
 ## Quy tắc Test Data (áp dụng cho cả 2 modes)
 
 ```
@@ -212,6 +237,8 @@ Khi form/UI có các input fields, agent **BẮT BUỘC** phải liệt kê từ
 Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tích Ambiguity, phân rã hệ thống, Traceability Matrix, đánh giá Risk Level, và sinh test cases chi tiết.
 
 > ⚠️ **QUAN TRỌNG:** Quy trình này **BẮT BUỘC chạy tuần tự** từng bước. KHÔNG được gộp nhiều bước chạy 1 lần. Mỗi bước phải hoàn thành và được user xác nhận trước khi sang bước tiếp.
+>
+> **Khi module có nhiều sub-module (xác định ở Bước 3):** quy tắc "tuần tự + confirm" ở trên áp dụng ở granularity **SUB-MODULE** cho Bước 4-6, không phải cấp module — nghĩa là mỗi sub-module phải được phân tích/sinh TC/confirm riêng, tuần tự, không gộp nhiều sub-module vào 1 lượt. Xem chi tiết ở đầu mục "Agent phải" của Bước 4 và mục 5-6 của Bước 5.
 
 > [!NOTE]
 > **2 luồng sử dụng riêng biệt:**
@@ -308,8 +335,9 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
    - **Theo luồng:** Flow tạo mới, Flow chỉnh sửa, Flow xóa...
 2. Mô tả ngắn gọn chức năng từng Module
 3. Chỉ ra Dependencies giữa các Module
+4. **Nếu 1 module phân rã ra ≥ 2 sub-module độc lập** (nhiều màn hình/route/luồng riêng biệt, ví dụ M1 LIST, M2 CREATE, M3 DETAIL...): liệt kê rõ danh sách sub-module kèm thứ tự xử lý dự kiến. Đây là **ranh giới bắt buộc** sẽ dùng xuyên suốt Bước 4-6 — từ Bước 4 trở đi, **mọi phân tích/sinh TC/confirm phải làm riêng theo từng sub-module này, không được gộp nhiều sub-module vào 1 lượt trình bày hay 1 lượt xin confirm** (xem chi tiết ở đầu mục "Agent phải" của Bước 4 và Bước 5).
 
-**Output:** Danh sách Modules/Sub-modules + Dependencies.
+**Output:** Danh sách Modules/Sub-modules + Dependencies. Nếu có ≥2 sub-module, đây là ranh giới cố định cho các bước còn lại — không đổi/gộp lại ở Bước 4-6.
 
 ---
 
@@ -317,7 +345,9 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 
 **Mục đích:** Thiết lập ma trận truy vết (Traceability Matrix) đa chiều để đảm bảo 100% requirements từ Test Basis được phủ bởi Test Conditions và Test Scenarios.
 
-**Agent phải:**
+> ⚠️ **Nếu Bước 3 đã xác định module có ≥ 2 sub-module:** xử lý **tuần tự từng sub-module một** theo đúng ranh giới đã chốt ở Bước 3. Với mỗi sub-module: chạy đủ mục 1-4 dưới đây **chỉ trong phạm vi sub-module đó**, trình bày kết quả, rồi **DỪNG LẠI chờ user confirm xong sub-module này mới chuyển sang sub-module tiếp theo**. TUYỆT ĐỐI không dồn nhiều sub-module vào 1 lần trình bày rồi xin confirm 1 lượt cho tất cả — đây chính là kiểu gộp đã gây rớt REQ/TC trong thực tế (Wave 6).
+
+**Agent phải (lặp lại cho từng sub-module nếu có ≥2 sub-module):**
 
 1. Xây dựng **Traceability Matrix** ánh xạ: `Requirements (REQ-ID) ↔ Test Conditions ↔ Test Scenarios / Test Cases` (Tham chiếu `templates/traceability-matrix.csv` để sử dụng format chuẩn khi xuất cấu trúc matrix).
 2. Cross-check xem có yêu cầu nào bị thiếu trong danh sách phân rã (Gap Analysis) để phát hiện lỗ hổng kiểm thử (Test coverage gaps).
@@ -327,10 +357,10 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
    - **UI & Behavior** (Medium risk) — label/placeholder/text hiển thị đúng verbatim nguồn thiết kế (đặc biệt các điểm đã phát hiện lệch giữa 2 nguồn tài liệu ở Bước 2), tab order, hover, focus, resize, disabled-state
    - **Phân quyền** (High risk) — Access Control & Roles, **PHẢI có ít nhất 1 REQ/scenario cho MỖI module/sub-module riêng biệt** (không gộp chung 1 REQ cho toàn bộ feature nếu từng module có màn hình/hành động khác nhau — kể cả các nút hành động phụ như Recalc/Delete nằm lồng trong màn khác vẫn phải có REQ phân quyền riêng)
    - **Ảnh hưởng chức năng liên quan** (High risk) — Dependencies & Data Integrity: dữ liệu hiển thị đúng ở List/Detail liên quan **sau khi** thao tác ghi (create/update/delete) thành công, logic kế thừa dữ liệu ngầm định, tác động sang màn hình/feature khác (kể cả ngoài phạm vi wave hiện tại — vẫn phải ghi nhận, đánh dấu Priority theo mức độ liên quan)
-4. **Self-check gate bắt buộc trước khi trình user**: với MỖI module đã phân rã ở Bước 3, xác nhận đã có ít nhất 1 REQ-ID thuộc **cả 5 nhóm** trên (hoặc note "N/A" có lý do rõ ràng cho nhóm không áp dụng). Nếu module nào thiếu 1+ nhóm, agent phải tự bổ sung REQ/Scenario cho đủ trước khi đưa ra Bước 4 output — không để user phải tự phát hiện thiếu sót này.
-5. **Chờ user review** danh sách scenarios và ma trận truy vết trước khi sinh test case chi tiết.
+4. **Self-check gate bắt buộc trước khi trình user**: với MỖI module/sub-module đã phân rã ở Bước 3, xác nhận đã có ít nhất 1 REQ-ID thuộc **cả 5 nhóm** trên (hoặc note "N/A" có lý do rõ ràng cho nhóm không áp dụng). Nếu thiếu 1+ nhóm, agent phải tự bổ sung REQ/Scenario cho đủ trước khi đưa ra output của (sub-)module này — không để user phải tự phát hiện thiếu sót này.
+5. **Chờ user review VÀ confirm.** Nếu module không tách sub-module: 1 lần review cho toàn bộ danh sách scenarios + ma trận truy vết. Nếu module có ≥2 sub-module: **confirm riêng sau MỖI sub-module** (không phải 1 lần cho toàn bộ danh sách) trước khi sinh test case chi tiết ở Bước 5 cho đúng sub-module vừa confirm.
 
-**Output:** Traceability Matrix đa chiều + High-Level Test Scenarios — đã tự-audit đủ 5 nhóm risk cho từng module (xem mục 4).
+**Output:** Traceability Matrix đa chiều + High-Level Test Scenarios — đã tự-audit đủ 5 nhóm risk cho từng module/sub-module (xem mục 4), đã được user confirm theo đúng granularity ở mục 5.
 
 > [!WARNING]
 > **Human Checkpoint:** User cần review danh sách scenarios để bổ sung các trường hợp đặc thù mà AI có thể bỏ sót. Đây là bước đánh giá rủi ro do con người thực hiện.
@@ -401,16 +431,17 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
    > Không thêm các thông tin này thành cột trong bảng TC chính nếu user không yêu cầu đổi mẫu.
 
 4. **Bao phủ đa dạng:** Happy Path (gồm case nhập full thông tin và case chỉ nhập thông tin bắt buộc tối thiểu), Negative Path (giá trị biên, vượt ký tự, validate thiếu dần các trường bắt buộc), Edge Cases.
-5. **Nếu scenarios quá nhiều:** Sinh từng Module một, hỏi user để tiếp tục.
-6. **Traceability Coverage Audit — BẮT BUỘC, không được bỏ qua dù chỉ 1 module:**
+5. **Sinh theo đúng ranh giới sub-module đã chốt ở Bước 3-4 — BẮT BUỘC nếu module có ≥ 2 sub-module** (không còn là tùy chọn "nếu quá nhiều" nữa): sinh TC chi tiết cho **1 sub-module duy nhất** mỗi lượt, chạy Traceability Coverage Audit cục bộ cho sub-module đó (mục 6, phần "audit cục bộ"), trình bày, rồi **DỪNG LẠI chờ user confirm sub-module này xong mới sinh tiếp sub-module kế tiếp**. KHÔNG gộp nhiều sub-module vào 1 lượt sinh + trình bày.
+6. **Traceability Coverage Audit — BẮT BUỘC, không được bỏ qua dù chỉ 1 module/sub-module, chạy 2 cấp độ:**
    > **Lý do bắt buộc:** Khi sinh hàng trăm TC bằng tay qua nhiều lượt, việc bỏ sót REQ/Scenario đã chốt ở Bước 4 (viết ra rồi quên đưa vào bảng TC) là lỗi hệ thống rất dễ xảy ra và rất khó tự phát hiện bằng mắt thường — đã xảy ra thật trong thực tế (5-7 REQ bị rớt khỏi TC dù đã note test data cho chúng). Bước audit dưới đây tồn tại chính để chặn lỗi này trước khi đưa cho user, không phải thủ tục hình thức.
-   - Sau khi sinh xong TC cho **toàn bộ** các module (không phải từng module riêng lẻ — audit ở cấp toàn bộ output cuối), lập bảng đối chiếu **mỗi REQ-ID ở Bước 4 ↔ ít nhất 1 TC ID** đã sinh. REQ nào không có TC nào tham chiếu tới → coi là lỗi, PHẢI bổ sung TC trước khi trình user, không được báo "hoàn thành" khi còn REQ trống.
+   - **Audit cục bộ (bắt buộc ngay sau khi sinh xong TC của MỖI sub-module, trước khi xin confirm ở mục 5):** đối chiếu mỗi REQ-ID thuộc phạm vi sub-module đó (đã chốt ở Bước 4) ↔ ít nhất 1 TC ID vừa sinh. REQ nào không có TC tham chiếu → bổ sung ngay trước khi trình user confirm sub-module này.
+   - **Audit tổng (bắt buộc sau khi TẤT CẢ sub-module đã sinh xong và được confirm):** lập lại bảng đối chiếu **mỗi REQ-ID ở Bước 4 ↔ ít nhất 1 TC ID** trên toàn bộ output (không giới hạn 1 sub-module) — bắt các REQ nằm giữa ranh giới 2 sub-module hoặc bị bỏ sót do lỗi phân rã ở Bước 3. REQ nào không có TC nào tham chiếu tới → coi là lỗi, PHẢI bổ sung TC trước khi trình user, không được báo "hoàn thành" khi còn REQ trống.
    - Nếu trong file test data (mục "Test Data thiết yếu") có khai một giá trị/tài khoản/mã cụ thể (vd `PN-18903`, tài khoản tenant khác...) — kiểm tra giá trị đó **thực sự được dùng** trong ≥1 TC. Test data khai nhưng không TC nào dùng là dấu hiệu chắc chắn của 1 scenario bị rớt.
    - Mọi con số tổng hợp (Risk Level summary, Priority stats, "Tổng số TC") **PHẢI được tính lại trực tiếp từ nội dung bảng TC cuối cùng** (đếm bằng script/công cụ, không viết theo trí nhớ hoặc ước lượng trước khi chốt nội dung) — đây là nguồn lỗi phổ biến thứ hai đã xảy ra thật (bảng thống kê viết trước rồi không đồng bộ lại sau khi TC thay đổi).
    - Mọi TC ID được **tham chiếu trong văn xuôi** ở nơi khác trong tài liệu (mục Ambiguities & Q&A, ghi chú...) phải được verify lại là **đúng ID thật** sau bất kỳ lần chỉnh sửa/renumber nào — không tự tin trích dẫn theo trí nhớ.
    - Nếu workspace có `scripts/validate_testcases/validate_tc.py`, **PHẢI chạy script này** trên từng file TC đã sinh trước khi báo hoàn thành hoặc trước khi chuyển sang Bước 6; sửa hết lỗi script báo trước khi tiếp tục.
 
-**Output:** Danh sách Test Cases chi tiết có Risk Level — đã chạy Traceability Coverage Audit (mục 6) sạch lỗi.
+**Output:** Danh sách Test Cases chi tiết có Risk Level — đã chạy Traceability Coverage Audit cục bộ theo từng sub-module + audit tổng cuối cùng (mục 6) sạch lỗi, đã được user confirm theo đúng granularity ở mục 5.
 
 ---
 
@@ -488,6 +519,31 @@ File Markdown phải chứa TOÀN BỘ các thông tin sau:
 - Test Steps và Expected Result phải được đánh số cụ thể tương ứng 1-1, dùng `<br>` để xuống dòng trong ô.
 - **TUYỆT ĐỐI không được bỏ sót** bất kỳ test case nào đã sinh ở Bước 5.
 
+##### Tách file theo sub-module (multi-file convention)
+
+**Ranh giới tách file PHẢI khớp đúng ranh giới sub-module đã chốt ở Bước 3** — không có ngưỡng riêng ở Bước 6. Cụ thể:
+
+- Nếu Bước 3 xác định module **chỉ có 1 sub-module / không tách sub-module** → gói toàn bộ vào **1 file duy nhất** `TC_[MODULE].md` như mô tả ở trên.
+- Nếu Bước 3 xác định module có **≥ 2 sub-module độc lập** (mỗi sub-module có route/màn hình riêng, ví dụ M1 LIST / M2 CREATE / M3 DETAIL...) → **bắt buộc tách file theo sub-module**, vì các sub-module này đã được phân tích/sinh TC/confirm riêng biệt xuyên suốt Bước 4-5 (không gộp ở bước nào) — gộp lại thành 1 file duy nhất ở bước cuối cùng này sẽ phá vỡ nguyên tắc đó.
+
+Khi tách, cấu trúc bắt buộc như sau:
+
+1. **1 file rollup** `TC_[MODULE].md` — chỉ giữ mục 1-6 (Thông tin chung, Risk Level Summary **tổng cho cả module**, Test Data, Traceability Matrix, Ambiguities & Q&A, Priority stats **tổng cho cả module**). Mục 7 trong file rollup KHÔNG chứa bảng TC chi tiết nữa, mà là **"Danh sách file con"**:
+
+   | File | Sub-module | TC ID range | Tổng TC |
+   |---|---|---|---|
+   | `TC_[MODULE]-[SUBMODULE1].md` | M1 ... | `[PREFIX]_TC_001` – `[PREFIX]_TC_027` | 27 |
+   | `TC_[MODULE]-[SUBMODULE2].md` | M2 ... | `[PREFIX]_TC_028` – `[PREFIX]_TC_059` | 32 |
+
+2. **N file con** `TC_[MODULE]-[SUBMODULE].md` (ví dụ `TC_PRC-LIST.md`, `TC_PRC-CREATE.md`) — mỗi file chỉ chứa mục 7 (Bảng TC chi tiết) cho đúng sub-module đó, vẫn đủ 5 nhóm risk category theo thứ tự chuẩn (Function/Validate/UI & Behavior/Phân quyền/Ảnh hưởng liên quan) như trong 1 file duy nhất.
+
+3. **TC ID:** vẫn dùng chung 1 prefix `[DỰ_ÁN]_[MODULE]_TC_` cho toàn bộ module (KHÔNG đổi/thêm prefix theo sub-module). Đánh số **liên tục xuyên suốt** các file con theo đúng thứ tự xuất hiện trong bảng "Danh sách file con" của rollup (file đầu 001→N, file kế tiếp N+1→...). **Không** reset về 001 ở mỗi file con.
+
+4. **Excel:** convert riêng từng file con bằng `node scripts/convert_excel/md_to_xlsx.js <file con>` (file rollup không có bảng TC nên không cần/không thể convert).
+
+5. **Validate:** chạy `python3 scripts/validate_testcases/validate_tc.py <rollup>.md` — script tự nhận diện file rollup (không có header bảng TC nhưng có bảng "Danh sách file con"), tự đọc và validate từng file con, rồi đối chiếu tổng số liệu (Tổng số TC, Priority stats) + tính liên tục của TC ID xuyên suốt các file con. Vẫn nên chạy `validate_tc.py <file con>.md` riêng lẻ khi sửa từng file con (hook `validate_testcases_on_write.sh` tự làm việc này mỗi lần Write/Edit).
+6. **Thời điểm ghi file:** ghi file con **ngay sau khi sub-module đó được user confirm ở Bước 5** (không đợi tất cả sub-module xong mới ghi 1 lượt cuối cùng) — nhất quán với nguyên tắc xử lý tuần tự từng sub-module xuyên suốt Bước 4-6. File rollup có thể cập nhật dần (bảng "Danh sách file con" thêm 1 dòng mỗi khi có file con mới) hoặc ghi 1 lần sau khi toàn bộ sub-module đã xong và audit tổng (Bước 5 mục 6) đã sạch.
+
 #### BƯỚC 2: CONVERT SANG EXCEL (TỰ ĐỘNG BẰNG SCRIPT)
 
 Ngay sau khi sinh và lưu xong file Markdown ở Bước 1 vào thư mục `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/` tương ứng, bạn (AI Agent) **BẮT BUỘC** phải tự động chạy lệnh Terminal trong Workspace để convert file Markdown đó sang file Excel (.xlsx) nằm trong cùng thư mục đó.
@@ -501,11 +557,12 @@ Ngay sau khi sinh và lưu xong file Markdown ở Bước 1 vào thư mục `pra
 - Nếu script báo lỗi (exit code khác 0) → sửa file, chạy lại script, lặp tới khi sạch — **KHÔNG báo hoàn thành với user khi script còn lỗi**.
 - Nếu môi trường không có Python/script này (dự án khác chưa copy script) → tự thực hiện thủ công đủ 5 kiểm tra tương đương liệt kê ở Bước 5 mục 6, và nói rõ với user là đã kiểm tra thủ công do thiếu tooling.
 - Một **PostToolUse hook** (`.claude/settings.json`) tự động chạy lại script này mỗi khi file khớp `practices/testcases/**/TC_*.md` được Write/Edit — hook là lưới an toàn cuối, không thay thế cho việc agent tự chủ động chạy validate trước.
+- Nếu áp dụng "Tách file theo sub-module" (xem Bước 1): chạy `validate_tc.py` trên **file rollup** — script tự phát hiện rollup, tự đọc + validate từng file con, đối chiếu tổng số liệu và tính liên tục TC ID xuyên suốt các file con. Vẫn phải sạch lỗi ở cả rollup lẫn từng file con trước khi báo hoàn thành sub-module đó (theo checkpoint ở Bước 5 mục 5).
 
 **Output:**
 
-- Bảng Test Cases Markdown hoàn chỉnh được lưu tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/TC_[MODULE].md`.
-- File Excel (.xlsx) đã được tự động convert thành công tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/TC_[MODULE].xlsx`.
+- Trường hợp 1 file (mặc định, module không tách sub-module): Bảng Test Cases Markdown hoàn chỉnh được lưu tại `practices/testcases/[TÊN_FOLDER_REQUIREMENT]/ui/TC_[MODULE].md`, Excel tương ứng tại `.../TC_[MODULE].xlsx`.
+- Trường hợp tách file theo sub-module: file rollup `.../ui/TC_[MODULE].md` (mục 1-6 + "Danh sách file con") + các file con `.../ui/TC_[MODULE]-[SUBMODULE].md` (mục 7 riêng từng sub-module) kèm Excel tương ứng cho từng file con — mỗi file con được tạo/validate/confirm ngay sau khi sub-module đó hoàn tất ở Bước 5, không đợi gộp hết rồi mới xuất 1 lượt.
 
 ---
 
@@ -566,6 +623,7 @@ Ngay sau khi sinh và lưu xong file Markdown ở Bước 1 vào thư mục `pra
 - ❌ Sinh test data chung chung / placeholder
 - ❌ Rút gọn hoặc bỏ sót test case khi mapping sang bảng
 - ❌ Sinh tất cả test cases 1 lần cho hệ thống lớn (phải chia module)
+- ❌ Gộp nhiều sub-module vào 1 lượt phân tích/sinh TC/confirm ở Bước 4-6 khi module có ≥2 sub-module — phải tách và confirm từng sub-module một, xuyên suốt từ Traceability tới file output
 - ❌ Chỉ có Happy Path, thiếu Negative/Boundary cases (QUICK)
 - ❌ Test Steps mơ hồ, không ghi rõ dữ liệu nhập
 - ❌ Gộp validation nhiều trường vào 1 test case → mỗi trường phải có TC validation riêng

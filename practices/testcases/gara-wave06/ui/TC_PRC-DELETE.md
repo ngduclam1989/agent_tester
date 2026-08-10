@@ -1,0 +1,29 @@
+# Test Cases — Wave 6 — Nhóm PRC — M5 PRC-DELETE
+
+> File con của rollup [`TC_PRC.md`](TC_PRC.md) — xem file đó để biết Thông tin chung / Test Data / Traceability Matrix / Ambiguities & Q&A / Bảng tổng hợp Risk Level & Priority cho toàn bộ module PRC.
+
+## 7. Bảng Test Cases chi tiết
+
+| TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data |
+|---|---|---|---|---|---|---|---|---|
+| **NHÓM FUNCTION — M5 PRC-DELETE** | | | | | | | | |
+| GARA_PRC_TC_108 | M5 | High | Kiểm tra mở dialog xác nhận xóa đúng nội dung thành công khi click icon "Xóa" | Đăng nhập garage-owner; đang ở màn PRC-LIST; bảng có sẵn dòng log id=4521 (kỳ=Tháng 07/2026, kho=Kho Chính - CN Quận 1) | 1. Click icon "Xóa" ở dòng id=4521 | 1. Dialog hiện đúng "Bạn có muốn xóa log tính giá {periodFrom} - {periodTo} của {warehouseName}." | Critical | N/A |
+| GARA_PRC_TC_109 | M5 | High | Kiểm tra xóa log thành công với dữ liệu kỳ mở và log ở trạng thái terminal (SUCCEEDED) | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog xác nhận xóa dòng id=4521 đang mở; log id=4521 trạng thái SUCCEEDED, kỳ "Tháng 07/2026" đang mở | 1. Bấm "Xác nhận xoá" | 1. Soft-delete<br>2. Toast thành công<br>3. Dialog đóng, LIST refetch | Critical | N/A |
+| GARA_PRC_TC_110 | M5 | High | Kiểm tra đóng dialog xác nhận thành công khi bấm "Hủy", không thực hiện xóa | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog xác nhận xóa dòng id=4521 đang mở | 1. Bấm "Hủy" | 1. Dialog đóng, KHÔNG gọi mutation | High | N/A |
+| GARA_PRC_TC_111 | M5 | High | Kiểm tra đóng dialog xác nhận thành công khi nhấn Escape, không thực hiện xóa | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog xác nhận xóa dòng id=4521 đang mở | 1. Nhấn Escape | 1. Dialog đóng, KHÔNG gọi mutation | Medium | N/A |
+| GARA_PRC_TC_112 | M5 | High | Kiểm tra xóa log thất bại với dữ liệu Kỳ kế toán đã đóng | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog xác nhận xóa dòng id=4523 đang mở; log id=4523 thuộc kỳ "Tháng 06/2026" đã đóng | 1. Bấm "Xác nhận xoá" | 1. Dialog swap "Không thể xóa" — "Log tính giá đã được dùng để khóa giá vốn hoặc kỳ kế toán đã đóng nên không được xóa." | High | N/A |
+| GARA_PRC_TC_113 | M5 | High | Kiểm tra xóa log thất bại với dữ liệu log đang ở trạng thái "Đang tính" (PENDING/RUNNING) | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog xác nhận xóa dòng id=4524 đang mở; log id=4524 đang ở trạng thái PENDING/RUNNING | 1. Bấm "Xác nhận xoá" | 1. Dialog swap "Không thể xóa" — "Đang có lần tính giá chạy cho kỳ + kho này — vui lòng đợi hoàn tất" (khác message TC_112) | High | N/A |
+| GARA_PRC_TC_114 | M5 | High | Kiểm tra xóa log thành công và giá vốn phiếu xuất không bị rollback | Đăng nhập garage-owner; đang ở màn PRC-LIST; log id=4521 (SUCCEEDED) đã cập nhật giá vốn cho mã PN-18901 | 1. Xóa log id=4521<br>2. Mở phiếu xuất liên quan mã PN-18901 | 1. Giá vốn phiếu xuất vẫn giữ nguyên giá trị đã tính | High | N/A |
+| **NHÓM VALIDATE — M5 PRC-DELETE** | | | | | | | | |
+| GARA_PRC_TC_115 | M5 | N/A | Kiểm tra dialog xác nhận xóa không phát sinh field cần validate (N/A) | — | — | N/A — dialog chỉ có nút xác nhận/hủy, không có input field | N/A | N/A |
+| **NHÓM UI & BEHAVIOR — M5 PRC-DELETE** | | | | | | | | |
+| GARA_PRC_TC_116 | M5 | Medium | Kiểm tra dialog xác nhận xóa đúng kích thước 441px và bo góc vuông | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog xác nhận xóa dòng id=4521 đang mở | 1. Inspect dialog | 1. `width=441px`, `rounded-none` (không bo góc) | Low | N/A |
+| GARA_PRC_TC_117 | M5 | Medium | Kiểm tra title dialog luôn hiển thị màu đen với mọi biến thể nội dung | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog "Không thể xóa" đang mở (log id=4524 đang PENDING/RUNNING) | 1. Quan sát title | 1. `text-foreground` (đen), KHÔNG nhuộm đỏ/cam | Low | N/A |
+| GARA_PRC_TC_118 | M5 | Medium | Kiểm tra hiển thị loading state thành công cho nút "Xác nhận xoá" khi đang chờ mutation | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog xác nhận xóa dòng id=4521 đang mở | 1. Bấm và quan sát ngay | 1. Nút disable + spinner, chặn double-submit | Medium | N/A |
+| GARA_PRC_TC_119 | M5 | Medium | Kiểm tra không hiển thị mã lỗi kỹ thuật ra UI tại dialog chặn xóa | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog chặn xóa (log id=4524 PENDING/RUNNING) đang mở | 1. Quan sát nội dung dialog | 1. Không thấy `ERR-INV-024`/`ERR-INV-029` — chỉ text tiếng Việt | Medium | N/A |
+| GARA_PRC_TC_120 | M5 | Medium | Kiểm tra hiển thị đúng label "Xác nhận xoá" verbatim theo Figma | Đăng nhập garage-owner; đang ở màn PRC-LIST, dialog xác nhận xóa dòng id=4521 đang mở | 1. Quan sát nút xác nhận | 1. Text đúng "Xác nhận xoá" (theo Figma, không phải "Xóa khoản mục") | Medium | N/A |
+| **NHÓM PHÂN QUYỀN — M5 PRC-DELETE** | | | | | | | | |
+| GARA_PRC_TC_121 | M5 | High | Kiểm tra phân quyền thao tác xóa thành công cho vai trò garage-owner | Đăng nhập garage-owner (owner_test_20260804@gara.test); đang ở màn PRC-LIST; bảng có sẵn dòng log id=4521 | 1. Xóa log id=4521 | 1. Thao tác thành công bình thường | Critical | owner_test_20260804@gara.test |
+| GARA_PRC_TC_122 | M5 | High | Kiểm tra phân quyền thao tác xóa thành công cho vai trò accountant | Đăng nhập accountant (accountant_test_20260804@gara.test); đang ở màn PRC-LIST; bảng có sẵn dòng log id=4521 | 1. Xóa log id=4521 | 1. Giống hệt TC_121 | Critical | accountant_test_20260804@gara.test |
+| **NHÓM ẢNH HƯỞNG CHỨC NĂNG LIÊN QUAN — M5 PRC-DELETE** | | | | | | | | |
+| GARA_PRC_TC_123 | M5 | High | Kiểm tra dữ liệu Stock V2 Reports giữ nguyên không đổi thành công sau khi xóa log (đúng thiết kế không rollback) | Đăng nhập garage-owner; đang ở màn PRC-LIST; vừa xóa log id=4521 (SUCCEEDED, mã PN-18901) | 1. Mở M6/M7/M8 cùng mã | 1. Giá trị GT xuất/tồn vẫn giữ nguyên như trước khi xóa log (không bị rollback về 0) | High | N/A |
