@@ -1,7 +1,7 @@
 ﻿# Bản ghi quyết định chiến lược test (TSDR)
 
 <!--
-  Mẫu này được tạo vào cuối phiên grill-me-qa.
+  Mẫu này được tạo vào cuối phiên Optional Grill Review.
   AI điền vào tất cả các phần dựa trên phiên chất vấn QA.
   Sao chép file này vào thư mục docs/ của dự án để traceability.
 -->
@@ -11,7 +11,7 @@
 **Ngày:** {{DATE}}
 **Người tham gia:** {{PARTICIPANTS}}
 **Loại phiên:** Chiến lược QA
-**Công cụ:** skill grill-me-qa
+**Công cụ:** rbt_manual_testing (Optional Grill Review)
 
 ---
 
@@ -151,4 +151,4 @@
 
 ---
 
-*Được tạo bởi skill grill-me-qa · {{DATE}}*
+*Được tạo bởi rbt_manual_testing (Optional Grill Review) · {{DATE}}*

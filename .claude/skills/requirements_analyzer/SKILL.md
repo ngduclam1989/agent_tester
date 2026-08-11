@@ -60,12 +60,75 @@ Chia thành các **User Stories** hoặc **Use Cases**:
 ### 4.4. Các luồng xử lý và Báo lỗi (Business Rules & Validations)
 Liệt kê chi tiết các Validation Message mong đợi khi người dùng nhập sai dữ liệu.
 
-### 4.5. Vị trí lưu file
+### 4.5. Điểm thiếu/điểm mờ (Gap Review)
+Bảng liệt kê toàn bộ finding theo mã `GAP-NNN`, xem cách phát hiện và định dạng bắt buộc tại mục 5 bên dưới. Đây KHÔNG phải mục phụ — đây là phần giá trị cao nhất của tài liệu, không được rút gọn hay bỏ qua finding nào.
+
+### 4.6. Vị trí lưu file
 Lưu tài liệu ra file Markdown tại `practices/requirements/[tên_dự_án_hoặc_module]/requirements_[tên_module].md` (tạo thư mục con nếu chưa có). Đây là vị trí chuẩn mà `rbt_manual_testing` sẽ đọc requirements từ đó khi sinh test cases — không lưu rải rác nơi khác.
 
-## 5. Bắt buộc (Strict Rules)
+## 5. Phát hiện điểm thiếu/điểm mờ (Requirement Gap Review)
+
+Mục tiêu của phần này là tìm được **càng nhiều điểm thiếu/mờ càng tốt**, mỗi điểm có bằng chứng cụ thể — không phải liệt kê vài điểm "nhìn thấy ngay" rồi dừng lại.
+
+### 5.1. Nguồn đối chiếu
+Tuỳ đầu vào đang có, đối chiếu qua các nguồn sau (bỏ qua nguồn không tồn tại trong tác vụ hiện tại):
+- Tài liệu yêu cầu gốc (.md đã convert từ .docx, Jira ticket, user story, mô tả text)
+- Mockup / screenshot / design
+- UI/DOM thực tế (nếu có Playwright MCP hoặc WebFetch)
+- Related tickets / tài liệu phụ thuộc
+
+### 5.2. 6 nhóm rà soát (Dimension) — đi qua lần lượt, không bỏ nhóm nào
+Với mỗi field/component/luồng đã thu thập ở mục 3, đối chiếu đủ 6 nhóm sau. Nhóm nào tài liệu không nhắc tới → đó là 1 gap:
+
+1. **Độ đầy đủ AC/User Story** — có phủ đủ happy path + negative + boundary + state không? AC có testable/quan sát được rõ ràng, hay chỉ mô tả mơ hồ (VD "hệ thống hoạt động ổn định")?
+2. **Độ phủ Business Rule** — rule có ví dụ/số liệu cụ thể hay chỉ là câu chung chung (VD "không cho phép năm quá khứ" mà không nói rõ mốc năm)? Tổ hợp ≥2 rule cùng áp dụng có được nói tới không?
+3. **Độ phủ trạng thái UX** — có đủ empty/loading/error/success state không? Transition giữa 2 state đã rõ chưa (VD "sau khi lưu xong chuyển màn nào")? Wording message cụ thể hay chỉ "hiển thị thông báo lỗi"?
+4. **Khớp field/dữ liệu** — field trên UI/mockup có khớp field trong tài liệu (tên, loại, bắt buộc, giá trị mặc định) không? Label giữa các nguồn có nhất quán không (VD tài liệu ghi "Kỳ kế toán năm", UI hiển thị "Kỳ năm")?
+5. **Nhất quán chéo nguồn** — tài liệu nói X, mockup nói Y, related ticket nói Z — có mâu thuẫn không?
+6. **Dependency còn thiếu** — field/rule/luồng nào tài liệu tham chiếu tới nhưng không thấy định nghĩa ở đâu (role, permission, ticket phụ thuộc, mã lỗi...)?
+
+### 5.3. 5 lăng kính rà soát sâu (Depth Lens) — áp dụng cho MỖI nhóm ở 5.2
+Đây là nơi hay bị bỏ sót nhất. Khi rà mỗi dimension ở trên, luôn tự hỏi thêm 5 khía cạnh sau:
+
+- **Biên & ngoại lệ**: input null/rỗng/0/âm/min/max/vượt giới hạn, timeout, thử lại, huỷ, lỗi một phần, dữ liệu cũ tạo trước khi có tính năng này.
+- **Nhất quán trạng thái**: entity có đường chuyển trạng thái hợp lệ không, trạng thái cuối có bị chặn chuyển tiếp không, đồng bộ giữa các entity liên quan (VD đơn hàng/thanh toán/tồn kho).
+- **Tương tranh & xung đột tài nguyên**: double-click/double-submit, nhiều tab, nhiều user cùng sửa 1 bản ghi, race condition giữa FE và BE.
+- **Bảo mật & dữ liệu**: truy cập trái quyền, lộ dữ liệu nhạy cảm, XSS/SQL injection khi field nhận input tự do, dấu vết audit.
+- **UX & khả năng tiếp cận**: empty/loading/error/success state, bàn phím/screen reader/focus/độ tương phản, luồng xác nhận + khôi phục cho hành động huỷ/xoá.
+
+### 5.4. Định dạng bắt buộc cho MỖI finding
+Mỗi gap/ambiguity phát hiện được PHẢI ghi đủ các trường sau — thiếu trường nào thì finding đó không hợp lệ:
+
+- **Mã**: `GAP-NNN` (đánh số tuần tự, không trùng, không tái sử dụng)
+- **Loại**: chọn đúng 1 trong 10 enum sau, không tự đặt tên khác — `Edge` / `Exception` / `State` / `Ambiguity` / `Concurrency` / `Security` / `Compliance` / `UX` / `Accessibility` / `Coverage-Gap`
+- **Mức độ**:
+  - `BLOCKER` — không giải quyết thì không thể sinh TC chính xác (VD field bắt buộc không định nghĩa loại dữ liệu)
+  - `HIGH` — TC sinh được nhưng thiếu hẳn 1 nhánh chính (VD error state chưa được đặc tả)
+  - `MEDIUM` — TC sinh được nhưng sẽ bỏ sót 1 edge case (VD giá trị biên chưa được đặc tả)
+  - `LOW` — chỉ ảnh hưởng độ rõ ràng/wording, không ảnh hưởng khả năng sinh TC
+- **Trích dẫn nguồn**: tên file + số dòng/section cụ thể (dùng markdown link `[tên file](đường_dẫn#Lxx)` nếu là file trong workspace) + quote nguyên văn. Nếu nguồn là UI/mockup: mô tả rõ vị trí (tên màn hình, tên field/component quan sát được).
+- **Mô tả**: gap là gì, cụ thể, không viết chung chung kiểu "AC-4 chưa rõ" mà không chỉ rõ chưa rõ điều gì
+- **Ảnh hưởng nếu không giải quyết**
+- **Đề xuất trả lời**: dựa trên tài liệu liên quan hoặc best practice ngành, không bịa — nếu không có căn cứ thì ghi rõ đây là giả định đề xuất
+- **Câu hỏi cho user**: đúng 1 câu, chờ xác nhận
+
+### 5.5. Quy tắc không được bỏ sót
+- Thấy gap dù nhỏ (LOW/cosmetic) PHẢI vẫn ghi finding đầy đủ theo mục 5.4 — không được lược bớt hay gộp vào câu tóm tắt kiểu "còn vài điểm nhỏ khác".
+- Không gộp nhiều gap khác nhau vào 1 mã `GAP-NNN` — mỗi gap là 1 mã riêng, dù cùng nằm trong 1 section của tài liệu gốc.
+- Finding không có trích dẫn nguồn cụ thể (file/dòng/quote) → không hợp lệ, phải bổ sung trước khi đưa vào tài liệu output.
+- Không tự suy diễn nghiệp vụ khi thiếu căn cứ — đưa vào "Đề xuất trả lời" kèm ghi rõ đây là đề xuất, không phải sự thật đã xác nhận.
+
+### 5.6. Khuyến nghị cuối mục Gap Review
+Ghi 1 dòng khuyến nghị tổng kết:
+- `SẴN SÀNG sinh TC` — nếu 0 finding mức `BLOCKER` còn mở
+- `CẦN LÀM RÕ TRƯỚC` — nếu còn ≥1 finding mức `BLOCKER` chưa có câu trả lời
+
+Lưu ý: đây là khuyến nghị tham khảo để người đọc ưu tiên xử lý, KHÔNG phải cơ chế chặn kỹ thuật — không có gì ngăn việc chạy tiếp `/generate_manual_testcases_rbt` hay `/generate_testcases_from_requirements` kể cả khi còn BLOCKER mở; quyết định vẫn thuộc về user.
+
+## 6. Bắt buộc (Strict Rules)
 - Luôn viết bằng **Tiếng Việt** có dấu đầy đủ.
-- Không sử dụng định dạng in đậm (dấu `**`) trong toàn bộ nội dung tài liệu sinh ra.
-- Không tự suy diễn các yêu cầu nghiệp vụ phức tạp nếu không có căn cứ từ UI. Nếu thiếu logic, hãy liệt kê chúng vào mục "Câu hỏi/Làm rõ với PO-User".
+- Không sử dụng định dạng in đậm (dấu `**`) trong toàn bộ nội dung tài liệu sinh ra (áp dụng cho phần 4.1-4.4 và 4.6; riêng bảng/finding ở mục 4.5 dùng định dạng cứng theo mục 5.4, cho phép in đậm tên trường để dễ đọc).
+- Không tự suy diễn các yêu cầu nghiệp vụ phức tạp nếu không có căn cứ từ UI. Nếu thiếu logic, hãy liệt kê chúng vào mục 4.5 (Gap Review) theo đúng định dạng `GAP-NNN`.
 - Tuyệt đối không đoán các trường dữ liệu, nút bấm, thông báo lỗi — phải quan sát UI/DOM thực tế trước khi liệt kê vào tài liệu.
 - Nếu có Playwright MCP, ưu tiên mở browser thật để screenshot/capture giao diện nếu cần.
+- Mọi finding trong mục 4.5 phải tuân thủ đúng định dạng ở mục 5.4 (đủ trích dẫn nguồn) và quy tắc không bỏ sót ở mục 5.5.

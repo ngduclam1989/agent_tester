@@ -74,35 +74,28 @@ Nếu user cung cấp mockup/screenshot:
 4. Tổng hợp **Business Rules** từ tất cả requirements + mockups
 5. Đánh dấu rõ quy tắc nào từ ticket chính vs ticket phụ thuộc
 
-### Bước 5: Phát hiện Ambiguities & Risks (Trọng tâm)
+### Bước 5: Phát hiện điểm thiếu/điểm mờ — Gap Review (Trọng tâm)
 
 > [!IMPORTANT]
-> Đây là phần **giá trị cao nhất** của workflow — phát hiện những gì requirement KHÔNG nói rõ.
+> Đây là phần **giá trị cao nhất** của workflow — mục tiêu là tìm được **càng nhiều điểm thiếu/mờ càng tốt**, có bằng chứng cụ thể, không bỏ sót bất kỳ điểm nào (kể cả LOW/cosmetic).
 
-**5.1. Điểm mơ hồ (Ambiguities):**
+Bước này **PHẢI thực hiện theo đúng phương pháp ở mục 5 "Phát hiện điểm thiếu/điểm mờ (Requirement Gap Review)" của skill `requirements_analyzer`** (đã nạp bắt buộc ở đầu workflow này) — nghĩa là:
 
-Với mỗi ambiguity, ghi rõ:
-- **Mã:** AMB-XX (đánh số tuần tự)
-- **Câu hỏi:** Mô tả rõ ràng điều gì chưa rõ
-- **Nguy cơ:** Impact nếu không được giải quyết
-- **Mức độ:** 🔴 High / 🟡 Medium / 🟢 Low
+1. Đi qua đủ **6 dimension** (AC completeness, BR coverage, UX state coverage, Field/data match, Cross-source consistency, Missing dependency).
+2. Với mỗi dimension, soi thêm **5 depth lens** (Biên & ngoại lệ, Nhất quán trạng thái, Tương tranh & xung đột, Bảo mật & dữ liệu, UX & khả năng tiếp cận).
+3. Mỗi gap tìm được ghi thành 1 finding mã `GAP-NNN` theo **đúng định dạng bắt buộc ở mục 5.4** của `requirements_analyzer`: Mã, Loại (10 enum: `Edge`/`Exception`/`State`/`Ambiguity`/`Concurrency`/`Security`/`Compliance`/`UX`/`Accessibility`/`Coverage-Gap`), Mức độ (`BLOCKER`/`HIGH`/`MEDIUM`/`LOW`), Trích dẫn nguồn (file + section/dòng + quote nguyên văn — hoặc vị trí màn hình/field nếu nguồn là mockup/UI), Mô tả, Ảnh hưởng, Đề xuất trả lời, Câu hỏi cho user.
+4. **Không được gộp nhiều gap vào 1 mã**, không được bỏ qua finding LOW/cosmetic dù nhỏ đến đâu.
 
-Các hướng phát hiện ambiguity:
+Các hướng phát hiện gap thường gặp (không giới hạn, chỉ để gợi ý khi walk 6 dimension):
 - Từ khóa mơ hồ: "where applicable", "as needed", "similar to", "etc."
-- các quyền còn thiếu: vd: hệ thống có 5 nhóm quyền, nhưng tài liệu chỉ có 1 nhóm quyền cho chức năng cần phân tích
-- Validation rules thiếu: min/max, format, required/optional, 
-- Hành vi edge case: lỗi mạng, concurrent access, trống data
+- Quyền còn thiếu: VD hệ thống có 5 nhóm quyền, nhưng tài liệu chỉ nói tới 1 nhóm quyền cho chức năng đang phân tích
+- Validation rule thiếu: min/max, format, required/optional
+- Hành vi edge case: lỗi mạng, truy cập đồng thời, dữ liệu trống
 - Inconsistency giữa document và mockup (tên cột, format, layout)
-- Threshold/config chưa xác định (ví dụ: bao nhiêu ngày = "approaching deadline"?)
-- Conflict giữa requirements cũ và mới
+- Threshold/config chưa xác định (VD bao nhiêu ngày = "sắp tới hạn"?)
+- Conflict giữa requirement cũ và mới
 
-**5.2. Rủi ro kiểm thử (Testing Risks):**
-
-Với mỗi risk, ghi rõ:
-- **Mã:** RISK-XX
-- **Tên rủi ro**
-- **Mô tả**
-- **Mitigation** (cách giảm thiểu)
+Cuối mục này, ghi 1 dòng khuyến nghị theo đúng mục 5.6 của `requirements_analyzer`: `SẴN SÀNG sinh TC` (0 BLOCKER mở) hoặc `CẦN LÀM RÕ TRƯỚC` (còn BLOCKER mở) — chỉ là khuyến nghị tham khảo, không chặn việc chạy workflow tiếp theo.
 
 ### Bước 6: Tổng hợp và trình bày (Synthesis & Delivery)
 
@@ -142,11 +135,13 @@ Agent PHẢI xuất artifact theo cấu trúc sau:
 ### 6.1. [Mockup 1]
 ### 6.N. [Mockup N]
 
-## 7. Các Điểm Mơ Hồ & Rủi Ro
-### 7.1. Điểm Mơ Hồ (Ambiguities)
-(Bảng: #, Câu hỏi, Nguy cơ, Mức độ)
-### 7.2. Rủi Ro Kiểm Thử
-(Bảng: #, Rủi ro, Mô tả, Mitigation)
+## 7. Điểm Thiếu/Điểm Mờ — Gap Review
+### 7.1. Bảng tổng hợp
+(Bảng: Mã GAP-NNN, Loại, Mức độ, Tóm tắt 1 dòng)
+### 7.2. Chi tiết từng finding
+(Mỗi GAP-NNN đầy đủ theo định dạng mục 5.4 skill `requirements_analyzer`: Mã, Loại, Mức độ, Trích dẫn nguồn, Mô tả, Ảnh hưởng, Đề xuất trả lời, Câu hỏi cho user)
+### 7.3. Khuyến nghị
+(`SẴN SÀNG sinh TC` hoặc `CẦN LÀM RÕ TRƯỚC` theo mục 5.6 skill `requirements_analyzer`)
 
 ## 8. Ma Trận Trạng Thái (nếu applicable)
 (Bảng state → behavior)
@@ -161,7 +156,9 @@ Agent PHẢI xuất artifact theo cấu trúc sau:
 ## Quy tắc quan trọng
 
 - ❌ **KHÔNG sinh test cases** — workflow này chỉ phân tích, không tạo TC
-- ❌ **KHÔNG tự đoán** business logic nếu document không nói rõ → đưa vào Ambiguities
+- ❌ **KHÔNG tự đoán** business logic nếu document không nói rõ → đưa vào Gap Review (`GAP-NNN`)
+- ❌ **KHÔNG bỏ sót** finding LOW/cosmetic — mọi gap phát hiện được đều phải emit đủ định dạng, không gộp vào tóm tắt
+- ❌ **KHÔNG ghi finding thiếu trích dẫn nguồn** (file/dòng/quote hoặc vị trí UI cụ thể) — finding thiếu citation coi như không hợp lệ
 - ❌ **KHÔNG bỏ qua comments** trong Jira ticket — comments thường chứa thông tin quan trọng bổ sung
 - ✅ **PHẢI đọc related tickets** nếu được reference trong AC
 - ✅ **PHẢI phân tích mockup** chi tiết nếu được cung cấp (fields, layout, interactions)
