@@ -61,7 +61,7 @@ Chia thành các **User Stories** hoặc **Use Cases**:
 Liệt kê chi tiết các Validation Message mong đợi khi người dùng nhập sai dữ liệu.
 
 ### 4.5. Điểm thiếu/điểm mờ (Gap Review)
-Bảng liệt kê toàn bộ finding theo mã `RR-NNN`, xem cách phát hiện và định dạng bắt buộc tại mục 5 bên dưới. Đây KHÔNG phải mục phụ — đây là phần giá trị cao nhất của tài liệu, không được rút gọn hay bỏ qua finding nào.
+Bảng liệt kê toàn bộ finding theo mã `RR-NNN`, xem cách phát hiện và định dạng bắt buộc tại mục 5 bên dưới. Đây KHÔNG phải mục phụ — đây là phần giá trị cao nhất của tài liệu, không được rút gọn hay bỏ qua finding nào. Sau khi liệt kê đầy đủ finding, bắt buộc bổ sung thêm mục Phân loại theo tác động (xem mục 5.7) — giúp người đọc lọc nhanh finding nào cần xử lý trước khi viết TC vs finding nào chỉ ảnh hưởng trải nghiệm người dùng.
 
 ### 4.6. Vị trí lưu file
 Lưu tài liệu ra file Markdown tại `practices/requirements/[tên_dự_án_hoặc_module]/requirements_[tên_module].md` (tạo thư mục con nếu chưa có). Đây là vị trí chuẩn mà `rbt_manual_testing` sẽ đọc requirements từ đó khi sinh test cases — không lưu rải rác nơi khác.
@@ -178,6 +178,18 @@ Ghi 1 dòng khuyến nghị tổng kết:
 
 Lưu ý: đây là khuyến nghị tham khảo để người đọc ưu tiên xử lý, KHÔNG phải cơ chế chặn kỹ thuật — không có gì ngăn việc chạy tiếp `/generate_manual_testcases_rbt` hay `/generate_testcases_from_requirements` kể cả khi còn BLOCKER mở; quyết định vẫn thuộc về user.
 
+### 5.7. Phân loại theo tác động (Impact Classification)
+
+Sau khi đã liệt kê đầy đủ mọi finding (mục 5.4-5.6), bắt buộc phân loại lại TOÀN BỘ finding theo tác động thực tế, để người đọc (QA/BA/Dev) lọc nhanh finding nào cần ưu tiên xử lý cho mục đích nào. Mỗi finding nhận đúng 1 trong 3 nhãn — chọn theo bản chất tác động chính, không theo mức độ nghiêm trọng (`[Cao]`/`[Trung bình]`/`[Thấp]` là trục khác, độc lập với nhãn này):
+
+- **Nhóm TC (Ảnh hưởng trực tiếp tới viết Test Case)** — finding khiến KHÔNG CÓ oracle rõ ràng để biết TC nên assert PASS hay FAIL, hoặc dữ liệu/mã lỗi/số liệu mâu thuẫn giữa các nguồn khiến TC viết theo 1 nguồn sẽ assert sai. Dấu hiệu nhận biết: business rule mơ hồ về input validation, mã lỗi không nhất quán giữa tài liệu và API/registry, threshold/ngưỡng số liệu chưa định nghĩa, payload/schema mâu thuẫn số lượng hoặc kiểu field, response contract của 1 API/event chưa được đặc tả.
+- **Nhóm UX (Hành vi người dùng)** — finding liên quan tới trải nghiệm/thao tác thực tế mà END-USER (không phải hệ thống nội bộ) gặp phải trên UI. Dấu hiệu nhận biết: accessibility (bàn phím/screen-reader), race condition phát sinh từ thao tác người dùng (double-click, F5, mở lại app), nội dung notification/wording người dùng nhìn thấy, hành vi UI khi lỗi (banner/toast/empty-state) mà AC chưa mô tả.
+- **Nhóm Khác** — finding không thuộc 2 nhóm trên: compliance/pháp lý (DPA, retention chưa ký), vận hành/monitoring nội bộ (alert, SLA, TTL dữ liệu hệ thống), governance/tài liệu/quy trình (đặt tên file sai, version citation lỗi thời, công thức metric báo cáo). Nhóm này không chặn việc viết TC chức năng và không phải hành vi end-user nhìn thấy trực tiếp.
+
+Một finding có thể mang CẢ 2 nhãn TC và UX nếu vừa thiếu oracle vừa ảnh hưởng trải nghiệm người dùng (VD: hành vi UI khi gặp lỗi vừa cần cho test case vừa là điều user thực sự thấy) — ghi rõ cả 2 nhãn trong trường hợp đó, không ép chọn 1.
+
+Trình bày mục này dưới dạng 2-3 bảng (1 bảng mỗi nhóm có finding), mỗi dòng gồm: Mã `RR-NNN`, Mức độ, 1 câu ngắn giải thích vì sao finding thuộc nhóm đó (không lặp lại toàn bộ nội dung finding đã viết ở mục 5.4). Nhóm Khác có thể trình bày dạng danh sách mã ngắn gọn thay vì bảng đầy đủ nếu số lượng lớn.
+
 ## 6. Bắt buộc (Strict Rules)
 - Luôn viết bằng **Tiếng Việt** có dấu đầy đủ.
 - Không sử dụng định dạng in đậm (dấu `**`) trong toàn bộ nội dung tài liệu sinh ra (áp dụng cho phần 4.1-4.4 và 4.6; riêng bảng/finding ở mục 4.5 dùng định dạng cứng theo mục 5.4, cho phép in đậm tên trường để dễ đọc).
@@ -185,3 +197,4 @@ Lưu ý: đây là khuyến nghị tham khảo để người đọc ưu tiên x
 - Tuyệt đối không đoán các trường dữ liệu, nút bấm, thông báo lỗi — phải quan sát UI/DOM thực tế trước khi liệt kê vào tài liệu.
 - Nếu có Playwright MCP, ưu tiên mở browser thật để screenshot/capture giao diện nếu cần.
 - Mọi finding trong mục 4.5 phải tuân thủ đúng cấu trúc 8 mục ở mục 5.4 (đủ trích dẫn nguồn) và quy tắc không bỏ sót ở mục 5.5.
+- Mục 4.5 phải kết thúc bằng phần Phân loại theo tác động theo đúng mục 5.7 — không bỏ qua bước này, kể cả khi số lượng finding ít.

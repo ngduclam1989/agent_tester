@@ -97,6 +97,8 @@ Các hướng phát hiện gap thường gặp (không giới hạn, chỉ để
 
 Cuối mục này, ghi 1 dòng khuyến nghị theo đúng mục 5.6 của `requirements_analyzer`: `SẴN SÀNG sinh TC` (0 finding mức `[Chặn]` mở) hoặc `CẦN LÀM RÕ TRƯỚC` (còn finding mức `[Chặn]` mở) — chỉ là khuyến nghị tham khảo, không chặn việc chạy workflow tiếp theo.
 
+Sau đó, bắt buộc phân loại lại toàn bộ finding theo tác động đúng mục 5.7 của `requirements_analyzer`: gắn nhãn `TC` (ảnh hưởng trực tiếp tới viết Test Case — thiếu oracle hoặc mã lỗi/số liệu mâu thuẫn giữa các nguồn), `UX` (liên quan hành vi/trải nghiệm thực tế của end-user), hoặc `Khác` (compliance/vận hành/governance, không thuộc 2 nhóm trên) cho mỗi `RR-NNN` — 1 finding có thể mang cả 2 nhãn `TC` + `UX` nếu áp dụng cả hai.
+
 ### Bước 6: Tổng hợp và trình bày (Synthesis & Delivery)
 
 1. **Ma trận trạng thái** (nếu có state transitions) — bảng mapping trạng thái → hành vi
@@ -142,6 +144,8 @@ Agent PHẢI xuất artifact theo cấu trúc sau:
 (Mỗi RR-NNN viết đầy đủ 8 mục theo cấu trúc mục 5.4 skill `requirements_analyzer`: Trích dẫn nguồn, Bối cảnh nghiệp vụ, Vấn đề cụ thể, Ảnh hưởng nếu không giải quyết, Đề xuất giải quyết, Liên kết với các phát hiện khác, Câu hỏi cho người dùng, Trạng thái)
 ### 7.3. Khuyến nghị
 (`SẴN SÀNG sinh TC` hoặc `CẦN LÀM RÕ TRƯỚC` theo mục 5.6 skill `requirements_analyzer`)
+### 7.4. Phân loại theo tác động
+(Bảng/danh sách finding gắn nhãn `TC` / `UX` / `Khác` theo mục 5.7 skill `requirements_analyzer`)
 
 ## 8. Ma Trận Trạng Thái (nếu applicable)
 (Bảng state → behavior)
@@ -159,6 +163,7 @@ Agent PHẢI xuất artifact theo cấu trúc sau:
 - ❌ **KHÔNG tự đoán** business logic nếu document không nói rõ → đưa vào Gap Review (`RR-NNN`, 8 mục)
 - ❌ **KHÔNG bỏ sót** finding mức `[Thấp]`/cosmetic — mọi gap phát hiện được đều phải emit đủ 8 mục, không gộp vào tóm tắt
 - ❌ **KHÔNG ghi finding thiếu trích dẫn nguồn** (file/dòng/quote hoặc vị trí UI cụ thể) — finding thiếu citation coi như không hợp lệ
+- ❌ **KHÔNG bỏ qua mục 7.4 Phân loại theo tác động** — mọi finding phải được gắn nhãn `TC`/`UX`/`Khác` theo mục 5.7 skill `requirements_analyzer`, kể cả khi tài liệu chỉ có vài finding
 - ❌ **KHÔNG bỏ qua comments** trong Jira ticket — comments thường chứa thông tin quan trọng bổ sung
 - ✅ **PHẢI đọc related tickets** nếu được reference trong AC
 - ✅ **PHẢI phân tích mockup** chi tiết nếu được cung cấp (fields, layout, interactions)
