@@ -61,7 +61,7 @@ Chia thành các **User Stories** hoặc **Use Cases**:
 Liệt kê chi tiết các Validation Message mong đợi khi người dùng nhập sai dữ liệu.
 
 ### 4.5. Điểm thiếu/điểm mờ (Gap Review)
-Bảng liệt kê toàn bộ finding theo mã `GAP-NNN`, xem cách phát hiện và định dạng bắt buộc tại mục 5 bên dưới. Đây KHÔNG phải mục phụ — đây là phần giá trị cao nhất của tài liệu, không được rút gọn hay bỏ qua finding nào.
+Bảng liệt kê toàn bộ finding theo mã `RR-NNN`, xem cách phát hiện và định dạng bắt buộc tại mục 5 bên dưới. Đây KHÔNG phải mục phụ — đây là phần giá trị cao nhất của tài liệu, không được rút gọn hay bỏ qua finding nào.
 
 ### 4.6. Vị trí lưu file
 Lưu tài liệu ra file Markdown tại `practices/requirements/[tên_dự_án_hoặc_module]/requirements_[tên_module].md` (tạo thư mục con nếu chưa có). Đây là vị trí chuẩn mà `rbt_manual_testing` sẽ đọc requirements từ đó khi sinh test cases — không lưu rải rác nơi khác.
@@ -97,38 +97,91 @@ Với mỗi field/component/luồng đã thu thập ở mục 3, đối chiếu 
 - **UX & khả năng tiếp cận**: empty/loading/error/success state, bàn phím/screen reader/focus/độ tương phản, luồng xác nhận + khôi phục cho hành động huỷ/xoá.
 
 ### 5.4. Định dạng bắt buộc cho MỖI finding
-Mỗi gap/ambiguity phát hiện được PHẢI ghi đủ các trường sau — thiếu trường nào thì finding đó không hợp lệ:
 
-- **Mã**: `GAP-NNN` (đánh số tuần tự, không trùng, không tái sử dụng)
-- **Loại**: chọn đúng 1 trong 10 enum sau, không tự đặt tên khác — `Edge` / `Exception` / `State` / `Ambiguity` / `Concurrency` / `Security` / `Compliance` / `UX` / `Accessibility` / `Coverage-Gap`
-- **Mức độ**:
-  - `BLOCKER` — không giải quyết thì không thể sinh TC chính xác (VD field bắt buộc không định nghĩa loại dữ liệu)
-  - `HIGH` — TC sinh được nhưng thiếu hẳn 1 nhánh chính (VD error state chưa được đặc tả)
-  - `MEDIUM` — TC sinh được nhưng sẽ bỏ sót 1 edge case (VD giá trị biên chưa được đặc tả)
-  - `LOW` — chỉ ảnh hưởng độ rõ ràng/wording, không ảnh hưởng khả năng sinh TC
-- **Trích dẫn nguồn**: tên file + số dòng/section cụ thể (dùng markdown link `[tên file](đường_dẫn#Lxx)` nếu là file trong workspace) + quote nguyên văn. Nếu nguồn là UI/mockup: mô tả rõ vị trí (tên màn hình, tên field/component quan sát được).
-- **Mô tả**: gap là gì, cụ thể, không viết chung chung kiểu "AC-4 chưa rõ" mà không chỉ rõ chưa rõ điều gì
-- **Ảnh hưởng nếu không giải quyết**
-- **Đề xuất trả lời**: dựa trên tài liệu liên quan hoặc best practice ngành, không bịa — nếu không có căn cứ thì ghi rõ đây là giả định đề xuất
-- **Câu hỏi cho user**: đúng 1 câu, chờ xác nhận
+Mỗi gap/ambiguity phát hiện được PHẢI viết thành 1 block Markdown độc lập theo đúng cấu trúc 8 mục cố định dưới đây — thiếu mục nào thì finding đó không hợp lệ. Không dùng bảng rút gọn thay thế — bảng chỉ dùng cho phần tổng hợp (mục 4.5 / §7.1 của output), còn mỗi finding chi tiết bắt buộc viết đầy đủ theo mẫu này.
+
+**Mã** — `RR-NNN` (đánh số tuần tự toàn tài liệu, không trùng, không tái sử dụng, không reset theo module).
+
+**Loại** — chọn đúng 1 trong 10 enum sau, ghi bằng nhãn tiếng Việt kèm ý nghĩa gốc trong ngoặc khi cần đối chiếu:
+
+| Nhãn tiếng Việt dùng trong heading | Enum gốc |
+|---|---|
+| Biên | Edge |
+| Ngoại lệ | Exception |
+| Trạng thái | State |
+| Mơ hồ | Ambiguity |
+| Tương tranh | Concurrency |
+| Bảo mật | Security |
+| Tuân thủ | Compliance |
+| UX | UX |
+| Khả năng tiếp cận | Accessibility |
+| Thiếu phủ | Coverage-Gap |
+
+**Mức độ** — ghi bằng nhãn tiếng Việt trong heading (`[Chặn]` / `[Cao]` / `[Trung bình]` / `[Thấp]`):
+
+- `[Chặn]` (BLOCKER) — không giải quyết thì không thể sinh TC chính xác (VD field bắt buộc không định nghĩa loại dữ liệu).
+- `[Cao]` (HIGH) — TC sinh được nhưng thiếu hẳn 1 nhánh chính (VD error state/response contract chưa được đặc tả).
+- `[Trung bình]` (MEDIUM) — TC sinh được nhưng sẽ bỏ sót 1 edge case (VD giá trị biên chưa được đặc tả).
+- `[Thấp]` (LOW) — chỉ ảnh hưởng độ rõ ràng/wording, không ảnh hưởng khả năng sinh TC.
+
+**Cấu trúc block** (heading + 8 mục con, theo đúng thứ tự):
+
+```markdown
+## RR-NNN [Mức độ] Loại — Tóm tắt 1 dòng nêu rõ FEAT/AC/section liên quan và bản chất gap
+
+### 1. Trích dẫn nguồn
+
+- **File**: [tên file](đường_dẫn_tương_đối#Lxx-Lyy) — dùng markdown link kèm anchor dòng thật nếu là file trong workspace; nếu nguồn là UI/mockup thì mô tả rõ vị trí (tên màn hình, tên field/component quan sát được) thay cho File/Dòng.
+- **Section**: mục/§/AC cụ thể trong file đó.
+- **Dòng**: số dòng bắt đầu-kết thúc của đoạn được trích.
+- **Quote nguyên văn**: trích nguyên văn (blockquote `>`), không diễn giải lại.
+
+### 2. Bối cảnh nghiệp vụ
+
+Giải thích ngắn gọn domain/luồng nghiệp vụ liên quan để người đọc không cần mở lại tài liệu gốc vẫn hiểu được vấn đề. Nếu có thể, minh hoạ bằng 1 ví dụ dữ liệu cụ thể (mã phiếu, số liệu, ngày tháng...) thay vì mô tả trừu tượng.
+
+### 3. Vấn đề cụ thể
+
+Nêu rõ (các) điểm mơ hồ/thiếu sót. Nếu gap có nhiều khía cạnh độc lập, tách thành "Vấn đề 1", "Vấn đề 2"... trong CÙNG 1 mã RR (không tách mã) khi các khía cạnh đó cùng chung 1 câu hỏi gốc cho user; nếu là gap thực sự khác nhau về bản chất thì phải tách thành mã RR riêng theo mục 5.5. Khi có ≥2 cách hiểu hợp lý, liệt kê rõ "Khả năng A / Khả năng B" thay vì chỉ nói "chưa rõ".
+
+### 4. Ảnh hưởng nếu không giải quyết
+
+Danh sách bullet, mỗi bullet 1 hệ quả cụ thể (kỹ thuật, nghiệp vụ, trải nghiệm, hoặc rủi ro test) — không viết chung chung kiểu "sẽ gây khó khăn".
+
+### 5. Đề xuất giải quyết
+
+Đề xuất cụ thể, có thể kèm ví dụ (JSON schema, bảng, đoạn message mẫu...) nếu gap thuộc dạng contract/API/message. Phải dựa trên tài liệu liên quan hoặc best practice ngành đã nêu rõ nguồn — không bịa. Nếu không có căn cứ, ghi rõ đây là giả định đề xuất, không phải sự thật đã xác nhận.
+
+### 6. Liên kết với các phát hiện khác
+
+Nếu gap này lặp lại pattern ở 1 finding khác (VD cùng loại thiếu sót ở 1 FEAT khác), hoặc liên quan/ảnh hưởng tới 1 mã RR khác, ghi rõ tại đây (VD "Cùng mẫu với RR-xxx", "Ảnh hưởng tới RR-yyy"). Nếu không có liên kết nào, ghi "Không có liên kết với finding khác trong tài liệu này".
+
+### 7. Câu hỏi cho người dùng
+
+Liệt kê các lựa chọn cụ thể dạng (a) / (b) / (c)... để user chọn hoặc phản hồi tự do — không viết 1 câu hỏi mở chung chung nếu có thể quy về các lựa chọn rõ ràng hơn.
+
+### 8. Trạng thái
+
+`ĐANG MỞ` khi mới phát hiện. Cập nhật thành `ĐÃ CHỐT — {tóm tắt quyết định}` khi user trả lời trong các lượt hội thoại sau, không xoá finding cũ.
+```
 
 ### 5.5. Quy tắc không được bỏ sót
-- Thấy gap dù nhỏ (LOW/cosmetic) PHẢI vẫn ghi finding đầy đủ theo mục 5.4 — không được lược bớt hay gộp vào câu tóm tắt kiểu "còn vài điểm nhỏ khác".
-- Không gộp nhiều gap khác nhau vào 1 mã `GAP-NNN` — mỗi gap là 1 mã riêng, dù cùng nằm trong 1 section của tài liệu gốc.
+- Thấy gap dù nhỏ (`[Thấp]`/cosmetic) PHẢI vẫn ghi finding đầy đủ 8 mục theo mục 5.4 — không được lược bớt hay gộp vào câu tóm tắt kiểu "còn vài điểm nhỏ khác".
+- Không gộp nhiều gap khác nhau về bản chất vào 1 mã `RR-NNN` — mỗi gap là 1 mã riêng, dù cùng nằm trong 1 section của tài liệu gốc. Chỉ được gộp thành nhiều "Vấn đề" trong CÙNG 1 mã khi chúng thực sự cùng 1 câu hỏi gốc cần user trả lời 1 lần (xem mục 5.4 §3).
 - Finding không có trích dẫn nguồn cụ thể (file/dòng/quote) → không hợp lệ, phải bổ sung trước khi đưa vào tài liệu output.
-- Không tự suy diễn nghiệp vụ khi thiếu căn cứ — đưa vào "Đề xuất trả lời" kèm ghi rõ đây là đề xuất, không phải sự thật đã xác nhận.
+- Không tự suy diễn nghiệp vụ khi thiếu căn cứ — đưa vào "Đề xuất giải quyết" kèm ghi rõ đây là đề xuất, không phải sự thật đã xác nhận.
 
 ### 5.6. Khuyến nghị cuối mục Gap Review
 Ghi 1 dòng khuyến nghị tổng kết:
-- `SẴN SÀNG sinh TC` — nếu 0 finding mức `BLOCKER` còn mở
-- `CẦN LÀM RÕ TRƯỚC` — nếu còn ≥1 finding mức `BLOCKER` chưa có câu trả lời
+- `SẴN SÀNG sinh TC` — nếu 0 finding mức `[Chặn]` còn mở
+- `CẦN LÀM RÕ TRƯỚC` — nếu còn ≥1 finding mức `[Chặn]` chưa có câu trả lời
 
 Lưu ý: đây là khuyến nghị tham khảo để người đọc ưu tiên xử lý, KHÔNG phải cơ chế chặn kỹ thuật — không có gì ngăn việc chạy tiếp `/generate_manual_testcases_rbt` hay `/generate_testcases_from_requirements` kể cả khi còn BLOCKER mở; quyết định vẫn thuộc về user.
 
 ## 6. Bắt buộc (Strict Rules)
 - Luôn viết bằng **Tiếng Việt** có dấu đầy đủ.
 - Không sử dụng định dạng in đậm (dấu `**`) trong toàn bộ nội dung tài liệu sinh ra (áp dụng cho phần 4.1-4.4 và 4.6; riêng bảng/finding ở mục 4.5 dùng định dạng cứng theo mục 5.4, cho phép in đậm tên trường để dễ đọc).
-- Không tự suy diễn các yêu cầu nghiệp vụ phức tạp nếu không có căn cứ từ UI. Nếu thiếu logic, hãy liệt kê chúng vào mục 4.5 (Gap Review) theo đúng định dạng `GAP-NNN`.
+- Không tự suy diễn các yêu cầu nghiệp vụ phức tạp nếu không có căn cứ từ UI. Nếu thiếu logic, hãy liệt kê chúng vào mục 4.5 (Gap Review) theo đúng định dạng `RR-NNN` (8 mục, mục 5.4).
 - Tuyệt đối không đoán các trường dữ liệu, nút bấm, thông báo lỗi — phải quan sát UI/DOM thực tế trước khi liệt kê vào tài liệu.
 - Nếu có Playwright MCP, ưu tiên mở browser thật để screenshot/capture giao diện nếu cần.
-- Mọi finding trong mục 4.5 phải tuân thủ đúng định dạng ở mục 5.4 (đủ trích dẫn nguồn) và quy tắc không bỏ sót ở mục 5.5.
+- Mọi finding trong mục 4.5 phải tuân thủ đúng cấu trúc 8 mục ở mục 5.4 (đủ trích dẫn nguồn) và quy tắc không bỏ sót ở mục 5.5.
