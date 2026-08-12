@@ -1,22 +1,22 @@
 ---
 name: framework_architect
-description: Skill thiết kế và scaffold automation framework hoàn chỉnh cho Playwright, Selenium, và Appium — bao gồm project structure, base classes, config management, reporting, và CI/CD integration.
+description: Skill thiết kế và scaffold automation framework hoàn chỉnh cho Playwright (TypeScript) — bao gồm project structure, base classes, config management, reporting, và CI/CD integration.
 ---
 
 # Framework Architect
 
 ## Description
 
-Skill chuyên biệt giúp agent thiết kế, scaffold và triển khai automation framework từ đầu. Hỗ trợ đa nền tảng (Web, Mobile, API) với các framework phổ biến nhất.
+Skill chuyên biệt giúp agent thiết kế, scaffold và triển khai automation framework Playwright (TypeScript) từ đầu, cho cả Web UI và API.
 
 Agent có thể:
 
 - Thiết kế project structure theo best practices
-- Sinh base classes, config management, driver/browser management
-- Tích hợp reporting (Allure, HTML Report, Playwright Report)
+- Sinh base classes, config management, browser management
+- Tích hợp reporting (Playwright HTML Report, Allure)
 - Cấu hình CI/CD pipeline (GitHub Actions, GitLab CI, Jenkins)
 - Sinh template Page Object Model, fixtures, helpers
-- Tạo file cấu hình (package.json, pom.xml, build.gradle, playwright.config.ts)
+- Tạo file cấu hình (package.json, playwright.config.ts)
 
 ---
 
@@ -34,32 +34,12 @@ Trigger keywords: "create framework", "design framework", "scaffold project", "t
 
 ---
 
-## Supported Stacks
-
-### 🌐 Web Automation
+## Supported Stack
 
 | Stack | Ngôn ngữ | Runner | Report | Build Tool |
 |---|---|---|---|---|
-| **Playwright + TypeScript** | TypeScript | Playwright Test | HTML Report, Allure | npm |
-| **Playwright + Java** | Java | TestNG / JUnit5 | Allure Report | Maven / Gradle |
-| **Playwright + Python** | Python | Pytest | Allure, pytest-html | pip |
-| **Selenium + Java** | Java | TestNG | Allure, ExtentReports | Maven / Gradle |
-| **Selenium + Python** | Python | Pytest | Allure, pytest-html | pip |
-
-### 📱 Mobile Automation
-
-| Stack | Ngôn ngữ | Runner | Report | Build Tool |
-|---|---|---|---|---|
-| **Appium + Java** | Java | TestNG | Allure, ExtentReports | Maven / Gradle |
-| **Appium + Python** | Python | Pytest | Allure, pytest-html | pip |
-
-### 🔌 API Automation
-
-| Stack | Ngôn ngữ | Runner | Report |
-|---|---|---|---|
-| **REST Assured** | Java | TestNG | Allure |
-| **Playwright API** | TypeScript | Playwright Test | HTML Report |
-| **Requests + Pytest** | Python | Pytest | Allure |
+| **Playwright + TypeScript** (Web UI) | TypeScript | Playwright Test | HTML Report, Allure | npm |
+| **Playwright API** (API testing) | TypeScript | Playwright Test | HTML Report | npm |
 
 ---
 
@@ -77,17 +57,14 @@ Mỗi framework PHẢI bao gồm các thành phần sau (tùy chỉnh theo stack
 - Centralized config — không hardcode giá trị trong test
 - Sensitive data (credentials) qua environment variables, KHÔNG commit vào repo
 
-### 3. Browser / Driver Management (Mandatory)
-- **Playwright:** playwright.config.ts / conftest.py với browser setup
-- **Selenium:** WebDriverManager hoặc Driver Factory pattern
-- **Appium:** Desired Capabilities factory, Appium server config
+### 3. Browser Management (Mandatory)
+- **Playwright:** playwright.config.ts với browser setup
 
 ### 4. Base Classes (Mandatory)
 - Base Page — chứa common methods (wait, click, type, screenshot)
 - Base Test — chứa setup/teardown, test lifecycle hooks
 - Không hardcode waits — chỉ dùng smart waits
 - **Playwright:** dùng custom Fixtures (`test.extend()`) để tự động khởi tạo/hủy Page Object và inject vào từng test, thay vì gọi `new` thủ công lặp lại trong `beforeEach`.
-- **Selenium:** WebDriver phải quản lý qua `ThreadLocal<WebDriver>` trong BaseTest để an toàn khi chạy Parallel — kết hợp cấu hình `parallel="methods"`/`parallel="classes"` + `thread-count` phù hợp trong `testng.xml` để tránh conflict session giữa các thread.
 
 ### 5. Page Object Model (Mandatory)
 - Mỗi page/screen → 1 Page class
@@ -152,116 +129,6 @@ project-root/
         └── playwright.yml      # CI pipeline
 ```
 
-### Selenium + Java (Maven + TestNG)
-
-```
-project-root/
-├── pom.xml                     # Maven config + dependencies
-├── testng.xml                  # TestNG suite config
-├── .env.example
-├── .gitignore
-├── README.md
-├── src/
-│   ├── main/java/
-│   │   └── com/project/
-│   │       ├── pages/          # Page Object classes
-│   │       │   ├── BasePage.java
-│   │       │   ├── LoginPage.java
-│   │       │   └── DashboardPage.java
-│   │       ├── drivers/        # Driver management
-│   │       │   └── DriverFactory.java
-│   │       ├── config/         # Configuration
-│   │       │   └── ConfigReader.java
-│   │       └── utils/          # Utilities
-│   │           ├── WaitHelper.java
-│   │           ├── ScreenshotUtil.java
-│   │           └── TestDataGenerator.java
-│   └── test/java/
-│       └── com/project/
-│           ├── base/
-│           │   └── BaseTest.java
-│           └── tests/
-│               ├── LoginTest.java
-│               └── DashboardTest.java
-├── test-data/
-│   └── users.json
-└── .github/
-    └── workflows/
-        └── selenium.yml
-```
-
-### Appium + Java (Maven + TestNG)
-
-```
-project-root/
-├── pom.xml
-├── testng.xml
-├── .env.example
-├── .gitignore
-├── README.md
-├── src/
-│   ├── main/java/
-│   │   └── com/project/
-│   │       ├── screens/        # Screen Object classes (mobile POM)
-│   │       │   ├── BaseScreen.java
-│   │       │   ├── LoginScreen.java
-│   │       │   └── HomeScreen.java
-│   │       ├── drivers/        # Appium driver management
-│   │       │   ├── AppiumDriverFactory.java
-│   │       │   └── CapabilitiesManager.java
-│   │       ├── config/
-│   │       │   └── AppConfig.java
-│   │       └── utils/
-│   │           ├── MobileGestures.java    # Swipe, scroll, tap
-│   │           ├── ScreenshotUtil.java
-│   │           └── TestDataGenerator.java
-│   └── test/java/
-│       └── com/project/
-│           ├── base/
-│           │   └── BaseTest.java
-│           └── tests/
-│               ├── LoginTest.java
-│               └── HomeTest.java
-├── apps/                       # APK/IPA files
-│   └── .gitkeep
-├── test-data/
-│   └── users.json
-└── .github/
-    └── workflows/
-        └── appium.yml
-```
-
-### Playwright + Python (Pytest)
-
-```
-project-root/
-├── playwright.config.py        # Pytest-playwright config (nếu có)
-├── pyproject.toml              # Python project config
-├── requirements.txt            # Dependencies
-├── conftest.py                 # Root fixtures + browser setup
-├── .env.example
-├── .gitignore
-├── README.md
-├── src/
-│   ├── pages/
-│   │   ├── base_page.py
-│   │   ├── login_page.py
-│   │   └── dashboard_page.py
-│   ├── utils/
-│   │   ├── config.py           # Env config reader
-│   │   ├── test_data.py        # Data generators
-│   │   └── helpers.py
-│   └── tests/
-│       ├── conftest.py         # Test-level fixtures
-│       ├── test_login.py
-│       └── test_dashboard.py
-├── test-data/
-│   └── users.json
-└── .github/
-    └── workflows/
-        └── playwright.yml
-```
-
 ---
 
 ## Design Principles
@@ -280,10 +147,10 @@ project-root/
 |---|---|
 | Hardcode URL/credentials trong code | Đọc từ .env hoặc config file |
 | Locator inline trong test | Khai báo trong Page class |
-| `Thread.sleep()` / `waitForTimeout()` | Smart waits (`expect()`, `WebDriverWait`) |
+| `waitForTimeout()` | Smart waits (`expect()`) |
 | Global mutable state | Isolated fixtures/setup per test |
 | Monolithic test file (1 file 500+ dòng) | Tách theo module/feature |
-| `System.out.println()` / `console.log()` | Logger framework (Log4j, winston, logging) |
+| `console.log()` | Logger framework (winston, pino) |
 
 ---
 
@@ -294,5 +161,3 @@ Agent PHẢI tuân thủ các rules chi tiết:
 - `.claude/rules/automation_rules.md` — General automation best practices
 - `.claude/rules/locator_strategy.md` — Locator selection priority
 - `.claude/rules/playwright_rules.md` — Playwright-specific rules
-- `.claude/rules/selenium_rules.md` — Selenium-specific rules
-- `.claude/rules/appium_rules.md` — Appium mobile automation rules

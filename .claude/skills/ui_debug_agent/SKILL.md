@@ -1,19 +1,19 @@
 ---
 name: ui_debug_agent
-description: Skill inspect web/mobile applications bằng browser tools, phân tích DOM elements, xác định locators ổn định, debug UI automation failures, và hỗ trợ sinh Page Object classes.
+description: Skill inspect web applications bằng browser tools, phân tích DOM elements, xác định locators ổn định, debug UI automation failures, và hỗ trợ sinh Page Object classes.
 ---
 
 # UI Debug Agent
 
 ## Description
 
-Skill chuyên biệt giúp agent inspect ứng dụng web/mobile trực tiếp trên browser thật, phân tích DOM, thu thập locators ổn định, và debug các vấn đề UI automation.
+Skill chuyên biệt giúp agent inspect ứng dụng web trực tiếp trên browser thật, phân tích DOM, thu thập locators ổn định, và debug các vấn đề UI automation.
 
 Agent có thể:
 
 - Mở browser thật, navigate đến bất kỳ URL nào
 - Inspect DOM elements — xác định attributes, hierarchy, state
-- Thu thập locators ổn định cho Playwright, Selenium, Appium
+- Thu thập locators ổn định cho Playwright
 - Debug automation failures (element not found, click intercepted, timeout)
 - Capture UI state (snapshot, screenshot) để phân tích
 - Phân tích dynamic content, iframe, shadow DOM, SPA navigation
@@ -102,9 +102,7 @@ Từ snapshot, xác định:
 
 ### 3. Xác định Locators
 
-Với mỗi element cần locator, áp dụng **priority order** theo framework:
-
-**Playwright:**
+Với mỗi element cần locator, áp dụng **priority order** của Playwright:
 
 | Priority | Locator | Ví dụ | Khi nào dùng |
 |---|---|---|---|
@@ -115,25 +113,6 @@ Với mỗi element cần locator, áp dụng **priority order** theo framework:
 | 5 | `getByTestId()` | `getByTestId('submit-btn')` | Element có data-testid attribute |
 | 6 | CSS | `page.locator('.submit-button')` | Không có semantic option nào phù hợp |
 | 7 | XPath | `page.locator('//div[@class="x"]')` | Last resort — tránh dùng |
-
-**Selenium:**
-
-| Priority | Locator | Ví dụ |
-|---|---|---|
-| 1 ⭐ | `By.id()` | `By.id("email")` |
-| 2 | `By.cssSelector("[data-testid]")` | `By.cssSelector("[data-testid='submit']")` |
-| 3 | `By.name()` | `By.name("username")` |
-| 4 | `By.cssSelector()` | `By.cssSelector(".login-form button")` |
-| 5 | `By.xpath()` | `By.xpath("//button[text()='Login']")` |
-
-**Appium (Mobile):**
-
-| Priority | Locator | Ví dụ |
-|---|---|---|
-| 1 ⭐ | Accessibility ID | `MobileBy.accessibilityId("loginButton")` |
-| 2 | ID (resource-id) | `MobileBy.id("com.app:id/login_btn")` |
-| 3 | Name | `MobileBy.name("Login")` |
-| 4 | XPath (relative) | `MobileBy.xpath("//android.widget.Button[@text='Login']")` |
 
 ### 4. Verify Locator
 
@@ -177,7 +156,6 @@ browser_snapshot → xác nhận kết quả
 
 ### Shadow DOM
 - Playwright `locator()` tự động pierce shadow DOM
-- Selenium cần `shadowRoot.findElement()`
 - `browser_snapshot` có thể thấy shadow DOM content tùy MCP version
 
 ### Dynamic Content (SPA / AJAX)
@@ -229,6 +207,4 @@ Agent PHẢI tuân thủ các rules chi tiết:
 
 - `.claude/rules/locator_strategy.md` — Master locator priority map
 - `.claude/rules/playwright_rules.md` — Playwright browser setup and locator rules
-- `.claude/rules/selenium_rules.md` — Selenium locator and wait rules
-- `.claude/rules/appium_rules.md` — Appium mobile locator rules
 - `.claude/rules/automation_rules.md` — General automation best practices

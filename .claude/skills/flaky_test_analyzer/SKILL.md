@@ -60,18 +60,12 @@ Detect flaky tests caused by:
 ### Timing Issues
 
 **Problem:**
-```java
-Thread.sleep(3000);       // Hard sleep — BAD
+```typescript
 page.waitForTimeout(2000); // Fixed delay — BAD
 ```
 
-**Fix:** Use smart waits as defined in `.claude/rules/selenium_rules.md` and `.claude/rules/playwright_rules.md`:
-```java
-// Selenium
-WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
-wait.until(ExpectedConditions.visibilityOfElementLocated(By.id("result")));
-
-// Playwright
+**Fix:** Use smart waits as defined in `.claude/rules/playwright_rules.md`:
+```typescript
 await expect(page.getByRole('button', { name: 'Submit' })).toBeVisible();
 ```
 
@@ -119,5 +113,4 @@ The agent MUST follow these rules when analyzing flaky tests:
 
 - `.claude/rules/locator_strategy.md` — Locator stability rules
 - `.claude/rules/automation_rules.md` — General automation best practices
-- `.claude/rules/selenium_rules.md` — Selenium wait strategy
 - `.claude/rules/playwright_rules.md` — Playwright auto-waiting

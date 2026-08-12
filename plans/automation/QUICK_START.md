@@ -9,7 +9,7 @@
 
 URL: [https://your-app.com/login]
 Tài khoản: [admin@test.com / Test@123]
-Framework: [Playwright TypeScript / Selenium Java]
+Framework: Playwright TypeScript
 
 Manual Test Cases:
 [Paste test cases vào đây]

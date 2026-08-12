@@ -83,8 +83,9 @@ Bước này **PHẢI thực hiện theo đúng phương pháp ở mục 5 "Phá
 
 1. Đi qua đủ **6 dimension** (AC completeness, BR coverage, UX state coverage, Field/data match, Cross-source consistency, Missing dependency).
 2. Với mỗi dimension, soi thêm **5 depth lens** (Biên & ngoại lệ, Nhất quán trạng thái, Tương tranh & xung đột, Bảo mật & dữ liệu, UX & khả năng tiếp cận).
-3. Mỗi gap tìm được ghi thành 1 finding mã `RR-NNN` theo **đúng cấu trúc 8 mục bắt buộc ở mục 5.4** của `requirements_analyzer`: heading `## RR-NNN [Mức độ] Loại — Tóm tắt` (Loại là 1 trong 10 enum dạng nhãn tiếng Việt: Biên/Ngoại lệ/Trạng thái/Mơ hồ/Tương tranh/Bảo mật/Tuân thủ/UX/Khả năng tiếp cận/Thiếu phủ; Mức độ là 1 trong `[Chặn]`/`[Cao]`/`[Trung bình]`/`[Thấp]`) + 8 mục con: 1. Trích dẫn nguồn, 2. Bối cảnh nghiệp vụ, 3. Vấn đề cụ thể, 4. Ảnh hưởng nếu không giải quyết, 5. Đề xuất giải quyết, 6. Liên kết với các phát hiện khác, 7. Câu hỏi cho người dùng, 8. Trạng thái.
+3. Mỗi gap tìm được ghi thành 1 finding mã `RR-NNN` theo **đúng cấu trúc 9 mục bắt buộc ở mục 5.4** của `requirements_analyzer`: heading `## RR-NNN [Mức độ] Loại — Tóm tắt` (Loại là 1 trong 10 enum dạng nhãn tiếng Việt: Biên/Ngoại lệ/Trạng thái/Mơ hồ/Tương tranh/Bảo mật/Tuân thủ/UX/Khả năng tiếp cận/Thiếu phủ; Mức độ là 1 trong `[Chặn]`/`[Cao]`/`[Trung bình]`/`[Thấp]`) + 9 mục con: 1. Trích dẫn nguồn, 2. Bối cảnh nghiệp vụ, 3. Vấn đề cụ thể, 4. Ảnh hưởng nếu không giải quyết, 5. Đề xuất giải quyết, 6. Liên kết với các phát hiện khác, 7. Câu hỏi cho người dùng, 8. Owner (vai trò chịu trách nhiệm chốt quyết định), 9. Trạng thái.
 4. **Không được gộp nhiều gap vào 1 mã**, không được bỏ qua finding LOW/cosmetic dù nhỏ đến đâu.
+5. Toàn bộ nội dung mỗi finding **PHẢI viết theo văn phong con người** đúng mục 5.4bis của `requirements_analyzer` — kể lại tình huống như giải thích miệng cho đồng nghiệp (câu văn xuôi, có actor cụ thể, có ví dụ dữ liệu/mã/trạng thái thật), KHÔNG liệt kê nhãn kỹ thuật khô khan hay lặp lại enum Loại/Mức độ trong phần thân.
 
 Các hướng phát hiện gap thường gặp (không giới hạn, chỉ để gợi ý khi walk 6 dimension):
 - Từ khóa mơ hồ: "where applicable", "as needed", "similar to", "etc."
@@ -139,9 +140,9 @@ Agent PHẢI xuất artifact theo cấu trúc sau:
 
 ## 7. Điểm Thiếu/Điểm Mờ — Gap Review
 ### 7.1. Bảng tổng hợp
-(Bảng: Mã RR-NNN, Loại, Mức độ, Tóm tắt 1 dòng)
+(Bảng: Mã RR-NNN, Loại, Mức độ, Tóm tắt 1 dòng, Owner — cột Owner giúp người đọc lọc nhanh cần forward finding cho ai mà không phải mở từng block chi tiết)
 ### 7.2. Chi tiết từng finding
-(Mỗi RR-NNN viết đầy đủ 8 mục theo cấu trúc mục 5.4 skill `requirements_analyzer`: Trích dẫn nguồn, Bối cảnh nghiệp vụ, Vấn đề cụ thể, Ảnh hưởng nếu không giải quyết, Đề xuất giải quyết, Liên kết với các phát hiện khác, Câu hỏi cho người dùng, Trạng thái)
+(Mỗi RR-NNN viết đầy đủ 9 mục theo cấu trúc mục 5.4 skill `requirements_analyzer`: Trích dẫn nguồn, Bối cảnh nghiệp vụ, Vấn đề cụ thể, Ảnh hưởng nếu không giải quyết, Đề xuất giải quyết, Liên kết với các phát hiện khác, Câu hỏi cho người dùng, Owner, Trạng thái — viết theo văn phong con người đúng mục 5.4bis, không phải liệt kê nhãn kỹ thuật)
 ### 7.3. Khuyến nghị
 (`SẴN SÀNG sinh TC` hoặc `CẦN LÀM RÕ TRƯỚC` theo mục 5.6 skill `requirements_analyzer`)
 ### 7.4. Phân loại theo tác động
@@ -160,8 +161,10 @@ Agent PHẢI xuất artifact theo cấu trúc sau:
 ## Quy tắc quan trọng
 
 - ❌ **KHÔNG sinh test cases** — workflow này chỉ phân tích, không tạo TC
-- ❌ **KHÔNG tự đoán** business logic nếu document không nói rõ → đưa vào Gap Review (`RR-NNN`, 8 mục)
-- ❌ **KHÔNG bỏ sót** finding mức `[Thấp]`/cosmetic — mọi gap phát hiện được đều phải emit đủ 8 mục, không gộp vào tóm tắt
+- ❌ **KHÔNG tự đoán** business logic nếu document không nói rõ → đưa vào Gap Review (`RR-NNN`, 9 mục)
+- ❌ **KHÔNG bỏ sót** finding mức `[Thấp]`/cosmetic — mọi gap phát hiện được đều phải emit đủ 9 mục, không gộp vào tóm tắt
+- ❌ **KHÔNG viết finding theo văn phong máy** (liệt kê nhãn kỹ thuật, lặp lại enum Loại/Mức độ trong thân bài, dùng "user"/"entity" chung chung) — phải viết theo mục 5.4bis skill `requirements_analyzer`: câu văn xuôi, actor cụ thể, ví dụ dữ liệu thật
+- ❌ **KHÔNG bỏ trống Owner** — mỗi finding phải chỉ rõ vai trò chịu trách nhiệm chốt quyết định, nếu chưa xác định được thì ghi rõ "Chưa xác định — cần user chỉ định"
 - ❌ **KHÔNG ghi finding thiếu trích dẫn nguồn** (file/dòng/quote hoặc vị trí UI cụ thể) — finding thiếu citation coi như không hợp lệ
 - ❌ **KHÔNG bỏ qua mục 7.4 Phân loại theo tác động** — mọi finding phải được gắn nhãn `TC`/`UX`/`Khác` theo mục 5.7 skill `requirements_analyzer`, kể cả khi tài liệu chỉ có vài finding
 - ❌ **KHÔNG bỏ qua comments** trong Jira ticket — comments thường chứa thông tin quan trọng bổ sung

@@ -12,4 +12,4 @@
 # OUTPUT FORMAT
 | # | Nhóm | Tên field | Giá trị | Mục đích test | Expected |
 
-Kèm code class DataGenerator (Java hoặc TypeScript tùy project).
+Kèm code class DataGenerator (TypeScript).

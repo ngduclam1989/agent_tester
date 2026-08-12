@@ -19,11 +19,11 @@ Hãy đóng vai là một **Senior Automation Engineer** với 10 năm kinh nghi
 
 ## Tech Stack
 
-- **Framework:** [Chọn 1: Playwright (TypeScript) / Playwright (Java) / Selenium WebDriver (Java/TestNG) / Appium (Java)]
-- **Ngôn ngữ:** [TypeScript / Java]
-- **Build tool:** [npm / Maven / Gradle]
-- **Test Runner:** [Playwright Test / TestNG / JUnit]
-- **Reporting:** [Playwright HTML Reporter / Allure Report / ExtentReport]
+- **Framework:** Playwright
+- **Ngôn ngữ:** TypeScript
+- **Build tool:** npm
+- **Test Runner:** Playwright Test
+- **Reporting:** Playwright HTML Reporter / Allure Report
 
 ## Mục tiêu
 
@@ -35,7 +35,7 @@ Ví dụ: Hệ thống CRM, luồng tạo mới Khách hàng
 
 Bạn phải tuân thủ nghiêm ngặt:
 1. **Page Object Model (POM):** Phân tách Pages và Tests rõ ràng
-2. **Smart Waits:** KHÔNG BAO GIỜ dùng `Thread.sleep`, `page.waitForTimeout` hay bất kỳ hard sleep nào
+2. **Smart Waits:** KHÔNG BAO GIỜ dùng `page.waitForTimeout` hay bất kỳ hard sleep nào
 3. **DOM Recon First:** TUYỆT ĐỐI không đoán locator — phải inspect DOM thật
 4. **Unique Test Data:** Dữ liệu unique + traceable, không hardcode
 5. **Clean Code:** Readable, maintainable, không code thừa

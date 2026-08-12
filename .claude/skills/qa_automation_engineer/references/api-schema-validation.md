@@ -1,6 +1,6 @@
 # Schema Validation
 
-Schema validation patterns for both TypeScript (Zod) and Java (JSON Schema Validator). Ensures API responses match expected structure on every test.
+Schema validation patterns for TypeScript (Zod). Ensures API responses match expected structure on every test.
 
 ## Zod (TypeScript)
 
@@ -60,49 +60,12 @@ const ErrorSchema = z.strictObject({
 });
 ```
 
-## JSON Schema (Java)
-
-### User Schema
-
-```json
-{
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "additionalProperties": false,
-  "required": ["id", "name", "email", "role", "created_at"],
-  "properties": {
-    "id": { "type": "string", "format": "uuid" },
-    "name": { "type": "string", "minLength": 1, "maxLength": 100 },
-    "email": { "type": "string", "format": "email" },
-    "role": { "enum": ["admin", "user", "viewer"] },
-    "created_at": { "type": "string", "format": "date-time" },
-    "updated_at": { "type": "string", "format": "date-time" }
-  }
-}
-```
-
-### REST Assured Usage
-
-```java
-import io.restassured.module.jsv.JsonSchemaValidator;
-
-@Test
-void validateUserSchema() {
-    given()
-    .when()
-        .get("/users/1")
-    .then()
-        .statusCode(200)
-        .body(JsonSchemaValidator.matchesJsonSchemaInClasspath("schemas/user-schema.json"));
-}
-```
-
 ## Strict vs Loose Validation
 
-| Scenario                                  | TypeScript                        | Java                                   |
-| ----------------------------------------- | --------------------------------- | -------------------------------------- |
-| **Your API** (you control the contract)   | `z.strictObject()`                | `additionalProperties: false`          |
-| **Third-party API** (fields may be added) | `z.object()`                      | `additionalProperties: true`           |
-| **Hybrid** (some required, some optional) | `z.object()` with optional fields | `required` array + optional properties |
+| Scenario                                  | TypeScript                        |
+| ----------------------------------------- | --------------------------------- |
+| **Your API** (you control the contract)   | `z.strictObject()`                |
+| **Third-party API** (fields may be added) | `z.object()`                      |
+| **Hybrid** (some required, some optional) | `z.object()` with optional fields |
 
 **Rule of thumb:** Use strict for APIs you own, loose for APIs you consume.

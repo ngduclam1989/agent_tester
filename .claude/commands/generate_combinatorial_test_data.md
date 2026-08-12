@@ -52,7 +52,7 @@ skills:
 | **Ma trận kết hợp** | ✅ | File `.md` / bảng Markdown từ `/generate_cross_module_test_plan` |
 | **URL ứng dụng** | ✅ (PIPELINE) | Để agent chạy browser tạo data |
 | **Credentials** | ⚠️ PIPELINE | Nếu app cần đăng nhập |
-| **Output format** | ❌ | `json` (mặc định), `csv`, `markdown`, `code` (TS/Java/Python) |
+| **Output format** | ❌ | `json` (mặc định), `csv`, `markdown`, `code` (TypeScript) |
 | **Ngôn ngữ data** | ❌ | Tiếng Việt / Tiếng Anh (mặc định: theo context) |
 
 ---

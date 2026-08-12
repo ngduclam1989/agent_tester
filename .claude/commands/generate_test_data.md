@@ -24,7 +24,7 @@ skills:
 | Fields cần data | ⚠️ Nên có | Danh sách fields + constraints. Nếu không có → AI tự phân tích từ DOM/Spec |
 | URL trang / Swagger spec | ❌ | Nếu có → AI inspect DOM/Spec để lấy validation rules chính xác |
 | Test cases | ❌ | Nếu đã có test cases → AI sinh data match từng TC |
-| Output format | ❌ | `json` (mặc định), `csv`, `markdown table`, `code` (TypeScript/Java/Python) |
+| Output format | ❌ | `json` (mặc định), `csv`, `markdown table`, `code` (TypeScript) |
 | Ngôn ngữ data | ❌ | Tiếng Việt / Tiếng Anh (mặc định: theo context) |
 
 ---

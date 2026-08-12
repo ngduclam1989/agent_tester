@@ -8,8 +8,8 @@
 ## Mục đích
 
 Định hình cho AI vai trò **Senior Automation Engineer** và nạp bối cảnh kỹ thuật. Bước này giúp AI biết chính xác:
-- Framework nào (Playwright / Selenium / Appium)
-- Ngôn ngữ nào (TypeScript / Java)
+- Framework: Playwright
+- Ngôn ngữ: TypeScript
 - Kiến trúc project ra sao
 - Các nguyên tắc code phải tuân thủ
 

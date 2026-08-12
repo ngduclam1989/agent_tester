@@ -41,5 +41,5 @@ Sinh code → Chạy test → FAIL?
 ## Lưu ý
 
 - AI sẽ **không hỏi user** trong quá trình self-fix (trừ khi gặp business rule mâu thuẫn).
-- Smart Waits bắt buộc — xem `.claude/rules/playwright_rules.md` hoặc `.claude/rules/selenium_rules.md`.
+- Smart Waits bắt buộc — xem `.claude/rules/playwright_rules.md`.
 - Mỗi test case phải có **assertion rõ ràng** ở cuối.

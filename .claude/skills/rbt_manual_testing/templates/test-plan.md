@@ -228,8 +228,8 @@
 |Category|Tool|Purpose|
 |---|---|---|
 |Test management|[Jira/TestRail/Zephyr]|Quản lý test cases|
-|Automation|Playwright/Selenium|UI automation|
-|API testing|[Postman/Playwright/REST Assured]|API testing|
+|Automation|Playwright|UI automation|
+|API testing|[Postman/Playwright]|API testing|
 |CI/CD|[GitHub Actions/Jenkins]|Run automated tests|
 |Defect tracking|[Jira]|Bug tracking|
 |Reporting|[Allure/HTML reporter]|Test reporting|

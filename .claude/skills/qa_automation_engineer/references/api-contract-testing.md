@@ -23,22 +23,6 @@ test("POST /api/users accepts valid payload", async ({ request }) => {
 });
 ```
 
-```java
-// Java — verify POST contract
-@Test
-@DisplayName("POST /users contract: returns 201 with Location header")
-void createUserContract() {
-    given()
-        .contentType(ContentType.JSON)
-        .body("{ \"name\": \"Test\", \"email\": \"test@example.com\" }")
-    .when()
-        .post("/users")
-    .then()
-        .statusCode(201)
-        .header("Location", matchesRegex(".+/api/users/.+"));
-}
-```
-
 ## Idempotency Testing
 
 Verify that repeated identical requests produce the same result:
@@ -56,20 +40,6 @@ test("PUT /api/users/:id is idempotent", async ({ request }) => {
   const body2 = await second.json();
   expect(body1).toEqual(body2);
 });
-```
-
-```java
-@Test
-@DisplayName("PUT /users/:id is idempotent")
-void putIsIdempotent() {
-    String payload = "{ \"name\": \"Same\", \"email\": \"same@example.com\" }";
-
-    Response first = given().contentType(ContentType.JSON).body(payload).put("/users/1");
-    Response second = given().contentType(ContentType.JSON).body(payload).put("/users/1");
-
-    assertThat(first.statusCode()).isEqualTo(second.statusCode());
-    assertThat(first.body().asString()).isEqualTo(second.body().asString());
-}
 ```
 
 ## Versioning Contracts

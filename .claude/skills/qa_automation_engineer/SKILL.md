@@ -1,6 +1,6 @@
 ---
 name: qa_automation_engineer
-description: Skill hỗ trợ agent thực hiện QA automation testing: generate automation scripts, API/a11y/regression tests, UI recon, locators, flaky analysis, test data và framework handoff. Dùng reference Playwright/Selenium/API bổ trợ khi cần.
+description: Skill hỗ trợ agent thực hiện QA automation testing: generate automation scripts, API/a11y/regression tests, UI recon, locators, flaky analysis, test data và framework handoff. Dùng reference Playwright/API bổ trợ khi cần.
 ---
 
 # QA Automation Engineer
@@ -36,7 +36,7 @@ This skill is designed for modern QA workflows and automation development.
 - Test data generation belongs to `test_data_generator`.
 - Requirement extraction from a running website belongs to `requirements_analyzer`.
 - Before doing complex automation work, read `references/AUTOTEST_HANDOFF_CONTRACT.md`.
-- To choose detailed Playwright/Selenium/API/a11y/regression references, read `references/AUTOTEST_REFERENCE_MAP.md`.
+- To choose detailed Playwright/API/a11y/regression references, read `references/AUTOTEST_REFERENCE_MAP.md`.
 
 ---
 
@@ -57,7 +57,7 @@ Use this skill when the user asks about:
 Typical prompts include:
 
 - Generate test cases from requirement
-- Generate Selenium automation from test case
+- Generate Playwright automation from test case
 - Generate automation from UI steps
 - Generate API tests from Swagger
 - Generate regression suite → _(redirect sang `generate_application_test_plan` hoặc `generate_manual_testcases_rbt`)_
@@ -98,13 +98,12 @@ Before generating code:
 - Preserve TC IDs in generated test names when available.
 - If the TC lacks UI details/locators, run optional UI recon through `ui_debug_agent` first.
 - If UI recon is not possible in the current context (no browser/DOM access), do not guess the DOM structure — create placeholder locator variables with a clear comment marking them as placeholders, and list every placeholder under an explicit "Actions Required" note in the output so the user knows exactly where to bind real locators before running the test.
-- Select the target stack (Playwright, Selenium, Appium, API) from the project context or ask if unclear.
+- Select the target stack (Playwright web or API) from the project context or ask if unclear.
 - Load only the relevant references from `references/AUTOTEST_REFERENCE_MAP.md`.
 
 Triggers when user asks:
 
 - convert test case to automation
-- generate Selenium automation
 - generate Playwright automation from test case
 
 ---
@@ -119,7 +118,7 @@ Triggers when user asks:
 
 - automate this UI flow
 - generate automation from steps
-- run UI steps and generate Selenium script
+- run UI steps and generate Playwright script
 
 ---
 
@@ -133,7 +132,6 @@ Reference guidance:
 - Schema validation: `references/api-schema-validation.md`
 - Contract testing: `references/api-contract-testing.md`
 - Playwright API: `references/api-playwright-api-testing.md`
-- REST Assured: `references/api-rest-assured-testing.md`
 
 Triggers when user provides:
 
@@ -216,7 +214,6 @@ Reference guidance:
 
 - Playwright + axe/WCAG: `references/a11y-playwright-wcag21aa-checklist.md`
 - ARIA/focus/keyboard patterns: `references/a11y-playwright-aria_patterns.md`
-- Selenium + axe: `references/a11y-selenium-axe_patterns.md`
 
 Triggers when user asks:
 
@@ -230,7 +227,7 @@ Triggers when user asks:
 
 ### Review automation code
 
-> **Không có workflow slash-command riêng** — dùng skill này trực tiếp khi user đưa code automation cần review (Playwright/Selenium/API).
+> **Không có workflow slash-command riêng** — dùng skill này trực tiếp khi user đưa code automation cần review (Playwright/API).
 
 Phân tích code theo các khía cạnh sau:
 
@@ -268,9 +265,7 @@ Use workflow: `generate_automation_framework`
 Triggers when user asks:
 
 - create automation framework
-- design Selenium framework
 - design Playwright framework
-- design Appium framework
 - scaffold automation project
 - thiết kế framework mới
 
@@ -355,11 +350,10 @@ Triggers when user asks:
 
 Default automation stack:
 
-- **Language:** Java
-- **UI automation:** Selenium WebDriver or Playwright
-- **Test framework:** TestNG
-- **API automation:** REST Assured
-- **Mobile automation:** Appium
+- **Language:** TypeScript
+- **UI automation:** Playwright
+- **Test framework:** Playwright Test
+- **API automation:** Playwright (API testing)
 - **Design pattern:** Page Object Model (POM)
 
 Stack-specific references:
@@ -369,24 +363,13 @@ Stack-specific references:
 | Playwright E2E | `playwright-e2e-page_object_model.md`, `playwright-e2e-locator_strategies.md`, `playwright-e2e-debugging.md`, `playwright-e2e-snippets.md` |
 | Playwright browser/CLI recon | `playwright-cli-running-code.md`, `playwright-cli-test-generation.md`, `playwright-cli-storage-state.md`, `playwright-cli-tracing.md` |
 | Webapp Playwright MCP | `webapp-playwright-common_patterns.md`, `webapp-playwright-page_object_model.md`, `webapp-playwright-api_testing.md` |
-| Selenium webapp | `selenium-webapp-page_object_model.md`, `selenium-webapp-locator_strategies.md`, `selenium-webapp-wait_strategies.md` |
-| API | `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md`, `api-rest-assured-testing.md` |
-| Accessibility | `a11y-playwright-wcag21aa-checklist.md`, `a11y-playwright-aria_patterns.md`, `a11y-selenium-axe_patterns.md` |
+| API | `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md` |
+| Accessibility | `a11y-playwright-wcag21aa-checklist.md`, `a11y-playwright-aria_patterns.md` |
 | Regression / CI | `regression-regression-strategy.md`, `regression-ci-cd-integration.md`, `regression-flaky-management.md` |
 
 ---
 
 # Locator Strategy
-
-## Selenium Locator Priority
-
-1. `id`
-2. `data-testid`
-3. `name`
-4. `css selector`
-5. `xpath` (last resort)
-
-Avoid fragile locators such as auto-generated class names or positional xpaths.
 
 ## Playwright Locator Priority
 
@@ -411,8 +394,6 @@ The agent MUST also follow the detailed rules defined in `.claude/rules/`:
 - [automation_rules.md](.claude/rules/automation_rules.md) — General automation best practices
 - [locator_strategy.md](.claude/rules/locator_strategy.md) — Detailed locator selection rules
 - [playwright_rules.md](.claude/rules/playwright_rules.md) — Playwright-specific rules
-- [selenium_rules.md](.claude/rules/selenium_rules.md) — Selenium-specific rules
-- [appium_rules.md](.claude/rules/appium_rules.md) — Appium mobile automation rules
 
 ---
 
@@ -421,7 +402,7 @@ The agent MUST also follow the detailed rules defined in `.claude/rules/`:
 The agent may consult additional documentation in the `references/` folder:
 
 - `AUTOTEST_HANDOFF_CONTRACT.md` — ownership boundaries and end-to-end automation handoff flow
-- `AUTOTEST_REFERENCE_MAP.md` — which references to load for Playwright, Selenium, API, a11y, regression, locator, flaky, framework tasks
+- `AUTOTEST_REFERENCE_MAP.md` — which references to load for Playwright, API, a11y, regression, locator, flaky, framework tasks
 - `PROJECT_CONTEXT.md` — Project domain, tech stack, key modules
 - `TEST_STRATEGY.md` — Testing objectives, scope, execution plan
 - `PROMPT_TEMPLATES.md` — Reusable prompt templates for common QA tasks
@@ -438,8 +419,8 @@ External references (thay thế cho các file đã gộp):
 Depending on the request, the agent may return:
 
 - Manual test cases (structured format)
-- Automation scripts (Java/TypeScript)
-- API tests (REST Assured)
+- Automation scripts (TypeScript)
+- API tests (Playwright API testing)
 - Locator recommendations
 - Test data (structured, randomized, traceable)
 - Automation framework design

@@ -18,22 +18,19 @@ File này định nghĩa chiến lược testing cho dự án. Agent tham khảo
 
 | Loại Test | Áp dụng | Tool/Framework |
 |-----------|---------|----------------|
-| UI Functional Testing | ✅ | Selenium / Playwright |
-| API Testing | ✅ | REST Assured / Postman |
-| Unit Testing | ✅ | JUnit / TestNG |
-| Integration Testing | ✅ | TestNG + REST Assured |
+| UI Functional Testing | ✅ | Playwright |
+| API Testing | ✅ | Playwright (API testing) / Postman |
 | Performance Testing | ⬜ | JMeter / k6 |
 | Security Testing | ⬜ | OWASP ZAP |
-| Mobile Testing | ⬜ | Appium |
 
 ## Test Automation Strategy
 
 ### Framework Architecture
 - **Design Pattern:** Page Object Model (POM)
-- **Language:** Java
-- **Test Runner:** TestNG
-- **Build Tool:** Maven
-- **Reporting:** Allure / ExtentReports
+- **Language:** TypeScript
+- **Test Runner:** Playwright Test
+- **Build Tool:** npm
+- **Reporting:** Playwright HTML Report / Allure
 
 ### Automation Scope
 - Smoke tests: Bao phủ happy path của các chức năng chính

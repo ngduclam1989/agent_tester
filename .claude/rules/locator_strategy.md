@@ -37,7 +37,5 @@ Trước khi đưa locator vào code, phải kiểm tra:
 
 ## 4. Locator Theo Framework
 
-Chi tiết locator cho từng framework xem tại:
+Chi tiết locator xem tại:
 - Playwright: `.claude/rules/playwright_rules.md` (Section 3)
-- Selenium: `.claude/rules/selenium_rules.md` (Section 1)
-- Appium: `.claude/rules/appium_rules.md` (Section 1)

@@ -98,7 +98,7 @@ Với mỗi field/component/luồng đã thu thập ở mục 3, đối chiếu 
 
 ### 5.4. Định dạng bắt buộc cho MỖI finding
 
-Mỗi gap/ambiguity phát hiện được PHẢI viết thành 1 block Markdown độc lập theo đúng cấu trúc 8 mục cố định dưới đây — thiếu mục nào thì finding đó không hợp lệ. Không dùng bảng rút gọn thay thế — bảng chỉ dùng cho phần tổng hợp (mục 4.5 / §7.1 của output), còn mỗi finding chi tiết bắt buộc viết đầy đủ theo mẫu này.
+Mỗi gap/ambiguity phát hiện được PHẢI viết thành 1 block Markdown độc lập theo đúng cấu trúc 9 mục cố định dưới đây — thiếu mục nào thì finding đó không hợp lệ. Không dùng bảng rút gọn thay thế — bảng chỉ dùng cho phần tổng hợp (mục 4.5 / §7.1 của output), còn mỗi finding chi tiết bắt buộc viết đầy đủ theo mẫu này. Toàn bộ nội dung 9 mục PHẢI viết theo văn phong con người mô tả ở mục 5.4bis — không viết theo kiểu liệt kê nhãn kỹ thuật khô khan.
 
 **Mã** — `RR-NNN` (đánh số tuần tự toàn tài liệu, không trùng, không tái sử dụng, không reset theo module).
 
@@ -124,7 +124,7 @@ Mỗi gap/ambiguity phát hiện được PHẢI viết thành 1 block Markdown 
 - `[Trung bình]` (MEDIUM) — TC sinh được nhưng sẽ bỏ sót 1 edge case (VD giá trị biên chưa được đặc tả).
 - `[Thấp]` (LOW) — chỉ ảnh hưởng độ rõ ràng/wording, không ảnh hưởng khả năng sinh TC.
 
-**Cấu trúc block** (heading + 8 mục con, theo đúng thứ tự):
+**Cấu trúc block** (heading + 9 mục con, theo đúng thứ tự):
 
 ```markdown
 ## RR-NNN [Mức độ] Loại — Tóm tắt 1 dòng nêu rõ FEAT/AC/section liên quan và bản chất gap
@@ -138,15 +138,15 @@ Mỗi gap/ambiguity phát hiện được PHẢI viết thành 1 block Markdown 
 
 ### 2. Bối cảnh nghiệp vụ
 
-Giải thích ngắn gọn domain/luồng nghiệp vụ liên quan để người đọc không cần mở lại tài liệu gốc vẫn hiểu được vấn đề. Nếu có thể, minh hoạ bằng 1 ví dụ dữ liệu cụ thể (mã phiếu, số liệu, ngày tháng...) thay vì mô tả trừu tượng.
+Kể lại tình huống như đang giải thích miệng cho một đồng nghiệp chưa biết gì về ticket này — câu văn xuôi có chủ ngữ/vị ngữ, nối theo trình tự thời gian hoặc nhân-quả, không phải mô tả trừu tượng. PHẢI có ví dụ dữ liệu cụ thể (mã phiếu, tên trạng thái, ID, ngày tháng, tên gate/rule/event thật nếu có) trừ khi finding thuộc Loại "Mơ hồ" thuần về wording/cosmetic không gắn với dữ liệu nào. Gọi tên actor cụ thể (khách hàng, nhân viên garage, hệ thống Driver+...) thay vì "user"/"entity"/"hệ thống" chung chung.
 
 ### 3. Vấn đề cụ thể
 
-Nêu rõ (các) điểm mơ hồ/thiếu sót. Nếu gap có nhiều khía cạnh độc lập, tách thành "Vấn đề 1", "Vấn đề 2"... trong CÙNG 1 mã RR (không tách mã) khi các khía cạnh đó cùng chung 1 câu hỏi gốc cho user; nếu là gap thực sự khác nhau về bản chất thì phải tách thành mã RR riêng theo mục 5.5. Khi có ≥2 cách hiểu hợp lý, liệt kê rõ "Khả năng A / Khả năng B" thay vì chỉ nói "chưa rõ".
+Nêu rõ (các) điểm mơ hồ/thiếu sót, viết tiếp mạch câu chuyện ở mục 2 (VD "gần như ĐỒNG THỜI, khách bấm huỷ trên app trong khi nhân viên vẫn đang thao tác ở bước 2 nên chưa kịp ghi liên kết") thay vì tách rời thành nhận định khô khan. Nếu gap có nhiều khía cạnh độc lập, tách thành "Vấn đề 1", "Vấn đề 2"... trong CÙNG 1 mã RR (không tách mã) khi các khía cạnh đó cùng chung 1 câu hỏi gốc cho user; nếu là gap thực sự khác nhau về bản chất thì phải tách thành mã RR riêng theo mục 5.5. Khi có ≥2 cách hiểu hợp lý, liệt kê rõ "Khả năng A / Khả năng B" thay vì chỉ nói "chưa rõ".
 
 ### 4. Ảnh hưởng nếu không giải quyết
 
-Danh sách bullet, mỗi bullet 1 hệ quả cụ thể (kỹ thuật, nghiệp vụ, trải nghiệm, hoặc rủi ro test) — không viết chung chung kiểu "sẽ gây khó khăn".
+Danh sách bullet, mỗi bullet 1 hệ quả cụ thể (kỹ thuật, nghiệp vụ, trải nghiệm, hoặc rủi ro test) viết thành câu hoàn chỉnh, dễ hình dung hậu quả thật — không viết chung chung kiểu "sẽ gây khó khăn" và không chỉ dán nhãn kỹ thuật trần trụi (VD tránh chỉ viết "Data inconsistency" — viết "Dữ liệu không nhất quán: SO vẫn tồn tại trong hệ thống dù booking gốc đã bị đánh dấu Đã huỷ, khiến nhân viên garage nhìn thấy 2 nguồn thông tin trái ngược nhau").
 
 ### 5. Đề xuất giải quyết
 
@@ -158,15 +158,47 @@ Nếu gap này lặp lại pattern ở 1 finding khác (VD cùng loại thiếu 
 
 ### 7. Câu hỏi cho người dùng
 
-Liệt kê các lựa chọn cụ thể dạng (a) / (b) / (c)... để user chọn hoặc phản hồi tự do — không viết 1 câu hỏi mở chung chung nếu có thể quy về các lựa chọn rõ ràng hơn.
+Liệt kê các lựa chọn cụ thể dạng (a) / (b) / (c)... để user chọn hoặc phản hồi tự do — không viết 1 câu hỏi mở chung chung nếu có thể quy về các lựa chọn rõ ràng hơn. Mỗi lựa chọn viết thành 1 câu đầy đủ nêu rõ hệ quả nếu chọn phương án đó, không viết cụt lủn kiểu từ khoá (VD tránh "(a) Auto-cancel", nên viết "(a) Hệ thống tự động huỷ SO khi nhận BOOKING.CANCELLED, kể cả khi SO đang ở trạng thái Nháp").
 
-### 8. Trạng thái
+### 8. Owner
+
+Vai trò/bộ phận chịu trách nhiệm CHỐT quyết định cho câu hỏi ở mục 7 — không phải người thực thi mà là người có thẩm quyền trả lời (VD "Business Authority + Solution Architect (vì liên quan cơ chế transactional giữa gf-sales với chính nó, không phải cross-boundary)", "Backend Lead (vì cần xác nhận thứ tự xử lý event trong queue)"). Luôn kèm 1 vế lý do ngắn giải thích vì sao đúng vai trò này chứ không phải vai trò khác. Nếu không xác định được owner cụ thể, ghi "Chưa xác định — cần user chỉ định" thay vì bỏ trống.
+
+### 9. Trạng thái
 
 `ĐANG MỞ` khi mới phát hiện. Cập nhật thành `ĐÃ CHỐT — {tóm tắt quyết định}` khi user trả lời trong các lượt hội thoại sau, không xoá finding cũ.
 ```
 
+### 5.4bis. Nguyên tắc viết: ngôn ngữ người, không phải ngôn ngữ máy
+
+Toàn bộ 9 mục trên PHẢI đọc như một người có kinh nghiệm nghiệp vụ đang giải thích lại tình huống cho đồng nghiệp nghe, KHÔNG đọc như log hệ thống hay bảng liệt kê thuật ngữ. Cụ thể:
+
+- Viết câu văn xuôi hoàn chỉnh (chủ ngữ + vị ngữ + trình tự thời gian/nhân-quả rõ ràng), hạn chế tối đa việc chỉ dán nhãn hoặc liệt kê rời rạc từng cụm từ.
+- Enum kỹ thuật (Loại, Mức độ) chỉ xuất hiện đúng 1 lần ở heading — không lặp lại các nhãn đó nhiều lần trong phần thân (VD không viết "Đây là 1 Concurrency issue mức High liên quan đến Race condition..." trong mục 2/3 — heading đã nói rồi, thân bài chỉ cần kể chuyện).
+- Gọi tên actor/hệ thống cụ thể xuất hiện trong domain thật (khách hàng, nhân viên garage, app Driver+, gate AC-7, event BOOKING.CANCELLED...) thay vì đại từ trừu tượng chung chung ("user", "entity", "hệ thống", "component A").
+- Minh hoạ bằng ví dụ dữ liệu/trạng thái/mã cụ thể thay vì mô tả khái niệm suông — mô tả "chưa rõ hành vi khi 2 luồng chạy đồng thời" là chưa đạt; phải kể được luồng nào làm gì, tại thời điểm nào, dẫn tới trạng thái dữ liệu cụ thể ra sao.
+- Câu hỏi cho user (mục 7) phải đọc được thành lời thoại tự nhiên như đang hỏi trực tiếp, không phải checklist kỹ thuật.
+
+Ví dụ đối chiếu (cùng 1 finding, viết sai vs viết đúng):
+
+```markdown
+✗ Sai (ngôn ngữ máy):
+Vấn đề: Concurrency issue giữa cancel flow và create flow. Entity SO có thể tồn tại
+sau khi Booking entity chuyển state=CANCELLED. Race condition xảy ra do thiếu lock
+mechanism. Ảnh hưởng: Data inconsistency, orphan record risk.
+
+✓ Đúng (ngôn ngữ người):
+Khách đến garage khi booking từ app Driver+ đang ở trạng thái "Lịch hẹn mới" hoặc
+"Đã xác nhận". Nhân viên bắt đầu tạo phiếu dịch vụ (SO) từ booking đó — nhưng gần
+như ĐỒNG THỜI, khách lại bấm huỷ ngay trên app, khiến Driver+ gửi sự kiện
+BOOKING.CANCELLED sang hệ thống. Nếu sự kiện huỷ này được xử lý đúng lúc SO đang
+được tạo (chưa kịp ghi liên kết vào booking), booking sẽ tự động chuyển "Đã huỷ"
+trong khi SO vẫn đang tồn tại song song — nhân viên garage nhìn vào sẽ thấy phiếu
+dịch vụ hợp lệ gắn với 1 booking đã huỷ, không biết nên tin dữ liệu nào.
+```
+
 ### 5.5. Quy tắc không được bỏ sót
-- Thấy gap dù nhỏ (`[Thấp]`/cosmetic) PHẢI vẫn ghi finding đầy đủ 8 mục theo mục 5.4 — không được lược bớt hay gộp vào câu tóm tắt kiểu "còn vài điểm nhỏ khác".
+- Thấy gap dù nhỏ (`[Thấp]`/cosmetic) PHẢI vẫn ghi finding đầy đủ 9 mục theo mục 5.4 — không được lược bớt hay gộp vào câu tóm tắt kiểu "còn vài điểm nhỏ khác".
 - Không gộp nhiều gap khác nhau về bản chất vào 1 mã `RR-NNN` — mỗi gap là 1 mã riêng, dù cùng nằm trong 1 section của tài liệu gốc. Chỉ được gộp thành nhiều "Vấn đề" trong CÙNG 1 mã khi chúng thực sự cùng 1 câu hỏi gốc cần user trả lời 1 lần (xem mục 5.4 §3).
 - Finding không có trích dẫn nguồn cụ thể (file/dòng/quote) → không hợp lệ, phải bổ sung trước khi đưa vào tài liệu output.
 - Không tự suy diễn nghiệp vụ khi thiếu căn cứ — đưa vào "Đề xuất giải quyết" kèm ghi rõ đây là đề xuất, không phải sự thật đã xác nhận.
@@ -193,8 +225,8 @@ Trình bày mục này dưới dạng 2-3 bảng (1 bảng mỗi nhóm có findi
 ## 6. Bắt buộc (Strict Rules)
 - Luôn viết bằng **Tiếng Việt** có dấu đầy đủ.
 - Không sử dụng định dạng in đậm (dấu `**`) trong toàn bộ nội dung tài liệu sinh ra (áp dụng cho phần 4.1-4.4 và 4.6; riêng bảng/finding ở mục 4.5 dùng định dạng cứng theo mục 5.4, cho phép in đậm tên trường để dễ đọc).
-- Không tự suy diễn các yêu cầu nghiệp vụ phức tạp nếu không có căn cứ từ UI. Nếu thiếu logic, hãy liệt kê chúng vào mục 4.5 (Gap Review) theo đúng định dạng `RR-NNN` (8 mục, mục 5.4).
+- Không tự suy diễn các yêu cầu nghiệp vụ phức tạp nếu không có căn cứ từ UI. Nếu thiếu logic, hãy liệt kê chúng vào mục 4.5 (Gap Review) theo đúng định dạng `RR-NNN` (9 mục, mục 5.4).
 - Tuyệt đối không đoán các trường dữ liệu, nút bấm, thông báo lỗi — phải quan sát UI/DOM thực tế trước khi liệt kê vào tài liệu.
 - Nếu có Playwright MCP, ưu tiên mở browser thật để screenshot/capture giao diện nếu cần.
-- Mọi finding trong mục 4.5 phải tuân thủ đúng cấu trúc 8 mục ở mục 5.4 (đủ trích dẫn nguồn) và quy tắc không bỏ sót ở mục 5.5.
+- Mọi finding trong mục 4.5 phải tuân thủ đúng cấu trúc 9 mục ở mục 5.4 (đủ trích dẫn nguồn) và quy tắc không bỏ sót ở mục 5.5.
 - Mục 4.5 phải kết thúc bằng phần Phân loại theo tác động theo đúng mục 5.7 — không bỏ qua bước này, kể cả khi số lượng finding ít.

@@ -1,8 +1,8 @@
 /analyze_flaky_tests
 
 # CONTEXT
-- Framework: [Playwright (TypeScript) / Selenium (Java) / Appium (Java)]
-- Test Runner: [Playwright Test / TestNG / Pytest]
+- Framework: Playwright (TypeScript)
+- Test Runner: Playwright Test
 - Môi trường: [Local / CI/CD pipeline]
 - Mode: [ANALYZE (chỉ báo cáo) / FIX (báo cáo + tự sửa code)]
 

@@ -4,16 +4,16 @@ Bạn là Senior Test Automation Architect với nhiều kinh nghiệm review au
 # CONTEXT
 Tôi đang phát triển automation test cho web application.
 Tech stack hiện tại:
-- [Java / TypeScript]
-- [Selenium WebDriver / Playwright]
-- [TestNG / Playwright Test]
+- TypeScript
+- Playwright
+- Playwright Test
 - Page Object Model
 
 Code cần review được đính kèm trong file hoặc đoạn code bên dưới.
 
 # TASK
 Review automation code này dưới góc nhìn best practice của Test Automation.
-Tham khảo quy tắc trong .claude/rules/ (automation_rules.md, locator_strategy.md, playwright_rules.md, selenium_rules.md).
+Tham khảo quy tắc trong .claude/rules/ (automation_rules.md, locator_strategy.md, playwright_rules.md).
 
 # CONSTRAINTS
 Phân tích các khía cạnh sau:

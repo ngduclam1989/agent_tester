@@ -155,7 +155,7 @@ Khi test data cần gắn trực tiếp với bộ test case thủ công (Manual
 
 | # | Nhóm | Tên field | Giá trị | Mục đích test | Expected |
 
-Kèm theo (tùy chọn): code class `DataGenerator` (Java hoặc TypeScript tùy theo stack hiện tại của project) để sinh lại các bộ data này trong automation.
+Kèm theo (tùy chọn): code class `DataGenerator` (TypeScript) để sinh lại các bộ data này trong automation.
 
 ---
 

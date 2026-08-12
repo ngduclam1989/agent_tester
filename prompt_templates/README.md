@@ -12,9 +12,7 @@ Khác với `plan/` (quy trình 6 bước), các prompt ở đây là **1 lần 
 | 01 | `prompt_01_generate_requirements.txt` | Phân tích website sinh Requirements | `/generate_requirements_from_website` |
 | 02 | `prompt_02_generate_test_cases.txt` | Sinh test cases từ requirements | `/generate_testcases_from_requirements` |
 | 03 | `prompt_03_create_framework_playwright.txt` | Dựng framework Playwright TS từ đầu | `/generate_automation_framework` |
-| 03 | `prompt_03_create_framework_selenium.txt` | Dựng framework Selenium Java từ đầu | `/generate_automation_framework` |
 | 04 | `prompt_04_generate_script_playwright.txt` | Viết test script Playwright TS | `/generate_automation_from_testcases` |
-| 04 | `prompt_04_generate_script_selenium.txt` | Viết test script Selenium Java | `/generate_automation_from_testcases` |
 | 05 | `prompt_05_convert_manual_to_automation.txt` | Chuyển manual TC sang automation | `/generate_automation_from_testcases` |
 | 06 | `prompt_06_review_automation_code.txt` | Review code automation | — |
 | 07 | `prompt_07_generate_test_data.txt` | Sinh test data có cấu trúc | `/generate_test_data` |

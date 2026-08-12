@@ -50,7 +50,7 @@ This reference contains the complete interrogation tree for all seven dimensions
 - What are the selection criteria? (speed, ecosystem, language, team skills, AI compatibility)
 - Is the framework suited for the team's expertise or will it require training?
 
-**Recommended answer:** Document a comparison matrix with weighted criteria. For modern web apps with TypeScript: Playwright is the leading choice (speed, auto-waiting, multi-browser, MCP integration). For Java teams: Selenium + JUnit 5 + AssertJ remains solid. For API testing: Playwright API fixtures or REST Assured. Avoid mixing frameworks unless justified by a clear boundary.
+**Recommended answer:** This project standardizes on Playwright + TypeScript (speed, auto-waiting, multi-browser, MCP integration) for both UI and API testing (Playwright API fixtures). Avoid mixing frameworks unless justified by a clear boundary.
 
 ### 2.2 What language and why?
 
@@ -58,7 +58,7 @@ This reference contains the complete interrogation tree for all seven dimensions
 - Does the language integrate well with the application stack?
 - Are there type safety requirements?
 
-**Recommended answer:** Match the test language to the team's primary language. TypeScript for JS/TS teams, Java for Java teams. Type safety is non-negotiable for maintainable test suites — use TypeScript or Java, avoid plain JavaScript or Python for large suites unless the team is Python-native.
+**Recommended answer:** This project standardizes on TypeScript. Type safety is non-negotiable for maintainable test suites — avoid plain JavaScript.
 
 ### 2.3 What design pattern?
 
@@ -189,7 +189,7 @@ This reference contains the complete interrogation tree for all seven dimensions
 - Manual testing? (keyboard navigation, screen readers)
 - When in the pipeline?
 
-**Recommended answer:** WCAG 2.1 AA as the baseline. Automated axe-core scans on every PR (in Playwright or Selenium tests). Manual keyboard navigation and screen reader testing for critical flows, at least once per release. Accessibility issues are P1 bugs, not nice-to-haves.
+**Recommended answer:** WCAG 2.1 AA as the baseline. Automated axe-core scans on every PR (in Playwright tests). Manual keyboard navigation and screen reader testing for critical flows, at least once per release. Accessibility issues are P1 bugs, not nice-to-haves.
 
 ### 6.2 Performance
 

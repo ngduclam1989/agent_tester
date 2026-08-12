@@ -38,7 +38,7 @@ Agent cần ít nhất **1 trong các input** sau từ user:
 | **Test file path** | User cung cấp hoặc agent tìm trong project | ⭐ Bắt buộc |
 | **Error log / stack trace** | User paste hoặc agent chạy test để thu thập | ⭐ Bắt buộc |
 | **CI/CD log** | User cung cấp URL hoặc file log | Tùy chọn |
-| **Test report** (HTML/JSON) | Playwright report, Allure, TestNG report | Tùy chọn |
+| **Test report** (HTML/JSON) | Playwright HTML Report, Allure | Tùy chọn |
 | **Lịch sử fail** | Số lần fail / tổng số lần chạy | Tùy chọn |
 
 ## Các bước thực hiện
@@ -46,21 +46,14 @@ Agent cần ít nhất **1 trong các input** sau từ user:
 ### Bước 1: Thu thập thông tin & Tái hiện lỗi (Detect & Reproduce)
 
 1. **Đọc test file** bằng `Read`:
-   - Xác định framework (Playwright / Selenium / Appium / Pytest / TestNG)
+   - Xác định framework (Playwright)
    - Ghi nhận cấu trúc: Page Objects, fixtures, helper functions
    - Đánh dấu các vùng code nghi ngờ (waits, locators, assertions, setup/teardown)
 
 2. **Chạy test** để tái hiện lỗi (nếu chưa có error log):
    - Chạy test **3 lần liên tiếp** bằng `Bash`:
      ```bash
-     # Playwright
      npx playwright test <test_file> --retries=0 --reporter=list
-
-     # Pytest
-     python -m pytest <test_file> -v --count=3
-
-     # Maven/TestNG
-     mvn test -Dtest=<TestClass> -Dsurefire.rerunFailingTestsCount=0
      ```
    - Ghi nhận pattern: Fail lần nào? Fail ở step nào? Error message giống hay khác nhau?
 
@@ -120,7 +113,7 @@ Agent cần ít nhất **1 trong các input** sau từ user:
 
    ## Tổng quan
    - **Test file:** <path>
-   - **Framework:** Playwright / Selenium / ...
+   - **Framework:** Playwright
    - **Tần suất fail:** X/Y lần chạy
    - **Mức độ nghiêm trọng:** 🔴 Critical / 🟡 Medium / 🟢 Low
 
@@ -187,14 +180,7 @@ Agent cần ít nhất **1 trong các input** sau từ user:
 
 1. **Chạy test 3 lần liên tiếp** sau khi fix:
    ```bash
-   # Playwright
    npx playwright test <test_file> --retries=0 --repeat-each=3
-
-   # Pytest
-   python -m pytest <test_file> -v --count=3
-
-   # Maven
-   mvn test -Dtest=<TestClass> (chạy 3 lần thủ công)
    ```
 
 2. **Đánh giá kết quả:**

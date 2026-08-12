@@ -65,14 +65,7 @@ Nếu user chưa cung cấp đủ → hỏi trước khi bắt đầu.
    - Pre-conditions (login, setup data, navigate...)
    - Dependencies giữa các TC (nếu có)
 
-3. **Xác định tech stack** (nếu chưa rõ):
-
-   | Framework | Ngôn ngữ | Runner | Khi nào chọn |
-   |---|---|---|---|
-   | Playwright | TypeScript | Playwright Test | Mặc định cho web |
-   | Playwright | Python | Pytest | Khi project dùng Python |
-   | Selenium | Java | TestNG | Khi user yêu cầu Java |
-   | Appium | Java | TestNG | Mobile app |
+3. **Tech stack:** Playwright + TypeScript (Playwright Test runner) — stack mặc định duy nhất của project.
 
 4. **Tạo artifact `task.md`** để theo dõi tiến độ:
    ```markdown
@@ -214,14 +207,7 @@ Nếu user chưa cung cấp đủ → hỏi trước khi bắt đầu.
 
 1. **Chạy test** bằng `Bash`:
    ```bash
-   # Playwright TS
    npx playwright test <test_file> --headed
-
-   # Playwright Python
-   python -m pytest <test_file> --headed
-
-   # Selenium Java
-   mvn test -Dtest=<TestClass>
    ```
 
 2. **Theo dõi kết quả** qua output trả về của `Bash` (dùng `run_in_background` nếu lệnh chạy lâu):

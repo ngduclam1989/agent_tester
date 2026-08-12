@@ -1,17 +1,13 @@
 ---
 name: smart_locator_agent
-description: Skill sinh locator ổn định và dễ bảo trì cho UI automation, hỗ trợ Playwright, Selenium và Appium.
+description: Skill sinh locator ổn định và dễ bảo trì cho UI automation, hỗ trợ Playwright.
 ---
 
 # Smart Locator Agent
 
 Purpose: Generate stable and maintainable locators for UI automation.
 
-Applicable frameworks:
-
-- Playwright
-- Selenium
-- Appium
+Applicable framework: Playwright
 
 ---
 
@@ -74,48 +70,6 @@ page.getByPlaceholder("Enter your password")
 
 ---
 
-## Selenium Locators
-
-Preferred order:
-
-1. `id`
-2. `data-testid`
-3. `name`
-4. `cssSelector`
-5. `xpath`
-
-Example:
-```java
-driver.findElement(By.id("login-button"));
-driver.findElement(By.cssSelector("button[data-testid='submit-btn']"));
-```
-
-> **Note:** For detailed rules, refer to `.claude/rules/selenium_rules.md`.
-
----
-
-## Appium Locators
-
-Preferred order:
-
-1. `accessibility id`
-2. `resource-id`
-3. `id`
-4. `iOS predicate string`
-5. `class chain`
-6. `xpath`
-
-Example:
-```java
-driver.findElement(AppiumBy.accessibilityId("login_button"));
-driver.findElement(AppiumBy.id("com.app:id/login_button"));
-driver.findElement(AppiumBy.iOSNsPredicateString("label == 'Login'"));
-```
-
-> **Note:** For detailed rules, refer to `.claude/rules/appium_rules.md`.
-
----
-
 ## Validation Rules
 
 Before using a locator, ensure:
@@ -142,5 +96,3 @@ When generating locators, provide:
 
 - `.claude/rules/locator_strategy.md` — Master locator priority map
 - `.claude/rules/playwright_rules.md` — Playwright-specific locator rules
-- `.claude/rules/selenium_rules.md` — Selenium-specific locator rules
-- `.claude/rules/appium_rules.md` — Appium-specific locator rules

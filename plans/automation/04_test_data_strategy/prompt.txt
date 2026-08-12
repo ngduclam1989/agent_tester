@@ -19,7 +19,7 @@ Hãy thiết kế **Test Data Strategy** theo yêu cầu sau:
 ## 1. Class sinh dữ liệu (Data Generator)
 
 Viết class Utils/Helper để generate dữ liệu tự động:
-- Sử dụng thư viện phù hợp: **Faker** (JS/TS), **JavaFaker** (Java), hoặc UUID
+- Sử dụng thư viện phù hợp: **Faker** (TypeScript), hoặc UUID
 - Mỗi hàm sinh 1 loại data cụ thể
 
 ## 2. Format traceable (truy vết được)
@@ -51,16 +51,9 @@ Phone:    09[random 8 digits]
 
 Hướng dẫn cách sử dụng bộ data này trong Test Cases:
 
-Playwright:
 ```typescript
 import { DataGenerator } from '../utils/data-generator';
 const testData = DataGenerator.createCustomer();
-```
-
-Selenium/Java:
-```java
-import utils.DataGenerator;
-String email = DataGenerator.generateEmail("createCustomer");
 ```
 
 ## 5. Quy tắc bắt buộc (tham khảo `.claude/rules/automation_rules.md`)

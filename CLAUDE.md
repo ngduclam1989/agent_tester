@@ -125,12 +125,11 @@ Test chỉ được coi là **hoàn thành** khi đáp ứng **toàn bộ** các
 
 | Loại             | Công nghệ                                     |
 | ----------------- | ----------------------------------------------- |
-| Ngôn ngữ        | Java, TypeScript                                |
-| Web Automation    | Playwright (TS/Java), Selenium WebDriver (Java) |
-| Mobile Automation | Appium (Java)                                   |
-| API Automation    | REST Assured                                    |
-| Test Framework    | TestNG, Playwright Test                         |
-| Build Tool        | Maven, npm                                      |
+| Ngôn ngữ        | TypeScript                                      |
+| Web Automation    | Playwright                                      |
+| API Automation    | Playwright (API testing)                        |
+| Test Framework    | Playwright Test                                 |
+| Build Tool        | npm                                              |
 
 ## 4. Tham Chiếu Rules Chi Tiết
 
@@ -139,8 +138,6 @@ Agent phải tham chiếu quy tắc chi tiết trong `.claude/rules/`:
 - [Quy tắc chung Automation](.claude/rules/automation_rules.md) — POM, Test Data, Naming, Assertions
 - [Chiến lược chọn Locator](.claude/rules/locator_strategy.md) — Thứ tự ưu tiên locator
 - [Quy tắc Playwright](.claude/rules/playwright_rules.md) — Browser setup, locator semantic, wait strategy
-- [Quy tắc Selenium](.claude/rules/selenium_rules.md) — WebDriverWait, TestNG structure
-- [Quy tắc Appium](.claude/rules/appium_rules.md) — Mobile locator, scroll, permission
 - [Quy tắc Chất Lượng Manual Test Case](.claude/rules/manual_testcase_quality_rules.md) — Traceability Coverage Audit, chống rớt REQ/scenario khi sinh TC hàng loạt, bắt buộc chạy `scripts/validate_testcases/validate_tc.py` trước khi báo hoàn thành
 
 ## 5. Tham Chiếu Skills
@@ -158,7 +155,7 @@ Agent sử dụng skills trong `.claude/skills/` tùy theo nhiệm vụ:
 | `locator_healer_agent`   | Sửa locator hỏng                                                                        |
 | `test_data_generator`    | Sinh test data unique, traceable — hỗ trợ multi-step pipeline & combinatorial data       |
 | `flaky_test_analyzer`    | Phân tích và khắc phục flaky tests                                                   |
-| `framework_architect`    | Thiết kế & scaffold automation framework (Playwright/Selenium/Appium) — project structure, base classes, config, reporting, CI/CD |
+| `framework_architect`    | Thiết kế & scaffold automation framework (Playwright) — project structure, base classes, config, reporting, CI/CD |
 
 ## 6. Kế Hoạch Kiểm Thử (Plan Templates)
 
@@ -202,8 +199,6 @@ code:     TC_LOGIN_1712049200
 | Framework  | Smart Wait                                                           |
 | ---------- | -------------------------------------------------------------------- |
 | Playwright | `expect().toBeVisible()`, `expect().toBeEnabled()`, Locator APIs |
-| Selenium   | `WebDriverWait` + `ExpectedConditions`                           |
-| Appium     | `WebDriverWait` + custom conditions                                |
 
 - Hạn chế `waitForSelector` nếu `expect()` đáp ứng được.
 - Mọi assertion phải có **timeout rõ ràng** hoặc dùng default timeout hợp lý.

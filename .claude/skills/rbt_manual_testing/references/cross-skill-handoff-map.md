@@ -28,7 +28,7 @@ lam thay doi schema TC hien co.
 | QA planning | `qa-test-planner` | Bo sung test plan/regression/bug-report thinking khi user can artifact. |
 | Regression strategy | `playwright-regression-testing` | Dung de xay tier smoke/sanity/regression/full trong summary/phu luc. |
 | API coverage | `api-testing` | Them API/auth/schema/contract conditions neu requirement co API. |
-| Accessibility | `a11y-playwright-testing`, `accessibility-selenium-testing` | Them keyboard/focus/WCAG manual checks vao scenarios hoac TC theo schema cu. |
+| Accessibility | `a11y-playwright-testing` | Them keyboard/focus/WCAG manual checks vao scenarios hoac TC theo schema cu. |
 | Strategy/testcase stress-test | Muc "Optional Grill Review" ngay trong `rbt_manual_testing` (xem `references/grill-qa-decision-tree.md`, `references/grill-ai-testing-interrogation.md`) | Dung optional de chat van scenarios, TC coverage, risk, regression impact, tool, CI/CD, maintainability truoc khi chot plan hoac mapping. Khong can goi skill ngoai. |
 | Requirement gap review (diem thieu/mo trong tai lieu yeu cau) | `requirements_analyzer` (muc 5) hoac `/analyze_requirement_document` | Dung TRUOC khi vao RBT Buoc 1 neu requirement con tho/chua duoc review; findings dang `RR-NNN` (8 muc, xem SKILL.md muc 5.4) co the map sang Test Condition/Ambiguity o Buoc 3. |
 

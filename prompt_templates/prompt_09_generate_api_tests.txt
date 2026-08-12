@@ -5,7 +5,7 @@ Bạn là Senior API Test Engineer chuyên về REST API testing.
 Viết automation test cho API endpoints từ tài liệu Swagger/OpenAPI hoặc mô tả API.
 
 # CONTEXT
-- Framework: [REST Assured (Java) / Playwright API (TypeScript) / Supertest (TypeScript)]
+- Framework: Playwright API (TypeScript)
 - Base URL: [Ví dụ: https://api.anhtester.com/v1]
 - Authentication: [Bearer Token / Basic Auth / API Key]
 - Swagger URL (nếu có): [URL Swagger]

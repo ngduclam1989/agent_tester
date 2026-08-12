@@ -38,27 +38,12 @@ Test đã chạy **PASS** trên máy cá nhân. Trước khi merge vào reposito
 
 ### 4. CI/CD Readiness
 
-[Tùy chỉnh theo framework của bạn:]
-
-Playwright:
 ```typescript
 // Gắn tag để chạy selective
 test.describe('Login Module', () => {
   test.describe.configure({ mode: 'parallel' });
   // ...
 });
-```
-
-Selenium/TestNG:
-```java
-@Test(groups = {"smoke", "regression"})
-public void testLoginSuccess() { ... }
-```
-
-Appium:
-```java
-@Test(groups = {"mobile", "regression"})
-public void testLoginMobile() { ... }
 ```
 
 ### 5. Documentation (tùy chọn)

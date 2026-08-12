@@ -6,7 +6,7 @@
 - **🔁 Quy Trình AI Hoàn Thiện (End-to-End):** Được xây dựng thành một quy trình ứng dụng AI khép kín — từ phân tích yêu cầu (Requirements), thiết kế test cases (Manual), đến viết script tự động (Automation), tích hợp CI/CD và báo cáo kết quả — tất cả đều có AI hỗ trợ.
 - **📋 Hỗ Trợ Cả Manual & Automation Testing:** Không chỉ dừng lại ở Automation, Kit còn trang bị đầy đủ quy trình, skill và prompt cho **Manual Tester** — bao gồm phân tích rủi ro (RBT), thiết kế test cases chất lượng cao và quản lý kết quả kiểm thử.
 - **🧠 Tối ưu cho QA/Tester:** Tất cả các prompt, rule và workflow đều được tinh chỉnh dựa trên tư duy và quy trình làm việc thực tế của cả **Manual Tester** lẫn **Automation Engineer**.
-- **🌐 Hỗ trợ Đa Nền Tảng:** Tương thích với các framework phổ biến như Web (Playwright, Selenium), Mobile (Appium), và API (Playwright, REST Assured).
+- **🌐 Automation Playwright:** Toàn bộ automation (Web UI + API) sử dụng Playwright + TypeScript.
 - **🛡️ Tuân thủ Tiêu Chuẩn Cao (Strict Rules):** Đảm bảo AI luôn đi theo cấu trúc Page Object Model (POM), viết code rõ ràng, không đoán bừa locator và tự động sửa lỗi (Self-fix).
 - **🇻🇳 Giao Tiếp Bằng Tiếng Việt:** AI được cấu hình để trao đổi, giải thích và báo cáo hoàn toàn bằng Tiếng Việt, thân thiện với người dùng Việt Nam.
 
@@ -41,7 +41,7 @@ antigravity-testing-kit/
 
 | Thư mục      | Vai trò |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rules/`     | Quy tắc bắt buộc: POM, locator strategy, smart waits, Playwright/Selenium/Appium rules |
+| `rules/`     | Quy tắc bắt buộc: POM, locator strategy, smart waits, Playwright rules |
 | `skills/`    | 11 kỹ năng chuyên biệt giúp Agent thực hiện các tác vụ tự động hóa (Automation, Manual, UI Debug, Test Data...) |
 | `commands/` | 16 kịch bản thực thi dạng slash commands thật (Claude Code tự nhận diện) giúp Agent tự động hóa toàn bộ quy trình làm việc |
 
@@ -56,11 +56,11 @@ Dưới đây là danh sách chi tiết các kỹ năng chuyên biệt nằm tro
 | **API Test Design** | [`api_test_design`](.claude/skills/api_test_design/SKILL.md) | Sinh Test Design (Markmap, 4-phase) và Manual Test Case (TSV 19 cột) cho API khi **không có Swagger** — chỉ cần tài liệu PTTK/RSD/DB. Được `rbt_manual_testing` gọi tới khi phát hiện scope API. |
 | **Requirements Analyzer** | [`requirements_analyzer`](.claude/skills/requirements_analyzer/SKILL.md) | Phân tích website hoặc module sản phẩm để tự động xây dựng tài liệu Yêu cầu (Requirements/User Stories) chuẩn mực. Kèm phương pháp **Requirement Gap Review** (6 dimension + 5 depth-lens, finding mã `RR-NNN` có citation + mức độ `[Chặn]/[Cao]/[Trung bình]/[Thấp]`) để tìm điểm thiếu/mờ trong tài liệu, và bước **Phân loại theo tác động** cuối cùng gắn nhãn `TC` (ảnh hưởng trực tiếp viết Test Case) / `UX` (hành vi người dùng) / `Khác` (compliance/vận hành/governance) cho từng finding để lọc nhanh việc cần ưu tiên. |
 | **UI Debug Agent** | [`ui_debug_agent`](.claude/skills/ui_debug_agent/SKILL.md) | Inspect web/mobile bằng browser thật (headed mode), phân tích DOM, xác định locators và sinh cấu trúc Page Object Model (POM). |
-| **Smart Locator Agent** | [`smart_locator_agent`](.claude/skills/smart_locator_agent/SKILL.md) | Sinh locator có độ tin cậy cao, ổn định và dễ bảo trì cho các framework Playwright, Selenium và Appium. |
+| **Smart Locator Agent** | [`smart_locator_agent`](.claude/skills/smart_locator_agent/SKILL.md) | Sinh locator có độ tin cậy cao, ổn định và dễ bảo trì cho Playwright. |
 | **Locator Healer Agent** | [`locator_healer_agent`](.claude/skills/locator_healer_agent/SKILL.md) | Tự động phát hiện và sửa chữa các locator bị hỏng (broken locator) khi code automation chạy thất bại. |
 | **Test Data Generator** | [`test_data_generator`](.claude/skills/test_data_generator/SKILL.md) | Sinh test data có cấu trúc, unique, traceable để kiểm thử tích hợp nhiều bước hoặc kiểm thử ma trận kết hợp. |
 | **Flaky Test Analyzer** | [`flaky_test_analyzer`](.claude/skills/flaky_test_analyzer/SKILL.md) | Phân tích các ca kiểm thử không ổn định (flaky tests), phát hiện nguyên nhân gốc rễ và tự động đề xuất/sửa đổi code. |
-| **Framework Architect** | [`framework_architect`](.claude/skills/framework_architect/SKILL.md) | Thiết kế cấu trúc dự án (scaffold) và thiết lập ban đầu cho các automation framework (Playwright, Selenium, Appium). |
+| **Framework Architect** | [`framework_architect`](.claude/skills/framework_architect/SKILL.md) | Thiết kế cấu trúc dự án (scaffold) và thiết lập ban đầu cho automation framework Playwright (TypeScript). |
 
 #### ⚡ Chi Tiết 16 Kịch Bản Thực Thi (Workflows / Slash Commands)
 
@@ -124,9 +124,7 @@ Dành cho tác vụ **đơn lẻ**, chỉ cần copy → thay `[...]` bằng d�
 | 01 | `prompt_01_generate_requirements.txt`        | Phân tích website sinh Requirements |
 | 02 | `prompt_02_generate_test_cases.txt`          | Sinh test cases từ requirements      |
 | 03 | `prompt_03_create_framework_playwright.txt`  | Dựng framework Playwright TS         |
-| 03 | `prompt_03_create_framework_selenium.txt`    | Dựng framework Selenium Java         |
 | 04 | `prompt_04_create_script_playwright.txt`     | Viết test script Playwright TS       |
-| 04 | `prompt_04_create_script_selenium.txt`       | Viết test script Selenium Java       |
 | 05 | `prompt_05_convert_manual_to_automation.txt` | Chuyển manual TC sang automation     |
 | 06 | `prompt_06_review_automation_code.txt`       | Review code automation                |
 | 07 | `prompt_07_generate_test_data.txt`           | Sinh test data có cấu trúc         |

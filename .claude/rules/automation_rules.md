@@ -1,6 +1,6 @@
 # Quy Tắc Chung cho QA Automation
 
-> Áp dụng cho mọi tác vụ automation testing, bất kể framework (Playwright, Selenium, Appium).
+> Áp dụng cho mọi tác vụ automation testing với Playwright.
 
 ## 1. Kiến Trúc & Framework
 
@@ -39,16 +39,6 @@
 
 ## 5. Quy Tắc Đặt Tên
 
-### Java
-
-| Thành phần | Quy tắc | Ví dụ |
-|---|---|---|
-| Page class | PascalCase + hậu tố `Page` | `LoginPage.java`, `CartPage.java` |
-| Test class | PascalCase + hậu tố `Test` | `LoginTest.java`, `CartTest.java` |
-| Test method | Bắt đầu bằng `test` + mô tả hành vi | `testLoginWithValidCredentials()` |
-| Locator biến | lowerCamelCase + hậu tố mô tả element | `loginButton`, `usernameInput` |
-| Utils class | PascalCase + mô tả chức năng | `DataGenerator.java`, `WaitHelper.java` |
-
 ### TypeScript / Playwright
 
 | Thành phần | Quy tắc | Ví dụ |
@@ -64,10 +54,6 @@
 - Mỗi test case **BẮT BUỘC** có ít nhất 1 assertion ở cuối.
 - Nên có assertion xen kẽ ở các bước quan trọng.
 - Assert phải mô tả rõ expected behavior:
-  ```java
-  // Java/TestNG
-  Assert.assertTrue(dashboardPage.isDisplayed(), "Dashboard phải hiển thị sau khi đăng nhập");
-  ```
   ```typescript
   // Playwright
   await expect(page.getByText('Đăng nhập thành công')).toBeVisible();

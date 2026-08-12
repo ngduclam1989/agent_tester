@@ -1,5 +1,5 @@
 ---
-description: Thực thi UI flow trực tiếp trên browser, thu thập locators từ DOM thực tế, và sinh automation scripts. Hỗ trợ Playwright, Selenium, Appium.
+description: Thực thi UI flow trực tiếp trên browser, thu thập locators từ DOM thực tế, và sinh automation scripts. Hỗ trợ Playwright.
 skills:
   - ui_debug_agent
   - smart_locator_agent
@@ -70,14 +70,7 @@ Nếu user chưa cung cấp đủ → hỏi:
      Step 5: Verify dashboard is displayed
      ```
 
-2. **Xác nhận tech stack** với user (nếu chưa rõ):
-
-   | Framework | Ngôn ngữ | Khi nào dùng |
-   |---|---|---|
-   | **Playwright** | TypeScript | Mặc định cho web automation |
-   | **Playwright** | Python | Khi user dùng Python stack |
-   | **Selenium** | Java | Khi user yêu cầu Java/Selenium |
-   | **Appium** | Java | Mobile app automation |
+2. **Tech stack:** Playwright + TypeScript — stack mặc định duy nhất của project.
 
    Nếu user chưa có automation project, scaffold cấu trúc nền tảng theo `framework_architect` trước khi sang bước sinh Page Object/Test.
 
@@ -124,14 +117,7 @@ Nếu user chưa cung cấp đủ → hỏi:
 
 4. **Locator Priority** (tuân thủ `.claude/rules/locator_strategy.md`):
 
-   **Playwright:**
    `getByRole()` → `getByLabel()` → `getByPlaceholder()` → `getByText()` → `getByTestId()` → CSS → XPath
-
-   **Selenium:**
-   `id` → `data-testid` → `name` → CSS selector → XPath
-
-   **Appium:**
-   `accessibility-id` → `id` → `name` → `xpath` (relative)
 
 5. **Xử lý tình huống khi chạy UI:**
 
@@ -154,7 +140,6 @@ Nếu user chưa cung cấp đủ → hỏi:
 
 1. **Sinh Page Object classes** từ locator collection:
 
-   **Playwright TypeScript:**
    ```typescript
    // src/pages/login.page.ts
    import { Page, Locator } from '@playwright/test';
@@ -180,27 +165,6 @@ Nếu user chưa cung cấp đủ → hỏi:
    }
    ```
 
-   **Selenium Java:**
-   ```java
-   // src/main/java/.../pages/LoginPage.java
-   public class LoginPage extends BasePage {
-     @FindBy(id = "email")
-     private WebElement emailInput;
-
-     @FindBy(id = "password")
-     private WebElement passwordInput;
-
-     @FindBy(css = "button[type='submit']")
-     private WebElement loginButton;
-
-     public void login(String email, String password) {
-       waitAndType(emailInput, email);
-       waitAndType(passwordInput, password);
-       waitAndClick(loginButton);
-     }
-   }
-   ```
-
 2. **Sinh Test class:**
    - Import Page Objects
    - Structure: **Arrange → Act → Assert**
@@ -211,7 +175,7 @@ Nếu user chưa cung cấp đủ → hỏi:
 3. **Nguyên tắc sinh code:**
    - Locator PHẢI lấy từ Bước 2 (đã verify trên DOM) — KHÔNG ĐOÁN
    - Không hardcode test data (credentials đọc từ env/config)
-   - Không dùng `waitForTimeout()` / `Thread.sleep()` — chỉ smart waits
+   - Không dùng `waitForTimeout()` — chỉ smart waits
    - Method names mô tả hành vi user, không mô tả thao tác DOM
    - Mỗi page → 1 file, mỗi test → 1 file
 
@@ -219,14 +183,7 @@ Nếu user chưa cung cấp đủ → hỏi:
 
 1. **Chạy test** bằng `Bash`:
    ```bash
-   # Playwright TS
    npx playwright test <test_file> --headed
-
-   # Playwright Python
-   python -m pytest <test_file> --headed
-
-   # Selenium Java
-   mvn test -Dtest=<TestClass>
    ```
 
 2. **Theo dõi kết quả** qua output trả về của `Bash`:
@@ -247,11 +204,7 @@ Nếu user chưa cung cấp đủ → hỏi:
 
 3. **Verify stability** — chạy test **2 lần liên tiếp** PASS:
    ```bash
-   # Playwright
    npx playwright test <test_file> --repeat-each=2
-
-   # Pytest
-   python -m pytest <test_file> --count=2
    ```
 
 4. **⚠️ Rule E3:** KHÔNG hỏi user trong quá trình fix lỗi. Chỉ hỏi khi:
@@ -262,10 +215,10 @@ Nếu user chưa cung cấp đủ → hỏi:
 ### Bước 5: Cleanup & Delivery
 
 1. **Code cleanup** (bắt buộc trước khi bàn giao):
-   - [ ] Xóa `console.log()` / `print()` / debug log
+   - [ ] Xóa `console.log()` / debug log
    - [ ] Xóa locator không dùng
    - [ ] Xóa commented-out code
-   - [ ] Không còn `waitForTimeout()` / `Thread.sleep()`
+   - [ ] Không còn `waitForTimeout()`
    - [ ] Import không thừa
 
 2. **Cập nhật artifact `task.md`** với kết quả:

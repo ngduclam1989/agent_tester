@@ -1,7 +1,7 @@
 /generate_api_tests_from_swagger
 
 # CONTEXT
-- Framework: [REST Assured (Java) / Playwright API (TypeScript) / Supertest (TypeScript) / Requests + Pytest (Python)]
+- Framework: Playwright API (TypeScript)
 - Mode: [SPEC (chỉ test cases) / FULL (test cases + automation scripts)]
 - Authentication: [Bearer Token / Basic Auth / API Key / OAuth2]
 
@@ -83,6 +83,6 @@ DELETE /api/customers/{id}
 # GHI CHÚ
 - Mode SPEC: Agent chỉ sinh test cases dạng tài liệu
 - Mode FULL: Agent dùng `framework_architect` nếu chưa có project/API framework, sinh code + chạy test + auto-heal nếu FAIL
-- Agent phải đọc `AUTOTEST_REFERENCE_MAP.md` để chọn API references đúng stack: tối thiểu `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, cộng thêm `api-playwright-api-testing.md` hoặc `api-rest-assured-testing.md` theo framework
+- Agent phải đọc `AUTOTEST_REFERENCE_MAP.md` để chọn API references: `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md`
 - Agent BẮT BUỘC phải liệt kê từng field trong request body và sinh validation TCs riêng cho TỪNG field
 - Agent phải sinh Security test cases (injection, IDOR, auth bypass, sensitive data)

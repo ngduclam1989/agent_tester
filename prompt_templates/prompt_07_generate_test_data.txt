@@ -38,4 +38,4 @@ Trả về dạng bảng:
 | # | Nhóm | Tên field | Giá trị | Mục đích test | Expected |
 |---|------|-----------|---------|---------------|----------|
 
-Kèm theo code class DataGenerator (Java hoặc TypeScript tùy theo project hiện tại).
+Kèm theo code class DataGenerator (TypeScript).

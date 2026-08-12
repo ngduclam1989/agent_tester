@@ -34,12 +34,6 @@ readonly emailInput = this.page.getByLabel('Email');
 readonly submitButton = this.page.getByRole('button', { name: 'Submit' });
 ```
 
-Ví dụ Selenium:
-```java
-private final By emailInput = By.id("email");
-private final By submitButton = By.cssSelector("button[data-testid='submit-btn']");
-```
-
 ### 3. Đóng gói Methods
 
 - Đặt tên method theo hành động nghiệp vụ (không theo kỹ thuật)

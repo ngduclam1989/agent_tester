@@ -36,28 +36,20 @@ Assert:  Kiểm tra kết quả (verify, expect)
 - Nên có assertion xen kẽ ở các bước quan trọng
 - Assert phải rõ ràng, mô tả đúng expected behavior
 
-Playwright:
 ```typescript
 await expect(page.getByText('Đăng nhập thành công')).toBeVisible();
 await expect(page).toHaveURL(/dashboard/);
 ```
 
-Selenium/TestNG:
-```java
-Assert.assertTrue(dashboardPage.isDisplayed(), "Dashboard should be visible after login");
-Assert.assertEquals(driver.getTitle(), "Dashboard");
-```
-
 ### 3. Smart Waits
 
-- ⛔ **TUYỆT ĐỐI** không dùng: `Thread.sleep()`, `page.waitForTimeout()`, `time.sleep()`
-- ✅ Playwright: Tận dụng auto-waiting + `expect().toBeVisible()`
-- ✅ Selenium: Dùng `WebDriverWait` + `ExpectedConditions`
+- ⛔ **TUYỆT ĐỐI** không dùng: `page.waitForTimeout()`
+- ✅ Tận dụng auto-waiting + `expect().toBeVisible()`
 
 ### 4. Test Independence
 
 - Mỗi test case **độc lập** (không phụ thuộc test khác)
-- Setup/teardown rõ ràng (`beforeEach`, `afterEach` / `@BeforeMethod`, `@AfterMethod`)
+- Setup/teardown rõ ràng (`beforeEach`, `afterEach`)
 - Test data unique mỗi lần chạy
 
 ### 5. Self-fix Loop (Chế độ tự sửa)
@@ -73,5 +65,3 @@ Sau khi sinh code, AI **phải tự chạy test**:
 
 > ⚠️ Tham khảo framework-specific rules:
 > - Playwright: `.claude/rules/playwright_rules.md`
-> - Selenium: `.claude/rules/selenium_rules.md`
-> - Appium: `.claude/rules/appium_rules.md`

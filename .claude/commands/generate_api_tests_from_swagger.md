@@ -14,7 +14,7 @@ skills:
 > - **`framework_architect`** (`.claude/skills/framework_architect/SKILL.md`) — Dùng khi Mode FULL cần scaffold project/API framework
 > - **Reference:** `.claude/skills/qa_automation_engineer/references/AUTOTEST_HANDOFF_CONTRACT.md`
 > - **Reference:** `.claude/skills/qa_automation_engineer/references/AUTOTEST_REFERENCE_MAP.md` — chọn đúng API references, không load tràn lan
-> - **API References (chọn theo stack):** `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md`, `api-rest-assured-testing.md`
+> - **API References:** `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md`
 
 Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác định các endpoints, sinh API test cases có cấu trúc, và (tùy mode) tự động sinh automation scripts hoàn chỉnh.
 
@@ -22,7 +22,7 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 
 - **Tất cả output bằng Tiếng Việt**
 - **KHÔNG đoán** schema/endpoint — phải đọc spec thực tế (JSON/YAML)
-- **PHẢI chọn API reference tối thiểu** theo `AUTOTEST_REFERENCE_MAP.md` trước khi sinh code: `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md` hoặc `api-rest-assured-testing.md` theo stack
+- **PHẢI chọn API reference tối thiểu** theo `AUTOTEST_REFERENCE_MAP.md` trước khi sinh code: `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md`
 - **Phải chờ user xác nhận** scope tại Bước 2 trước khi sinh chi tiết
 - Nếu user chưa cung cấp Swagger URL/file → hỏi trước khi bắt đầu
 - ⚠️ **Rule E3:** Khi test FAIL → tự đọc log → phân tích → sửa → chạy lại. KHÔNG hỏi user trong quá trình fix lỗi
@@ -71,14 +71,7 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
    - Nếu Mode FULL: "Tech stack mong muốn?" (mặc định theo bảng bên dưới)
 3. **Chờ user xác nhận** scope trước khi sang Bước 3
 
-**Tech Stack mặc định (Mode FULL):**
-
-| Framework | Ngôn ngữ | Khi nào dùng |
-|---|---|---|
-| **REST Assured** | Java | Mặc định cho Java projects, TestNG runner |
-| **Playwright API Testing** | TypeScript | Khi user dùng Playwright hoặc TypeScript stack |
-| **Supertest + Jest** | TypeScript/JS | Khi user dùng Node.js backend |
-| **Requests + Pytest** | Python | Khi user dùng Python stack |
+**Tech Stack (Mode FULL):** Playwright API Testing (TypeScript) — stack mặc định duy nhất của project.
 
 ### Bước 3: Sinh API Test Scenarios & Test Data
 
@@ -210,28 +203,8 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 > Chỉ thực hiện khi ở **Mode FULL**
 > Nếu project/framework chưa tồn tại, dùng skill `framework_architect` hoặc workflow `/generate_automation_framework` để scaffold nền tảng API trước khi sinh test classes.
 
-1. **Thiết kế project structure** phù hợp với framework:
+1. **Thiết kế project structure:**
 
-   **REST Assured (Java):**
-   ```
-   src/test/java/
-   ├── api/                    # API client classes (per resource)
-   │   ├── BaseApi.java        # Base config: baseURI, auth, logging
-   │   ├── UserApi.java        # Methods: createUser(), getUser(), ...
-   │   └── AuthApi.java        # Methods: login(), refreshToken(), ...
-   ├── models/                 # POJO/DTO classes (from Swagger models)
-   │   ├── UserRequest.java
-   │   └── UserResponse.java
-   ├── tests/                  # Test classes (TestNG)
-   │   ├── UserApiTest.java
-   │   └── AuthApiTest.java
-   ├── utils/                  # Helpers
-   │   ├── TestDataGenerator.java
-   │   └── AssertionHelper.java
-   └── testdata/               # Test data files (JSON/YAML)
-   ```
-
-   **Playwright API (TypeScript):**
    ```
    tests/
    ├── api/
@@ -243,39 +216,6 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
    │   └── auth.api.spec.ts
    └── fixtures/
        └── api-fixtures.ts     # Shared fixtures (auth tokens, etc.)
-   ```
-
-   **Requests + Pytest (Python):**
-   ```
-   tests/
-   ├── api/
-   │   ├── conftest.py          # Fixtures: base_url, auth_token, api_client
-   │   ├── helpers/
-   │   │   ├── base_api.py      # Base API client (requests.Session)
-   │   │   ├── user_api.py      # API methods per resource
-   │   │   └── test_data.py     # Data generators
-   │   ├── models/
-   │   │   ├── user_model.py    # Pydantic/dataclass models
-   │   │   └── response_model.py
-   │   ├── test_user_api.py     # Test file per resource
-   │   └── test_auth_api.py
-   └── pytest.ini               # Pytest config
-   ```
-
-   **Supertest + Jest (TypeScript):**
-   ```
-   tests/
-   ├── api/
-   │   ├── helpers/
-   │   │   ├── base-api.ts      # Supertest agent config
-   │   │   ├── user-api.ts      # API methods per resource
-   │   │   └── test-data.ts     # Data generators
-   │   ├── models/
-   │   │   └── user.model.ts    # TypeScript interfaces
-   │   ├── user.api.test.ts     # Test file per resource
-   │   └── auth.api.test.ts
-   ├── jest.config.ts            # Jest config
-   └── setup.ts                  # Global setup (auth token)
    ```
 
 2. **Sinh code** theo thứ tự:
@@ -306,9 +246,9 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 > Chỉ thực hiện khi ở **Mode FULL**
 
 1. **Chạy test** bằng `Bash`:
-   - REST Assured: `mvn test -Dtest=<TestClass>`
-   - Playwright: `npx playwright test tests/api/`
-   - Pytest: `python -m pytest tests/api/`
+   ```bash
+   npx playwright test tests/api/
+   ```
 
 2. **Theo dõi** kết quả qua output trả về của `Bash`:
    - Nếu **PASS** → cập nhật artifact, báo cáo kết quả

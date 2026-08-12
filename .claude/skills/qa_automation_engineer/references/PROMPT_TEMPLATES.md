@@ -29,7 +29,7 @@ Phân tích requirement sau và sinh test cases:
 Chuyển đổi test case sau thành automation script:
 
 **Test Case:** [TC content]
-**Framework:** [Selenium Java / Playwright TypeScript]
+**Framework:** Playwright TypeScript
 **Pattern:** Page Object Model
 
 **Output:**
@@ -52,7 +52,7 @@ Sinh API tests từ Swagger specification:
 
 **Swagger URL:** [URL]
 **Endpoint(s):** [Endpoint cần test]
-**Framework:** REST Assured + TestNG
+**Framework:** Playwright API testing
 
 **Bao gồm:**
 - Happy path (200 OK)
@@ -72,7 +72,7 @@ Inspect element và sinh locator ổn định:
 
 **Element:** [Mô tả element cần tìm]
 **Page URL:** [URL]
-**Tool:** [Selenium / Playwright]
+**Tool:** Playwright
 
 **Output:**
 - Locator chính (primary)

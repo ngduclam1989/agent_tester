@@ -95,8 +95,7 @@ Workflow này giúp agent tự động khám phá một ứng dụng web, phân 
 
 > Chỉ thực hiện khi ở **Mode FULL**
 
-1. Xác định **tech stack** automation (hỏi user nếu chưa rõ):
-   - Mặc định: Playwright + TypeScript (hoặc Selenium + Java theo preference)
+1. **Tech stack:** Playwright + TypeScript — stack mặc định duy nhất của project.
 2. Sinh **Page Object classes** cho mỗi module:
    - Locator thu thập từ DOM thực tế (Bước 1), KHÔNG đoán
    - Methods tương tác rõ nghĩa

@@ -20,11 +20,11 @@ Bạn là Senior Automation Engineer với 10 năm kinh nghiệm. Hãy tự đ�
 
 === TECH STACK ===
 
-- Framework: [Chọn 1: Playwright (TypeScript) / Playwright (Java) / Selenium WebDriver (Java/TestNG) / Appium (Java)]
-- Ngôn ngữ: [TypeScript / Java]
-- Build tool: [npm / Maven / Gradle]
-- Test Runner: [Playwright Test / TestNG / JUnit]
-- Reporting: [Playwright HTML Reporter / Allure Report / ExtentReport]
+- Framework: Playwright
+- Ngôn ngữ: TypeScript
+- Build tool: npm
+- Test Runner: Playwright Test
+- Reporting: Playwright HTML Reporter / Allure Report
 
 === THÔNG TIN MÔI TRƯỜNG ===
 
