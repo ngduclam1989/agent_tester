@@ -275,8 +275,8 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
      - Tính nhất quán (Consistency): Các yêu cầu có mâu thuẫn lẫn nhau không?
      - Tính kiểm thử được (Testability): Các tiêu chí chấp nhận (Acceptance Criteria) có rõ ràng và đo lường được không?
 6. **Vẽ nháp Diagram (nếu thiếu các sơ đồ nghiệp vụ cần thiết):**
-   - Nếu tài liệu yêu cầu thiếu các diagram quan trọng như: **State Diagram** (Sơ đồ trạng thái), **Sequence Diagram** (Sơ đồ tuần tự), **Data Flow Diagram** (Sơ đồ luồng dữ liệu), hoặc **Activity Diagram** (Sơ đồ hoạt động)...
-   - Agent có thể chủ động vẽ nháp các diagram này bằng định dạng Mermaid (hoặc text/yaml mô tả tương ứng) và lưu vào thư mục `practices/diagram/` với tên file tương ứng với chức năng (ví dụ: `practices/diagram/onboard_tenant_state.mermaid` hoặc `practices/diagram/onboard_tenant_activity.mermaid`).
+   - Nếu tài liệu yêu cầu thiếu các diagram quan trọng như: **State Diagram** (Sơ đồ trạng thái), **Sequence Diagram** (Sơ đồ tuần tự), **Data Flow Diagram** (Sơ đồ luồng dữ liệu), hoặc **Activity Diagram** (Sơ đồ hoạt động — dùng type Flowchart hoặc Swimlane nếu có phân vai)...
+   - Agent chủ động vẽ nháp bằng skill `diagram-design` (`.claude/skills/diagram-design/SKILL.md`) và lưu vào thư mục `practices/diagram/` với tên file kebab-case tương ứng chức năng (ví dụ: `practices/diagram/onboard-tenant-state.html`, `practices/diagram/onboard-tenant-activity.html`).
    - Sau đó, yêu cầu người dùng (User) xem và confirm sơ đồ này trước khi tiếp tục.
 7. Tóm tắt scope kiểm thử (kèm kết luận UI/API/BOTH ở mục 4), bối cảnh nghiệp vụ, danh sách các tài liệu thuộc **Test Basis**, kết quả review tĩnh sơ bộ, các thông tin trường dữ liệu đã trích xuất, và danh sách các diagram đã vẽ nháp (nếu có).
 8. **Chờ user xác nhận** trước khi sang Bước 2.

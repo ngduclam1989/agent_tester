@@ -2,11 +2,11 @@
 type: architecture
 artifact_kind: hld
 status: ACTIVE
-version: 9
+version: 10
 tier: T1
 owner_authority: Architecture Authority
 boundary: gf-sales
-last_reviewed: "2026-08-10"
+last_reviewed: "2026-08-11"
 depends_on:
   - ../TECHSTACK.md
   - ../SYSTEM-ARCHITECTURE.md
@@ -276,12 +276,11 @@ Tenant strategy: column `tenant_id` trực tiếp trên booking/SO/customer/vehi
 
 ### 9.3 Đồng bộ chứng từ sang Driver+ (DESIGN — ad-hoc 2026-08-10, ADR-031)
 
-> Nửa thứ 3 của tích hợp, tách khỏi booking relay. Contract canonical: [`gf-sales-events.md`](../events/gf-sales-events.md) §2ter/§3.10/§3.11. Quyết định: [ADR-031](../decisions/ADR-031-driver-plus-document-sync.md).
+> Nửa thứ 3 của tích hợp, tách khỏi booking relay. Contract canonical: [`gf-sales-events.md`](../events/gf-sales-events.md) §2ter/§3.10 (§3.11 `ServiceOrderDocumentRevoked` đã bị loại bỏ — ADR-031 v6). Quyết định: [ADR-031](../decisions/ADR-031-driver-plus-document-sync.md).
 
 **Capabilities**
 
-- **Emit phiếu dịch vụ** khi SO chuyển "Hoàn thành" + SO liên kết booking nguồn Driver+ (`FEAT-SO-DETAIL` AC-17 / `BR-SO-DTL-007`) — step `DOCUMENT.SERVICE_ORDER.SYNC` trên topic mới `AC-DEV-DOCUMENT-EVENTS`.
-- **Thu hồi** khi phiếu đã emit sau đó chuyển "Đã huỷ" (AC-24) — step `DOCUMENT.SERVICE_ORDER.REVOKED`.
+- **Emit phiếu dịch vụ** khi SO chuyển "Hoàn thành" + SO liên kết booking nguồn Driver+ (`FEAT-SO-DETAIL` AC-17 / `BR-SO-DTL-007`) — step `DOCUMENT.SERVICE_ORDER.SYNC` trên topic mới `AC-DEV-DOCUMENT-EVENTS`. **Không có** step "Thu hồi" — premise (huỷ phiếu quyết toán → reopen SO → huỷ SO) không phải luồng nghiệp vụ tồn tại (ADR-031 v6 D3).
 - **Tệp qua URL**: render PDF (`V1PrintStrategy`, cùng template `export-pdf`) → upload `ct-file-storage` → payload mang `fileUrl` + `checksum` + `expiresAt` (TTL 30 ngày). KHÔNG nhúng binary.
 - **Feature flag** `Document:DriverPlus`, độc lập `Booking:DriverPlus`.
 - **Không** endpoint REST mới, **không** bảng/cột mới — tái dùng `outbox_event` (ADR-031 D6).
@@ -344,6 +343,7 @@ Tenant strategy: column `tenant_id` trực tiếp trên booking/SO/customer/vehi
 
 | Date | Version | Summary |
 |---|---|---|
+| 2026-08-11 | v10 | **§9.3 — loại bỏ step "Thu hồi" (`DOCUMENT.SERVICE_ORDER.REVOKED`)** per ADR-031 v6 (user sonhoang chốt qua `/warm-up gf-sales` GAP-W07-GSL-02): premise duy nhất khiến step khả đạt ("hủy phiếu quyết toán" → reopen SO) không phải luồng nghiệp vụ tồn tại. §9.3 chỉ còn "Emit phiếu dịch vụ" (SYNC), bullet cite §3.11 đổi thành §3.10-only. **KHÔNG đụng** phần còn lại §9.3 (tệp qua URL, flag, no-endpoint) + §1–§8, §10, §11. v9 → v10. |
 | 2026-08-10 | v9 | **§9.3 MỚI — đồng bộ chứng từ sang Driver+ (ADR-031)**: emit phiếu dịch vụ khi SO "Hoàn thành" (`FEAT-SO-DETAIL` AC-17 / `BR-SO-DTL-007`) + thu hồi khi huỷ, topic mới `AC-DEV-DOCUMENT-EVENTS`, tệp qua URL TTL 30 ngày, flag `Document:DriverPlus`, không endpoint/bảng/cột mới. Kèm khối Invariants + Performance & Scale bổ sung cho §7/§8. §9.2 bullet "emit phiếu DV/QT ngoài scope" nay trỏ §9.3. **KHÔNG đụng** §1–§8, §9.1/§9.2 còn lại, §10, §11. v8 → v9. |
 | 2026-08-05 | v8 | **W07 Driver+ integration rewrite (DESIGN) + §7 Performance & Scale (mới)**. §1 Overview +callout Driver+ rewrite (brownfield, delta additive, giữ nguyên topic/group/4 step production). **§7 Performance & Scale mới, 6/6 item** — expected load (bổ sung Kafka lag + throughput Driver+ inbound), pagination (không phát sinh mới ở W07), index list (+1 index mới `(tenant_id, lead_source, status)` tenant-prefix; **flag nợ kỹ thuật** 4 index `booking` hiện hữu thiếu tenant-prefix — không sửa trong wave này), cache (Driver+ không cache), N+1 avoidance, tenant fairness (bulkhead consumer + partition key theo aggregate). §7 Forbidden cũ renumber → **§8** (+7 rule W07). **§9 mới "Driver+ integration — gf-sales scope"** (capabilities + invariants). §8 Insurance renumber → **§10** (sub-section 8.1/8.1bis/8.2 → 10.1/10.1bis/10.2). §9 References → **§11** (+block W07). Frontmatter `depends_on` +ADR-029. **KHÔNG đụng**: §2 C4 diagram, §3 Key Design Decisions, §4 Dependencies, §5 Data Ownership, §6 Quality Attributes, nội dung §10 Insurance. v7 → v8. |
 | 2026-06-09 | v7 | **+§8.1bis Error contract (`INS_*` — CR-1780980611)**: validation điều chỉnh BH emit registry code trực tiếp + đúng status (FE bind `extensions.code`); đổi hành vi `%`/amount 400→422, BH<0 reject→warning 200; +Forbidden bullet (no raw exception/ad-hoc code). Trỏ gf-sales-api §3bis.4, BR-EP §5.5. |

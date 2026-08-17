@@ -1,14 +1,16 @@
 ---
-type: ux
-artifact_kind: ux-spec
-status: PLANNED
-version: 4
+type: epic
+artifact_kind: epic
+status: DONE
+version: 5
 tier: T2
 owner_authority: Business Authority
-last_reviewed: "2026-08-03"
+boundary: "gf-sales"
+last_reviewed: "2026-08-11"
+supersedes: null
 ---
 
-# UX-FLOW-BOOKING: Luồng lịch hẹn & tiếp nhận xe
+# EP-BOOKING: Lịch hẹn & Driver+
 
 ---
 
@@ -16,390 +18,118 @@ last_reviewed: "2026-08-03"
 
 | Field | Value |
 |---|---|
-| Screen / Flow | `UX-FLOW-BOOKING` |
-| Kind | FLOW |
-| Referenced by | `FEAT-BOOK-LIST`, `FEAT-BOOK-DETAIL`, `FEAT-BOOK-CREATE`, `FEAT-BOOK-EDIT`, `FEAT-BOOK-CONFIRM`, `FEAT-BOOK-ARRIVE`, `FEAT-BOOK-CANCEL`, `FEAT-BOOK-DECLINE`, `FEAT-BOOK-DRIVERPLUS-INBOUND` (mới), `FEAT-BOOK-DRIVERPLUS-OUTBOUND` (mới) |
+| Epic ID | `EP-BOOKING` |
+| Title | Lịch hẹn & Driver+ |
+| Status | DONE (phần tích hợp Driver+ đang viết lại — xem §4, §7 v4) |
+| Priority | P0 |
+| Target wave | Wave 1 |
 
-## 1. Purpose
+## 1. Outcome / Hypothesis
 
-Luồng lịch hẹn & tiếp nhận xe mô tả toàn bộ vòng đời vận hành lịch hẹn tại garage — từ lúc lịch hẹn được tạo đến khi kết thúc (tiếp nhận xe → tạo Phiếu dịch vụ, hoặc từ chối / hủy).
+Nếu garage có thể quản lý toàn bộ vòng đời lịch hẹn (tạo, xác nhận, từ chối, tiếp nhận xe, hủy) trên một hệ thống duy nhất — đồng thời tự động nhận và phản hồi lịch hẹn từ ứng dụng tài xế Driver+ — thì garage sẽ giảm thiểu sai sót trong tiếp nhận xe, rút ngắn thời gian chờ của khách hàng và tăng tỷ lệ chuyển đổi từ lịch hẹn sang phiếu dịch vụ.
 
-**Người thực hiện:** Chủ garage và Kế toán — quyền ngang nhau trên toàn bộ luồng lịch hẹn.
+## 2. Personas Impacted
 
-**Nền tảng:** Garage Care (bao gồm Web GMS và App Garage) — giao diện vận hành cho garage. Khách hàng tương tác qua ứng dụng tài xế Driver+ (ngoài phạm vi luồng này). **(v3, 2026-08-03)**: tích hợp Driver+ viết lại hoàn toàn theo tài liệu mới từ đội Driver+ — xem §4.3 cập nhật.
-
-### Sơ đồ luồng vận hành tổng quan
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                  LUỒNG VẬN HÀNH LỊCH HẸN                       │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  ① TẠO LỊCH HẸN                                                │
-│     Garage Care ── Tạo thủ công ────────► Đã xác nhận          │
-│     (Web GMS + App Garage)                                      │
-│     Driver+ ────── Sự kiện tự động ─────► Lịch hẹn mới         │
-│     (đủ 14 trường — xem §4.3, v3)                               │
-│     Walk-in ────── Tự sinh từ PDV ──────► Xe đã đến            │
-│                                                                 │
-│  ② XỬ LÝ (tại Chi tiết lịch hẹn)                               │
-│     Lịch hẹn mới ─┬─ Xác nhận ─────────► Đã xác nhận          │
-│                    └─ Từ chối (+ lý do) ► Đã từ chối           │
-│     Đã xác nhận ──┬─ Xe đã đến ────────► Xe đã đến            │
-│                   └─ Hủy (+ lý do) ────► Đã hủy               │
-│     Quá hạn ─────── Hệ thống tự động ──► Đã hủy               │
-│     Driver+ ──────── Yêu cầu hủy, tự động áp dụng ──► Đã hủy   │
-│     (nếu đủ điều kiện gate — xem §4.3, v3)                       │
-│                                                                 │
-│  ③ TIẾP NHẬN XE                                                │
-│     Xe đã đến ──── Tạo Phiếu DV ───────► EP-SERVICE-ORDER      │
-│     (hoàn thành PDV / tạo phiếu QT → emit sang Driver+          │
-│      nếu booking nguồn D+ — xem §4.3, v3)                       │
-│                                                                 │
-│  ④ CHỈNH SỬA (khi trạng thái cho phép)                         │
-│     Lịch hẹn mới / Đã xác nhận                                 │
-│     ── Form chỉnh sửa ─────────────────► Đồng bộ Driver+       │
-│                                                                 │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Dependency liên module
-
-| Hướng | Module | Quan hệ |
+| Persona | Role | Mô tả |
 |---|---|---|
-| Upstream | `EP-FOUND` | Cấu hình garage, khung giờ (timeslot), phân quyền người dùng |
-| Upstream | `EP-CUSTOMER` | Dữ liệu khách hàng và xe — gợi ý khi tạo / chỉnh sửa lịch hẹn |
-| Downstream | `EP-SERVICE-ORDER` | Tạo Phiếu dịch vụ liên kết từ lịch hẹn; tự sinh booking walk-in khi tạo PDV không gắn lịch hẹn |
-| Bên ngoài | Driver+ | Hai chiều: nhận lịch hẹn (`FEAT-BOOK-DRIVERPLUS-INBOUND`), nhận yêu cầu hủy, đồng bộ trạng thái + phản hồi (`FEAT-BOOK-DRIVERPLUS-OUTBOUND`), đồng bộ chỉnh sửa (`FEAT-BOOK-EDIT`) |
-| Bên ngoài | Driver+ (qua `EP-SERVICE-ORDER`/`EP-SETTLEMENT`) | Emit mã phiếu + tệp phiếu dịch vụ/quyết toán khi booking nguồn D+ (`FEAT-SO-DETAIL`, `FEAT-STL-CREATE`) |
+| Chủ garage | PRIMARY | Quản lý và xử lý lịch hẹn hàng ngày: xác nhận, từ chối, tiếp nhận xe, tạo phiếu dịch vụ |
+| Kế toán | PRIMARY | Xem và xử lý lịch hẹn với quyền tương đương chủ garage |
 
-## 2. Entry Points
+## 3. Vòng đời trạng thái
 
-| # | Điểm vào | Điều kiện | Đầu ra |
+```
+                        ┌─────────────────────────────────────────────┐
+                        │              NGUỒN TẠO                      │
+                        ├─────────────┬──────────────┬────────────────┤
+                        │ Driver+     │ Driver+      │ Garage Care    │
+                        │             │              │                │
+                        └──────┬──────┴──────┬───────┴───────┬────────┘
+                               │             │               │
+                               ▼             │               ▼
+                      ┌────────────────┐     │      ┌────────────────┐
+                      │ Lịch hẹn mới  │     │      │ Đã xác nhận   │
+                      │   (BOOKING)    │     │      │   (BOOKED)     │
+                      └───┬────┬───┬───┘     │      └──┬────┬────┬───┘
+                          │    │   │         │         │    │    │
+              Xác nhận    │    │   │ Từ chối │  Xe đã  │    │    │ Hủy
+                          │    │   │         │  đến    │    │    │
+                          ▼    │   ▼         │         ▼    │    ▼
+                 ┌─────────┐   │ ┌──────────┐│  ┌──────────┐│ ┌─────────┐
+                 │ Đã xác  │   │ │ Đã từ   ││  │ Xe đã   ││ │ Đã hủy  │
+                 │ nhận    │   │ │ chối    ││  │ đến     ││ │         │
+                 │(BOOKED) │   │ │(DECLINED)││  │(ARRIVED) ││ │(CANCEL) │
+                 └─────────┘   │ └──────────┘│  └──────────┘│ └─────────┘
+                               │             │              │
+                               ▼             ▼              │
+                          ┌──────────────────────┐          │
+                          │      Đã hủy          │◄─────────┘
+                          │ (CANCELLED / NO_SHOW)│
+                          │  Quá hạn tự động     │
+                          └──────────────────────┘
+
+  Walk-in (tự sinh từ Phiếu dịch vụ):
+      ─── Tạo Phiếu DV không gắn booking ──► Xe đã đến (ARRIVED)
+```
+
+**Ghi chú:**
+- **Garage Care** là tên sản phẩm bao gồm **Web GMS** và **App Garage**. Lịch hẹn tạo từ Garage Care khởi tạo ở trạng thái **"Đã xác nhận"**.
+- Chỉ lịch hẹn từ **Driver+** mới khởi tạo ở trạng thái **"Lịch hẹn mới"** (cần garage xác nhận).
+- **"Lịch hẹn mới"** và **"Đã xác nhận"** là 2 trạng thái cho phép chỉnh sửa.
+- **"Đã xác nhận"** chỉ cho phép hủy khi chưa có Phiếu dịch vụ liên kết.
+- Trạng thái **"Đã hủy"** trên giao diện gồm cả hủy thủ công và quá hạn tự động (NO_SHOW và CANCELLED).
+- Walk-in không phải hành động của người dùng trong module lịch hẹn — hệ thống tự sinh khi tạo Phiếu dịch vụ (xem `FEAT-SO-CREATE`).
+- **(v4, 2026-08-03)** Khi khách hàng hủy lịch hẹn từ Driver+, hệ thống **tự động áp dụng hủy ngay** nếu booking đang "Lịch hẹn mới"/"Đã xác nhận" và chưa có phiếu dịch vụ liên kết — không có bước garage duyệt yêu cầu hủy. Mọi lần chuyển sang "Đã hủy" đều ghi nhận `cancel_source` (khách hủy qua Driver+ / garage tự hủy / quá hạn tự động) để phân biệt nguồn gốc khi đồng bộ ngược sang Driver+. Chi tiết: `FEAT-BOOK-DRIVERPLUS-INBOUND.md` + `FEAT-BOOK-DRIVERPLUS-OUTBOUND.md`.
+
+## 4. Features
+
+| FEAT ID | Title | Link | Priority |
 |---|---|---|---|
-| 1 | Menu lịch hẹn trên Web GMS | Đã đăng nhập, thuộc garage hiện tại | Màn hình Danh sách lịch hẹn |
-| 2 | Nút **"Tạo lịch hẹn"** trên Danh sách | Đang ở Danh sách lịch hẹn | Form tạo lịch hẹn mới |
-| 3 | Nhấn vào một lịch hẹn trong danh sách | Đang ở Danh sách lịch hẹn | Màn hình Chi tiết lịch hẹn |
-| 4 | Nút chỉnh sửa trên Danh sách (cột Thao tác) | Trạng thái **"Lịch hẹn mới"** hoặc **"Đã xác nhận"** | Form chỉnh sửa lịch hẹn |
-| 5 | Nút chỉnh sửa trên Chi tiết | Trạng thái **"Lịch hẹn mới"** hoặc **"Đã xác nhận"** | Form chỉnh sửa lịch hẹn |
-| 6 | Khách hàng đặt lịch từ Driver+ | Sự kiện inbound từ Driver+, đủ 14 trường (v3, `FEAT-BOOK-DRIVERPLUS-INBOUND`) | Lịch hẹn mới trên Danh sách (**"Lịch hẹn mới"**) |
-| 7 | Tạo Phiếu dịch vụ loại sửa chữa không gắn lịch hẹn | Từ luồng `FEAT-SO-CREATE` | Tự sinh lịch hẹn walk-in (**"Xe đã đến"**) |
-| 8 | Khách hàng gửi yêu cầu hủy từ Driver+ (mới, v3) | Sự kiện inbound từ Driver+, booking đang "Lịch hẹn mới"/"Đã xác nhận" (`FEAT-BOOK-DRIVERPLUS-INBOUND` AC-6) | Tự động áp dụng "Đã hủy" trên Danh sách (không qua bước duyệt) |
+| `FEAT-BOOK-LIST` | Danh sách lịch hẹn | [FEAT-BOOK-LIST](../features/FEAT-BOOK-LIST.md) | P0 |
+| `FEAT-BOOK-DETAIL` | Chi tiết lịch hẹn | [FEAT-BOOK-DETAIL](../features/FEAT-BOOK-DETAIL.md) | P0 |
+| `FEAT-BOOK-CREATE` | Tạo lịch hẹn mới | [FEAT-BOOK-CREATE](../features/FEAT-BOOK-CREATE.md) | P0 |
+| `FEAT-BOOK-EDIT` | Chỉnh sửa lịch hẹn | [FEAT-BOOK-EDIT](../features/FEAT-BOOK-EDIT.md) | P1 |
+| `FEAT-BOOK-CONFIRM` | Xác nhận lịch hẹn | [FEAT-BOOK-CONFIRM](../features/FEAT-BOOK-CONFIRM.md) | P0 |
+| `FEAT-BOOK-ARRIVE` | Xác nhận xe đã đến | [FEAT-BOOK-ARRIVE](../features/FEAT-BOOK-ARRIVE.md) | P0 |
+| `FEAT-BOOK-CANCEL` | Hủy lịch hẹn (garage tự hủy) | [FEAT-BOOK-CANCEL](../features/FEAT-BOOK-CANCEL.md) | P1 |
+| `FEAT-BOOK-DECLINE` | Từ chối lịch hẹn | [FEAT-BOOK-DECLINE](../features/FEAT-BOOK-DECLINE.md) | P1 |
+| `FEAT-BOOK-DRIVERPLUS-INBOUND` (mới, v4) | Nhận yêu cầu đặt lịch/hủy từ Driver+ | [FEAT-BOOK-DRIVERPLUS-INBOUND](../features/FEAT-BOOK-DRIVERPLUS-INBOUND.md) | P0 |
+| `FEAT-BOOK-DRIVERPLUS-OUTBOUND` (mới, v4) | Phản hồi/đồng bộ trạng thái sang Driver+ | [FEAT-BOOK-DRIVERPLUS-OUTBOUND](../features/FEAT-BOOK-DRIVERPLUS-OUTBOUND.md) | P0 |
 
-## 3. Layout / Wireframe
+> **Ghi chú (v4)**: `FEAT-BOOK-DRIVERPLUS-INBOUND` + `FEAT-BOOK-DRIVERPLUS-OUTBOUND` thay thế hoàn toàn AC-23/AC-24 (nay SUPERSEDED) từng nằm trong `FEAT-BOOK-CREATE` — tách riêng vì đây là luồng tự động (event-driven), khác hẳn luồng tạo thủ công qua form của `FEAT-BOOK-CREATE`.
 
-> Luồng lịch hẹn trên Web GMS gồm 4 màn hình chính. Sơ đồ dưới mô tả quan hệ điều hướng giữa các màn hình — chi tiết nội dung từng màn xem tại FEAT tương ứng.
+## 5. Dependencies
 
-```
-┌──────────────────┐     Tạo mới      ┌──────────────────┐
-│  Danh sách       │─────────────────►│  Form tạo        │
-│  lịch hẹn        │                  │  lịch hẹn        │
-│ (FEAT-BOOK-LIST) │◄─────────────────│ (FEAT-BOOK-      │
-│                  │   Submit / Hủy   │  CREATE)          │
-└──┬───────────────┘                  └──────────────────┘
-   │
-   │ Xem chi tiết
-   │ (hoặc Chỉnh sửa
-   │  từ cột Thao tác *)
-   ▼
-┌──────────────────┐   Chỉnh sửa     ┌──────────────────┐
-│  Chi tiết        │────────────────►│  Form chỉnh sửa  │
-│  lịch hẹn        │◄────────────────│  lịch hẹn        │
-│ (FEAT-BOOK-      │   Lưu / Hủy    │ (FEAT-BOOK-      │
-│  DETAIL)         │                 │  EDIT)            │
-│                  │                 └──────────────────┘
-│ Hành động:       │
-│ • Xác nhận       │
-│ • Từ chối        │   Tạo PDV      ┌──────────────────┐
-│ • Xe đã đến      │───────────────►│  Tạo Phiếu DV    │
-│ • Hủy            │                │ (→ FEAT-SO-CREATE)│
-└──────────────────┘                └──────────────────┘
+### 5.1 Epic Dependencies
 
-(*) Chỉnh sửa từ cột Thao tác trên Danh sách đi thẳng đến
-    Form chỉnh sửa; sau khi Lưu → quay về Chi tiết lịch hẹn.
-```
-
-**Nguồn tự động (không qua form tạo thủ công):**
-
-```
-┌──────────────────┐               ┌──────────────────┐
-│  Driver+         │── Sự kiện ───►│  Lịch hẹn mới    │
-│  (ứng dụng       │   tự động    │  xuất hiện trên  │
-│   tài xế)        │              │  Danh sách       │
-├──────────────────┤              │  lịch hẹn        │
-│  Phiếu dịch vụ  │── Tự sinh ───►│                  │
-│  (walk-in)       │   booking    │  (walk-in: trạng │
-│                  │              │   thái Xe đã đến)│
-└──────────────────┘              └──────────────────┘
-```
-
-**Ghi chú (P2 fix 2026-08-03)**: `FEAT-BOOK-DRIVERPLUS-INBOUND` (nhận tạo/hủy) và `FEAT-BOOK-DRIVERPLUS-OUTBOUND` (phản hồi/đồng bộ trạng thái) là 2 FEAT thuần backend/event, **không có màn hình riêng** — không xuất hiện trong sơ đồ điều hướng phía trên. Chi tiết hành vi 2 FEAT này xem §4.3.
-
-## 4. Behavior
-
-### 4.1 Xem và tìm kiếm danh sách lịch hẹn
-
-> FEAT tham chiếu: `FEAT-BOOK-LIST`
-
-| Bước | Trigger | Phản hồi |
+| Epic | Quan hệ | Mô tả |
 |---|---|---|
-| 1 | Chủ garage / Kế toán truy cập menu lịch hẹn | Hiển thị bảng danh sách với 7 cột: Mã lịch hẹn, Nguồn, Khách hàng, Biển số xe, Thời gian hẹn, Trạng thái, Thao tác |
-| 2 | Nhập từ khóa vào ô tìm kiếm | Lọc theo biển số xe, tên khách hàng hoặc số điện thoại |
-| 3 | Chọn bộ lọc (trạng thái, nguồn, khoảng thời gian) | Danh sách cập nhật theo tiêu chí đã chọn |
-| 4 | Nhấn **"Đặt lại bộ lọc"** | Xóa toàn bộ tiêu chí, hiển thị danh sách mặc định |
-| 5 | Nhấn vào một lịch hẹn | Chuyển sang Chi tiết lịch hẹn (xem §4.4) |
-| 6 | Nhấn nút **"Tạo lịch hẹn"** | Chuyển sang Form tạo lịch hẹn (xem §4.2) |
-| 7 | Nhấn nút chỉnh sửa trong cột Thao tác | Chuyển sang Form chỉnh sửa (xem §4.9) — chỉ hiển thị khi trạng thái cho phép |
+| `EP-SERVICE-ORDER` | Downstream | Sau khi xe đã đến, tạo Phiếu dịch vụ liên kết từ lịch hẹn. Walk-in booking được tự sinh khi tạo Phiếu dịch vụ không gắn lịch hẹn. |
+| `EP-FOUND` | Upstream | Cấu hình garage, khung giờ (timeslot) và phân quyền người dùng. |
+| `EP-CUSTOMER` | Upstream | Dữ liệu khách hàng và xe dùng cho gợi ý khi tạo/chỉnh sửa lịch hẹn. |
 
-**Trường hợp ngoại lệ:**
-- Không có lịch hẹn nào → hiển thị trạng thái trống.
-- Tìm kiếm không có kết quả → hiển thị trạng thái trống với thông báo phù hợp.
+### 5.2 Architecture Dependencies
 
-### 4.2 Tạo lịch hẹn thủ công (Garage Care)
+| Dependency | Mô tả |
+|---|---|
+| `gf-sales` | Boundary chính: xử lý toàn bộ nghiệp vụ booking. |
+| `agg-garage-graph` | BFF layer: chuyển tiếp GraphQL operations từ frontend sang gf-sales. |
+| Driver+ (external) | Nhận lịch hẹn từ ứng dụng tài xế; đồng bộ trạng thái và cập nhật hai chiều. |
+| Garage Care | Tên sản phẩm bao gồm Web GMS và App Garage. Lịch hẹn tạo từ Garage Care khởi tạo ở trạng thái **"Đã xác nhận"**. |
 
-> FEAT tham chiếu: `FEAT-BOOK-CREATE`
+## 6. Success Metric
 
-| Bước | Trigger | Phản hồi |
+| Metric | Target | Measurement |
 |---|---|---|
-| 1 | Nhấn **"Tạo lịch hẹn"** trên Danh sách | Mở form trống gồm 5 mục: Thông tin khách hàng, Thông tin xe, Hình ảnh xe, Thời gian hẹn, Thông tin dịch vụ |
-| 2 | Nhập SĐT hoặc tên khách hàng | Gợi ý danh sách khách hàng khớp từ dữ liệu đã có |
-| 3 | Chọn khách hàng từ gợi ý (hoặc nhập thủ công) | Tự động điền SĐT và tên khách hàng tương ứng |
-| 4 | Nhập biển số xe | Gợi ý danh sách xe khớp; chọn xe → tự động điền thông tin xe |
-| 5 | Tải ảnh xe (không bắt buộc) | Cho phép tải nhiều ảnh cùng lúc |
-| 6 | Chọn ngày hẹn và giờ hẹn | Kiểm tra khung giờ: thông báo phù hợp hoặc cảnh báo có lịch hẹn gần |
-| 7 | Chọn loại dịch vụ, nhập mô tả / ghi chú | Điền thông tin dịch vụ |
-| 8 | Nhấn nút submit (khi đủ trường bắt buộc) | Tạo lịch hẹn → trạng thái **"Đã xác nhận"**, mã tự sinh, nguồn tự động ghi nhận |
-
-**Trường hợp ngoại lệ:**
-- Biển số xe sai định dạng → thông báo lỗi: **"Biển số xe không đúng định dạng (Ví dụ chuẩn: 30A12345)"**.
-- Có lịch hẹn gần khung giờ đã chọn → cảnh báo: **"Có {n} lịch hẹn gần thời điểm bạn chọn"** kèm liên kết xem chi tiết. Vẫn cho phép tạo (không chặn).
-- Thiếu trường bắt buộc → nút submit bị mờ (disabled).
-- Tạo thất bại → toast **"Lỗi"**, form giữ nguyên dữ liệu.
-- Nhấn nút hủy bỏ → đóng form, quay về Danh sách. ⚠ NEED CLARIFICATION — KG chưa ghi nhận label nút hủy trên form tạo.
-
-### 4.3 Nhận lịch hẹn từ nguồn bên ngoài
-
-> **(v3, 2026-08-03)** — viết lại hoàn toàn theo tài liệu mới từ đội Driver+ (FEAT-DP-034 biểu mẫu đặt lịch, FEAT-DP-035 relay 2 chiều). FEAT tham chiếu: `FEAT-BOOK-DRIVERPLUS-INBOUND` (thay `FEAT-BOOK-CREATE` Nhóm A2 cũ, nay SUPERSEDED).
-
-**4.3.1 Từ ứng dụng tài xế Driver+ — tạo lịch hẹn mới**
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Khách hàng điền biểu mẫu 14 trường (5 bắt buộc + 9 tùy chọn) trên Driver+ và tick đồng ý chia sẻ thông tin (Driver+ tự lưu, GMS không nhận/lưu consent) | — |
-| 2 | Driver+ chuyển tiếp yêu cầu sang GMS | Hệ thống tự động tạo lịch hẹn → trạng thái **"Lịch hẹn mới"**, nguồn **"Từ ứng dụng tài xế"** |
-| 3 | — | Lịch hẹn xuất hiện trên Danh sách Web GMS để chủ garage xác nhận hoặc từ chối |
-
-**4.3.2 Từ ứng dụng tài xế Driver+ — yêu cầu hủy (mới, v3)**
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Khách hàng gửi yêu cầu hủy trên Driver+ | Driver+ chuyển tiếp yêu cầu sang GMS |
-| 2 | Booking đang **"Lịch hẹn mới"** hoặc **"Đã xác nhận"** (chưa có phiếu DV liên kết) | Hệ thống **tự động áp dụng hủy ngay** — KHÔNG có bước garage duyệt. Trạng thái → **"Đã hủy"**, ghi `cancel_source = DRIVERPLUS_USER` |
-| 3 | Booking đang **"Xe đã đến"** / đã có phiếu DV / đã ở trạng thái khép lại | Hệ thống **KHÔNG áp dụng hủy** — giữ nguyên trạng thái hiện tại, phản hồi lại đúng trạng thái thực tế cho Driver+ (không phải "từ chối yêu cầu") |
-| 4 | — | Kết quả (áp dụng hủy hoặc giữ nguyên) đều được phản hồi về Driver+ để đồng bộ hiển thị cho khách hàng |
-
-> **Không mang theo** cơ chế đồng bộ ngược (khách đã liên kết Driver+ đặt lịch qua kênh khác → tự đẩy sang D+) từng có ở thiết kế sequence-diagram cũ — tài liệu nguồn mới (FEAT-DP-034/035/046) không đề cập, xem `FEAT-BOOK-DRIVERPLUS-INBOUND.md` §7 Out of Scope.
-
-### 4.4 Xem chi tiết lịch hẹn
-
-> FEAT tham chiếu: `FEAT-BOOK-DETAIL`
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Nhấn vào lịch hẹn trên Danh sách | Mở Chi tiết lịch hẹn với tiêu đề **"Lịch hẹn"** |
-| 2 | Màn hình được tải | Hiển thị thông tin tổng quan: mã lịch hẹn, trạng thái, nguồn, thời gian hẹn |
-| 3 | — | Hiển thị thông tin khách hàng: tên, số điện thoại |
-| 4 | — | Hiển thị thông tin xe: biển số, hãng xe, dòng xe, phiên bản, năm sản xuất, số VIN, số Km, hình ảnh (nếu có) |
-| 5 | — | Hiển thị thông tin dịch vụ: loại dịch vụ, mô tả tình trạng xe, ghi chú khách hàng, ghi chú nội bộ |
-| 6 | — | Hiển thị lịch sử chuyển trạng thái: hành động, mô tả, người thực hiện, thời gian, lý do (nếu có) |
-| 7 | Lịch hẹn có PDV liên kết | Hiển thị mã và trạng thái Phiếu dịch vụ liên kết |
-| 8 | Lịch hẹn chưa có PDV liên kết | Không hiển thị thông tin PDV (hoặc hiển thị trạng thái chưa liên kết) |
-| 9 | — | Hiển thị nút hành động phù hợp trạng thái (xem §5.2 ma trận hành động) |
-
-**Ghi chú:** Thông tin khách hàng và xe hiển thị là snapshot tại thời điểm tạo lịch hẹn, không phải dữ liệu hiện tại.
-
-**Trường hợp ngoại lệ:**
-- Lịch hẹn không có thông tin xe → các trường xe hiển thị trống.
-- Lịch hẹn không có hình ảnh xe → mục hình ảnh không hiển thị.
-- Lịch sử chỉ có 1 mục (vừa tạo) → hiển thị bình thường.
-
-### 4.5 Xác nhận lịch hẹn
-
-> FEAT tham chiếu: `FEAT-BOOK-CONFIRM`
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Tại Chi tiết, lịch hẹn ở **"Lịch hẹn mới"** | Hiển thị nút xác nhận |
-| 2 | Nhấn nút xác nhận | Trạng thái → **"Đã xác nhận"** |
-| 3 | — | Toast: tiêu đề **"Xác nhận lịch hẹn thành công"**, mô tả **"Lịch hẹn đã được xác nhận. Khách hàng sẽ nhận được thông báo qua Driver+"** (sửa lỗi chính tả "Drive+" → "Driver+", v3 2026-08-03) |
-| 4 | — | Nút xác nhận biến mất → thay bằng nút Xe đã đến và nút Hủy |
-
-**Trường hợp ngoại lệ:**
-- Lịch hẹn bị hệ thống tự chuyển trạng thái (quá hạn) trong khi thao tác → xác nhận thất bại, toast **"Lỗi"**.
-
-### 4.6 Từ chối lịch hẹn
-
-> FEAT tham chiếu: `FEAT-BOOK-DECLINE`
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Tại Chi tiết, lịch hẹn ở **"Lịch hẹn mới"** | Hiển thị nút từ chối |
-| 2 | Nhấn nút từ chối | Mở hộp thoại nhập lý do (placeholder: **"Nhập lý do từ chối"**) |
-| 3 | Nhập lý do và xác nhận | Trạng thái → **"Đã từ chối"** |
-| 4 | — | Toast: tiêu đề **"Đã từ chối lịch hẹn"**, mô tả **"Thông tin từ chối đã được gửi cho khách hàng trên Driver+"** |
-| 5 | — | Nút từ chối biến mất. Lý do từ chối ghi nhận trong lịch sử trạng thái |
-
-**Trường hợp ngoại lệ:**
-- Lịch hẹn bị hệ thống tự chuyển trạng thái (quá hạn) → từ chối thất bại, toast **"Lỗi"**.
-
-### 4.7 Xác nhận xe đã đến
-
-> FEAT tham chiếu: `FEAT-BOOK-ARRIVE`
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Tại Chi tiết, lịch hẹn ở **"Đã xác nhận"** | Hiển thị nút xe đã đến |
-| 2 | Nhấn nút xe đã đến | Trạng thái → **"Xe đã đến"**. Ghi nhận thời điểm xe đến |
-| 3 | — | Toast: tiêu đề **"Thành công"**, mô tả **"Đã cập nhật xe đã đến"** |
-| 4 | — | Nút xe đã đến biến mất. Xuất hiện nút tạo Phiếu dịch vụ (nếu chưa có PDV liên kết) |
-
-**Trường hợp ngoại lệ:**
-- Lịch hẹn bị hệ thống tự hủy (quá hạn) → xác nhận thất bại, toast **"Lỗi"**.
-
-### 4.8 Hủy lịch hẹn
-
-> FEAT tham chiếu: `FEAT-BOOK-CANCEL`
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Tại Chi tiết, lịch hẹn ở **"Đã xác nhận"** và chưa có PDV liên kết | Hiển thị nút hủy |
-| 2 | Nhấn nút hủy | Mở hộp thoại nhập lý do hủy (placeholder: **"Nhập lý do hủy lịch hẹn"**) |
-| 3 | Nhập lý do và xác nhận hủy | Trạng thái → **"Đã hủy"** |
-| 4 | — | Toast: **"Hủy lịch hẹn thành công"**. Nút hủy biến mất. Lý do ghi nhận trong lịch sử. Hệ thống ghi `cancel_source = GARAGE_INTERNAL` (P2 fix 2026-08-03); nếu booking nguồn Driver+, đồng bộ sang Driver+ — xem `FEAT-BOOK-DRIVERPLUS-OUTBOUND` AC-4 |
-
-**Trường hợp ngoại lệ:**
-- Phiếu dịch vụ vừa được tạo liên kết trong khi mở hộp thoại → hủy thất bại.
-- Hủy thất bại → toast **"Lỗi"**, trạng thái không thay đổi.
-
-### 4.9 Chỉnh sửa lịch hẹn
-
-> FEAT tham chiếu: `FEAT-BOOK-EDIT`
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Tại Chi tiết hoặc cột Thao tác trên Danh sách, lịch hẹn ở **"Lịch hẹn mới"** hoặc **"Đã xác nhận"** | Chuyển sang form chỉnh sửa, dữ liệu hiện tại đã điền sẵn (5 mục: Thông tin khách hàng, Thông tin xe, Hình ảnh xe, Thời gian hẹn, Thông tin dịch vụ) |
-| 2 | Thay đổi thông tin | Form hỗ trợ gợi ý khách hàng, xe, kiểm tra khung giờ — tương tự form tạo |
-| 3 | Nhấn **"Lưu thay đổi"** (khi đủ trường bắt buộc) | Cập nhật lịch hẹn thành công |
-| 4 | — | Toast: tiêu đề **"Cập nhật lịch hẹn thành công"**, mô tả **"Thông tin lịch hẹn đã được cập nhật."**. Quay về Chi tiết lịch hẹn |
-| 5 | — | Đồng bộ thông tin cập nhật sang Driver+ |
-
-**Trường hợp ngoại lệ:**
-- Lịch hẹn bị chuyển trạng thái (quá hạn) trong khi chỉnh sửa → lưu thất bại.
-- Trạng thái **"Đã xác nhận"** — cho phép chỉnh sửa nhưng trạng thái không thay đổi sau khi lưu.
-- Cập nhật thất bại → toast **"Lỗi"**.
-- Nhấn nút hủy bỏ → đóng form, quay về Chi tiết. ⚠ NEED CLARIFICATION — KG chưa ghi nhận label nút hủy trên form chỉnh sửa.
-
-### 4.10 Hệ thống tự hủy quá hạn
-
-> FEAT tham chiếu: `FEAT-BOOK-LIST` (AC-14), `FEAT-BOOK-CANCEL` (BR-BOOK-CAN-004)
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Lịch hẹn ở **"Lịch hẹn mới"** hoặc **"Đã xác nhận"** quá hạn thời gian quy định | Hệ thống tự động chuyển trạng thái → **"Đã hủy"** |
-| 2 | — | Ghi nhận lịch sử chuyển trạng thái. Danh sách hiển thị trạng thái mới. Hệ thống ghi `cancel_source = NO_SHOW_AUTO` (P2 fix 2026-08-03); nếu booking nguồn Driver+, đồng bộ sang Driver+ — xem `FEAT-BOOK-DRIVERPLUS-OUTBOUND` AC-4 |
-
-**Ghi chú:** Không qua nút bấm — hành vi hoàn toàn tự động của hệ thống. Không phải hành động của người dùng trong module lịch hẹn.
-
-### 4.11 Walk-in: Tự sinh lịch hẹn từ Phiếu dịch vụ
-
-> FEAT tham chiếu: `FEAT-BOOK-CREATE` (AC-26), cross-module với `FEAT-SO-CREATE`
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Chủ garage tạo Phiếu dịch vụ loại sửa chữa mà không gắn lịch hẹn | Hệ thống tự sinh lịch hẹn walk-in → trạng thái **"Xe đã đến"**, nguồn **"Walk-in"** |
-| 2 | — | Thời điểm xe đến = thời điểm tạo phiếu. Lịch hẹn liên kết tự động với PDV |
-| 3 | — | Lịch hẹn xuất hiện trên Danh sách lịch hẹn Web GMS |
-
-**Ghi chú:** Không áp dụng cho Phiếu dịch vụ loại bán lẻ. Chi tiết trigger tạo xem `FEAT-SO-CREATE`.
-
-### 4.12 Chuyển tiếp: Tạo Phiếu dịch vụ từ lịch hẹn
-
-> FEAT tham chiếu: `FEAT-BOOK-DETAIL` (AC-11, AC-12), cross-module với `FEAT-SO-CREATE`
-
-| Bước | Trigger | Phản hồi |
-|---|---|---|
-| 1 | Tại Chi tiết, lịch hẹn ở **"Xe đã đến"** và chưa có PDV liên kết | Hiển thị nút tạo Phiếu dịch vụ |
-| 2 | Nhấn nút tạo Phiếu dịch vụ | Chuyển sang màn hình tạo Phiếu dịch vụ (`FEAT-SO-CREATE`) với thông tin lịch hẹn liên kết sẵn |
-| 3 | (Sau khi PDV được tạo) | Nút tạo PDV biến mất → thay bằng thông tin PDV liên kết (mã và trạng thái) |
-
-## 5. States
-
-### 5.1 Bảng trạng thái
-
-| Trạng thái | Tên hiển thị | Mô tả | Tính chất |
-|---|---|---|---|
-| Lịch hẹn mới | **"Lịch hẹn mới"** | Lịch hẹn vừa tạo, chờ garage xác nhận hoặc từ chối | Cho phép chỉnh sửa |
-| Đã xác nhận | **"Đã xác nhận"** | Garage đã xác nhận, chờ xe đến | Cho phép chỉnh sửa |
-| Xe đã đến | **"Xe đã đến"** | Xe đã đến garage, sẵn sàng tạo Phiếu dịch vụ | Trạng thái chờ chuyển tiếp |
-| Đã từ chối | **"Đã từ chối"** | Garage từ chối lịch hẹn | Trạng thái kết thúc |
-| Đã hủy | **"Đã hủy"** | Hủy thủ công hoặc quá hạn tự động | Trạng thái kết thúc |
-
-**Ghi chú:** Hai trạng thái nội bộ (hủy thủ công và không đến) đều hiển thị chung là **"Đã hủy"** trên giao diện.
-
-### 5.2 Ma trận hành động theo trạng thái
-
-| Trạng thái | Xác nhận | Từ chối | Xe đã đến | Hủy | Chỉnh sửa | Tạo PDV |
-|---|---|---|---|---|---|---|
-| Lịch hẹn mới | ✓ | ✓ | — | — | ✓ | — |
-| Đã xác nhận | — | — | ✓ | ✓ * | ✓ | — |
-| Xe đã đến | — | — | — | — | — | ✓ ** |
-| Đã từ chối | — | — | — | — | — | — |
-| Đã hủy | — | — | — | — | — | — |
-
-\* Hủy chỉ khả dụng khi chưa có Phiếu dịch vụ liên kết.
-
-\** Tạo PDV chỉ hiển thị khi chưa có Phiếu dịch vụ liên kết. Khi đã có PDV → hiển thị thông tin PDV thay cho nút.
-
-### 5.3 Nguồn lịch hẹn và trạng thái khởi tạo
-
-| Nguồn | Tên hiển thị | Trạng thái khởi tạo | Cách tạo |
-|---|---|---|---|
-| Garage Care (Web GMS + App Garage) | — | **"Đã xác nhận"** | Chủ garage / Kế toán tạo thủ công |
-| Driver+ | **"Từ ứng dụng tài xế"** | **"Lịch hẹn mới"** | Hệ thống nhận sự kiện tự động |
-| Walk-in | **"Walk-in"** | **"Xe đã đến"** | Hệ thống tự sinh khi tạo PDV không gắn booking |
-
-## 6. Validation Rules
-
-> Áp dụng cho Form tạo (`FEAT-BOOK-CREATE`) và Form chỉnh sửa (`FEAT-BOOK-EDIT`).
-
-| Trường | Bắt buộc | Quy tắc | Thông báo lỗi |
-|---|---|---|---|
-| SĐT khách hàng | Có | — | — |
-| Tên khách hàng | Có | — | — |
-| Biển số xe | Không | Kiểm tra định dạng | **"Biển số xe không đúng định dạng (Ví dụ chuẩn: 30A12345)"** |
-| Số khung xe (Số VIN) | Không | — | — |
-| Số Km | Không | — | — |
-| Hãng xe | Không | — | — |
-| Dòng xe | Không | — | — |
-| Năm sản xuất | Không | — | — |
-| Phiên bản | Không | — | — |
-| Hình ảnh xe | Không | — | — |
-| Ngày hẹn | Có | Kiểm tra khung giờ (cảnh báo nếu có lịch hẹn gần, không chặn) | — |
-| Giờ hẹn | Có | Kiểm tra khung giờ (cảnh báo nếu có lịch hẹn gần, không chặn) | — |
-| Loại dịch vụ | Có | — | — |
-| Mô tả tình trạng xe | Không | — | — |
-| Ghi chú khách hàng | Không | — | — |
-| Ghi chú nội bộ | Không | — | — |
-
-**Điều kiện nút submit (Tạo / Lưu thay đổi):**
-- Khả dụng (enabled): 5 trường bắt buộc đã điền đủ (SĐT khách hàng, Tên khách hàng, Ngày hẹn, Giờ hẹn, Loại dịch vụ) và hệ thống không đang gửi yêu cầu.
-- Bị mờ (disabled): thiếu trường bắt buộc hoặc đang gửi yêu cầu.
+| Tỷ lệ lịch hẹn được xử lý (xác nhận hoặc từ chối) trong 24h | >= 90% | Số lịch hẹn xử lý trong 24h / tổng lịch hẹn mới |
+| Tỷ lệ chuyển đổi lịch hẹn sang Phiếu dịch vụ | >= 70% | Số lịch hẹn có Phiếu DV liên kết / tổng lịch hẹn **"Xe đã đến"** |
+| Tỷ lệ lịch hẹn quá hạn tự động (NO_SHOW) | <= 15% | Số lịch hẹn bị hệ thống tự hủy / tổng lịch hẹn |
 
 ## 7. Change Log
 
 | Date | Version | Author | Description |
 |---|---|---|---|
-| 2026-05-20 | 1 | Business Authority | Khởi tạo UX-FLOW-BOOKING từ EP-BOOKING v2 và 8 FEAT: LIST v3, DETAIL v2, CREATE v6, EDIT v2, CONFIRM v1, ARRIVE v1, CANCEL v1, DECLINE v1. |
-| 2026-05-20 | 2 | Business Authority | Sửa toàn bộ nguồn tạo: Garage Care = Web GMS + App Garage → trạng thái khởi tạo **"Đã xác nhận"**; xóa Web GMS khỏi nguồn riêng; xóa Garage Care khỏi nguồn bên ngoài; xóa §4.3.2; cập nhật §4.2 trạng thái → **"Đã xác nhận"**. |
-| 2026-08-03 | 3 | user (Business Authority) qua main agent | **REWORK — viết lại §4.3 theo tài liệu mới từ đội Driver+** (FEAT-DP-034/035, thay thế hoàn toàn nội dung cũ, coi phần cũ SUPERSEDED). §4.3.1 (tạo lịch hẹn) bổ sung bước consent phía Driver+ (không gửi/lưu ở GMS) + 14 trường. **§4.3.2 mới** (yêu cầu hủy — số này từng bị xóa ở v2, nay tái sử dụng cho nội dung hoàn toàn khác, không liên quan §4.3.2 cũ): mô tả rõ 2 nhánh gate (áp dụng ngay / giữ nguyên + đồng bộ thực tế) + `cancel_source`. §1 Nền tảng, sơ đồ luồng tổng quan (①②③), Dependency liên module, §2 Entry Points (thêm điểm vào #8 — yêu cầu hủy), §4.5 (fix lỗi chính tả "Drive+" → "Driver+") đều cập nhật theo. Không mang theo cơ chế đồng bộ ngược (booking tạo kênh khác cho khách đã liên kết D+) — tài liệu nguồn mới không đề cập. Đồng bộ EP-BOOKING v4, FEAT-BOOK-DRIVERPLUS-INBOUND/OUTBOUND v1, BR-GF-SALES v2. |
-| 2026-08-03 | 4 | user (Business Authority) qua main agent | **Fix P2 (BA-review round 1)**: §4.8 (Hủy lịch hẹn — garage tự hủy) + §4.10 (Hệ thống tự hủy quá hạn) bổ sung ghi nhận `cancel_source` (GARAGE_INTERNAL / NO_SHOW_AUTO tương ứng) — trước đó chỉ §4.3.2 (Driver+ hủy) có nhắc, 2 section còn lại sót. §3 Layout/Wireframe thêm ghi chú `FEAT-BOOK-DRIVERPLUS-INBOUND`/`-OUTBOUND` là FEAT thuần backend/event, không có màn hình riêng nên không xuất hiện trong sơ đồ điều hướng — trỏ sang §4.3 để xem chi tiết hành vi. |
+| 2026-05-20 | 1 | Business Authority | Khởi tạo EP-BOOKING từ 8 FEAT đã gen (LIST v3, DETAIL v2, CREATE v6, EDIT v2, CONFIRM v1, ARRIVE v1, CANCEL v1, DECLINE v1). Vòng đời trạng thái tổng hợp từ KG gf-sales v5 + garage-web. |
+| 2026-05-20 | 2 | Business Authority | Sửa toàn bộ nội dung thiếu dấu tiếng Việt (vi phạm _RULES §4); sửa nguồn tạo cột 1 bỏ Web GMS. |
+| 2026-05-20 | 3 | Business Authority | Bổ sung ghi chú: Garage Care = Web GMS + App Garage → trạng thái khởi tạo **"Đã xác nhận"**; chỉ Driver+ khởi tạo **"Lịch hẹn mới"**. Cập nhật §5.2. |
+| 2026-08-03 | 4 | user (Business Authority) qua main agent | **REWORK — tích hợp Driver+ viết lại theo tài liệu mới từ đội Driver+** (FEAT-DP-034/035/046, thay thế hoàn toàn thiết kế cũ, coi phần cũ là SUPERSEDED). Thêm 2 FEAT mới `FEAT-BOOK-DRIVERPLUS-INBOUND` + `FEAT-BOOK-DRIVERPLUS-OUTBOUND` vào §4 (thay AC-23/24 cũ tại FEAT-BOOK-CREATE). §3 thêm ghi chú cơ chế hủy tự động + `cancel_source`. Fix drift Metadata §Status (ghi nhầm "PLANNED" trong khi frontmatter đã "DONE" từ v1 — đồng bộ lại "DONE"). Không mang theo cơ chế đồng bộ ngược (khách đã liên kết D+ đặt qua kênh khác) từ thiết kế sequence-diagram cũ vì tài liệu nguồn mới không đề cập — xem `FEAT-BOOK-DRIVERPLUS-INBOUND.md` §7 Out of Scope. Đồng bộ FEAT-BOOK-CREATE (AC-23/24 SUPERSEDED), FEAT-BOOK-EDIT/CANCEL/LIST (cross-ref), FEAT-SO-DETAIL + FEAT-STL-CREATE (thêm AC emit invoice), BR-GF-SALES, BR-GF-ACCOUNTING (mới), UX-FLOW-BOOKING, README. |
+| 2026-08-11 | 5 | main agent (phát hiện qua user report) | **DATA-INTEGRITY FIX — khôi phục nội dung v4 bị mất**. Commit `d02f176` (2026-08-05, "feat(product): document DriverPlus partner link" — cùng đợt author `EP-PARTNER-LINK`/`FEAT-SYS-DRIVERPLUS-LINK` cho W07) đã vô tình ghi đè toàn bộ file này bằng nội dung của `Product/ux/UX-FLOW-BOOKING.md` (frontmatter đổi `type: epic` → `type: ux`, tiêu đề đổi thành `# UX-FLOW-BOOKING`, byte-identical 100% với UX-FLOW-BOOKING.md trong ~6 ngày). Khôi phục nguyên nội dung epic v4 từ `git show d02f176^:Product/epics/EP-BOOKING.md` (không fabricate lại — nội dung v4 đã đúng và đầy đủ trước khi bị ghi đè, khớp với README Change Log entry v20). Không có edit hợp lệ nào khác vào file này giữa `d02f176` và hiện tại (đã verify qua `git log`). Đã cross-check 4 file khác cùng đợt commit (EP-PARTNER-LINK, UX-FLOW-PARTNER-LINK, FEAT-SYS-DRIVERPLUS-LINK, FEAT-BOOK-DRIVERPLUS-INBOUND/OUTBOUND) — không phát hiện lỗi tương tự. |

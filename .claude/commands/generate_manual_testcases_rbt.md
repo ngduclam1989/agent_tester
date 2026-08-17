@@ -37,7 +37,7 @@ Thực hiện theo hướng dẫn chi tiết trong skill `rbt_manual_testing` �
 1. Yêu cầu user cung cấp: tên dự án, mô tả hệ thống, mục tiêu MVP, tài liệu yêu cầu.
 2. Đọc kỹ tài liệu, xác nhận hiểu bối cảnh.
 3. **Phân loại Scope: UI / API / BOTH (bắt buộc)** — xác định module/feature đang test thuộc loại nào (chỉ UI, chỉ API có tài liệu PTTK/RSD/DB, hay cả hai). Ghi rõ kết luận này — Bước 5 sẽ dùng để tự động rẽ nhánh.
-4. **Vẽ nháp Diagram (nếu thiếu các sơ đồ nghiệp vụ cần thiết):** Nếu tài liệu thiếu các diagram cần thiết (State Diagram, Sequence Diagram, Data Flow Diagram, Activity Diagram...), chủ động vẽ nháp bằng Mermaid và lưu vào thư mục `practices/diagram/`, yêu cầu người dùng confirm.
+4. **Vẽ nháp Diagram (nếu thiếu các sơ đồ nghiệp vụ cần thiết):** Nếu tài liệu thiếu các diagram cần thiết (State Diagram, Sequence Diagram, Data Flow Diagram, Activity Diagram...), chủ động vẽ nháp bằng skill `diagram-design` và lưu vào thư mục `practices/diagram/`, yêu cầu người dùng confirm.
 5. **Chờ user xác nhận** → sang Bước 2.
 
 ### Bước 2: Phân tích yêu cầu (Analysis & QnA)

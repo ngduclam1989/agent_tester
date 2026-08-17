@@ -2,11 +2,11 @@
 type: architecture
 artifact_kind: hld
 status: ACTIVE
-version: 4.2
+version: 4.3
 tier: T1
 owner_authority: Architecture Authority
 boundary: gf-system
-last_reviewed: "2026-08-10"
+last_reviewed: "2026-08-12"
 depends_on:
   - ../TECHSTACK.md
   - ../SYSTEM-ARCHITECTURE.md
@@ -234,7 +234,7 @@ depends_on:
 
 ### 7.3. Index list
 
-> **Bắt buộc**: mọi index của bảng tenant-scoped bắt đầu bằng `(tenant_id, ...)`.
+> **Bắt buộc**: mọi index của bảng tenant-scoped bắt đầu bằng `(tenant_id, ...)`. **Ngoại lệ duy nhất (v4.3)**: `idx_plr_request_code_lookup` — xem row cuối bảng + lý do ngay dưới.
 
 | Query pattern | Index | Table | Note |
 |---|---|---|---|
@@ -244,6 +244,7 @@ depends_on:
 | Tra lịch sử re-request theo tài khoản D+ | `(tenant_id, partner_code, partner_account_phone)` — `idx_plr_tenant_partner_account` | `partner_link_request` | `FEAT` AC-25 |
 | Đọc hồ sơ garage real-time | `(tenant_id)` UNIQUE — `uk_tenant_profile_tenant_id` | `tenant_profile` | Cover khối "THÔNG TIN ĐỒNG BỘ" (CB-SYS-006) |
 | Đọc thông tin xuất HĐ real-time | `(tenant_id)` UNIQUE — `idx_tenant_invoice_info_tenant_id` (đã có) | `tenant_invoice_info` | Không đổi |
+| **(v4.3, ngoại lệ không tenant-prefix)** Adapter resolve tenant cho inbound `WITHDRAW`/`UNLINK` khi chưa biết `tenant_id` | `(request_code)` — `idx_plr_request_code_lookup` | `partner_link_request` | D+ không gửi `OriginTenantId`/`data.tenantId` ở 2 step này (ADR-029 v3 gap G4) — phải tra `tenant_id` **trước khi biết tenant**, nên không thể tenant-prefix. Cùng loại ngoại lệ đã chấp nhận cho resolve-qua-SĐT ở `REQUEST.CREATE` (ADR-029 v2, query trên `tenant_profile.contact_phone_number`, không index riêng bảng đó). Query có thể trả >1 dòng lý thuyết vì `uk_plr_tenant_request_code` chỉ unique composite `(tenant_id, request_code)` — xem `gf-system-data-model.md` §2bis.2 |
 
 ### 7.4. Cache strategy
 
@@ -321,6 +322,7 @@ depends_on:
 
 | Date | Version | Summary |
 |---|---|---|
+| 2026-08-12 | v4.3 | **Self-audit follow-up — ADR-029 v3 gap G4 (resolve tenant qua `requestCode`)**: §7.3 Index list có rule "Bắt buộc: mọi index tenant-scoped bắt đầu bằng `(tenant_id, ...)`" mâu thuẫn trực tiếp với index mới `idx_plr_request_code_lookup` (không tenant-prefix, cần để resolve `WITHDRAW`/`UNLINK` khi D+ không gửi `OriginTenantId`) đã thêm ở `gf-system-data-model.md` v3.2 nhưng bị sót khỏi HLD khi cascade ADR-029 v3. Thêm ngoại lệ vào rule + row index mới vào bảng. Đồng bộ `ADR-029` v3 + `gf-system-events.md` v7 + `gf-system-data-model.md` v3.2 + `INTEG-EXT-driver-plus.md` v10. |
 | 2026-08-10 | v4.2 | Đồng bộ semantic kill-switch `PartnerLink:DriverPlus` theo FEAT AC-43/BR-DPL-CMN-008: off chặn REST/action, từ chối request tạo mới bằng `ERR-DPL-011`, ngừng outbound profile/status, giữ dữ liệu/audit và ẩn UI client. |
 | 2026-08-07 | v4.1 | **ARCH-REVIEW-W07 P2 fix** — cite `gf-system-events.md §3.10–§3.13` → **§3.11–§3.14** (§9 References), theo renumber gf-system-events.md v5 (§3.10 collision baseline `Employee*Changed` vs W07 `PartnerLink*`). |
 | 2026-08-05 | v4 | **W07 EP-PARTNER-LINK (DESIGN)** — §1 thêm khối trách nhiệm "Partner Link — Driver Plus" (adapter Kafka tự-own 3 step inbound + 3 step outbound, 6 REST endpoint, invariant DB-level, own `tenant_profile`) + note mã `LKD` KHÔNG dùng `sequences`. §2 C4 L3 redraw (thêm `PartnerLinkCtrl` + `PartnerLinkDriverPlusConsumer` + `PartnerLinkService`/`TenantProfileService`, 7→9 tables, V1-V6→V1-V8, thêm topic PARTNER-LINK ở footer P/C). §3 +6 Key Design Decision (ADR-029 adapter tự-own · correlated response event · partial unique index cho `BR-DPL-CMN-002` — **RESOLVE `FEAT` AC-31** · cascade 1 transaction — **RESOLVE `FEAT` EC-3** · ADR-030 `tenant_profile` · noti đi thẳng không qua `gf-notification`). §4.1 +2 inbound caller (Driver Plus Kafka, `agg-garage-graph` REST cho cả web+mobile); §4.2 +1 outbound topic + cập nhật DB 9 tables/V1-V8. §5 +2 bảng owned. **§7 Performance & Scale (mới, 6/6 item)** — expected load, no-pagination deviation có guard cap 500, index list toàn bộ tenant-prefix, cache **CẤM** cho khối đồng bộ (CB-SYS-006), N+1 avoidance, tenant fairness. §7 Forbidden cũ renumber → **§8** (+9 rule W07); §8 References cũ → **§9** (+ADR-029/030, INTEG-EXT-driver-plus, Product W07). Frontmatter `depends_on` +2 ADR. **KHÔNG đụng**: §6 Quality Attributes baseline, các Key Design Decision cũ, §5 các bảng baseline. v3 → v4. |

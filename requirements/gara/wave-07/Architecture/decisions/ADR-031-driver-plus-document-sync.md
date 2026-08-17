@@ -2,11 +2,11 @@
 type: architecture
 artifact_kind: adr
 status: ACCEPTED
-version: 2
+version: 6
 tier: T1
 owner_authority: Architecture Authority
 boundary: global
-last_reviewed: "2026-08-10"
+last_reviewed: "2026-08-11"
 ---
 
 # ADR-031: Đồng bộ chứng từ GMS → Driver Plus — topic `AC-DEV-DOCUMENT-EVENTS`, mỗi boundary tự emit, tệp qua URL có hạn
@@ -38,19 +38,18 @@ Phạm vi Product: `FEAT-SO-DETAIL` AC-17 / `BR-SO-DTL-007` · `FEAT-STL-CREATE`
 
 Cả 2 producer bắn vào **1 topic**; Driver+ chỉ subscribe 1 topic cho chứng từ. Naming theo `_CONVENTIONS.md` §2.1 (`AC-DEV-{DOMAIN}-EVENTS`, suffix `-EVENTS` cho lifecycle). **Không** đụng contract `AC-DEV-BOOKING-EVENTS` đang chạy production (tránh trộn consumer group booking với chứng từ). Partition key `Document-{documentCode}` (per-aggregate, `_CONVENTIONS.md` §4.1).
 
-### D3 — 3 `MessageStep`, 2 loại phiếu tách riêng
+### D3 — 2 `MessageStep`, 2 loại phiếu tách riêng
 
 | `MessageStep` | Producer | Trigger |
 |---|---|---|
 | `DOCUMENT.SERVICE_ORDER.SYNC` | `gf-sales` | Phiếu dịch vụ chuyển "Hoàn thành" (AC-17), SO liên kết booking nguồn Driver+ |
 | `DOCUMENT.SETTLEMENT.SYNC` | `gf-accounting` | Tạo phiếu quyết toán thành công (AC-3), SO gốc liên kết booking nguồn Driver+ |
-| `DOCUMENT.SERVICE_ORDER.REVOKED` | `gf-sales` | SO đã emit SYNC sau đó chuyển "Đã huỷ" (AC-24) |
 
 **Không có `DOCUMENT.SETTLEMENT.REVOKED`** (quyết định round 2, 2026-08-10): `FEAT-STL-DETAIL` EC-7 + AC-16/17/18 đã bị Business Authority **gỡ 2026-08-03** (Change Log v3) — "Hủy phiếu quyết toán" mô tả một chức năng **không tồn tại**, nhầm với AC-15 "Hủy chỉnh sửa". Không có luồng nghiệp vụ → không khai báo step. Endpoint `POST /api/v1/settlements/{code}/cancel` có trong API baseline nhưng chưa được Product xác nhận là luồng người dùng thật.
 
-Driver+ filter được ở header, không phải parse payload (Critical Rule #18). Cặp phiếu quyết toán (`FEAT-STL-CREATE` AC-4) emit **riêng từng phiếu**.
+**Không có `DOCUMENT.SERVICE_ORDER.REVOKED`** (RESOLVED v6, Delivery Authority sonhoang chốt 2026-08-11, xem Change Log v6): step này ban đầu được khai báo (round 1/2) với ghi chú tính khả đạt — đường **duy nhất** để 1 SO đã "Hoàn thành" (đã emit SYNC) chuyển sang "Đã huỷ" là qua **huỷ phiếu quyết toán** → `gf-accounting` gọi REST reopen SO (CB-INS-003) → SO rời "Đã quyết toán" → garage huỷ phiếu. User xác nhận lại 2026-08-11 (cùng root-cause với quyết định gỡ `SETTLEMENT.REVOKED` ở trên): **"Hủy phiếu quyết toán" không phải luồng nghiệp vụ tồn tại** — do đó đường duy nhất tới trạng thái kích hoạt REVOKED không đạt được. Step bị loại bỏ hoàn toàn (không chỉ hoãn qua CR) vì **không có cơ chế nào có thể trigger nó** trong hệ thống hiện tại. Nếu sau này Business Authority xác nhận có luồng huỷ phiếu quyết toán thật (hoặc đường khác dẫn tới hủy SO sau "Hoàn thành") → CR bổ sung lại step, thuần additive (đối xứng D3 cho `SETTLEMENT.REVOKED`).
 
-> **Ghi chú tính khả đạt của `DOCUMENT.SERVICE_ORDER.REVOKED`**: nút "Hủy" phiếu dịch vụ chỉ hiện ở trạng thái "Đang thực hiện" / "Đã xác nhận" (`FEAT-SO-DETAIL` AC-15/AC-18) — không có đường trực tiếp "Hoàn thành" → "Đã huỷ". Đường thực tế: huỷ phiếu quyết toán → `gf-accounting` gọi REST reopen SO (CB-INS-003, `gf-accounting-events.md` §4) → SO rời trạng thái "Đã quyết toán" → garage huỷ phiếu. Step vẫn khai báo đợt này để không phải mở CR khi đường đó xảy ra.
+Driver+ filter được ở header, không phải parse payload (Critical Rule #18). Cặp phiếu quyết toán (`FEAT-STL-CREATE` AC-4) emit **riêng từng phiếu**.
 
 ### D3bis — Nguồn điều kiện emit của `gf-accounting`
 
@@ -74,13 +73,13 @@ Payload mang `fileUrl` (**URL tuyệt đối**, có scheme + domain — khác `p
 
 ### D5 — `event_id` deterministic theo mã phiếu
 
-`event_id = UUIDv5(NS_DP_DOCUMENT, documentCode + "|" + documentType)` với namespace cố định `NS_DP_DOCUMENT = 3f1a7c52-8b6d-4e29-9a10-b7c4d5e6f708`. Retry kỹ thuật lặp y nguyên `event_id` → D+ dedupe sạch, khớp câu chữ Product ("GMS đảm bảo `event_id` ổn định qua các lần retry", `FEAT-SO-DETAIL:139`). `messageId` của step SYNC **đặt bằng** `event_id` (retry-stable ở cả 2 lớp). Step REVOKED sinh khoá riêng `UUIDv5(NS_DP_DOCUMENT, documentCode + "|" + documentType + "|REVOKED")` — không đụng khoá dedupe của SYNC.
+`event_id = UUIDv5(NS_DP_DOCUMENT, documentCode + "|" + documentType)` với namespace cố định `NS_DP_DOCUMENT = 3f1a7c52-8b6d-4e29-9a10-b7c4d5e6f708`. Retry kỹ thuật lặp y nguyên `event_id` → D+ dedupe sạch, khớp câu chữ Product ("GMS đảm bảo `event_id` ổn định qua các lần retry", `FEAT-SO-DETAIL:139`). `messageId` của step SYNC **đặt bằng** `event_id` (retry-stable ở cả 2 lớp).
 
 **Known limitation (chấp nhận có ý thức)**: khoá **không có `revision`** → phiếu được **sửa / xuất lại** sau khi đã emit sẽ mang cùng `event_id` và bị D+ bỏ qua. Nếu nghiệp vụ có case xuất lại phiếu → CR bổ sung `revision` vào khoá (breaking với dedupe store phía D+, cần thống nhất trước).
 
 ### D6 — Không thêm bảng, không migration
 
-Cả 2 boundary tái dùng outbox sẵn có. Không cần lưu vết "đã emit" riêng vì `event_id` là **hàm thuần** của `(documentCode, documentType)` — bản REVOKED tự correlate được về bản SYNC mà không cần join. `gf-accounting` dùng `ddl-auto=update` (Gotcha #5) nên nếu sau này phát sinh cột thì cũng additive, **không** Flyway DDL; đợt này không phát sinh cột nào.
+Cả 2 boundary tái dùng outbox sẵn có. Không cần lưu vết "đã emit" riêng vì `event_id` là **hàm thuần** của `(documentCode, documentType)`. `gf-accounting` dùng `ddl-auto=update` (Gotcha #5) nên nếu sau này phát sinh cột thì cũng additive, **không** Flyway DDL; đợt này không phát sinh cột nào.
 
 ### D7 — Kill-switch riêng: feature flag `Document:DriverPlus`
 
@@ -95,8 +94,9 @@ Cả 2 boundary tái dùng outbox sẵn có. Không cần lưu vết "đã emit"
 | Tái dùng `AC-DEV-BOOKING-EVENTS` | Không thêm topic | Trộn consumer group booking với chứng từ; ảnh hưởng contract production | D2 |
 | Nhúng binary base64 trong payload | D+ không cần fetch | PDF nhiều trang chạm `max.message.bytes`; outbox + log phình; replay tốn kém | D4 |
 | Signed URL TTL ngắn (300s) | Bảo mật chặt hơn | ADR-016 đã chốt **KHÔNG dùng signed URL TTL** (quyết định kiến trúc 2026-06-17, supersede mốc 300s); ngoài ra 300s vỡ ngay khi D+ lag | D4 — đổi được thì phải supersede/sửa ADR-016 |
-| Hoãn `SERVICE_ORDER.REVOKED` sang CR sau | Ship nhanh hơn | Phiếu DV đã huỷ vẫn nằm trong hồ sơ số của xe → sai lệch dữ liệu đối tác | Quyết định user 2026-08-10 (Q6) |
+| Hoãn `SERVICE_ORDER.REVOKED` sang CR sau (ship 2 step SYNC trước) | Ship nhanh hơn, không chờ Driver+ xác nhận handler | Phiếu DV đã huỷ vẫn nằm trong hồ sơ số của xe → sai lệch dữ liệu đối tác | Quyết định user 2026-08-10 (Q6) — **superseded 2026-08-11** (v6): premise "SO có thể huỷ sau Hoàn thành" không đúng (xem D3), nên không còn phương án nào giữa "ship ngay" vs "hoãn" — step bị loại bỏ hoàn toàn |
 | Khai báo luôn `SETTLEMENT.REVOKED` | Đối xứng 2 loại phiếu | Không có luồng nghiệp vụ hủy phiếu QT — `FEAT-STL-DETAIL` EC-7/AC-16..18 đã bị BA gỡ 2026-08-03 | Loại ở round 2 (Q8); CR bổ sung nếu BA xác nhận sau |
+| Giữ `SERVICE_ORDER.REVOKED` chờ D+ xác nhận handler (Open Question #1 gốc) | Đối xứng nếu path thật sự xảy ra | Path kích hoạt (huỷ phiếu quyết toán → reopen SO → huỷ SO) không tồn tại — chờ D+ xác nhận cho 1 step không bao giờ fire là lãng phí effort tích hợp | Loại 2026-08-11 (v6) — cùng root-cause với dòng "Khai báo luôn SETTLEMENT.REVOKED" ở trên; CR bổ sung nếu BA xác nhận có luồng huỷ phiếu QT thật sau này |
 
 ## Consequences
 
@@ -110,16 +110,16 @@ Cả 2 boundary tái dùng outbox sẵn có. Không cần lưu vết "đã emit"
 
 - `gf-sales-api.md` §3bis.2 (`for-settlement` +3 field) phải deploy **trước** producer `gf-accounting` — thứ tự cutover bắt buộc.
 - `gf-sales` và `gf-accounting` **mới trở thành caller trực tiếp của `ct-file-storage`** (trước đó chỉ BFF gọi — ADR-016). Thêm 1 dependency đồng bộ trong luồng emit; lỗi upload → không ghi outbox → phiếu vẫn hoàn thành/tạo bình thường (KHÔNG rollback state nghiệp vụ), ghi ngoại lệ cho vận hành.
-- D+ phải có handler cho 3 step mới; step `SERVICE_ORDER.REVOKED` cần D+ xác nhận trước cutover (xem Open Questions).
+- D+ phải có handler cho 2 step mới (`SERVICE_ORDER.SYNC` + `SETTLEMENT.SYNC`).
 - Dedupe không có `revision` (D5) — xuất lại phiếu bị bỏ qua phía D+.
 
 ## Open Questions
 
-1. Driver+ team xác nhận đã có handler cho `DOCUMENT.SERVICE_ORDER.REVOKED` trước cutover. Chưa có → ship 2 step SYNC trước, REVOKED sau qua CR (flag D7 vẫn dùng chung).
-2. `folderType` dùng khi upload `ct-file-storage`: đề xuất `SETTLEMENTS` (tái dùng ADR-016) cho phiếu quyết toán và `SERVICE_ORDERS` cho phiếu dịch vụ — cần Platform xác nhận giá trị enum hợp lệ.
+1. ~~Driver+ team xác nhận đã có handler cho `DOCUMENT.SERVICE_ORDER.REVOKED` trước cutover~~ — **RESOLVED v6 (moot)**: step `DOCUMENT.SERVICE_ORDER.REVOKED` bị loại bỏ hoàn toàn khỏi contract (xem D3) — không còn gì để D+ cần confirm handler. Contract W07 document-sync chỉ còn 2 step (`SERVICE_ORDER.SYNC` + `SETTLEMENT.SYNC`), cả 2 đều D+ cần handler nhưng không phải Open Question (đã ratified từ v1).
+2. ~~`folderType` dùng khi upload `ct-file-storage`~~ — **RESOLVED v4** (Delivery Authority sonhoang chốt 2026-08-11, xem Change Log v3 + v4): **1 giá trị dùng chung `folderType="SO"`** cho cả 2 loại chứng từ — phiếu dịch vụ (`gf-sales`, `DOCUMENT.SERVICE_ORDER.SYNC`, chốt qua GAP-W07-GSL-03) và phiếu quyết toán (`gf-accounting`, `DOCUMENT.SETTLEMENT.SYNC`, chốt qua GAP-W07-GAC-02) — vì cả 2 đều thuộc cùng 1 Service Order gốc. Thay thế đề xuất split 2 giá trị (`SETTLEMENTS`/`SERVICE_ORDERS`) ở v1/v2.
 3. Nếu Security yêu cầu cưỡng chế hạn tải ở tầng storage → cần **CR supersede/sửa ADR-016** ("KHÔNG signed URL TTL" là quyết định của Architecture Authority, không phải giới hạn platform). Trước khi đó, `expiresAt` giữ nghĩa deadline hợp đồng.
 4. Luồng hủy phiếu quyết toán: endpoint `POST /api/v1/settlements/{code}/cancel` có trong API baseline nhưng `FEAT-STL-DETAIL` đã gỡ AC-16/17/18 (2026-08-03) vì chức năng không tồn tại. Nếu BA xác nhận sau này có luồng thật → CR bổ sung step `DOCUMENT.SETTLEMENT.REVOKED`, thuần additive (đối xứng D3).
-5. Retention của tệp chứng từ phía D+ và phía `ct-file-storage` (ADR-016 đặt 10 năm cho hồ sơ BH; chứng từ đồng bộ D+ chưa có policy).
+5. ~~Retention của tệp chứng từ phía D+ và phía `ct-file-storage`~~ — **RESOLVED v5** (Delivery Authority sonhoang chốt 2026-08-11, xem Change Log v5): **giữ vĩnh viễn** (không xóa/không có lifecycle expiry) tại `ct-file-storage` — khác với `expiresAt` (TTL 30 ngày, chỉ là deadline hợp đồng cho Driver+ tải tệp, KHÔNG phải storage lifecycle). Platform KHÔNG cấu hình auto-purge cho `folderType="SO"` documents nguồn document-sync này.
 
 ## References
 
@@ -133,5 +133,9 @@ Cả 2 boundary tái dùng outbox sẵn có. Không cần lưu vết "đã emit"
 
 | Date | Version | Author | Description |
 |---|---|---|---|
+| 2026-08-11 | 6 | Delivery Authority (sonhoang) — chốt qua `/warm-up gf-sales --phase A` gap GAP-W07-GSL-02 | **D3 — loại bỏ hoàn toàn step `DOCUMENT.SERVICE_ORDER.REVOKED`** (không chỉ hoãn qua CR như quyết định 2026-08-10 Q6): user xác nhận **"hủy phiếu quyết toán" không phải luồng nghiệp vụ tồn tại** — đây là premise DUY NHẤT khiến REVOKED khả đạt (đường: huỷ phiếu QT → reopen SO → huỷ SO), cùng root-cause đã dùng để gỡ `SETTLEMENT.REVOKED` ở round 2 (2026-08-10, Q8). Contract W07 document-sync còn **2 `MessageStep`** (`SERVICE_ORDER.SYNC` + `SETTLEMENT.SYNC`, cả 2 đều SYNC-only, không REVOKED). D3 table + achievability note rewrite; D5 bỏ khoá dedupe riêng cho REVOKED; D6 bỏ mention "bản REVOKED tự correlate"; Alternatives table +2 row phản ánh đảo ngược quyết định Q6; Consequences "D+ phải có handler cho 3 step" → "2 step"; Open Question #1 đóng (moot — không còn gì cần D+ xác nhận). Cascade bắt buộc (thực hiện cùng version bump này): `gf-sales-events.md` (xóa catalog row 7c + §2ter E3 + §3.11 schema), `gf-sales-HLD.md` (xóa bullet "Thu hồi"), `INTEG-EXT-driver-plus.md` (xóa row #14 step table, step count 14→13), `gf-sales-api.md` (enum `DocumentMessageStep` bỏ `SERVICE_ORDER.REVOKED`, còn 2 giá trị), `_CONVENTIONS.md` (§11 cross-boundary topic bảng bỏ step), `PKG-W07-partner-link-booking-driver-plus.md` (bỏ mọi mention REVOKED ở §2.2.3/§4.1/§5.1), `Plan/WAVE-SEQUENCE.md` (Core contracts DOCUMENT 3→2 step, tổng 14→13 MessageStep, Exit Criteria bỏ clause REVOKED). Cross-ref: `Tracking/warm-up/WAVE07/W07-gf-sales-warm-up-phaseA.md` GAP-W07-GSL-02 (RESOLVED). |
+| 2026-08-11 | 5 | Delivery Authority (sonhoang) — chốt qua `/warm-up gf-sales --phase A` gap GAP-W07-GSL-05 | **Open Question #5 resolved — Retention chứng từ document-sync**: chốt **giữ vĩnh viễn** (không lifecycle expiry / không auto-purge) cho tệp `folderType="SO"` tại `ct-file-storage` — khác `expiresAt` TTL 30 ngày (D4, chỉ là deadline hợp đồng cho Driver+ tải tệp). Cross-ref: `Tracking/warm-up/WAVE07/W07-gf-sales-warm-up-phaseA.md` GAP-W07-GSL-05 (RESOLVED, chuyển từ DEFERRED do `--fix` subagent trước đó). |
+| 2026-08-11 | 4 | Delivery Authority (sonhoang) — chốt qua `/warm-up gf-accounting --phase A` gap GAP-W07-GAC-02 | **Open Question #2 fully resolved — `folderType` phía `gf-accounting`**: chốt `folderType="SO"` cho upload PDF phiếu quyết toán (`gf-accounting`) khi đồng bộ chứng từ sang Driver+, thay đề xuất ban đầu `SETTLEMENTS`. Đồng nhất với quyết định v3 phía `gf-sales` (cũng `folderType="SO"`) — 1 giá trị dùng chung cho cả 2 loại chứng từ vì cùng thuộc 1 Service Order gốc. Open Question #2 nay **đóng hoàn toàn**. Cross-ref: `Tracking/warm-up/WAVE07/W07-gf-accounting-warm-up-phaseA.md` GAP-W07-GAC-02 (RESOLVED) · sibling `Tracking/warm-up/WAVE07/W07-gf-sales-warm-up-phaseA.md` GAP-W07-GSL-03 (RESOLVED, v3). |
+| 2026-08-11 | 3 | Delivery Authority (sonhoang) — chốt qua `/warm-up gf-sales --phase A` gap GAP-W07-GSL-03 | **Open Question #2 partial resolve — `folderType` phía `gf-sales`**: chốt `folderType="SO"` cho upload PDF phiếu dịch vụ (`gf-sales`) khi đồng bộ chứng từ sang Driver+, thay đề xuất ban đầu `SERVICE_ORDERS`. Phía `gf-accounting` (phiếu quyết toán, đề xuất `SETTLEMENTS`) **vẫn OPEN** — chưa được Platform xác nhận, không thuộc quyết định lần này. Cross-ref: `Tracking/warm-up/WAVE07/W07-gf-sales-warm-up-phaseA.md` GAP-W07-GSL-03 (RESOLVED) · sibling gap `GAP-W07-GAC-02` (gf-accounting warm-up, vẫn OPEN cho phần `SETTLEMENTS`). |
 | 2026-08-10 | 2 | Architecture Authority (agent-arch-author) | **Round 2 sau arch-review (mandate Q7–Q10)**: (Q8) gỡ step `DOCUMENT.SETTLEMENT.REVOKED` khỏi D3 + Alternatives + Consequences + Open Q — tiền đề round 1 sai vì `FEAT-STL-DETAIL` EC-7/AC-16..18 đã bị Business Authority gỡ 2026-08-03; contract còn **3 step**. (Q7) thêm **D3bis** — điều kiện emit của `gf-accounting` lấy từ 3 field additive `bookingCode`/`externalBookingId`/`isDriverPlusSource` trong snapshot `for-settlement` (`gf-sales-api.md` §3bis.2 v13), đóng P0 vi phạm Critical Rule #1. (Q9) D4 + Open Q3: KHÔNG signed URL là **quyết định ADR-016**, gỡ ràng buộc = supersede ADR-016, không phải chờ Platform. (Q10) frontmatter `boundary` → `global` (precedent ADR-029); D4 khẳng định `fileUrl` là URL **tuyệt đối**. |
 | 2026-08-10 | 1 | Architecture Authority (agent-arch-author) | Initial — đồng bộ chứng từ GMS → Driver+ (phiếu dịch vụ + phiếu quyết toán): topic `AC-DEV-DOCUMENT-EVENTS`, 4 MessageStep, mỗi boundary tự emit, tệp qua URL TTL 30 ngày, `event_id` UUIDv5 theo mã phiếu, không schema change. |

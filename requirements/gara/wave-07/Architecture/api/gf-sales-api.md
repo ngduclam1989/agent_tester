@@ -2,11 +2,11 @@
 type: architecture
 artifact_kind: api-contract
 status: ACTIVE
-version: 13
+version: 14
 tier: T1
 owner_authority: Architecture Authority
 boundary: gf-sales
-last_reviewed: "2026-08-10"
+last_reviewed: "2026-08-11"
 depends_on:
   - "../hld/gf-sales-HLD.md"
   - "../data/gf-sales-data-model.md"
@@ -4210,7 +4210,7 @@ Cross-cutting (mọi endpoint): `INS_FORBIDDEN_TENANT` (INS-9001/403), `INS_UNAU
 
 ### 5.2bis. Đồng bộ chứng từ Driver+ (ad-hoc 2026-08-10, ADR-031)
 
-> Field **event payload** của 2 step `DOCUMENT.SERVICE_ORDER.*` ([`gf-sales-events.md`](../events/gf-sales-events.md) §3.10/§3.11). Dùng chung tên canonical với `gf-accounting` ([`gf-accounting-api.md`](gf-accounting-api.md) §6.5) — 2 producer, 1 topic, D+ parse 1 shape.
+> Field **event payload** của step `DOCUMENT.SERVICE_ORDER.SYNC` ([`gf-sales-events.md`](../events/gf-sales-events.md) §3.10 — §3.11 `ServiceOrderDocumentRevoked` đã bị loại bỏ, ADR-031 v6). Dùng chung tên canonical với `gf-accounting` ([`gf-accounting-api.md`](gf-accounting-api.md) §6.5) — 2 producer, 1 topic, D+ parse 1 shape.
 
 | Concept (Product term VI) | BE (Java camelCase) | BFF (GraphQL SDL) | FE (TS type field) | Mobile (Dart field) | Cite |
 |---|---|---|---|---|---|
@@ -4224,13 +4224,11 @@ Cross-cutting (mọi endpoint): `INS_FORBIDDEN_TENANT` (INS-9001/403), `INS_UNAU
 | Kiểu MIME | `file.mimeType` | — | — | — | ADR-016 §Phase B |
 | Mã kiểm tra toàn vẹn | `file.checksum` | — | — | — | ADR-031 D4 |
 | Hạn tải tệp | `file.expiresAt` | — | — | — | ADR-031 D4 |
-| Lý do thu hồi | `revokedReason` | — | — | — | `FEAT-SO-DETAIL` AC-22/AC-23 (Ghi chú bắt buộc) |
-| Khoá đối chiếu bản đồng bộ gốc | `correlation.syncEventId` | — | — | — | ADR-031 D3 |
 
 | Enum type | Values | Cite |
 |---|---|---|
 | `DocumentType` | `SERVICE_ORDER \| SETTLEMENT` | ADR-031 D3 (2 loại phiếu) |
-| `DocumentMessageStep` | `DOCUMENT.SERVICE_ORDER.SYNC \| DOCUMENT.SETTLEMENT.SYNC \| DOCUMENT.SERVICE_ORDER.REVOKED` | ADR-031 D3 (3 step — `SETTLEMENT.REVOKED` gỡ round 2: `FEAT-STL-DETAIL` EC-7 đã bị Business Authority gỡ 2026-08-03, không có luồng hủy phiếu QT) |
+| `DocumentMessageStep` | `DOCUMENT.SERVICE_ORDER.SYNC \| DOCUMENT.SETTLEMENT.SYNC` | ADR-031 D3 (2 step — `SETTLEMENT.REVOKED` gỡ round 2 2026-08-10: `FEAT-STL-DETAIL` EC-7 đã bị Business Authority gỡ 2026-08-03; `SERVICE_ORDER.REVOKED` gỡ 2026-08-11 (v6) cùng root-cause, không có luồng hủy phiếu QT) |
 
 > **Không expose ra BFF/FE/Mobile**: chứng từ đi thẳng GMS → Driver+ qua Kafka, không có màn hình GMS nào hiển thị các field này. Cột "—" là có chủ đích, không phải thiếu sót.
 
@@ -4255,6 +4253,7 @@ Không áp dụng cho W07 và cho đợt document sync (ADR-031) — tích hợp
 
 | Date | Version | Summary |
 |---|---|---|
+| 2026-08-11 | v14 | **§5.2bis — loại bỏ `DOCUMENT.SERVICE_ORDER.REVOKED`** (ADR-031 v6, per user sonhoang chốt qua `/warm-up gf-sales` GAP-W07-GSL-02): premise duy nhất khiến step khả đạt (huỷ phiếu quyết toán → reopen SO) không phải luồng nghiệp vụ tồn tại. Naming Registry table xóa 2 row (`revokedReason`, `correlation.syncEventId`); enum `DocumentMessageStep` còn **2 giá trị** (`SYNC` × 2 loại, không REVOKED nào); header cite §3.11→§3.10-only. **KHÔNG thêm/xóa endpoint** — §2 Endpoint Summary không đổi. v13 → v14. |
 | 2026-08-10 | v13 | **P0 fix round 2 (mandate Q7) — §3bis.2 `for-settlement` +3 field additive** `bookingCode` + `externalBookingId` + `isDriverPlusSource`, cho phép `gf-accounting` xác định phiếu QT thuộc booking nguồn Driver+ **mà không đọc DB gf-sales** (đóng vi phạm Critical Rule #1 — trước đó payload `DOCUMENT.SETTLEMENT.SYNC` đánh `bookingCode` Required nhưng snapshot không mang được trường nào). Backward-compat thuần additive (ADR-013). Kèm mandate Q8: §5.2bis enum `DocumentMessageStep` gỡ `DOCUMENT.SETTLEMENT.REVOKED` (còn 3 step). **KHÔNG thêm endpoint** — §2 Endpoint Summary không đổi. v12 → v13. |
 | 2026-08-10 | v12 | **§5.2bis MỚI — Naming Registry cho đồng bộ chứng từ Driver+ (ADR-031)**: 12 field payload + 2 enum (`DocumentType`, `DocumentMessageStep`) dùng chung với `gf-accounting-api.md` §6.5. Ghi rõ các field **không** expose BFF/FE/Mobile (Kafka-only, không có màn hình GMS). §5.3 note mở rộng (vẫn không có REST path param mới), §6 References +Product. **KHÔNG thêm endpoint REST nào** — §2 Endpoint Summary không đổi. v11 → v12. |
 | 2026-08-05 | v11 | **W07 Driver+ integration rewrite (DESIGN)** — thêm **§5 Naming Registry** (5.1 DTO/event payload 18 concept · 5.2 enum 5 loại full values verbatim + bảng mapping `BookingStatus`→`DriverPlusBookingStatus` · 5.3 path param N/A); §5 References cũ renumber → **§6** (+ADR-029, +INTEG-EXT-driver-plus, +Product/BR W07). §4 Forbidden +2 rule naming. **KHÔNG thêm endpoint REST** — tích hợp Driver+ thuần Kafka per ADR-029; §1/§2/§3/§3bis giữ nguyên toàn bộ. v10 → v11. |

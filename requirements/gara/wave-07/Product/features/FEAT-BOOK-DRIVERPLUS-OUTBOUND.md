@@ -2,7 +2,7 @@
 type: feature
 artifact_kind: feature
 status: PLANNED
-version: 4
+version: 5
 tier: T2
 owner_authority: Business Authority
 parent_epic: "EP-BOOKING"
@@ -21,14 +21,14 @@ last_reviewed: "2026-08-10"
 
 ## Metadata
 
-| Field | Value |
-|---|---|
-| Feature ID | `FEAT-BOOK-DRIVERPLUS-OUTBOUND` |
-| Title | Phản hồi và đồng bộ trạng thái lịch hẹn sang Driver+ |
-| Parent Epic | `EP-BOOKING` |
-| Boundary | `gf-sales` |
-| Priority | P0 (thay thế cơ chế đang production) |
-| Status | PLANNED |
+| Field       | Value                                                |
+| ----------- | ---------------------------------------------------- |
+| Feature ID  | `FEAT-BOOK-DRIVERPLUS-OUTBOUND`                      |
+| Title       | Phản hồi và đồng bộ trạng thái lịch hẹn sang Driver+ |
+| Parent Epic | `EP-BOOKING`                                         |
+| Boundary    | `gf-sales`                                           |
+| Priority    | P0 (thay thế cơ chế đang production)                 |
+| Status      | PLANNED                                              |
 
 ## 1. User Story
 
@@ -85,7 +85,7 @@ last_reviewed: "2026-08-10"
   - Khi: Driver+ nhận các lượt gửi lặp đó.
   - Thì: mỗi sự kiện mang `event_id` ổn định, không đổi qua các lần retry — Driver+ dedupe theo `event_id` để chỉ áp dụng đúng một lần (per FEAT-DP-035 AC-19, phía nhận). GMS đảm bảo không tự sinh `event_id` mới cho cùng 1 lần thay đổi trạng thái khi retry.
 
-### Nhóm C — Phản hồi từ chối khi không xử lý được yêu cầu inbound (mới, BA-review F7)
+### Nhóm C — Gửi kết quả từ chối khi không xử lý được yêu cầu inbound
 
 - [ ] **AC-10**: Phản hồi từ chối khi yêu cầu đặt lịch không hợp lệ
   - Tại: ngay sau khi hệ thống nhận yêu cầu đặt lịch từ Driver+ (`FEAT-BOOK-DRIVERPLUS-INBOUND` AC-2) nhưng payload không hợp lệ — thiếu 1 trong 5 trường bắt buộc, hoặc giờ hẹn không đúng bước 15 phút (`FEAT-BOOK-DRIVERPLUS-INBOUND` EC-3, nay RESOLVED).
@@ -130,13 +130,16 @@ last_reviewed: "2026-08-10"
 
 ## 8. Feature-flag
 
-Dùng chung flag `Booking:DriverPlus` với `FEAT-BOOK-DRIVERPLUS-INBOUND` — xem chi tiết đầy đủ (`default_state`, `rollout_scope`, `kill_switch_owner`, behavior khi `off`) tại `FEAT-BOOK-DRIVERPLUS-INBOUND.md` §8. Khi flag `off`: feature này ngừng gửi mọi sự kiện outbound (đồng bộ trạng thái, phản hồi từ chối AC-10/11, emit qua `FEAT-SO-DETAIL`/`FEAT-STL-CREATE`) song song với INBOUND ngừng nhận request.
+Dùng chung flag `Booking:DriverPlus` với `FEAT-BOOK-DRIVERPLUS-INBOUND` — xem chi tiết đầy đủ (`default_state`, `rollout_scope`, `kill_switch_owner`, behavior khi `off`) tại `FEAT-BOOK-DRIVERPLUS-INBOUND.md` §8. Khi flag `off`, feature này ngừng gửi các sự kiện thuộc luồng booking (đồng bộ trạng thái và phản hồi tạo/hủy, bao gồm AC-10/11), song song với INBOUND ngừng nhận request.
+
+Flag này **không điều khiển** việc gửi phiếu dịch vụ/phiếu quyết toán. Hai luồng chứng từ thuộc `FEAT-SO-DETAIL` và `FEAT-STL-CREATE`, dùng flag riêng `Document:DriverPlus`. Hai công tắc hoạt động độc lập: tắt booking không tự động dừng gửi chứng từ phát sinh từ booking Driver+ đã tồn tại.
 
 ## 9. Change Log
 
-| Date | Version | Author | Description |
-|---|---|---|---|
-| 2026-08-03 | 1 | user (Business Authority) qua main agent | **Khởi tạo** — tách riêng khỏi `FEAT-BOOK-DRIVERPLUS-INBOUND.md` theo đúng chiều outbound. Viết theo FEAT-DP-035 Nhóm 3/6/7 (phía Driver+). Điểm mới quan trọng nhất so với cơ chế cũ: `cancel_source` **bắt buộc** khi trạng thái = "Đã hủy" (AC-4) — trước đây `BOOKING.UPDATE.RESPONSE` không có field này. Quyết định (đồng ý với user 2026-08-03): logic emit phiếu DV/QT **không** đặt trong feature này — thêm AC trực tiếp vào `FEAT-SO-DETAIL`/`FEAT-STL-CREATE` theo boundary ownership sẵn có, tránh tạo FEAT/BR cross-boundary không cần thiết. |
-| 2026-08-03 | 2 | user (Business Authority) qua main agent | **Fix batch F3/F4/F7 (BA-review round 1, 2026-08-03)**: (F3) AC-4 viết lại "Tại" — chốt rõ: `cancel_source` luôn ghi nhận nội bộ cho mọi booking hủy, chỉ **payload gửi Driver+** (chỉ tồn tại cho booking nguồn D+) mới bắt buộc có trường này; EC-2 chuyển NEED CONFIRMATION → **RESOLVED** cùng logic. (F4) §5 BR-BOOK-024 thu hẹp phạm vi — loại trừ phiếu quyết toán (thuộc `gf-accounting`, outbox riêng, xem `BR-STL-CRE-008`/`CB-ACC-008`), tránh nhận vơ ownership cross-boundary. (F7) Thêm **Nhóm C** (AC-10, AC-11) — phản hồi từ chối đồng bộ khi yêu cầu inbound không hợp lệ (payload sai — `ERR-BOOK-001`) hoặc không tìm thấy booking cho yêu cầu hủy (`ERR-BOOK-002`), mã lỗi mới đăng ký tại `ERROR-CODE-REGISTRY.md` §6 (`API_RESPONSE`, không render GMS UI); §4 API Reference bổ sung mô tả kênh phản hồi đồng bộ khác với 2 kênh event outbound hiện có. |
-| 2026-08-03 | 3 | user (Business Authority) qua main agent | **Thêm §8 Feature-flag** (cross-ref, chi tiết đầy đủ tại `FEAT-BOOK-DRIVERPLUS-INBOUND.md` §8) — dùng chung flag `Booking:DriverPlus`, default `on` mọi tenant. §8 cũ (Change Log) đổi thành §9. |
-| 2026-08-10 | 4 | Business Authority qua main agent | **Chốt Kafka theo ADR-029**: response lỗi tạo/hủy booking đổi từ mô tả HTTP đồng bộ sang event correlated (`BOOKING.CREATE.RESPONSE` / `BOOKING.CANCEL.RESPONSE`); chốt `BOOKING.CHANGE.STATUS` và additive `cancelSource`/`driverPlusStatus`. |
+| Date       | Version | Author                                   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------- | ------- | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-08-03 | 1       | user (Business Authority) qua main agent | **Khởi tạo** — tách riêng khỏi `FEAT-BOOK-DRIVERPLUS-INBOUND.md` theo đúng chiều outbound. Viết theo FEAT-DP-035 Nhóm 3/6/7 (phía Driver+). Điểm mới quan trọng nhất so với cơ chế cũ: `cancel_source` **bắt buộc** khi trạng thái = "Đã hủy" (AC-4) — trước đây `BOOKING.UPDATE.RESPONSE` không có field này. Quyết định (đồng ý với user 2026-08-03): logic emit phiếu DV/QT **không** đặt trong feature này — thêm AC trực tiếp vào `FEAT-SO-DETAIL`/`FEAT-STL-CREATE` theo boundary ownership sẵn có, tránh tạo FEAT/BR cross-boundary không cần thiết.                                                                                                                                                                                                                                                                                                                     |
+| 2026-08-03 | 2       | user (Business Authority) qua main agent | **Fix batch F3/F4/F7 (BA-review round 1, 2026-08-03)**: (F3) AC-4 viết lại "Tại" — chốt rõ: `cancel_source` luôn ghi nhận nội bộ cho mọi booking hủy, chỉ **payload gửi Driver+** (chỉ tồn tại cho booking nguồn D+) mới bắt buộc có trường này; EC-2 chuyển NEED CONFIRMATION → **RESOLVED** cùng logic. (F4) §5 BR-BOOK-024 thu hẹp phạm vi — loại trừ phiếu quyết toán (thuộc `gf-accounting`, outbox riêng, xem `BR-STL-CRE-008`/`CB-ACC-008`), tránh nhận vơ ownership cross-boundary. (F7) Thêm **Nhóm C** (AC-10, AC-11) — phản hồi từ chối đồng bộ khi yêu cầu inbound không hợp lệ (payload sai — `ERR-BOOK-001`) hoặc không tìm thấy booking cho yêu cầu hủy (`ERR-BOOK-002`), mã lỗi mới đăng ký tại `ERROR-CODE-REGISTRY.md` §6 (`API_RESPONSE`, không render GMS UI); §4 API Reference bổ sung mô tả kênh phản hồi đồng bộ khác với 2 kênh event outbound hiện có. |
+| 2026-08-03 | 3       | user (Business Authority) qua main agent | **Thêm §8 Feature-flag** (cross-ref, chi tiết đầy đủ tại `FEAT-BOOK-DRIVERPLUS-INBOUND.md` §8) — dùng chung flag `Booking:DriverPlus`, default `on` mọi tenant. §8 cũ (Change Log) đổi thành §9.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| 2026-08-10 | 4       | Business Authority qua main agent        | **Chốt Kafka theo ADR-029**: response lỗi tạo/hủy booking đổi từ mô tả HTTP đồng bộ sang event correlated (`BOOKING.CREATE.RESPONSE` / `BOOKING.CANCEL.RESPONSE`); chốt `BOOKING.CHANGE.STATUS` và additive `cancelSource`/`driverPlusStatus`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| 2026-08-10 | 5       | Business Authority qua main agent        | **Đồng bộ feature flag với ADR-031**: sửa phạm vi `Booking:DriverPlus` chỉ điều khiển các sự kiện booking. Phiếu dịch vụ/quyết toán dùng flag độc lập `Document:DriverPlus`; tắt booking không tự động dừng chứng từ của booking Driver+ đã tồn tại.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |

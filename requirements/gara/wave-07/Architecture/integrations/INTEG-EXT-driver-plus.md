@@ -2,12 +2,12 @@
 type: architecture
 artifact_kind: integration-external
 status: ACTIVE
-version: 5
+version: 10
 tier: T1
 owner_authority: Architecture Authority
 boundary: "cross-boundary (gf-system, gf-sales, gf-accounting)"
 provider: "Driver Plus"
-last_reviewed: "2026-08-10"
+last_reviewed: "2026-08-12"
 supersedes: "none"
 ---
 
@@ -73,16 +73,16 @@ supersedes: "none"
 
 ## 4. Endpoints / Operations Used
 
-**Không có HTTP operation.** Contract = **14 `MessageStep`** trên 3 topic:
+**Không có HTTP operation.** Contract = **13 `MessageStep`** trên 3 topic:
 
 ### 4.1 Partner link — `AC-DEV-PARTNER-LINK-EVENTS` (`MessageGroup=PARTNER_LINK`, boundary `gf-system`)
 
 | # | Chiều | `MessageStep` | Trigger | Cite |
 |---|---|---|---|---|
-| 1 | D+ → GMS | `PARTNER_LINK.REQUEST.CREATE` | Tài khoản D+ gửi yêu cầu liên kết tới garage | CB-SYS-004 · `BR-DPL-CMN-001` |
+| 1 | D+ → GMS | `PARTNER_LINK.REQUEST.CREATE` | Tài khoản D+ gửi yêu cầu liên kết tới garage — payload mang `partnerAccountPhone` = **SĐT garage** (GMS resolve tenant từ SĐT này, KHÔNG phải D+ tự set `tenantId`, ADR-029 v2) | CB-SYS-004 · `BR-DPL-CMN-001` · ADR-029 v2 |
 | 2 | D+ → GMS | `PARTNER_LINK.REQUEST.WITHDRAW` | D+ user tự hủy yêu cầu đang "Chờ liên kết" | CB-SYS-007 · `BR-DPL-CAN-004` |
 | 3 | D+ → GMS | `PARTNER_LINK.UNLINK` | D+ user tự hủy liên kết đang "Đã liên kết" | CB-SYS-008 · `BR-DPL-CAN-005` |
-| 4 | GMS → D+ | `PARTNER_LINK.REQUEST.RESPONSE` | Kết quả xử lý #1 (ack hoặc từ chối `ERR-DPL-010`) | ADR-029 · `FEAT` AC-34 |
+| 4 | GMS → D+ | `PARTNER_LINK.REQUEST.RESPONSE` | Kết quả xử lý #1 (ack hoặc từ chối `ERR-DPL-010` single-active guard, hoặc `ERR-DPL-013` resolve tenant từ SĐT thất bại — ADR-029 v2) | ADR-029 · `FEAT` AC-34 |
 | 5 | GMS → D+ | `PARTNER_LINK.PROFILE.SYNC` | Garage Duyệt hoặc bấm "Đồng bộ lại" | CB-SYS-005 · `FEAT` AC-15(c)/AC-21(a) |
 | 6 | GMS → D+ | `PARTNER_LINK.STATUS.CHANGED` | State đổi do action từ GMS (4 loại) + wording notification | CB-SYS-009 · `BR-DPL-NOTI-001..004` |
 
@@ -104,14 +104,13 @@ supersedes: "none"
 |---|---|---|---|---|---|
 | 12 | GMS → D+ | `DOCUMENT.SERVICE_ORDER.SYNC` | `gf-sales` | Phiếu dịch vụ chuyển "Hoàn thành", SO liên kết booking nguồn D+ | `FEAT-SO-DETAIL` AC-17 · `BR-SO-DTL-007` |
 | 13 | GMS → D+ | `DOCUMENT.SETTLEMENT.SYNC` | `gf-accounting` | Tạo phiếu quyết toán thành công, snapshot `for-settlement` trả `isDriverPlusSource=true` (cặp AC-4 → 2 event) | `FEAT-STL-CREATE` AC-3/AC-4 · `BR-STL-CRE-008` · `gf-sales-api.md` §3bis.2 |
-| 14 | GMS → D+ | `DOCUMENT.SERVICE_ORDER.REVOKED` | `gf-sales` | Phiếu DV đã SYNC sau đó chuyển "Đã huỷ" | `FEAT-SO-DETAIL` AC-22..24 · ADR-031 D3 |
 
 **Quy tắc chốt** (chi tiết + lý do: ADR-031):
 
 - **Tệp**: payload mang `file.fileUrl` + `fileName` + `mimeType` + `checksum` (SHA-256) + `expiresAt`; D+ **tự fetch**, GMS KHÔNG nhúng binary. TTL **30 ngày** kể từ `occurredAt`. `fileUrl` là **URL tuyệt đối** (có scheme + domain) — khác `pdfUrl` của ADR-016 (relative path, FE ghép domain): Driver+ là hệ ngoài, không ghép được. **Signed URL TTL là quyết định kiến trúc đã chốt KHÔNG dùng** (ADR-016 §Decision + §Đã chốt, supersede mốc 300s ngày 2026-06-17) — nên `expiresAt` ở đây là **deadline hợp đồng** (D+ phải fetch trước mốc này; GMS không cam kết URL sống sau đó), không phải TTL cưỡng chế ở tầng storage. Muốn cưỡng chế → phải **supersede/sửa ADR-016** (Architecture Authority), không phải chờ Platform.
 - **Hết hạn / fetch lỗi**: GMS **không** tự phát lại; không có kênh REST ngược. Vận hành re-queue outbox row để phát lại cùng `eventId` (§13). D+ chủ động xin lại → cần CR thêm step inbound `DOCUMENT.RESEND.REQUEST` (ngoài phạm vi).
 - **Emit độc lập**: 2 loại phiếu không chờ nhau, không ghi đè nhau; cặp phiếu QT emit riêng từng phiếu.
-- **Thu hồi**: chỉ có cho **phiếu dịch vụ** (`FEAT-SO-DETAIL` AC-22..24). D+ **đánh dấu thu hồi**, KHÔNG xoá (giữ audit trail hồ sơ số của xe). **Không có** `DOCUMENT.SETTLEMENT.REVOKED` — `FEAT-STL-DETAIL` EC-7 + AC-16/17/18 đã bị Business Authority gỡ 2026-08-03: "Hủy phiếu quyết toán" là chức năng không tồn tại. Nếu BA xác nhận sau này có luồng đó → CR bổ sung, thuần additive.
+- **Thu hồi**: **KHÔNG có step thu hồi cho cả 2 loại phiếu.** `DOCUMENT.SETTLEMENT.REVOKED` không có vì `FEAT-STL-DETAIL` EC-7 + AC-16/17/18 đã bị Business Authority gỡ 2026-08-03 — "Hủy phiếu quyết toán" là chức năng không tồn tại. `DOCUMENT.SERVICE_ORDER.REVOKED` (row 14 cũ, loại bỏ 2026-08-11, ADR-031 v6) cũng không có — đường trigger duy nhất của nó (huỷ phiếu quyết toán → reopen SO → huỷ SO) phụ thuộc chính "Hủy phiếu quyết toán" nói trên, nên bất khả thi cùng lý do. Nếu BA xác nhận sau này có luồng huỷ phiếu quyết toán thật → CR bổ sung lại cả 2 step, thuần additive.
 - **Nguồn điều kiện emit của `gf-accounting`**: 3 field additive `bookingCode` / `externalBookingId` / `isDriverPlusSource` trong snapshot `for-settlement` (`gf-sales-api.md` §3bis.2 v13) — **KHÔNG** đọc DB `gf-sales`.
 - **Kill-switch**: feature flag **`Document:DriverPlus`**, độc lập 2 flag còn lại (§11).
 
@@ -130,11 +129,11 @@ Schema đầy đủ per step (payload JSON + bảng field + cite Product + idemp
 
 ### 5.1 Envelope chung (cả 2 nửa)
 
-**Request/Event** (Kafka value = `KafkaMessageWrapper`):
+**Request/Event** (Kafka value = `KafkaMessageWrapper`) — `PARTNER_LINK.REQUEST.CREATE` _(v2 — không còn `OriginTenantId`/`data.tenantId`, D+ chưa biết tenant; `partnerAccountPhone` = SĐT garage dùng để GMS resolve, ADR-029 v2)_:
 ```json
 {
   "headers": {
-    "OriginTenantId": 5001,
+    "OriginTenantId": null,
     "MessageGroup": "PARTNER_LINK",
     "MessageStep": "PARTNER_LINK.REQUEST.CREATE",
     "OriginMessageCode": "LKD-2026-001",
@@ -144,10 +143,31 @@ Schema đầy đủ per step (payload JSON + bảng field + cite Product + idemp
   "messageId": "b3f1c2de-0000-4000-8000-000000000001",
   "source": "driver-plus",
   "type": "BASIC_MESSAGE",
-  "data": "{\"eventId\":\"…\",\"eventType\":\"PartnerLinkRequestCreate\",\"eventVersion\":\"1.0\",\"tenantId\":5001,\"occurredAt\":\"2026-08-05T03:10:00Z\",\"requestCode\":\"LKD-2026-001\"}",
+  "data": "{\"eventId\":\"…\",\"eventType\":\"PartnerLinkRequestCreate\",\"eventVersion\":\"2.0\",\"occurredAt\":\"2026-08-05T03:10:00Z\",\"requestCode\":\"LKD-2026-001\",\"partnerAccountPhone\":\"0901234567\"}",
   "timestamp": "2026-08-05T03:10:00Z"
 }
 ```
+
+**Request/Event** — `PARTNER_LINK.REQUEST.WITHDRAW` / `PARTNER_LINK.UNLINK` _(v3 — không còn `OriginTenantId`/`data.tenantId`, D+ không quản lý giá trị này; resolve tenant qua lookup `partner_link_request` theo `requestCode`, ADR-029 v3 gap G4)_:
+```json
+{
+  "headers": {
+    "OriginTenantId": null,
+    "MessageGroup": "PARTNER_LINK",
+    "MessageStep": "PARTNER_LINK.UNLINK",
+    "OriginMessageCode": "LKD-2026-001",
+    "CorrelationId": "uuid",
+    "TraceParent": "00-trace-span-01"
+  },
+  "messageId": "b3f1c2de-0000-4000-8000-000000000002",
+  "source": "driver-plus",
+  "type": "BASIC_MESSAGE",
+  "data": "{\"eventId\":\"…\",\"eventType\":\"PartnerLinkUnlink\",\"eventVersion\":\"2.0\",\"occurredAt\":\"2026-08-05T06:00:00Z\",\"requestCode\":\"LKD-2026-001\",\"reason\":\"Tài xế đổi garage hợp tác\"}",
+  "timestamp": "2026-08-05T06:00:00Z"
+}
+```
+
+> ⚠️ `OriginMessageCode` (= `data.requestCode`) **phải là mã gốc** D+ sinh lúc `PARTNER_LINK.REQUEST.CREATE` cho cùng lần liên kết — D+ **tái sử dụng nguyên vẹn**, KHÔNG sinh mã mới mỗi lần bắn message. Đây là điều kiện tiên quyết để GMS resolve đúng tenant (ADR-029 v3).
 
 **Response (correlated) — shape thống nhất cho cả 3 luồng inbound**:
 ```json
@@ -158,16 +178,26 @@ Schema đầy đủ per step (payload JSON + bảng field + cite Product + idemp
 }
 ```
 
+**Response (correlated) — nhánh resolve tenant từ SĐT thất bại** _(v2, ADR-029 amendment — gap G3; `tenantId`/`OriginTenantId` = `null`)_:
+```json
+{
+  "success": false,
+  "error": { "code": "ERR-DPL-013", "message": "Không tìm thấy garage nào đăng ký số điện thoại này trong hệ thống GMS. Vui lòng kiểm tra lại số điện thoại." },
+  "correlation": { "requestEventId": "b3f1c2de-0000-4000-8000-000000000001", "originMessageCode": "LKD-2026-001" }
+}
+```
+
 **Error shape (mã dùng chung, verbatim từ `Product/Commons/ERROR-CODE-REGISTRY.md`)**:
 
 | Code | Luồng | HTTP-equivalent | Nguồn |
 |---|---|---|---|
 | `ERR-DPL-010` | Partner link — tạo yêu cầu bị single-active guard chặn | 409 | Registry §5 |
 | `ERR-DPL-011` | Partner link — tạo yêu cầu khi kill-switch `PartnerLink:DriverPlus=off` | 503 | Registry §5 · FEAT AC-43 · BR-DPL-CMN-008 |
+| `ERR-DPL-013` (mới, v2) | Partner link — tạo yêu cầu, resolve tenant từ `partnerAccountPhone` thất bại (không khớp garage nào) | 404 | Registry §5 · ADR-029 v2 (amendment, gap G3) |
 | `ERR-BOOK-001` | Booking — payload đặt lịch không hợp lệ (thiếu 1/5 trường bắt buộc hoặc giờ hẹn sai bước 15 phút) | 400 | Registry §6 |
 | `ERR-BOOK-002` | Booking — yêu cầu hủy không tìm thấy lịch hẹn | 404 | Registry §6 |
 
-Cả 3 mã có display type `API_RESPONSE` — **response cho external caller, KHÔNG render UI GMS**.
+Cả 4 mã có display type `API_RESPONSE` — **response cho external caller, KHÔNG render UI GMS**.
 
 **Mapping → internal model**: xem bảng mapping field → cột DB tại `gf-sales-events.md` §3.8 (booking, 14 trường) và `gf-system-data-model.md` §2bis (partner link).
 
@@ -179,8 +209,10 @@ Cả 3 mã có display type `API_RESPONSE` — **response cho external caller, K
 |---|---|---|---|
 | Broker unavailable khi publish | Producer exception | Spring Kafka callback | Event **đã nằm trong `outbox_events`** → `OutboxScheduler` retry (60s `gf-system` / 10s `gf-sales`). **KHÔNG** rollback state cục bộ |
 | Consumer xử lý lỗi hạ tầng (DB down) | Exception trước ack | Log + metric | Không ack → Kafka redeliver; inbox dedupe chặn double-apply |
-| **Message thiếu `OriginTenantId`** | Header rỗng | Consumer guard | **Ack + skip** + log warning — tránh retry vô hạn (hành vi production `gf-sales`) |
-| `data.tenantId` ≠ `headers.OriginTenantId` | Mismatch | Consumer guard | **Fail có kiểm soát** + audit; **KHÔNG** xử lý side-effect (`_CONVENTIONS.md` §3.5) |
+| **Message thiếu `OriginTenantId`** | Header rỗng | Consumer guard | **Ack + skip** + log warning — tránh retry vô hạn (hành vi production `gf-sales` booking). **Ngoại lệ: partner-link (`gf-system`) cả 3 step inbound (`CREATE`/`WITHDRAW`/`UNLINK`) KHÔNG áp dụng row này** — `OriginTenantId` không bắt buộc, D+ không quản lý giá trị này (ADR-029 v2 gap G3 + v3 gap G4); xem 2 row resolve-qua-`requestCode` bên dưới cho `WITHDRAW`/`UNLINK` |
+| `data.tenantId` ≠ `headers.OriginTenantId` | Mismatch | Consumer guard | **Fail có kiểm soát** + audit; **KHÔNG** xử lý side-effect (`_CONVENTIONS.md` §3.5). Không áp dụng cho partner-link inbound (không còn `tenantId` trong payload) |
+| **Partner-link `WITHDRAW`/`UNLINK` — `requestCode` không khớp record nào** | Lookup `partner_link_request WHERE request_code = ?` trả 0 dòng | Adapter resolve gate | **Ack + skip** + log warning — không có gì để hủy (thường do D+ gửi sai/mới mã thay vì tái sử dụng mã gốc, ADR-029 v3 gap G4) |
+| **Partner-link `WITHDRAW`/`UNLINK` — `requestCode` khớp >1 record** | Lookup trả >1 dòng (lý thuyết — unique constraint hiện tại chỉ composite `(tenant_id, request_code)`, không global-unique) | Adapter resolve gate | **KHÔNG** tự chọn tenant; alert vận hành **P1**, ack + skip, chờ xử lý thủ công (ADR-029 v3 gap G4) |
 | Message trùng (D+ retry) | Cùng `messageId` | `inbox_event` unique constraint | Ack + skip; thêm lớp 2 là unique `(tenant_id, request_code)` cho partner link (`FEAT` EC-4) / dedupe booking (`INBOUND` AC-9) |
 | **Payload sai nghiệp vụ** (thiếu trường bắt buộc, giờ sai bước 15 phút, single-active guard chặn) | Gate reject | Adapter validation gate | Publish **response event** `success=false` + mã lỗi tương ứng, rồi **ack**. **KHÔNG** retry — request sai từ đầu (OUTBOUND AC-11) |
 | Event tới record sai state (D+ withdraw record đã terminal) | State guard | Domain check | **Bỏ qua + log warning**, không đổi state, không xoá lịch sử (`FEAT` AC-33/AC-35 nhánh 2) |
@@ -212,10 +244,10 @@ Cả 3 mã có display type `API_RESPONSE` — **response cho external caller, K
 |---|---|
 | Idempotency key generation | `messageId` = UUID v4 per Kafka message; `data.eventId` = UUID v4 per domain event. Producer **tái dùng** cùng giá trị khi retry |
 | Server-side dedup window | **Không giới hạn thời gian** — `inbox_event.event_id` là PK, giữ vĩnh viễn (không có TTL cleanup ở `gf-system`). Lớp 2: unique `(tenant_id, request_code)` |
-| Order guarantees | **Per-aggregate ordering** qua partition key: `PartnerLink-{requestCode}` · `Booking-{bookingCode}` · `Document-{documentCode}` (`_CONVENTIONS.md` §4.1). SYNC và REVOKED cùng 1 phiếu → cùng partition → D+ luôn thấy đúng thứ tự. 2 message cùng aggregate → cùng partition → xử lý tuần tự đúng thứ tự producer gửi. **KHÔNG** có global ordering giữa các aggregate khác nhau |
+| Order guarantees | **Per-aggregate ordering** qua partition key: `PartnerLink-{requestCode}` · `Booking-{bookingCode}` · `Document-{documentCode}` (`_CONVENTIONS.md` §4.1). 2 message cùng aggregate → cùng partition → xử lý tuần tự đúng thứ tự producer gửi. **KHÔNG** có global ordering giữa các aggregate khác nhau |
 | Race create-vs-cancel cùng booking | Giải quyết bằng partition ordering ở trên — GMS **không** thêm rule nghiệp vụ riêng để đảo thứ tự (`FEAT-BOOK-DRIVERPLUS-INBOUND` EC-2) |
 | Replay safety | At-least-once cả 2 chiều. Inbound: an toàn nhờ inbox dedupe. Outbound: Driver Plus **BẮT BUỘC** dedupe theo `eventId` / `correlation.requestEventId` (`FEAT-DP-035` AC-19) |
-| Document sync dedupe | `eventId` = hàm thuần của `(documentCode, documentType)` → phát lại kỹ thuật mang y nguyên khoá; D+ ghi 1 lần. REVOKED có khoá riêng (`…\|REVOKED`) + `correlation.syncEventId` trỏ về bản SYNC. **Không có `revision`** — xem Known limitation §6.1 |
+| Document sync dedupe | `eventId` = hàm thuần của `(documentCode, documentType)` → phát lại kỹ thuật mang y nguyên khoá; D+ ghi 1 lần. **Không có `revision`** — xem Known limitation §6.1 |
 | `PARTNER_LINK.PROFILE.SYNC` lặp | An toàn — Driver Plus áp **last-write-wins** theo `occurredAt` (mỗi lần "Đồng bộ lại" ghi 1 event mới) |
 
 ## 8. Observability
@@ -224,11 +256,11 @@ Cả 3 mã có display type `API_RESPONSE` — **response cho external caller, K
 
 | Metric | Type | Tags |
 |---|---|---|
-| `integration.driver_plus.inbound.messages` | counter | `boundary`, `message_step`, `outcome` (`applied` \| `rejected` \| `skipped_duplicate` \| `skipped_state`) |
+| `integration.driver_plus.inbound.messages` | counter | `boundary`, `message_step`, `outcome` (`applied` \| `rejected` \| `skipped_duplicate` \| `skipped_state` \| `skipped_unresolved` (v10 — `requestCode` không khớp record nào, partner-link `WITHDRAW`/`UNLINK`, ADR-029 v3) \| `skipped_ambiguous` (v10 — `requestCode` khớp >1 record, cùng lớp rủi ro với tenant mismatch, ADR-029 v3)) |
 | `integration.driver_plus.inbound.lag` | gauge | `boundary`, `topic`, `partition` |
 | `integration.driver_plus.outbound.published` | counter | `boundary`, `message_step` |
 | `integration.driver_plus.outbound.failed` | counter | `boundary`, `message_step`, `retry_count` |
-| `integration.driver_plus.gate.rejections` | counter | `boundary`, `error_code` (`ERR-DPL-010` \| `ERR-DPL-011` \| `ERR-BOOK-001` \| `ERR-BOOK-002`) |
+| `integration.driver_plus.gate.rejections` | counter | `boundary`, `error_code` (`ERR-DPL-010` \| `ERR-DPL-011` \| `ERR-DPL-013` \| `ERR-BOOK-001` \| `ERR-BOOK-002`) |
 | `integration.driver_plus.document.file_upload` | counter | `boundary`, `document_type`, `outcome` (`ok` \| `failed`) — theo dõi bước upload `ct-file-storage` trước khi ghi outbox |
 | `integration.driver_plus.outbox.pending_age` | gauge | `boundary` — tuổi event `PENDING` cũ nhất (phát hiện scheduler kẹt) |
 
@@ -255,6 +287,7 @@ Cả 3 mã có display type `API_RESPONSE` — **response cho external caller, K
 | Outbox `pending_age` | > 10 phút | P2 | boundary owner |
 | Gate rejection rate | > 20% tổng inbound trong 15 phút | P3 | boundary owner + Driver Plus team (dấu hiệu drift contract) |
 | Tenant mismatch (`data.tenantId` ≠ `OriginTenantId`) | **any** | **P1** | On-call — nghi vấn cross-tenant leak |
+| **(v10)** Ambiguous tenant resolve (`outcome=skipped_ambiguous` — `requestCode` khớp >1 record ở gate `WITHDRAW`/`UNLINK`) | **any** | **P1** | On-call — cùng lớp rủi ro tenant mismatch; kiểm `uk_plr_tenant_request_code` có bị vi phạm giả định global-unique không (ADR-029 v3 gap G4) |
 
 ## 9. SLA, Quotas & Cost
 
@@ -280,7 +313,7 @@ Cả 3 mã có display type `API_RESPONSE` — **response cho external caller, K
 | Regulatory frameworks | PDPD (Nghị định bảo vệ dữ liệu cá nhân VN) — điều khoản chia sẻ đầy đủ do **Legal hoàn thiện sau qua CR**; DEV dùng bản tóm tắt 2 mục (`FEAT` AC-12 + §7) |
 | DPA signed | **Open Question** — chưa xác nhận trong Product docs |
 | Data retention at provider | **Open Question** — Driver Plus giữ hồ sơ garage bao lâu sau khi hủy liên kết chưa được đặc tả |
-| Right-to-erasure flow | **Gap đã biết**: khi garage Hủy liên kết, GMS publish `PARTNER_LINK.STATUS.CHANGED` `UNLINKED` nhưng **không** có step yêu cầu D+ xoá dữ liệu đã đồng bộ. Nếu cần → CR riêng thêm step `PARTNER_LINK.DATA.PURGE` |
+| Right-to-erasure flow | **RESOLVED (quyết định Delivery Authority, 2026-08-11)**: GMS **không** phát step yêu cầu D+ xoá dữ liệu khi garage Hủy liên kết, và **sẽ không bổ sung**. Ranh giới trách nhiệm: GMS chỉ có nghĩa vụ **truyền đúng dữ liệu** trong lúc liên kết đang hoạt động (`PROFILE.SYNC` lúc Duyệt/Đồng bộ lại) + báo đúng trạng thái khi liên kết kết thúc (`STATUS.CHANGED` `UNLINKED`) — GMS không sở hữu, không kiểm soát, và không có quyền yêu cầu D+ xử lý dữ liệu đã nhận phía họ. D+ là bên tự thu thập/tự xử lý tiếp dữ liệu theo hạ tầng và chính sách riêng của họ, ngoài phạm vi quản trị của GMS. Nếu tương lai có DPA/hợp đồng ràng buộc nghĩa vụ này, xử lý qua CR riêng — không phải gap của W07. |
 
 ## 11. Sandbox vs Production
 
@@ -299,11 +332,12 @@ Cả 3 mã có display type `API_RESPONSE` — **response cho external caller, K
 | Layer | Approach |
 |---|---|
 | Unit | Mock `PassthroughService`/repository; assert adapter gate quyết định đúng (5 trường bắt buộc, bước 15 phút, single-active guard) + shape response event |
-| Integration | **Testcontainers Kafka** — publish message inbound, assert (a) record DB đúng state, (b) inbox row tạo, (c) outbound event đúng `MessageStep` + payload. Bao gồm case duplicate `messageId`, thiếu `OriginTenantId`, và `PartnerLink:DriverPlus=off` → không tạo record + response `ERR-DPL-011` + không phát profile/status |
+| Integration | **Testcontainers Kafka** — publish message inbound, assert (a) record DB đúng state, (b) inbox row tạo, (c) outbound event đúng `MessageStep` + payload. Bao gồm case duplicate `messageId`, thiếu `OriginTenantId` (booking `gf-sales` — vẫn bắt buộc, ack+skip khi thiếu), và `PartnerLink:DriverPlus=off` → không tạo record + response `ERR-DPL-011` + không phát profile/status |
+| **(v10)** Integration — resolve `WITHDRAW`/`UNLINK` qua `requestCode` | **Testcontainers Kafka**, riêng cho gap G4 (ADR-029 v3): (a) message thiếu `OriginTenantId` cho `WITHDRAW`/`UNLINK` → assert **KHÔNG** ack+skip vì thiếu header (khác booking) — resolve tiếp tục qua `requestCode`; (b) `requestCode` không khớp record nào → assert ack+skip + `outcome=skipped_unresolved`, không đổi state; (c) `requestCode` khớp đúng 1 record nhưng sai `status` kỳ vọng → assert ack+skip + `outcome=skipped_state` (rule sẵn có); (d) seed 2 record khác tenant cùng `requestCode` (giả lập vi phạm giả định global-unique) → assert **KHÔNG** tự chọn tenant, `outcome=skipped_ambiguous`, alert P1 fire, không transition record nào |
 | Contract test | So sánh payload sample trong `gf-system-events.md` §3.11–§3.14 / `gf-sales-events.md` §3.8/§3.9 với fixture do Driver Plus cung cấp. **Chưa có schema registry** — contract test dựa trên fixture thủ công (Open Question) |
 | Chaos | Inject: broker down khi publish (assert outbox giữ `PENDING` + retry) · consumer crash giữa transaction (assert không double-apply) · message malformed (assert ack + log, không poison partition) |
 | E2E | Môi trường dev với tenant test + tài khoản D+ test: duyệt → assert D+ nhận `PROFILE.SYNC` + `STATUS.CHANGED`; đặt lịch từ app D+ → assert booking xuất hiện trên Web GMS |
-| Document sync | Integration (Testcontainers Kafka): hoàn thành SO có booking nguồn D+ → assert 1 event `DOCUMENT.SERVICE_ORDER.SYNC` đúng payload + `eventId` khớp `UUIDv5(documentCode\|documentType)`; chạy lại → **cùng** `eventId`. Tạo cặp phiếu QT (AC-4) với `isDriverPlusSource=true` → assert **2** event riêng; `isDriverPlusSource=false` hoặc thiếu → assert **không** publish. Upload `ct-file-storage` fail → assert state nghiệp vụ vẫn commit + không có outbox row. Huỷ SO sau SYNC → assert `DOCUMENT.SERVICE_ORDER.REVOKED` mang `correlation.syncEventId` đúng. Huỷ phiếu QT → assert **không** publish step nào (không có `SETTLEMENT.REVOKED`) |
+| Document sync | Integration (Testcontainers Kafka): hoàn thành SO có booking nguồn D+ → assert 1 event `DOCUMENT.SERVICE_ORDER.SYNC` đúng payload + `eventId` khớp `UUIDv5(documentCode\|documentType)`; chạy lại → **cùng** `eventId`. Tạo cặp phiếu QT (AC-4) với `isDriverPlusSource=true` → assert **2** event riêng; `isDriverPlusSource=false` hoặc thiếu → assert **không** publish. Upload `ct-file-storage` fail → assert state nghiệp vụ vẫn commit + không có outbox row. Không có step thu hồi cho cả 2 loại phiếu (`SERVICE_ORDER.REVOKED` + `SETTLEMENT.REVOKED` đều đã loại bỏ — ADR-031 v6) — huỷ SO hoặc huỷ phiếu QT (nếu path đó từng khả thi) → assert **không** publish step nào |
 | Concurrency | **Bắt buộc** cho `FEAT` AC-31: 2 request Duyệt 2 record khác nhau cùng tenant chạy song song → assert đúng 1 thành công, cái còn lại nhận `ERR-DPL-006` và tự chuyển `REJECTED` (verify partial unique index hoạt động) |
 
 ## 13. Runbook (Operational)
@@ -317,6 +351,8 @@ Cả 3 mã có display type `API_RESPONSE` — **response cho external caller, K
 | D+ báo "không tải được tệp chứng từ" | Kiểm `expiresAt` của event gốc + object còn trên `ct-file-storage` không. Còn hạn → lỗi phía D+/mạng. Hết hạn → re-queue outbox row phát lại (cùng `eventId`); nếu D+ đã ghi nhận event thì phải phối hợp D+ xoá dedupe trước |
 | Garage báo "phiếu đã sửa nhưng D+ vẫn hiện bản cũ" | **Known limitation** ADR-031 D5 (khoá dedupe không có `revision`) — không có cách xử lý tại chỗ; escalate để mở CR |
 | Nghi vấn cross-tenant (alert P1) | Dừng consumer ngay, dump message vi phạm, đối chiếu `OriginTenantId` vs `data.tenantId`, escalate Security + D+ team |
+| **(v10)** Ambiguous tenant resolve — `requestCode` khớp >1 record (`outcome=skipped_ambiguous`, alert P1) | Dừng consumer ngay (giống nghi vấn cross-tenant); query thủ công `SELECT * FROM partner_link_request WHERE request_code = '{mã}'` liệt kê toàn bộ record khớp trên **mọi tenant** (query không tenant-scope — chỉ chạy thủ công, KHÔNG hardcode vào app code); xác định record đúng dựa vào `tenant_id` gắn với `partnerAccountPhone`/timeline gần nhất; xử lý transition thủ công cho đúng record qua thao tác GMS UI hiện có (Hủy liên kết); escalate Security để điều tra vì sao `requestCode` trùng (khả năng: D+ có bug sinh mã trùng, hoặc tấn công cố tình gửi mã trùng) |
+| **(v10)** D+ báo "gửi Hủy/Rút yêu cầu nhưng GMS không cập nhật" (nghi ngờ `outcome=skipped_unresolved`) | Kiểm log `integration.driver_plus.inbound.messages{outcome=skipped_unresolved}` theo `messageId`/`OriginMessageCode` D+ cung cấp; nếu có → D+ gửi sai `requestCode` (không phải mã gốc lúc `CREATE`) — escalate D+ team, **KHÔNG** tự sửa `requestCode` trong DB để "cho khớp" (phá audit trail) |
 | Unrecognized `MessageStep` | Ack + log warning; **KHÔNG** throw (tránh poison partition). Đây là hành vi mặc định của cả 2 consumer |
 | Garage báo "hồ sơ bên D+ không cập nhật" | Hướng dẫn bấm "Đồng bộ lại thông tin sang D+" (không auto-sync theo thiết kế — `FEAT` EC-6); kiểm outbox có event `PROFILE.SYNC` mới không |
 
@@ -325,7 +361,7 @@ Full runbook: `Operations/runbooks/INTEG-EXT-driver-plus-runbook.md` *(chưa t�
 ## 14. Forbidden patterns
 
 - ❌ Xử lý message mà **không filter** `MessageGroup` + `MessageStep` — cả 2 topic dùng chung inbound/outbound (Critical Rule #18).
-- ❌ Xử lý message tenant-scoped khi thiếu `OriginTenantId`, hoặc khi `data.tenantId` ≠ `OriginTenantId` (data-breach risk).
+- ❌ Xử lý message tenant-scoped khi thiếu `OriginTenantId`, hoặc khi `data.tenantId` ≠ `OriginTenantId` (data-breach risk). **Ngoại lệ (v10)**: cả 3 step inbound partner-link (`REQUEST.CREATE`/`REQUEST.WITHDRAW`/`UNLINK`) KHÔNG áp dụng — `OriginTenantId` không bắt buộc, D+ không quản lý giá trị này (ADR-029 v2 gap G3 + v3 gap G4); tenant được resolve tại adapter gate (qua `partnerAccountPhone` hoặc `requestCode` tuỳ step), không đọc trực tiếp từ header.
 - ❌ Bypass outbox — publish thẳng `kafkaTemplate.send()` trong transaction nghiệp vụ (ADR-004, `BR-CORE-005`).
 - ❌ Ack message inbound **trước khi** ghi inbox thành công (mất idempotency guard).
 - ❌ Rollback state nghiệp vụ đã commit khi outbound publish thất bại (`FEAT` AC-32 · `BR-BOOK-024`).
@@ -363,7 +399,12 @@ Full runbook: `Operations/runbooks/INTEG-EXT-driver-plus-runbook.md` *(chưa t�
 
 | Date | Version | Change | Author |
 |---|---|---|---|
+| 2026-08-12 | 10 | **Self-audit follow-up cho v9 (gap G4 resolve-qua-`requestCode`)** — v9 mô tả "alert P1"/case ambiguous ở §6.1 nhưng chưa đăng ký vào các bảng canonical vận hành, để lại 5 gap: §8.1 Metrics thêm 2 giá trị `outcome` mới (`skipped_unresolved`, `skipped_ambiguous`); §8.4 Alerts thêm row P1 cho ambiguous resolve (trước đó chỉ có prose, không có row); §12 Test strategy thêm 4 case Integration test riêng cho gap G4 (thiếu header không skip / 0 record / sai state / ambiguous >1 record); §13 Runbook thêm 2 scenario mới (ambiguous resolve — hướng dẫn thao tác thủ công cụ thể; D+ báo GMS không cập nhật — nghi `skipped_unresolved`); §14 Forbidden patterns caveat lại rule cũ "thiếu `OriginTenantId` = data-breach risk" — không còn đúng cho cả 3 step inbound partner-link (dễ bị hiểu nhầm là thiết kế v2/v3 vi phạm rule này). Không đổi Decision/Contract — thuần bổ sung phần vận hành/kiểm thử bị sót khi soạn v9. | Delivery Authority (sonhoang) qua main agent — self-audit |
+| 2026-08-12 | 9 | **Resolve tenant từ `requestCode` tại `PARTNER_LINK.REQUEST.WITHDRAW`/`UNLINK`** (ADR-029 v3 amendment, gap G4 do Driver Plus team phát hiện — D+ không quản lý `tenantId` GMS ở bất kỳ step nào, không riêng `REQUEST.CREATE`). §5.1: thêm envelope example `WITHDRAW`/`UNLINK` bỏ `OriginTenantId`/`data.tenantId`, kèm cảnh báo `OriginMessageCode` phải là mã gốc D+ tái sử dụng (không sinh mới mỗi lần bắn). §6.1: row "Message thiếu `OriginTenantId`" thêm ngoại lệ partner-link (cả 3 step); row tenant-mismatch ghi rõ không áp dụng cho partner-link inbound; thêm 2 row failure mode mới (0 record khớp `requestCode` → ack+skip; >1 record khớp → alert P1, không tự chọn tenant). **KHÔNG tạo topic/step/error code mới** — 2 step này vốn không phát response ngược. Đồng bộ `ADR-029` v3 + `gf-system-events.md` v7. Cascade còn lại: `gf-system-data-model.md` §2bis.2 (index `idx_plr_request_code_lookup`), `FEAT-SYS-DRIVERPLUS-LINK.md` AC-33/AC-35. | Delivery Authority (sonhoang) qua main agent |
+| 2026-08-11 | 8 | **Đóng gap Right-to-erasure (§10)** — Delivery Authority (sonhoang) xác nhận qua conversation: GMS không có nghĩa vụ yêu cầu D+ xoá dữ liệu khi garage Hủy liên kết. Lý do: GMS chỉ có trách nhiệm truyền đúng dữ liệu trong lúc liên kết hoạt động + báo đúng trạng thái khi kết thúc — không sở hữu/kiểm soát dữ liệu phía D+ sau khi đã truyền, D+ tự thu thập và tự xử lý tiếp theo hạ tầng riêng của họ. Không bổ sung step `PARTNER_LINK.DATA.PURGE`. Nếu tương lai có DPA ràng buộc nghĩa vụ này thì xử lý qua CR riêng, không phải gap của W07. Đồng bộ: gap review `PKG-W07` (RR-003 đóng). | Delivery Authority (sonhoang) qua main agent |
+| 2026-08-11 | 7 | **Resolve tenant từ SĐT tại `PARTNER_LINK.REQUEST.CREATE`** (ADR-029 v2 amendment, gap G3 do Driver Plus team phát hiện — SĐT đúng định dạng nhưng không tồn tại GMS, D+ không có danh bạ để tự validate, trước đây phải chờ 60' timeout phía D+). §4.1 row 1 + row 4 cập nhật mô tả (`partnerAccountPhone` = SĐT garage, không phải SĐT tài khoản D+; response nay có 2 nhánh lỗi). §5.1: envelope example `REQUEST.CREATE` bỏ `OriginTenantId`/`data.tenantId` (D+ không tự biết), thêm example response nhánh `ERR-DPL-013`; error shape table thêm row `ERR-DPL-013` (404, Registry §5). §8.1 metric tag `error_code` thêm `ERR-DPL-013`. **KHÔNG tạo topic/step mới** — tái dùng `PARTNER_LINK.REQUEST.RESPONSE` đã có. Đồng bộ `ADR-029` v2 + `gf-system-events.md` v6 + `Product/Commons/ERROR-CODE-REGISTRY.md` v25 + `FEAT-SYS-DRIVERPLUS-LINK.md` v34. | Delivery Authority (sonhoang) qua main agent |
 | 2026-08-10 | 5 | Đồng bộ quyết định Business Authority về `PartnerLink:DriverPlus`: flag off là kill-switch toàn luồng, không chỉ ẩn UI; chặn REST/action, từ chối request tạo mới bằng correlated response `ERR-DPL-011`, ngừng outbound profile/status, giữ dữ liệu/audit. Bổ sung contract test + runbook flag-off. Áp dụng cho cả 3 flag (`PartnerLink:DriverPlus` / `Booking:DriverPlus` / `Document:DriverPlus`), kế thừa flag thứ 3 do document sync (v3) thêm. | Architecture Authority qua quyết định Business Authority |
+| 2026-08-11 | 5 | **Loại bỏ step `DOCUMENT.SERVICE_ORDER.REVOKED`** (ADR-031 v6, per user sonhoang chốt qua `/warm-up gf-sales` GAP-W07-GSL-02): premise duy nhất khiến step khả đạt (huỷ phiếu quyết toán → reopen SO → huỷ SO) không phải luồng nghiệp vụ tồn tại — cùng root-cause đã gỡ `SETTLEMENT.REVOKED` ở v4. §4 header **14 → 13 `MessageStep`**; §4.3 bảng xóa row 14, còn **2 row** (12, 13); §4.3 "Thu hồi" bullet viết lại (không còn step thu hồi nào cho cả 2 loại phiếu); §12 Order guarantees + Document sync dedupe bỏ mention REVOKED; §12 test matrix Document sync case cập nhật. **KHÔNG đụng** §4.1 Partner link (6 step), §4.2 Booking (5 step), §1–§3, §5–§11, §13–§15. | main-agent (per user sonhoang) |
 | 2026-08-10 | 4 | **Round 2 fix sau arch-review (mandate Q7/Q8/Q9/Q10)** — (Q8) gỡ step `DOCUMENT.SETTLEMENT.REVOKED`: §4 header 15 → **14 `MessageStep`**, §4.3 bảng còn **3 row**, §5 nguồn canonical, §12 test matrix, §15 references; lý do `FEAT-STL-DETAIL` EC-7 đã bị Business Authority gỡ 2026-08-03. (Q7) §4.3 nêu nguồn điều kiện emit của `gf-accounting` = 3 field additive trong snapshot `for-settlement` (`gf-sales-api.md` §3bis.2 v13), đóng P0 boundary isolation. (Q9/Q10) §4.3 sửa mô tả `expiresAt`: KHÔNG signed URL là **quyết định kiến trúc ADR-016**, gỡ ràng buộc phải supersede ADR-016 (không phải chờ Platform); khẳng định `fileUrl` là **URL tuyệt đối** (khác `pdfUrl` relative của ADR-016 — D+ là hệ ngoài, không ghép domain được). | Architecture Authority (agent-arch-author) |
 | 2026-08-10 | 3 | **Bổ sung nửa thứ 3 — Document sync (ADR-031)**, đóng gap BA phát hiện sau W07 (W07 chỉ phủ partner link + booking relay; đồng bộ chứng từ nằm ngoài scope theo `arch-design-partner-link-answers-1.md` Q4). **§4.3 MỚI**: topic `AC-DEV-DOCUMENT-EVENTS`, `MessageGroup=DOCUMENT`, 4 step (`DOCUMENT.{SERVICE_ORDER,SETTLEMENT}.{SYNC,REVOKED}`), 2 producer tự emit (`gf-sales` + `gf-accounting`), 1 chiều GMS → D+. Tệp gửi bằng URL (`fileUrl`+`checksum`+`expiresAt` TTL 30 ngày), KHÔNG binary; `eventId` deterministic UUIDv5 theo mã phiếu. Cập nhật §1 identity (+`gf-accounting`), §3.1 ACL topic mới, §4 header (9 → 15 step), §5 nguồn canonical, §6.1 +3 failure mode (upload fail / fetch hết hạn / phiếu xuất lại bị bỏ qua), §6.2 retry `gf-accounting`, §7 partition key + dedupe chứng từ, §8.1 metric upload + §8.2 cấm log `fileUrl`, §10 PII chứng từ, §11 flag thứ 3 `Document:DriverPlus`, §12 test matrix, §13 +2 runbook, §14 +5 forbidden, §15 references. **KHÔNG đụng** contract partner link + booking relay đang chạy. | Architecture Authority (agent-arch-author) |
 | 2026-08-07 | 2 | **ARCH-REVIEW-W07 P2 fix**: (a) frontmatter `boundary: "gf-system, gf-sales"` → `"cross-boundary (gf-system, gf-sales)"` theo convention ADR-013/014/015; (b) cite `gf-system-events.md §3.10–§3.13` → **§3.11–§3.14** (3 chỗ: §4 mapping table, §7 contract test, §15 References) theo renumber gf-system-events.md v5. | Architecture Authority (main agent, post-review fix) |

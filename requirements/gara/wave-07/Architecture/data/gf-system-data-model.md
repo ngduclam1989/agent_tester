@@ -2,11 +2,11 @@
 type: architecture
 artifact_kind: data-model
 status: ACTIVE
-version: 3.1
+version: 3.2
 tier: T1
 owner_authority: Architecture Authority
 boundary: gf-system
-last_reviewed: "2026-08-07"
+last_reviewed: "2026-08-12"
 depends_on:
   - "../hld/gf-system-HLD.md"
   - "../events/tenant-system-events.md"
@@ -358,7 +358,7 @@ Yêu cầu liên kết đối tác ngoài (`LKD-YYYY-NNN`). Record **chỉ đư�
 | `created_at` / `updated_at` | TIMESTAMPTZ | NO | Audit từ `AuditableEntity` | — |
 | `created_by` / `updated_by` | VARCHAR(100) | YES | Audit actor | — |
 
-**Indexes** (mọi index đều tenant-prefix — bảng tenant-scoped):
+**Indexes**: mọi index đều tenant-prefix — bảng tenant-scoped — **ngoại trừ `idx_plr_request_code_lookup` (v3.2)**, xem ghi chú ngoại lệ ngay dưới bảng.
 
 | Index | Cột | Mục đích | Cite |
 |---|---|---|---|
@@ -366,10 +366,13 @@ Yêu cầu liên kết đối tác ngoài (`LKD-YYYY-NNN`). Record **chỉ đư�
 | `uk_plr_tenant_active_link` | UNIQUE `(tenant_id) WHERE status = 'LINKED'` (partial) | **Enforce invariant single-active-link ở tầng DB** — atomic dưới concurrent write; request commit sau nhận constraint violation → cascade auto-reject | `BR-DPL-CMN-002` · `FEAT` AC-31 (Product đề xuất đúng cơ chế này) |
 | `idx_plr_tenant_status_requested` | `(tenant_id, status, requested_at DESC)` | Cover list + filter đa trạng thái + sort mặc định | `BR-DPL-LST-002` · `BR-DPL-LST-003` |
 | `idx_plr_tenant_partner_account` | `(tenant_id, partner_code, partner_account_phone)` | Tra cứu lịch sử re-request theo tài khoản D+ | `FEAT` AC-25 |
+| `idx_plr_request_code_lookup` (mới, v3.2) | `(request_code)` — **KHÔNG tenant-prefix** | Adapter resolve gate của `PARTNER_LINK.REQUEST.WITHDRAW`/`UNLINK` tra `tenant_id` khi message inbound không mang `OriginTenantId` (D+ không quản lý giá trị này) — phải tra **trước khi biết tenant**, nên không thể prefix `tenant_id` như các index khác | ADR-029 v3 (gap G4) · `gf-system-events.md` §3.11 v7 |
+
+**Ngoại lệ tenant-prefix**: `idx_plr_request_code_lookup` là **ngoại lệ có kiểm soát** với nguyên tắc "mọi query bắt buộc filter tenant" — cùng loại ngoại lệ đã chấp nhận cho resolve-qua-SĐT tại `PARTNER_LINK.REQUEST.CREATE` (ADR-029 v2, dùng `tenant_profile.contact_phone_number`, không có index riêng ghi ở đây vì thuộc bảng `tenant_profile` §2bis.3). Query dùng index này **có thể trả >1 dòng về lý thuyết** vì `uk_plr_tenant_request_code` chỉ unique theo `(tenant_id, request_code)`, không global-unique trên `request_code` — consumer phải tự xử lý case này (không tự chọn tenant), xem `gf-system-events.md` §3.11 v7 bước 4.
 
 **Constraints**: PK `id`. **Không có FK vật lý** tới `tenant_subscriptions` (ADR-009 — chỉ scalar key). Không có hard-delete: terminal record giữ vĩnh viễn (`BR-DPL-CMN-006`).
 
-**Ghi chú invariant**: `uk_plr_tenant_active_link` là **cơ chế chính thức** trả lời `FEAT` AC-31 + EC-3 (`NEED CONFIRMATION Architecture`). Duyệt + cascade auto-reject chạy trong **cùng 1 transaction**: `UPDATE … SET status='LINKED'` cho record đích, rồi `UPDATE … SET status='REJECTED' WHERE tenant_id=? AND status='PENDING' AND id<>?` cho phần còn lại (all-or-nothing, khớp đề xuất `BR-DPL-APV-004`). Record đã terminal trước đó không bị ghi đè vì mệnh đề `status='PENDING'` (thoả AC-28).
+**Ghi chú invariant**: `uk_plr_tenant_active_link` là **cơ chế chính thức** trả lời `FEAT` AC-31 + EC-3. Duyệt + cascade auto-reject chạy trong **cùng 1 transaction**: `UPDATE … SET status='LINKED'` cho record đích, rồi `UPDATE … SET status='REJECTED' WHERE tenant_id=? AND status='PENDING' AND id<>?` cho phần còn lại (all-or-nothing, khớp đề xuất `BR-DPL-APV-004`). Record đã terminal trước đó không bị ghi đè vì mệnh đề `status='PENDING'` (thoả AC-28).
 
 ### 2bis.3 `tenant_profile` (V7)
 
@@ -469,6 +472,7 @@ Rủi ro source/schema đã ghi nhận:
 
 | Date | Version | Summary |
 |---|---|---|
+| 2026-08-12 | v3.2 | **ADR-029 v3 amendment — index mới cho resolve tenant qua `requestCode`** (gap G4 do Driver Plus team phát hiện: D+ không quản lý `tenantId` GMS ở `WITHDRAW`/`UNLINK`, chỉ giữ được `requestCode` gốc). §2bis.2 `partner_link_request`: thêm index `idx_plr_request_code_lookup (request_code)` — **ngoại lệ không tenant-prefix**, kèm ghi chú lý do (query resolve chạy trước khi biết tenant) + rủi ro >1 dòng do unique constraint hiện tại chỉ composite `(tenant_id, request_code)`. Đồng bộ `ADR-029` v3 + `gf-system-events.md` v7. |
 | 2026-08-07 | v3.1 | **ARCH-REVIEW-W07 P2 fix** — §2bis.4 `MessageStep` enum row cite `gf-system-events.md §3.11` → **§3.12**, theo renumber gf-system-events.md v5. |
 | 2026-08-05 | v3 | **W07 EP-PARTNER-LINK (DESIGN)** — thêm §2bis với 2 bảng mới: `partner_link_request` (V8, §2bis.2 — 13 cột + 4 index tenant-prefix, trong đó `uk_plr_tenant_active_link` partial UNIQUE `(tenant_id) WHERE status='LINKED'` là **cơ chế chính thức** trả lời `FEAT-SYS-DRIVERPLUS-LINK` AC-31 + EC-3 NEED CONFIRMATION Architecture về atomic invariant `BR-DPL-CMN-002`) và `tenant_profile` (V7, §2bis.3 — SoT hồ sơ garage per ADR-030, seed từ `TenantProvisionedEvent` payload sẵn có). §2bis.1 ERD bổ sung (ASCII). §2bis.4 enum bổ sung: `PartnerLinkStatus`/`PartnerCode` mới + `InboxEventType` +3 + `MessageGroup` +`PARTNER_LINK` + `MessageStep` +6. §3 Data Isolation +2 bullet. §4 migration table +V7/+V8 (additive, không rewrite V1..V6 — Gotcha #9). Frontmatter `depends_on` +ADR-029/+ADR-030. Mọi cột có cột **Cite** trace về dòng Product cụ thể. **KHÔNG đụng**: 7 bảng baseline §2, ERD §1, các mục còn lại của §3/§4. v2 → v3. |
 | 2026-05-19 | v2 | Thêm bảng `tenant_transporter_registry` (V6 migration) với đầy đủ columns, indexes, constraints. Cập nhật enum `InboxEventType` (+`TENANT_TRANSPORTER_REGISTRY_UPSERT_REQUESTED`, `TENANT_TRANSPORTER_REGISTRY_DELETE_REQUESTED`), `MessageStep` (+4 giá trị transporter registry), `MessageGroup` (+`TENANT-TRANSPORTER-REGISTRY`), thêm enum `TenantTransporterRegistryStatus`. Cập nhật ERD, data isolation, repository list. |

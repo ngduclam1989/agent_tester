@@ -156,6 +156,7 @@ Agent sử dụng skills trong `.claude/skills/` tùy theo nhiệm vụ:
 | `test_data_generator`    | Sinh test data unique, traceable — hỗ trợ multi-step pipeline & combinatorial data       |
 | `flaky_test_analyzer`    | Phân tích và khắc phục flaky tests                                                   |
 | `framework_architect`    | Thiết kế & scaffold automation framework (Playwright) — project structure, base classes, config, reporting, CI/CD |
+| `diagram-design`         | Vẽ diagram kỹ thuật (architecture, sequence, flowchart, ER, state machine, timeline, org chart...) dạng HTML tự chứa (inline SVG) — output vào `practices/diagram/`. Được `rbt_manual_testing` gọi tới khi thiếu sơ đồ nghiệp vụ (Bước 1 mục 6) |
 
 ## 6. Kế Hoạch Kiểm Thử (Plan Templates)
 
@@ -234,4 +235,5 @@ Agent sử dụng workflows trong `.claude/commands/` — mỗi file là một s
 | `/generate_cross_module_test_plan`    | Phân tích cross-module (2 modes: DOCUMENT/BROWSER), sinh ma trận kết hợp bằng script pairwise |
 | `/generate_combinatorial_test_data`   | Sinh test data cho ma trận kết hợp — offline hoặc pipeline qua browser          |
 | `/generate_api_tests_from_swagger`      | Sinh API tests từ Swagger spec                             |
+| `/generate_diagram`                     | Vẽ diagram kỹ thuật (architecture, sequence, flowchart, ER, state machine...) bằng skill `diagram-design` — output vào `practices/diagram/` |
 | `/analyze_flaky_tests`                  | Phân tích và khắc phục flaky tests                     |

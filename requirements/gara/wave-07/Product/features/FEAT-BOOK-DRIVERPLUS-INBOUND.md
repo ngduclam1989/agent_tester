@@ -2,7 +2,7 @@
 type: feature
 artifact_kind: feature
 status: PLANNED
-version: 6
+version: 7
 tier: T2
 owner_authority: Business Authority
 parent_epic: "EP-BOOKING"
@@ -126,7 +126,7 @@ last_reviewed: "2026-08-10"
 
 ## 8. Feature-flag
 
-> Áp dụng chung cho cả `FEAT-BOOK-DRIVERPLUS-INBOUND` (feature này) và `FEAT-BOOK-DRIVERPLUS-OUTBOUND` — 1 flag key điều khiển toàn bộ luồng tích hợp Driver+ (nhận + gửi đi cùng lúc, không tách được vì là 2 nửa của 1 relay 2 chiều). Xem cross-ref tại `FEAT-BOOK-DRIVERPLUS-OUTBOUND.md` §Feature-flag.
+> Áp dụng chung cho `FEAT-BOOK-DRIVERPLUS-INBOUND` (feature này) và `FEAT-BOOK-DRIVERPLUS-OUTBOUND`: 1 flag key điều khiển riêng luồng booking hai chiều (nhận yêu cầu booking từ Driver+ và gửi phản hồi/trạng thái booking về Driver+). Xem cross-ref tại `FEAT-BOOK-DRIVERPLUS-OUTBOUND.md` §Feature-flag.
 
 | Field | Value |
 |---|---|
@@ -134,10 +134,12 @@ last_reviewed: "2026-08-10"
 | `default_state` | `on` — **bật cho TẤT CẢ tenant ngay khi release** (chốt user 2026-08-03, không rollout theo nhóm pilot — theo đúng xu hướng chung đã áp dụng cho `Inventory:InventoryV2` + `PartnerLink:DriverPlus`). |
 | `rollout_scope` | Toàn bộ tenant ngay khi ship. Không có giai đoạn dùng thử theo nhóm pilot. |
 | `kill_switch_owner` | Delivery Authority (config-level toggle) — vẫn giữ công tắc để **tắt khẩn cấp** nếu Driver+ gặp sự cố diện rộng (VD backend Driver+ down, tràn lỗi payload). |
-| Behavior khi `off` (kill-switch kích hoạt) | Adapter gate (AC-1..AC-8) từ chối toàn bộ request inbound từ Driver+ (không tạo booking mới, không áp dụng yêu cầu hủy). `FEAT-BOOK-DRIVERPLUS-OUTBOUND` đồng thời ngừng gửi mọi sự kiện outbound. Booking đã tồn tại từ trước (nguồn D+) không bị ảnh hưởng — vẫn quản lý bình thường qua Web GMS/App Garage như booking thường. |
+| Behavior khi `off` (kill-switch kích hoạt) | Adapter gate (AC-1..AC-8) từ chối toàn bộ request inbound từ Driver+ (không tạo booking mới, không áp dụng yêu cầu hủy). `FEAT-BOOK-DRIVERPLUS-OUTBOUND` đồng thời ngừng gửi các sự kiện phản hồi/trạng thái booking. Booking đã tồn tại từ trước (nguồn D+) không bị ảnh hưởng — vẫn quản lý bình thường qua Web GMS/App Garage như booking thường. |
 
 > **Rationale**: mặc định bật cho tất cả tenant (quyết định user 2026-08-03) — chấp nhận rủi ro đồng loạt tương tự `PartnerLink:DriverPlus`. Công tắc giữ lại **chỉ để kill-switch khẩn cấp**, không dùng để rollout dần.
 > **Cơ chế kỹ thuật triển khai flag**: `FeatureFlagService.isEnabled()` được gọi programmatic trong adapter layer; không dùng annotation. Khi `off`, adapter ngừng nhận inbound và ngừng publish outbound.
+>
+> **Phạm vi độc lập**: `Booking:DriverPlus` không điều khiển việc gửi phiếu dịch vụ/phiếu quyết toán. Chứng từ dùng flag riêng `Document:DriverPlus` theo `FEAT-SO-DETAIL` và `FEAT-STL-CREATE`. Vì vậy, tắt luồng booking không tự động dừng gửi chứng từ phát sinh từ các booking Driver+ đã tồn tại; chỉ `Document:DriverPlus=off` mới dừng luồng chứng từ.
 
 ## 9. Change Log
 
@@ -149,3 +151,4 @@ last_reviewed: "2026-08-10"
 | 2026-08-03 | 4 | user (Business Authority) qua main agent | **RESOLVE AC-3 (đối chiếu 3 tài liệu Driver+ chính thức đầy đủ — FEAT-DP-034 v7/FEAT-DP-035 v5/FEAT-DP-046 v5, khác bản sequence-diagram W10 cũ đã dùng trước đó)**: gỡ marker NEED CONFIRMATION Architecture/BA về mapping "Loại dịch vụ" — chốt theo `FEAT-DP-034` §7 (quyết định PO phía Driver+ đã có sẵn, không phải agent tự suy luận): **KHÔNG cross-mapping**, "Loại dịch vụ" (Car Spa/Bảo dưỡng/Sửa chữa) và danh mục dịch vụ nội bộ GMS (`EP-CATALOG`) là 2 hệ thống độc lập theo đúng chủ đích thiết kế — GMS chỉ lưu/hiển thị nguyên văn, không map. Đối chiếu đợt này đồng thời xác nhận: payload phiếu DV/QT (mã phiếu + tệp) đã đúng theo `FEAT-DP-035` AC-11/AC-14 (không cần sửa `FEAT-SO-DETAIL`/`FEAT-STL-CREATE`); Luồng 1b (đồng bộ ngược) và cơ chế dead-letter/retry chi tiết xác nhận **không** có trong 3 tài liệu chính thức — giữ nguyên quyết định loại khỏi phạm vi đã có từ trước, user xác nhận không cần bổ sung. |
 | 2026-08-03 | 5 | user (Business Authority) qua main agent | **Fix F4 (BA-review Wave 7)**: AC-2 bổ sung — Số điện thoại **không cần validate lại định dạng** ở adapter gate, vì trường này khoá cứng lấy từ số điện thoại đã dùng đăng ký tài khoản Driver+ (per `FEAT-DP-034` AC-6, không phải input tự do), đã đảm bảo hợp lệ từ phía Driver+. |
 | 2026-08-10 | 6 | Business Authority qua main agent | **Chốt Kafka theo ADR-029**: giữ `BOOKING.CREATE.REQUEST` và `BOOKING.CANCELLED` trên `AC-DEV-BOOKING-EVENTS`; chốt partition theo booking cho race create/cancel và cơ chế feature flag programmatic tại adapter. Gỡ các marker Architecture tương ứng. |
+| 2026-08-10 | 7 | Business Authority qua main agent | **Đồng bộ feature flag với ADR-031**: giới hạn `Booking:DriverPlus` trong luồng booking inbound/outbound; việc gửi phiếu dịch vụ và phiếu quyết toán được điều khiển độc lập bởi `Document:DriverPlus`. Tắt booking không tự động dừng chứng từ của booking Driver+ đã tồn tại. |
