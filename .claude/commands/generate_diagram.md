@@ -23,7 +23,7 @@ skills:
 | Input | Bắt buộc | Mô tả |
 |---|---|---|
 | Nội dung cần vẽ | ✅ | Mô tả trực tiếp, HOẶC tên wave/feature/file trong `requirements/` để AI tự đọc |
-| Loại diagram | ❌ | Nếu không chỉ định, AI tự chọn theo §3 của skill (architecture, sequence, flowchart, ER, state machine, swimlane, timeline, org chart, layer stack, data flow...) |
+| Loại diagram | ❌ | **Mặc định của project này**: nếu User không nêu rõ loại diagram, vẽ **cả 3** — Architecture (topology tổng thể), Sequence, và Activity/Flowchart — mỗi loại 1 file riêng, mỗi file tự trong complexity budget của nó (§7 của skill). Không tự chọn 1 loại duy nhất khi chưa nêu rõ. Nếu User có nêu rõ loại (vd "vẽ sequence diagram") thì chỉ vẽ đúng loại đó. |
 | Nguồn import | ❌ | Nếu có sẵn `.drawio*` hoặc Mermaid `.mmd`/fenced block cần vẽ lại — nêu rõ đường dẫn, xem §11 |
 
 ---

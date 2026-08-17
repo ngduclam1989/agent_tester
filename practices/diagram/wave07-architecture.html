@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wave 7 · Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --color-paper:   #f5f5f5;
+      --color-ink:     #2d3142;
+      --color-muted:   #4f5d75;
+      --color-accent:  #eb6c36;
+      --font-sans:     'Geist', system-ui, sans-serif;
+      --font-serif:    'Instrument Serif', serif;
+      --font-mono:     'Geist Mono', ui-monospace, monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      background: var(--color-paper);
+      color: var(--color-ink);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+    }
+    .frame { max-width: 1360px; width: 100%; }
+    .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 0.66rem;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--color-muted);
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-family: var(--font-serif);
+      font-size: clamp(1.5rem, 2.4vw + 0.75rem, 2rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      line-height: 1.15;
+      color: var(--color-ink);
+      margin-bottom: 1.5rem;
+    }
+    svg { width: 100%; min-width: 1000px; display: block; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <p class="eyebrow">Architecture · Wave 07 · Garage Automation Testing Kit</p>
+    <h1>Wave 7 — topology tổng thể: Partner Link, Booking relay, Document sync</h1>
+
+    <svg viewBox="0 0 1250 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="w07-arch-title w07-arch-desc">
+      <title id="w07-arch-title">Wave 7 system architecture</title>
+      <desc id="w07-arch-desc">Driver Plus exchanges Kafka events with three backend boundaries — gf-system for Partner Link, gf-sales for booking and service-order documents, gf-accounting for settlement documents — while garage-web and garage-mobile reach gf-system and gf-sales through the agg-garage-graph BFF, and gf-sales plus gf-accounting upload rendered documents to ct-file-storage.</desc>
+      <defs>
+        <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/></marker>
+        <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/></marker>
+        <marker id="arrow-link" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#2e5aa8"/></marker>
+      </defs>
+
+      <rect width="100%" height="100%" fill="#f5f5f5"/>
+
+      <!-- ZONES (drawn before arrows/nodes) -->
+      <rect x="480" y="64" width="200" height="336" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="546" y="68" width="68" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="580" y="77" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">BACKEND</text>
+
+      <rect x="940" y="120" width="200" height="224" rx="8" fill="rgba(45,49,66,0.02)" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <rect x="1006" y="124" width="60" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="1036" y="133" fill="rgba(45,49,66,0.40)" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.14em">CLIENTS</text>
+
+      <!-- ARROWS -->
+      <!-- Driver Plus <-> Kafka -->
+      <line x1="204" y1="240" x2="280" y2="240" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Kafka <-> gf-system -->
+      <line x1="400" y1="128" x2="500" y2="128" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Kafka <-> gf-sales -->
+      <line x1="400" y1="240" x2="500" y2="240" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- Kafka <-> gf-accounting -->
+      <line x1="400" y1="352" x2="500" y2="352" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- BFF -> gf-system (elbow, fanned attach at y=224) -->
+      <path d="M 740,224 H 708 Q 700,224 700,216 V 136 Q 700,128 692,128 H 660" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- BFF -> gf-sales (straight, y=240) -->
+      <line x1="740" y1="240" x2="660" y2="240" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- garage-web -> BFF (elbow, fanned attach at y=224) -->
+      <path d="M 960,184 H 938 Q 930,184 930,192 V 216 Q 930,224 922,224 H 900" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- garage-mobile -> BFF (elbow, fanned attach at y=256) -->
+      <path d="M 960,296 H 938 Q 930,296 930,288 V 264 Q 930,256 922,256 H 900" fill="none" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- gf-accounting -> gf-sales (snapshot read) -->
+      <line x1="580" y1="320" x2="580" y2="272" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <!-- gf-sales -> ct-file-storage (fanned exit x=540) -->
+      <line x1="540" y1="272" x2="540" y2="460" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <!-- gf-accounting -> ct-file-storage (fanned exit x=620) -->
+      <line x1="620" y1="384" x2="620" y2="460" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+      <!-- ARROW LABELS -->
+      <rect x="204" y="222" width="76" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="242" y="231" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">3 KAFKA TOPICS</text>
+
+      <rect x="410" y="110" width="80" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="450" y="119" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">PARTNER_LINK</text>
+
+      <rect x="404" y="222" width="92" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="450" y="231" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BOOKING + DOC</text>
+
+      <rect x="414" y="334" width="72" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="450" y="343" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">DOCUMENT</text>
+
+      <rect x="662" y="170" width="76" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="700" y="179" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">6 REST OPS</text>
+
+      <rect x="662" y="222" width="76" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="700" y="231" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">BOOKING REST</text>
+
+      <rect x="898" y="198" width="64" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="930" y="207" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GRAPHQL</text>
+
+      <rect x="898" y="270" width="64" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="930" y="279" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">GRAPHQL</text>
+
+      <rect x="524" y="284" width="112" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="580" y="293" fill="#2e5aa8" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.05em">FOR-SETTLEMENT</text>
+
+      <rect x="492" y="374" width="96" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="540" y="383" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">UPLOAD PDF</text>
+
+      <rect x="572" y="416" width="96" height="12" rx="2" fill="#f5f5f5"/>
+      <text x="620" y="425" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.06em">UPLOAD PDF</text>
+
+      <!-- NODES (drawn after arrows) -->
+      <!-- Driver Plus (external) -->
+      <rect x="60" y="208" width="144" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="60" y="208" width="144" height="64" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="68" y="216" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="84" y="225" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text x="132" y="244" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Driver Plus</text>
+      <text x="132" y="260" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">external partner</text>
+
+      <!-- Kafka (bus / store, tall bar) -->
+      <rect x="280" y="96" width="120" height="288" rx="6" fill="#f5f5f5"/>
+      <rect x="280" y="96" width="120" height="288" rx="6" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <rect x="288" y="104" width="30" height="12" rx="2" fill="transparent" stroke="rgba(79,93,117,0.50)" stroke-width="0.8"/>
+      <text x="303" y="113" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BUS</text>
+      <text x="340" y="244" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">Kafka</text>
+      <text x="340" y="260" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">3 topics · W07</text>
+
+      <!-- gf-system (focal) -->
+      <rect x="500" y="96" width="160" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="500" y="96" width="160" height="64" rx="6" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <rect x="508" y="104" width="32" height="12" rx="2" fill="transparent" stroke="rgba(235,108,54,0.50)" stroke-width="0.8"/>
+      <text x="524" y="113" fill="#eb6c36" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SYS</text>
+      <text x="580" y="132" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">gf-system</text>
+      <text x="580" y="148" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">Partner Link owner</text>
+
+      <!-- gf-sales -->
+      <rect x="500" y="208" width="160" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="500" y="208" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="508" y="216" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="524" y="225" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SVC</text>
+      <text x="580" y="244" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">gf-sales</text>
+      <text x="580" y="260" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">booking + SO doc</text>
+
+      <!-- gf-accounting -->
+      <rect x="500" y="320" width="160" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="500" y="320" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="508" y="328" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="524" y="337" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">SVC</text>
+      <text x="580" y="356" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">gf-accounting</text>
+      <text x="580" y="372" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">settlement doc</text>
+
+      <!-- agg-garage-graph (BFF) -->
+      <rect x="740" y="208" width="160" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="740" y="208" width="160" height="64" rx="6" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <rect x="748" y="216" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="764" y="225" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">BFF</text>
+      <text x="820" y="244" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">agg-garage-graph</text>
+      <text x="820" y="260" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">GraphQL BFF</text>
+
+      <!-- garage-web -->
+      <rect x="960" y="152" width="160" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="960" y="152" width="160" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <rect x="968" y="160" width="32" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
+      <text x="984" y="169" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">WEB</text>
+      <text x="1040" y="188" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">garage-web</text>
+      <text x="1040" y="204" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">liên kết · booking</text>
+
+      <!-- garage-mobile -->
+      <rect x="960" y="264" width="160" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="960" y="264" width="160" height="64" rx="6" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <rect x="968" y="272" width="32" height="12" rx="2" fill="transparent" stroke="rgba(122,131,153,0.40)" stroke-width="0.8"/>
+      <text x="984" y="281" fill="#7a8399" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">APP</text>
+      <text x="1040" y="300" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">garage-mobile</text>
+      <text x="1040" y="316" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">tab liên kết</text>
+
+      <!-- ct-file-storage (external / platform) -->
+      <rect x="500" y="460" width="160" height="64" rx="6" fill="#f5f5f5"/>
+      <rect x="500" y="460" width="160" height="64" rx="6" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <rect x="508" y="468" width="32" height="12" rx="2" fill="transparent" stroke="rgba(45,49,66,0.30)" stroke-width="0.8"/>
+      <text x="524" y="477" fill="#4f5d75" font-size="7" font-family="'Geist Mono', monospace" text-anchor="middle" letter-spacing="0.08em">EXT</text>
+      <text x="580" y="496" fill="#2d3142" font-size="12" font-weight="600" font-family="'Geist', sans-serif" text-anchor="middle">ct-file-storage</text>
+      <text x="580" y="512" fill="#4f5d75" font-size="9" font-family="'Geist Mono', monospace" text-anchor="middle">PDF · URL tuyệt đối</text>
+
+      <!-- LEGEND -->
+      <line x1="40" y1="562" x2="1210" y2="562" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+      <text x="40" y="578" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.18em">LEGEND</text>
+
+      <rect x="40" y="594" width="14" height="10" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1"/>
+      <text x="60" y="602" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Focal boundary</text>
+
+      <rect x="196" y="594" width="14" height="10" rx="2" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+      <text x="216" y="602" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Backend / BFF</text>
+
+      <rect x="352" y="594" width="14" height="10" rx="2" fill="rgba(45,49,66,0.05)" stroke="#4f5d75" stroke-width="1"/>
+      <text x="372" y="602" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Bus / broker</text>
+
+      <rect x="486" y="594" width="14" height="10" rx="2" fill="rgba(45,49,66,0.03)" stroke="rgba(45,49,66,0.30)" stroke-width="1"/>
+      <text x="506" y="602" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">External / platform</text>
+
+      <rect x="642" y="594" width="14" height="10" rx="2" fill="rgba(79,93,117,0.10)" stroke="#7a8399" stroke-width="1"/>
+      <text x="662" y="602" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Client app</text>
+
+      <line x1="762" y1="600" x2="790" y2="600" stroke="#2e5aa8" stroke-width="1.2" marker-end="url(#arrow-link)"/>
+      <text x="798" y="602" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">REST / GraphQL</text>
+
+      <line x1="930" y1="600" x2="958" y2="600" stroke="#4f5d75" stroke-width="1.2" marker-end="url(#arrow)"/>
+      <text x="966" y="602" fill="#4f5d75" font-size="8.5" font-family="'Geist', sans-serif">Kafka event</text>
+    </svg>
+  </div>
+</body>
+</html>
