@@ -23,6 +23,31 @@ Cả 2 lớp lỗi này **không phải lỗi logic nghiệp vụ** (không sai 
 8. **Test Title (schema FULL RBT, cột thứ 4) bắt buộc theo convention `Kiểm tra <hành động: thành công/thất bại/validate/chặn...> <đối tượng> với <loại dữ liệu>`** — không được viết cụt lủn kiểu mô tả thao tác UI thô (vd "Bấm 'Xem' điều hướng đúng Detail", "Feature flag OFF") vì không nói rõ kỳ vọng PASS gì, khiến việc quét nhanh hàng trăm TC để tìm đúng case rất chậm và dễ nhầm. Xem ví dụ đúng/sai đầy đủ tại `.claude/skills/rbt_manual_testing/SKILL.md` mục "Quy tắc đặt tên Test Title/Test Scenario". `validate_tc.py` tự động FAIL nếu Test Title không bắt đầu bằng "Kiểm tra", và tự động FAIL nếu Expected Result chứa cụm mơ hồ không thể verify được (vd "NEED CONFIRMATION", "ghi nhận hành vi thực tế", "chưa quy định rõ") thay vì chọn 1 default cụ thể kèm nhãn `[ASSUMPTION: ...]`.
 9. **Pre-Condition (TC thuộc phạm vi UI) bắt buộc nêu đủ 3 thành phần: (a) User được sử dụng — tài khoản/role cụ thể đang đăng nhập; (b) Màn hình đang đứng — route/màn hình UI ngay trước khi Test Steps chạy; (c) Dữ liệu cần thiết phải có — giá trị/ID/số lượng cụ thể đã tồn tại sẵn, không dùng định lượng mơ hồ.** Rule ra đời sau khi rà soát `TC_PRC.md` (Wave 6) phát hiện Pre-Condition kiểu "Tenant có ≥1 log PRC đã chạy", "Bảng có dòng id=4521", "3 log ở 3 trạng thái khác nhau" — mô tả trạng thái trừu tượng, không nói rõ ai đang đăng nhập, đang đứng ở màn nào (vì Test Steps thường viết tắt thao tác trực tiếp trên UI như "Bấm icon 'Xem' ở dòng id=4521" mà không lặp lại bước điều hướng), và dữ liệu cụ thể nào phải setup sẵn — khiến người thực thi TC không thể chuẩn bị môi trường độc lập, phải tự đoán. Xem ví dụ đúng/sai đầy đủ tại `.claude/skills/rbt_manual_testing/SKILL.md` mục "Quy tắc nội dung Pre-Condition (UI)". `validate_tc.py` cảnh báo (WARNING) các dòng Pre-Condition trong file `.../ui/TC_*.md` thiếu 1 trong 3 thành phần trên.
 
+10. **Nhóm Validate phải tách nhóm con theo TỪNG ĐƠN VỊ ĐƯỢC VALIDATE — áp dụng cho cả TC UI lẫn TC API.**
+    Không được gộp toàn bộ test case validation của nhiều trường vào một khối liền. Cụ thể:
+    - **UI:** mỗi trường trên form là 1 nhóm con (`Trường: Email`, `Trường: Số điện thoại`...),
+      gom đủ checklist của trường đó (bỏ trống, whitespace-only, max length, ký tự đặc biệt,
+      XSS/SQLi, trim space đầu/cuối) vào cùng nhóm con.
+    - **API — header/tham số:** 1 nhóm con cho mỗi trường (`Header: transactionId`...).
+    - **API — trường mandatory bên trong payload nhiều trường** (bản tin SWIFT, XML ISO 20022,
+      JSON lồng nhau): 1 nhóm con cho mỗi bản tin/payload (`Bản tin MT195`, `Bản tin CAMT.110`...).
+    - **API — tầng giao thức** (sai HTTP method, sai Content-Type, sai Accept): 1 nhóm con riêng.
+
+    Rule ra đời sau khi rà soát bộ TC API AML (327 TC): nhóm Validate bị gộp thành block `MT`
+    chứa 110 test case của 20 loại bản tin khác nhau — người review phải cuộn qua hàng trăm
+    dòng mới tìm được trường mình cần xem. Mục đích của việc tách nhóm con là để **quét mắt
+    tìm đúng trường cần xem**, nên block quá thô thì bảng TC quay về đúng vấn đề ban đầu:
+    dài và không đọc được.
+
+11. **Cột Pre-condition VÀ cột Test Data dùng gạch đầu dòng `-`, KHÔNG đánh số `1.` `2.` `3.`** —
+    áp cho cả TC UI lẫn TC API. Đánh số chỉ dùng ở `Test Steps` (thứ tự thực hiện là bắt buộc) và
+    `Expected result` (phải map 1-1 với số bước). Pre-condition là **tập điều kiện phải đồng thời
+    đúng** trước khi test chạy, còn Test Data là **tập thành phần cấu thành request/dữ liệu cần
+    chuẩn bị** — cả hai đều không có thứ tự thực hiện, nên đánh số gây hiểu nhầm là phải làm tuần
+    tự và làm ô dữ liệu rườm rà. Riêng nội dung body (JSON/XML/bản tin SWIFT) nằm dưới dòng
+    `- Body:` thì giữ nguyên định dạng gốc, không thêm gạch đầu dòng vào từng dòng body.
+    `validate_tc.py` báo lỗi khi phát hiện Pre-condition hoặc Test Data còn đánh số.
+
 ## Tham chiếu
 
 - Skill chính: `.claude/skills/rbt_manual_testing/SKILL.md` — Bước 5 mục 6 (Traceability Coverage Audit), Bước 6 phần "BƯỚC 3: VALIDATE TRƯỚC KHI BÁO HOÀN THÀNH", mục "Quy tắc đặt tên Test Title/Test Scenario" (naming convention), mục "Quy tắc nội dung Pre-Condition (UI)" (3 thành phần bắt buộc).

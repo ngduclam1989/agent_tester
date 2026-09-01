@@ -164,7 +164,7 @@ test.describe("Pagination", () => {
 
 ### Vì sao data-driven
 
-Test case API sinh ra từ skill `api_test_design` (schema 19 cột) thường lên tới vài chục TC cho
+Test case API sinh ra từ skill `api_test_design` (schema 20 cột) thường lên tới vài chục TC cho
 1 endpoint. Viết mỗi TC thành 1 khối `test()` riêng làm file phình và trùng lặp gần như hoàn toàn.
 Cách làm: đưa TC vào file Excel, spec đọc file rồi sinh test động trong vòng lặp.
 

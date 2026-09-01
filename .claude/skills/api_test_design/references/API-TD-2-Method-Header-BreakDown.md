@@ -99,49 +99,53 @@ Giả định Request Body đã hợp lệ hoàn toàn. Focus 100% vào giao th�
 ```markdown
 # POST /v1/trans/minval - Tạo yêu cầu cập nhật ngưỡng
 ## Method & Header
+
+### BLOCK: Common — Risk: Medium
 <!-- Happy Path này chỉ verify lớp Gateway/Protocol.
      Không thay thế Happy Path ở Cấu phần 2, 3, 4. -->
-### TD_P1_001 - [Smoke] - Happy Path (Method và Header hoàn toàn hợp lệ)
+#### TD_P1_001 - [Smoke] - Happy Path (Method và Header hoàn toàn hợp lệ)
 - **Steps**: Gọi POST với Token hợp lệ, Content-Type: application/json,
   Accept: application/json, và đầy đủ Custom Headers.
 - **Expected**: HTTP 200. Request vượt qua Gateway vào xử lý logic.
 
 <!-- BƯỚC 1: HTTP METHOD -->
-### TD_P1_002 - [Protocol] - Gọi sai HTTP Method (GET thay vì POST)
+#### TD_P1_002 - [Protocol] - Gọi sai HTTP Method (GET thay vì POST)
 - **Steps**: Gửi request với Method là GET.
 - **Expected**: HTTP 405 'Method Not Allowed' hoặc HTTP 404.
 
-<!-- BƯỚC 2: AUTHORIZATION -->
-### TD_P1_003 - [Security] - Header Authorization bị Missing
-- **Steps**: Gửi request không có header Authorization.
-- **Expected**: HTTP 401, Code 'ERR_UNAUTHORIZED'.
-### TD_P1_004 - [Security] - Token sai format (thiếu prefix "Bearer ")
-- **Steps**: Gửi request với Authorization: "<raw_token>" (không có "Bearer ").
-- **Expected**: HTTP 401, Code 'ERR_TOKEN_INVALID'.
-### TD_P1_005 - [Security] - Token đã hết hạn (expired)
-- **Steps**: Gửi request với Token hợp lệ về format nhưng đã expired.
-- **Expected**: HTTP 401, Code 'ERR_TOKEN_EXPIRED'.
-### TD_P1_006 - [Security] - Token hợp lệ nhưng role không đủ quyền
-- **Steps**: Gửi request với Token của role không được phép gọi endpoint này.
-- **Expected**: HTTP 403, Code 'ERR_FORBIDDEN'.
-
 <!-- BƯỚC 3: CONTENT-TYPE -->
-### TD_P1_007 - [Format] - Sai Content-Type (text/plain)
+#### TD_P1_003 - [Format] - Sai Content-Type (text/plain)
 - **Steps**: Gửi request với Content-Type: text/plain.
 - **Expected**: HTTP 415 'Unsupported Media Type'.
 
 <!-- BƯỚC 4: ACCEPT HEADER (NEW v1.2.0) -->
-### TD_P1_008 - [Accept] - Sai Accept header (text/xml)
+#### TD_P1_004 - [Accept] - Sai Accept header (text/xml)
 - **Steps**: Gửi request với Accept: text/xml trong khi API chỉ hỗ trợ application/json.
 - **Expected**: HTTP 406 'Not Acceptable'.
 
 <!-- BƯỚC 5: CUSTOM HEADERS -->
-### TD_P1_009 - [Basic] - Thiếu Custom Header 'X-Client-ID' bắt buộc
+#### TD_P1_005 - [Basic] - Thiếu Custom Header 'X-Client-ID' bắt buộc
 - **Steps**: Gửi request thiếu header 'X-Client-ID'.
 - **Expected**: HTTP 400, Code 'ERR_MISSING_CLIENT_ID'.
-### TD_P1_010 - [Basic] - 'X-Client-ID' có giá trị sai định dạng
+#### TD_P1_006 - [Basic] - 'X-Client-ID' có giá trị sai định dạng
 - **Steps**: Gửi request với 'X-Client-ID' không đúng format quy định trong PTTK.
 - **Expected**: HTTP 400, Code 'ERR_INVALID_CLIENT_ID'.
+
+### BLOCK: Authentication — Risk: High
+<!-- BƯỚC 2: AUTHORIZATION — tách block riêng vì [Security] nâng Risk lên High,
+     không được gộp chung block Common (xem API-TD-1 mục IV.2). -->
+#### TD_P1_007 - [Security] - Header Authorization bị Missing
+- **Steps**: Gửi request không có header Authorization.
+- **Expected**: HTTP 401, Code 'ERR_UNAUTHORIZED'.
+#### TD_P1_008 - [Security] - Token sai format (thiếu prefix "Bearer ")
+- **Steps**: Gửi request với Authorization: "<raw_token>" (không có "Bearer ").
+- **Expected**: HTTP 401, Code 'ERR_TOKEN_INVALID'.
+#### TD_P1_009 - [Security] - Token đã hết hạn (expired)
+- **Steps**: Gửi request với Token hợp lệ về format nhưng đã expired.
+- **Expected**: HTTP 401, Code 'ERR_TOKEN_EXPIRED'.
+#### TD_P1_010 - [Security] - Token hợp lệ nhưng role không đủ quyền
+- **Steps**: Gửi request với Token của role không được phép gọi endpoint này.
+- **Expected**: HTTP 403, Code 'ERR_FORBIDDEN'.
 ```
 
 ## V. Thực Thi Cuối

@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/anhtester/antigravity-testing-kit#readme",
   "dependencies": {
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "xlsx-js-style": "^1.2.0"
   }
 }

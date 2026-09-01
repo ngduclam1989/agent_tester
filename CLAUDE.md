@@ -148,7 +148,7 @@ Agent sử dụng skills trong `.claude/skills/` tùy theo nhiệm vụ:
 | -------------------------- | ----------------------------------------------------------------------------------------- |
 | `qa_automation_engineer` | Master skill cho automation — điều phối toàn bộ quy trình                          |
 | `rbt_manual_testing`     | Master skill cho manual testing — 2 modes: QUICK (sinh TC nhanh) và FULL RBT (6 bước) |
-| `api_test_design`        | Sinh Test Design (Markmap, 4-phase) + Manual TC (TSV 19 cột) cho API khi không có Swagger — được `rbt_manual_testing` gọi tới ở Bước 5 |
+| `api_test_design`        | Sinh Test Design (Markmap, 4-phase) + Manual TC (20 cột, chia block theo RBT) cho API khi không có Swagger — được `rbt_manual_testing` gọi tới ở Bước 5 |
 | `requirements_analyzer`  | Phân tích requirements từ website/tài liệu                                           |
 | `ui_debug_agent`         | Inspect UI/DOM, thu thập locators                                                        |
 | `smart_locator_agent`    | Sinh locator mới ổn định                                                              |

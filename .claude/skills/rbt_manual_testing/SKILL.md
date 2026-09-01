@@ -165,7 +165,10 @@ Lý do bắt buộc: Test Title là thứ đầu tiên người review/tester đ
 
 > Áp dụng cho mọi TC thuộc phạm vi **UI (Web/Mobile)** — cả QUICK và FULL RBT. Rule ra đời sau khi rà soát `TC_PRC.md` (Wave 6) phát hiện Pre-Condition viết theo kiểu mô tả trạng thái trừu tượng ("Tenant có ≥1 log PRC đã chạy", "Bảng có dòng id=4521", "3 log ở 3 trạng thái khác nhau") — người chạy test không biết phải setup cụ thể ra sao, và không biết Test Steps bắt đầu từ đâu vì Test Steps thường viết tắt thao tác trực tiếp trên UI (vd "Bấm icon 'Xem' ở dòng id=4521") mà không nói rõ **đang đứng ở màn nào, đăng nhập bằng ai**.
 
-Cột Pre-Condition **PHẢI** nêu đủ 3 thành phần sau (viết gộp 1-2 câu, không cần tách dòng):
+Cột Pre-Condition **PHẢI** nêu đủ 3 thành phần sau. Mỗi thành phần viết **1 dòng bắt đầu
+bằng `- `** (dùng `<br>` để xuống dòng trong ô Markdown), **KHÔNG đánh số `1.` `2.` `3.`** —
+đánh số chỉ dành cho `Test Steps` và `Expected Result` nơi thứ tự là bắt buộc; Pre-Condition
+là tập điều kiện phải đồng thời đúng, không có thứ tự thực hiện:
 
 1. **User được sử dụng** — tài khoản/role cụ thể đang đăng nhập (hoặc "Không cần đăng nhập" nếu guest). Không viết chung chung "user hợp lệ".
 2. **Màn hình đang đứng** — route/màn hình UI ngay trước khi Test Steps bắt đầu chạy (vì Test Steps thực hiện thao tác trực tiếp, không lặp lại bước điều hướng). Không viết "—" nếu Test Steps không có bước điều hướng riêng.
@@ -173,7 +176,7 @@ Cột Pre-Condition **PHẢI** nêu đủ 3 thành phần sau (viết gộp 1-2 
 
 ```
 ❌ Sai: "Tenant có ≥1 log PRC đã chạy"
-✅ Đúng: "Đăng nhập garage-owner (owner_test_20260804@gara.test); đang ở màn PRC-LIST (/inventory/price-calc-runs); đã tồn tại sẵn 1 log PRC id=4519, kỳ=Tháng 07/2026, kho=Kho Chính - CN Quận 1, trạng thái SUCCEEDED"
+✅ Đúng: "- User: Đăng nhập garage-owner (owner_test_20260804@gara.test)<br>- Màn hình: đang ở PRC-LIST (/inventory/price-calc-runs)<br>- Dữ liệu: đã tồn tại sẵn 1 log PRC id=4519, kỳ=Tháng 07/2026, kho=Kho Chính - CN Quận 1, trạng thái SUCCEEDED"
 
 ❌ Sai: "Bảng có dòng id=4521"
 ✅ Đúng: "Đăng nhập garage-owner; đang ở màn PRC-LIST; bảng có sẵn dòng log id=4521 (kỳ=Tháng 07/2026, kho=Kho Chính - CN Quận 1)"
@@ -186,7 +189,46 @@ Nếu 1 TC kế thừa dữ liệu/session từ TC ngay trước đó trong cùn
 
 `scripts/validate_testcases/validate_tc.py` có cảnh báo (WARNING, không block) khi phát hiện nhiều dòng Pre-Condition trong file thuộc thư mục `.../ui/` thiếu 1 trong 3 thành phần trên — xem chi tiết trong output hook `validate_testcases_on_write.sh`.
 
+## Quy tắc tách nhóm con trong nhóm Validate — BẮT BUỘC
+
+> Áp dụng cho cả QUICK và FULL RBT, và **áp dụng cho cả TC API** (xem
+> `.claude/skills/api_test_design/references/API-TD-1-Setup-Context.md` mục IV.2).
+
+Nhóm Validate thường chiếm phần lớn số lượng TC của một module. Nếu để toàn bộ TC validation
+của mọi trường nằm liền một khối, người review phải cuộn qua hàng trăm dòng mới tìm được
+trường mình cần xem. Vì vậy:
+
+**Trong nhóm Validate, PHẢI chèn thêm dòng tiêu đề nhóm con cho TỪNG TRƯỜNG được validate**,
+gom đủ checklist của trường đó (bỏ trống, whitespace-only, max length, ký tự đặc biệt,
+XSS/SQLi, trim space) vào cùng nhóm con:
+
+```
+| **NHÓM VALIDATE** | | | | | | | | |
+| **— Trường: Tên khách hàng** | | | | | | | | |
+| GARA_CUS_TC_045 | M2 | Medium | Kiểm tra validate trường "Tên khách hàng" thất bại khi bỏ trống | ... |
+| GARA_CUS_TC_046 | M2 | Medium | Kiểm tra validate trường "Tên khách hàng" thất bại khi nhập toàn khoảng trắng | ... |
+| GARA_CUS_TC_047 | M2 | Medium | Kiểm tra validate trường "Tên khách hàng" thất bại khi vượt 256 ký tự (max 255) | ... |
+| **— Trường: Email** | | | | | | | | |
+| GARA_CUS_TC_048 | M2 | Medium | Kiểm tra validate trường "Email" thất bại khi thiếu ký tự @ | ... |
+```
+
+- Dòng nhóm con dùng tiền tố `— ` để phân biệt với dòng nhóm rủi ro cấp trên.
+- Thứ tự trường trong nhóm con đi **theo đúng thứ tự xuất hiện trên form** (từ trên xuống),
+  không xếp theo bảng chữ cái — để người test đối chiếu được với màn hình thật.
+- Trường nào không có TC validation (read-only, hệ thống tự sinh) thì bỏ hẳn nhóm con đó,
+  không tạo nhóm con rỗng.
+
 ## Quy tắc Test Data (áp dụng cho cả 2 modes)
+
+Khi ô `Test Data` có nhiều thành phần, viết **mỗi thành phần 1 dòng bắt đầu bằng `- `**
+(dùng `<br>` để xuống dòng trong ô Markdown), **KHÔNG đánh số `1.` `2.` `3.`** — giống cột
+`Pre-Condition`. Đánh số chỉ dành cho `Test Steps` và `Expected Result`, nơi thứ tự thực
+hiện là bắt buộc; Test Data là tập dữ liệu cần chuẩn bị, không có thứ tự.
+
+```
+❌ Sai: "1. Tên: Nguyễn Văn A<br>2. Email: a@test.com<br>3. SĐT: 0901234567"
+✅ Đúng: "- Tên: Nguyễn Văn A<br>- Email: a@test.com<br>- SĐT: 0901234567"
+```
 
 ```
 ❌ Sai: "Nhập mã số hợp lệ"
@@ -374,7 +416,7 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 > **Rẽ nhánh theo Scope (tự động, dựa trên phân loại UI/API/BOTH đã xác định ở Bước 1 — không hỏi lại user trừ khi phân loại còn mơ hồ):**
 >
 > - **UI-only** → thực hiện quy trình bên dưới (không đổi gì).
-> - **API-only** → **rẽ hẳn sang skill `api_test_design`** (`.claude/skills/api_test_design/SKILL.md`): chạy quy trình 5 bước 4-phase để sinh Test Design (Markmap), **chờ user confirm Test Design**, rồi chạy tiếp bước sinh Test Case (schema 19 cột) theo `references/API-Gen-TC-From-TD-v4.md` của skill đó, convert sang `.md`+`.xlsx` và xóa file `.tsv` trung gian (xem mục "Lưu trữ" của `api_test_design`). **Bỏ qua toàn bộ quy trình UI bên dưới** cho module này — TC API dùng schema/định dạng riêng (19 cột), không phải bảng Markdown 9 cột của RBT UI.
+> - **API-only** → **rẽ hẳn sang skill `api_test_design`** (`.claude/skills/api_test_design/SKILL.md`): chạy quy trình 5 bước 4-phase để sinh Test Design (Markmap), **chờ user confirm Test Design**, rồi chạy tiếp bước sinh Test Case (schema 19 cột) theo `references/API-Gen-TC-From-TD-v4.md` của skill đó, convert sang `.md`+`.xlsx` và xóa file `.tsv` trung gian (xem mục "Lưu trữ" của `api_test_design`). **Bỏ qua toàn bộ quy trình UI bên dưới** cho module này — TC API dùng schema/định dạng riêng (19 cột), không phải bảng Markdown 9 cột của RBT UI — nhưng đã được chuẩn hóa theo cùng tinh thần RBT: có cột `Risk Level`, chia block bằng dòng tiêu đề nhóm in đậm, `Test Case Title` theo convention "Kiểm tra ...", và Pre-condition 3 thành phần.
 > - **BOTH** → xử lý **tuần tự, API trước — UI sau** (không làm song song):
 >   1. Chạy nhánh API-only ở trên trước → ra file TC API (`.md`+`.xlsx`, TSV trung gian đã xóa) → **chờ user confirm xong TC API**.
 >   2. Sau khi TC API đã confirm, mới tiếp tục quy trình UI bên dưới cho phần UI của cùng feature.
@@ -550,6 +592,22 @@ Ngay sau khi sinh và lưu xong file Markdown ở Bước 1 vào thư mục `pra
 
 - Lệnh chạy: `node scripts/convert_excel/md_to_xlsx.js <đường_dẫn_tuyệt_đối_tới_file_markdown>`
   *(Lưu ý: Không tự xuất file CSV. File Excel sẽ do script này tự động tạo ra dựa trên các bảng Test Cases trong file Markdown. Hãy ghi rõ đường dẫn file Excel được tạo ra để người dùng dễ dàng truy cập).*
+- **Điều kiện tiên quyết:** lần đầu dùng phải chạy `cd scripts/convert_excel && npm install`
+  (script dùng `xlsx-js-style` để ghi được màu; bản `xlsx` community ghi ra sẽ mất định dạng).
+
+**File `.xlsx` được tô màu tự động** — agent không phải làm gì thêm, script tự suy ra từ
+dạng dòng. File mẫu để đối chiếu mắt thường:
+`.claude/skills/rbt_manual_testing/templates/TC_mau_UI.xlsx` (4 TC, đủ 4 mức định dạng):
+
+| Dòng | Nền | Chữ |
+|---|---|---|
+| Header (tên cột) | `2F5597` navy | Arial 10 đậm, trắng, căn giữa |
+| Dòng nhóm rủi ro `**NHÓM ...**` | `9DC3E6` xanh vừa | Arial 10 đậm |
+| Dòng nhóm con `**— Trường: ...**` (tách theo từng trường trong nhóm Validate) | `BDD7EE` xanh nhạt | Arial 10 đậm |
+| Dòng Test Case | trắng | Arial 10 thường, wrap text, căn trên |
+
+Viền mảnh `4472C4`, freeze dòng header, bật AutoFilter. Dấu `**` của nhãn dòng nhóm được bỏ
+khi ghi sang Excel (chỉ `.md` mới cần để in đậm).
 
 #### BƯỚC 3: VALIDATE TRƯỚC KHI BÁO HOÀN THÀNH (BẮT BUỘC)
 

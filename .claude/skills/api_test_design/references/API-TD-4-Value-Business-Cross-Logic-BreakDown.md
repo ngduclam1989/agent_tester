@@ -160,82 +160,92 @@ Tag `[ST]` CHỈ cho state pre-condition. KHÔNG dùng cho Happy Path.
 
 ```markdown
 ## Value, Business Logic, Cross Logic
+
+### BLOCK: Common — Risk: High
 <!-- Happy Path này verify Business Logic và DB. Không thay thế HP ở C1, C2, C4. -->
-### TD_P3_001 - [Smoke] - Happy Path (Dữ liệu và Trạng thái hợp lệ)
+#### TD_P3_001 - [Smoke] - Happy Path (Dữ liệu và Trạng thái hợp lệ)
 - **Steps**: Request hợp lệ với tài khoản Active, chưa có yêu cầu Pending.
 - **Expected**:
   - HTTP 200, Code 'SUCCESS'.
   - DB bảng 'Threshold_Requests': lưu 1 record mới, status = 'PENDING'.
 
+### BLOCK: Field 'amount' — Risk: High
 <!-- VÒNG LẶP FIELD: 'amount' (Rule: Min 10,000 — Max 50,000,000) — BVA_MODE=FULL -->
-### TD_P3_002 - [BVA] - 'amount' dưới biên dưới (Min-1 = 9,999) — NEGATIVE
+#### TD_P3_002 - [BVA] - 'amount' dưới biên dưới (Min-1 = 9,999) — NEGATIVE
 - **Steps**: Request với 'amount' = 9999.
 - **Expected**: HTTP 400, Code 'ERR_AMOUNT_TOO_LOW'.
-### TD_P3_003 - [BVA+] - 'amount' tại biên dưới (Min = 10,000) — POSITIVE
+#### TD_P3_003 - [BVA+] - 'amount' tại biên dưới (Min = 10,000) — POSITIVE
 - **Steps**: Request với 'amount' = 10000.
 - **Expected**: HTTP 200, Code 'SUCCESS'. Giá trị được chấp nhận.
-### TD_P3_004 - [BVA+] - 'amount' ngay trên biên dưới (Min+1 = 10,001) — POSITIVE
+#### TD_P3_004 - [BVA+] - 'amount' ngay trên biên dưới (Min+1 = 10,001) — POSITIVE
 - **Steps**: Request với 'amount' = 10001.
 - **Expected**: HTTP 200, Code 'SUCCESS'. Giá trị được chấp nhận.
-### TD_P3_005 - [BVA+] - 'amount' ngay dưới biên trên (Max-1 = 49,999,999) — POSITIVE
+#### TD_P3_005 - [BVA+] - 'amount' ngay dưới biên trên (Max-1 = 49,999,999) — POSITIVE
 - **Steps**: Request với 'amount' = 49999999.
 - **Expected**: HTTP 200, Code 'SUCCESS'. Giá trị được chấp nhận.
-### TD_P3_006 - [BVA+] - 'amount' tại biên trên (Max = 50,000,000) — POSITIVE
+#### TD_P3_006 - [BVA+] - 'amount' tại biên trên (Max = 50,000,000) — POSITIVE
 - **Steps**: Request với 'amount' = 50000000.
 - **Expected**: HTTP 200, Code 'SUCCESS'. Giá trị được chấp nhận.
-### TD_P3_007 - [BVA] - 'amount' trên biên trên (Max+1 = 50,000,001) — NEGATIVE
+#### TD_P3_007 - [BVA] - 'amount' trên biên trên (Max+1 = 50,000,001) — NEGATIVE
 - **Steps**: Request với 'amount' = 50000001.
 - **Expected**: HTTP 400, Code 'ERR_AMOUNT_TOO_HIGH'.
 
+### BLOCK: Field 'quantity' — Risk: High
 <!-- VÒNG LẶP FIELD: 'quantity' (Rule: Min 0) — Min=0 → BVA/ECP kết hợp -->
-### TD_P3_008 - [BVA/ECP] - 'quantity' dưới tối thiểu / số âm (Min=0 → nhập -1)
+#### TD_P3_008 - [BVA/ECP] - 'quantity' dưới tối thiểu / số âm (Min=0 → nhập -1)
 - **Steps**: Request với 'quantity' = -1.
 - **Expected**: HTTP 400, Code 'ERR_INVALID_QUANTITY'.
 
+### BLOCK: Field 'due_date' — Risk: High
 <!-- VÒNG LẶP FIELD: 'due_date' (Type: Date, Rule: không được trong quá khứ) -->
-### TD_P3_009 - [BVA] - 'due_date' là ngày quá khứ
+#### TD_P3_009 - [BVA] - 'due_date' là ngày quá khứ
 - **Steps**: Request với 'due_date' = ngày hôm qua (VD: 2026-06-09).
 - **Expected**: HTTP 400, Code 'ERR_DATE_IN_PAST'.
-### TD_P3_010 - [BVA] - 'due_date' là ngày không hợp lệ theo lịch (30/02)
+#### TD_P3_010 - [BVA] - 'due_date' là ngày không hợp lệ theo lịch (30/02)
 - **Steps**: Request với 'due_date' = "2026-02-30".
 - **Expected**: HTTP 400, Code 'ERR_INVALID_DATE'.
-### TD_P3_011 - [BVA] - 'due_date' là 29/02 của năm không nhuận
+#### TD_P3_011 - [BVA] - 'due_date' là 29/02 của năm không nhuận
 - **Steps**: Request với 'due_date' = "2025-02-29" (2025 không phải năm nhuận).
 - **Expected**: HTTP 400, Code 'ERR_INVALID_DATE'.
 
+### BLOCK: Field 'account_id' — Risk: High
+<!-- Block chứa [IDOR] → Risk High theo API-TD-1 mục IV.2. -->
 <!-- VÒNG LẶP FIELD: 'account_id' (Type: ID) -->
-### TD_P3_012 - [ECP] - 'account_id' không tồn tại trong hệ thống
+#### TD_P3_012 - [ECP] - 'account_id' không tồn tại trong hệ thống
 - **Steps**: Request với 'account_id' = "999999" (Fake ID).
 - **Expected**: HTTP 404, Code 'ERR_ACCOUNT_NOT_FOUND'.
-### TD_P3_013 - [IDOR] - 'account_id' tồn tại nhưng thuộc về user khác (NEW v1.2.0)
+#### TD_P3_013 - [IDOR] - 'account_id' tồn tại nhưng thuộc về user khác (NEW v1.2.0)
 - **Steps**: Request với 'account_id' hợp lệ trong DB nhưng là tài khoản của user B,
   trong khi đang authenticate bằng Token của user A.
 - **Expected**: HTTP 403 'ERR_FORBIDDEN' [ASSUMPTION nếu PTTK không định nghĩa].
 
+### BLOCK: Field 'reason_text' — Risk: Low
+<!-- Block chỉ gồm [EG] và [Whitespace] → Risk Low theo API-TD-1 mục IV.2. -->
 <!-- VÒNG LẶP FIELD: 'reason_text' (Text tự do ✅) — EG_CHECK=FULL → 2 cases -->
-### TD_P3_014 - [EG] - 'reason_text' chứa Emoji và Unicode đặc biệt
+#### TD_P3_014 - [EG] - 'reason_text' chứa Emoji và Unicode đặc biệt
 - **Steps**: Request với 'reason_text' = "Khẩn 🚨🔥 <script>alert(1)</script>".
 - **Expected**: HTTP 400 'ERR_INVALID_INPUT' HOẶC HTTP 200 với giá trị được
   encode an toàn (HTML entities). Không trả HTTP 500.
-### TD_P3_015 - [Whitespace] - 'reason_text' chỉ chứa khoảng trắng (NEW v1.2.0)
+#### TD_P3_015 - [Whitespace] - 'reason_text' chỉ chứa khoảng trắng (NEW v1.2.0)
 - **Steps**: Request với 'reason_text' = "   " (3 spaces, không phải rỗng).
 - **Expected**: HTTP 400 'ERR_INVALID_INPUT' HOẶC HTTP 200 nhưng hệ thống phải
   trim/reject — không được lưu chuỗi khoảng trắng thuần vào DB.
 
+### BLOCK: Cross-Field & State — Risk: High
 <!-- BƯỚC 3: TRẠNG THÁI VÀ LOGIC CHÉO -->
-### TD_P3_016 - [ST] - Tài khoản bị khóa (INACTIVE)
+#### TD_P3_016 - [ST] - Tài khoản bị khóa (INACTIVE)
 - **Steps**: Request với 'account_id' của tài khoản đã bị khóa.
 - **Expected**: HTTP 403, Code 'ERR_ACCOUNT_LOCKED'.
-### TD_P3_017 - [ST] - Đã có yêu cầu đang Pending cho tài khoản này
+#### TD_P3_017 - [ST] - Đã có yêu cầu đang Pending cho tài khoản này
 - **Steps**: Request với 'account_id' đang có yêu cầu ở trạng thái PENDING.
 - **Expected**: HTTP 409, Code 'ERR_DUPLICATE_REQUEST'.
-### TD_P3_018 - [DT] - 'min_value' lớn hơn 'max_value' (logic chéo 2 trường)
+#### TD_P3_018 - [DT] - 'min_value' lớn hơn 'max_value' (logic chéo 2 trường)
 - **Steps**: Request với 'min_value' = 50000, 'max_value' = 10000.
 - **Expected**: HTTP 400, Code 'ERR_MIN_GREATER_THAN_MAX'.
-### TD_P3_019 - [DT] - 'max_value' vượt 'daily_limit' (C3 — tổ hợp 3 trường)
+#### TD_P3_019 - [DT] - 'max_value' vượt 'daily_limit' (C3 — tổ hợp 3 trường)
 - **Steps**: Request với min=10000, max=200000000, daily_limit=100000000 (max > limit).
 - **Expected**: HTTP 400, Code 'ERR_MAX_EXCEEDS_DAILY_LIMIT'.
-### TD_P3_020 - [DT] - 'daily_limit' nhỏ hơn 'min_value' (C4 — tổ hợp 3 trường)
+#### TD_P3_020 - [DT] - 'daily_limit' nhỏ hơn 'min_value' (C4 — tổ hợp 3 trường)
 - **Steps**: Request với min=500000, max=10000000, daily_limit=100000 (limit < min).
 - **Expected**: HTTP 400, Code 'ERR_DAILY_LIMIT_TOO_LOW'.
 ```

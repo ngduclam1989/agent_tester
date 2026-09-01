@@ -1,14 +1,22 @@
 /**
  * Script: api_tsv_to_md_xlsx.js
  * Mô tả:  Convert file TSV Test Case (API, schema 19 cột của skill api_test_design)
- *         sang Markdown table (.md) VÀ Excel (.xlsx) có format đẹp.
+ *         sang Markdown (.md) VÀ Excel (.xlsx) đã chuẩn hóa theo RBT.
  *
  * Khác với md_to_xlsx.js (chỉ đọc bảng Markdown 9 cột của rbt_manual_testing/UI),
  * script này đọc trực tiếp file .tsv 19 cột (Test Case ID, Function, Group Tests,
- * Scenario Outline, Test Case Summary, Pre-conditions, Test Data, Test Steps,
+ * Risk Level, Test Case Title, Pre-conditions, Test Data, Test Steps,
  * Expected result, Environment, Priority, Regression, Automation,
  * Manual Test Results Round 1, Manual Test Results Round 2, Automation Test Results,
  * Actual result, BugID, Notes) do skill api_test_design sinh ra.
+ *
+ * Chuẩn hóa theo RBT (v2):
+ *   - Nhận diện DÒNG TIÊU ĐỀ NHÓM (ô đầu dạng "**NHÓM ... BLOCK: ... Risk: ...**",
+ *     19 ô còn lại rỗng) — không tính vào tổng số TC.
+ *   - File .md tách mỗi NHÓM RỦI RO RBT (cột Function) thành 1 section "##" riêng, kèm
+ *     bảng tổng hợp số TC theo Nhóm x Block x Risk Level tính lại từ nội dung thật.
+ *   - File .xlsx giữ 1 sheet "API Test Cases" theo đúng thứ tự gốc (kể cả dòng nhóm),
+ *     kèm 1 sheet "Tong hop".
  *
  * Cách dùng:
  *   node scripts/convert_excel/api_tsv_to_md_xlsx.js <input.tsv> [output_basename]
@@ -22,21 +30,39 @@
 const fs = require("fs");
 const path = require("path");
 
+// xlsx-js-style: fork của SheetJS, API y hệt nhưng GHI được style (fill/font/border/wrap).
+// Bản `xlsx` community chỉ đọc được style, ghi ra sẽ mất màu.
 let XLSX;
 try {
-  XLSX = require("xlsx");
+  XLSX = require("xlsx-js-style");
 } catch {
-  console.error("❌ Thiếu thư viện xlsx. Cài đặt bằng lệnh:");
-  console.error("   cd scripts/convert_excel && npm install xlsx");
+  console.error("❌ Thiếu thư viện xlsx-js-style. Cài đặt bằng lệnh:");
+  console.error("   cd scripts/convert_excel && npm install");
   process.exit(1);
 }
+
+// Bảng màu lấy từ .claude/skills/rbt_manual_testing/templates/Testcase_mẫu AI_v1.0.0.xlsx
+const PALETTE = {
+  header: "2F5597", // navy — dòng tên cột
+  group1: "9DC3E6", // xanh vừa — dòng nhóm mở đầu 1 NHÓM RỦI RO
+  group2: "BDD7EE", // xanh nhạt — dòng nhóm của các block tiếp theo
+  border: "4472C4", // viền mảnh xanh
+};
+const FONT = "Arial";
+const thinBorder = () => {
+  const e = { style: "thin", color: { rgb: PALETTE.border } };
+  return { top: e, bottom: e, left: e, right: e };
+};
+// Cột căn giữa: Test Case ID(0) Risk Level(3) Environment(9) Priority(10)
+// Regression(11) Automation(12) + 4 cột kết quả (13-16) + BugID(17)
+const CENTERED = new Set([0, 3, 9, 10, 11, 12, 13, 14, 15, 16, 17]);
 
 const EXPECTED_HEADER = [
   "Test Case ID",
   "Function",
   "Group Tests",
-  "Scenario Outline",
-  "Test Case Summary",
+  "Risk Level",
+  "Test Case Title",
   "Pre-conditions",
   "Test Data",
   "Test Steps",
@@ -136,6 +162,34 @@ function toMarkdownCell(text) {
   return withRealNewlines.replace(/\|/g, "\\|").replace(/\r?\n/g, "<br>");
 }
 
+/**
+ * Dòng tiêu đề nhóm: ô đầu tiên là nhãn in đậm "**NHÓM ...**", mọi ô còn lại rỗng.
+ * Dòng này chỉ để phân nhóm trực quan — KHÔNG phải test case.
+ */
+function isGroupRow(row) {
+  const first = (row[0] || "").trim();
+  if (!/^\*\*.*\*\*$/.test(first)) return false;
+  return row.slice(1).every((c) => (c || "").trim() === "");
+}
+
+function countTestCases(rows) {
+  return rows.filter((r) => !isGroupRow(r)).length;
+}
+
+/** Thống kê số TC theo Nhóm rủi ro x Block x Risk Level (tính lại từ nội dung thật). */
+function buildSummary(rows) {
+  const map = new Map();
+  for (const row of rows) {
+    if (isGroupRow(row)) continue;
+    const key = [row[1] || "", row[2] || "", row[3] || ""].join("\u0000");
+    map.set(key, (map.get(key) || 0) + 1);
+  }
+  return [...map.entries()].map(([k, count]) => {
+    const [fn, block, risk] = k.split("\u0000");
+    return { fn, block, risk, count };
+  });
+}
+
 function buildMarkdown(coverageSeal, header, rows, moduleName) {
   const lines = [];
   lines.push(`# Test Cases (API) — ${moduleName}`);
@@ -144,38 +198,159 @@ function buildMarkdown(coverageSeal, header, rows, moduleName) {
     lines.push(`> ${coverageSeal}`);
     lines.push("");
   }
-  lines.push(`Tổng số Test Case: **${rows.length}**`);
+  lines.push(`Tổng số Test Case: **${countTestCases(rows)}**`);
   lines.push("");
-  lines.push(`| ${header.join(" | ")} |`);
-  lines.push(`|${header.map(() => "---").join("|")}|`);
-  for (const row of rows) {
-    const cells = header.map((_, i) => toMarkdownCell(row[i] || ""));
+
+  const summary = buildSummary(rows);
+  if (summary.length > 0) {
+    lines.push("## Tổng hợp theo nhóm");
+    lines.push("");
+    lines.push("| Nhóm rủi ro (Function) | Block (Group Tests) | Risk Level | Số TC |");
+    lines.push("|---|---|---|---|");
+    for (const r of summary) {
+      lines.push(`| ${r.fn} | ${r.block} | ${r.risk} | ${r.count} |`);
+    }
+    lines.push(`| **Tổng** | | | **${countTestCases(rows)}** |`);
+    lines.push("");
+  }
+
+  const headerLine = `| ${header.join(" | ")} |`;
+  const sepLine = `|${header.map(() => "---").join("|")}|`;
+
+  // Dòng tiêu đề nhóm không có cột Function → nó thuộc về nhóm rủi ro của TC ngay sau nó.
+  // Nếu không tính trước, dòng nhóm sẽ bị in ra TRƯỚC heading "##" của chính nó.
+  const effectiveFn = rows.map((row, i) => {
+    if (!isGroupRow(row)) return row[1] || "";
+    for (let j = i + 1; j < rows.length; j++) {
+      if (!isGroupRow(rows[j])) return rows[j][1] || "";
+    }
+    return "";
+  });
+
+  let currentFn = null;
+  let tableOpen = false;
+
+  const closeTable = () => {
+    if (tableOpen) {
+      lines.push("");
+      tableOpen = false;
+    }
+  };
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const cells = header.map((_, k) => toMarkdownCell(row[k] || ""));
+    const fn = effectiveFn[i];
+
+    if (fn !== currentFn) {
+      closeTable();
+      currentFn = fn;
+      lines.push(`## ${fn}`);
+      lines.push("");
+    }
+
+    if (!tableOpen) {
+      lines.push(headerLine);
+      lines.push(sepLine);
+      tableOpen = true;
+    }
     lines.push(`| ${cells.join(" | ")} |`);
   }
-  lines.push("");
+  closeTable();
+
   return lines.join("\n");
+}
+
+/**
+ * Tô màu sheet "API Test Cases" theo bảng màu của template mẫu:
+ *   - dòng 1 (header)           → nền navy, chữ trắng đậm, căn giữa
+ *   - dòng nhóm mở đầu 1 NHÓM   → nền xanh vừa, chữ đậm
+ *   - dòng nhóm của block tiếp  → nền xanh nhạt, chữ đậm
+ *   - dòng TC                   → nền trắng, wrap text, căn trên
+ */
+function applyStyles(ws, header, rows) {
+  const base = { name: FONT, sz: 10 };
+  const border = thinBorder();
+
+  for (let c = 0; c < header.length; c++) {
+    const addr = XLSX.utils.encode_cell({ r: 0, c });
+    if (!ws[addr]) continue;
+    ws[addr].s = {
+      font: { ...base, bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: PALETTE.header } },
+      alignment: { horizontal: "center", vertical: "top", wrapText: true },
+      border,
+    };
+  }
+
+  let lastFn = null;
+  rows.forEach((row, idx) => {
+    const r = idx + 1;
+    const group = isGroupRow(row);
+    // Dòng nhóm mang tên NHÓM ngay trong nhãn; dòng TC lấy từ cột Function
+    const fn = group ? (row[0] || "").replace(/\*/g, "").split("·")[0].trim() : row[1];
+    let fill = null;
+    if (group) {
+      fill = fn && fn !== lastFn ? PALETTE.group1 : PALETTE.group2;
+    }
+    if (fn) lastFn = fn;
+
+    for (let c = 0; c < header.length; c++) {
+      const addr = XLSX.utils.encode_cell({ r, c });
+      if (!ws[addr]) continue;
+      ws[addr].s = {
+        font: { ...base, bold: group },
+        ...(fill ? { fill: { fgColor: { rgb: fill } } } : {}),
+        alignment: {
+          vertical: "top",
+          wrapText: true,
+          horizontal: group ? "left" : CENTERED.has(c) ? "center" : "left",
+        },
+        border,
+      };
+    }
+  });
 }
 
 function buildXlsx(header, rows, outputPath) {
   const wsData = [header];
   for (const row of rows) {
     const cleaned = header.map((_, i) => unescapeLiteralNewlines(row[i] || ""));
+    // Nhãn dòng nhóm trong .md phải bọc ** để in đậm; trong Excel đã có nền + font đậm
+    // nên bỏ dấu ** đi cho sạch.
+    if (isGroupRow(row)) cleaned[0] = cleaned[0].replace(/^\*\*|\*\*$/g, "");
     wsData.push(cleaned);
   }
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);
 
-  // Column widths — tuned cho 19 cột (ID ngắn, Steps/Expected/Summary dài)
-  const colWidths = [20, 16, 16, 30, 40, 30, 30, 45, 40, 12, 10, 12, 12, 14, 14, 16, 14, 12, 12];
+  // Column widths — tuned cho 19 cột (ID ngắn, Title/Steps/Expected dài)
+  const colWidths = [
+    22, 20, 22, 11, 58, 34, 34, 48, 42, 10, 10, 11, 11, 14, 14, 16, 14, 10, 30,
+  ];
   ws["!cols"] = colWidths.map((w) => ({ wch: w }));
 
   ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", state: "frozen" };
 
-  const lastCol = String.fromCharCode(65 + header.length - 1); // hỗ trợ tới cột Z (19 cột = S, an toàn)
+  const lastCol = String.fromCharCode(65 + header.length - 1); // 19 cột = S, an toàn
   ws["!autofilter"] = { ref: `A1:${lastCol}${rows.length + 1}` };
+
+  applyStyles(ws, header, rows);
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "API Test Cases");
+
+  // Sheet "Tong hop": thống kê tính lại từ nội dung thật, không viết tay
+  const summary = buildSummary(rows);
+  const sumData = [["Nhom rui ro (Function)", "Block (Group Tests)", "Risk Level", "So TC"]];
+  for (const r of summary) sumData.push([r.fn, r.block, r.risk, r.count]);
+  sumData.push(["TONG", "", "", countTestCases(rows)]);
+  const wsSum = XLSX.utils.aoa_to_sheet(sumData);
+  wsSum["!cols"] = [{ wch: 34 }, { wch: 30 }, { wch: 12 }, { wch: 8 }];
+  wsSum["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", state: "frozen" };
+  applyStyles(wsSum, sumData[0], sumData.slice(1));
+  XLSX.utils.book_append_sheet(wb, wsSum, "Tong hop");
+
   XLSX.writeFile(wb, outputPath);
 }
 
@@ -203,7 +378,11 @@ function main() {
 
   console.log(`📖 Đang đọc: ${inputPath}`);
   const { coverageSeal, header, rows } = parseTsvFile(inputPath);
-  console.log(`📊 Tìm thấy ${rows.length} test case, ${header.length} cột.`);
+  const tcCount = countTestCases(rows);
+  const groupCount = rows.length - tcCount;
+  console.log(
+    `📊 Tìm thấy ${tcCount} test case + ${groupCount} dòng tiêu đề nhóm, ${header.length} cột.`
+  );
 
   const md = buildMarkdown(coverageSeal, header, rows, moduleName);
   fs.writeFileSync(mdPath, md, "utf-8");

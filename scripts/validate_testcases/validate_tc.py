@@ -62,6 +62,189 @@ CHILD_TABLE_HEADER_RE = re.compile(r'^\|\s*File\s*\|\s*Sub-module\s*\|')
 CHILD_ROW_ID_NUM_RE = re.compile(r'_TC_(\d+)')
 
 
+API_HEADER_START = "| Test Case ID | Function | Group Tests | Risk Level"
+API_EXPECTED_HEADER = [
+    "Test Case ID", "Function", "Group Tests", "Risk Level", "Test Case Title",
+    "Pre-conditions", "Test Data", "Test Steps", "Expected result",
+    "Environment", "Priority", "Regression", "Automation",
+    "Manual Test Results Round 1", "Manual Test Results Round 2",
+    "Automation Test Results", "Actual result", "BugID", "Notes",
+]
+API_TC_ROW_RE = re.compile(r'^\|\s*([A-Z][A-Z0-9]*(?:_[A-Z0-9\-]+)+_TC_(\d+))\s*\|')
+API_GROUP_ROW_RE = re.compile(r'^\|\s*\*\*(.+?)\*\*\s*\|')
+API_TD_REF_RE = re.compile(r'\bTD:\s*(TD_P[1-4]_\d+)')
+API_RISK_ENUM = {"High", "Medium", "Low"}
+API_TOTAL_DECLARED_RE = re.compile(r'T[ổo]ng s[ốo] Test Case:\s*\*\*(\d+)\*\*')
+API_PRECOND_BANNED_RE = re.compile(r'(?:^|<br>)\s*(?:\d+\.|-)\s*(Env|URL|Endpoint|Header)\s*:', re.IGNORECASE)
+API_PRECOND_NUMBERED_RE = re.compile(r'(?:^|<br>)\s*\d+\.\s*(?:User/Quy|Tr[aạ]ng th[aá]i|D[uữ] li[eệ]u)', re.IGNORECASE)
+# Test Data cung dung gach dau dong: bat cac dong 'N. Endpoint:' / 'N. Headers:' / 'N. Body:'...
+API_TESTDATA_NUMBERED_RE = re.compile(r'(?:^|<br>)\s*\d+\.\s*(Endpoint|Headers?|File|Body|DB)\s*:', re.IGNORECASE)
+
+
+def split_md_row(line):
+    """Tach 1 dong bang Markdown thanh cac o, ton trong pipe da escape."""
+    body = line.strip()
+    if body.startswith("|"):
+        body = body[1:]
+    if body.endswith("|"):
+        body = body[:-1]
+    cells, buf, i = [], [], 0
+    while i < len(body):
+        ch = body[i]
+        if ch == "\\" and i + 1 < len(body) and body[i + 1] == "|":
+            buf.append("|")
+            i += 2
+            continue
+        if ch == "|":
+            cells.append("".join(buf).strip())
+            buf = []
+            i += 1
+            continue
+        buf.append(ch)
+        i += 1
+    cells.append("".join(buf).strip())
+    return cells
+
+
+def _validate_api(path, lines):
+    """Validate file TC API (schema 19 cot cua skill api_test_design)."""
+    errors, warnings = [], []
+
+    header_idxs = [i for i, l in enumerate(lines) if l.strip().startswith(API_HEADER_START)]
+    header_cells = split_md_row(lines[header_idxs[0]])
+    if header_cells != API_EXPECTED_HEADER:
+        missing = [c for c in API_EXPECTED_HEADER if c not in header_cells]
+        extra = [c for c in header_cells if c not in API_EXPECTED_HEADER]
+        fail(errors, f"Header bảng TC API không khớp contract 19 cột. Thiếu: {missing or 'không'} | Thừa: {extra or 'không'}")
+
+    tc_ids, tc_nums, prefixes = [], [], Counter()
+    block_risk = {}
+    blocks_seen = []
+    group_labels = []
+    summary_counter = Counter()
+    seen_header_rows = set(header_idxs)
+
+    for i, line in enumerate(lines):
+        if not line.startswith("|") or i in seen_header_rows:
+            continue
+        stripped = line.strip()
+        if set(stripped) <= set("|-: "):
+            continue
+
+        cells = split_md_row(line)
+
+        gm = API_GROUP_ROW_RE.match(line)
+        if gm and all(c == "" for c in cells[1:]):
+            group_labels.append((i + 1, gm.group(1).strip()))
+            continue
+
+        tm = API_TC_ROW_RE.match(line)
+        if not tm:
+            continue
+
+        if len(cells) != 19:
+            fail(errors, f"Dòng {i+1}: có {len(cells)} cột, contract yêu cầu đúng 19 cột. TC: {tm.group(1)}")
+            continue
+
+        tc_id, num = tm.group(1), int(tm.group(2))
+        tc_ids.append(tc_id)
+        tc_nums.append(num)
+        prefixes[tc_id.rsplit("_TC_", 1)[0]] += 1
+
+        function, block, risk = cells[1], cells[2], cells[3]
+        scenario, precond, notes = cells[4], cells[5], cells[18]
+
+        if risk not in API_RISK_ENUM:
+            fail(errors, f"Dòng {i+1} ({tc_id}): Risk Level = '{risk}' — phải là enum sạch High/Medium/Low, không thêm chú thích.")
+        if block and block == function:
+            fail(errors, f"Dòng {i+1} ({tc_id}): cột 'Group Tests' đang copy lại cột 'Function' ('{function}') — phải mang TÊN BLOCK lấy từ Test Design.")
+        if not block:
+            fail(errors, f"Dòng {i+1} ({tc_id}): cột 'Group Tests' (tên block) đang để trống.")
+
+        key = (function, block)
+        if key in block_risk and block_risk[key] != risk:
+            fail(errors, f"Dòng {i+1} ({tc_id}): block '{block}' có Risk Level không nhất quán ('{risk}' vs '{block_risk[key]}') — Risk gán ở mức block, mọi TC trong cùng block phải giống nhau.")
+        else:
+            block_risk.setdefault(key, risk)
+        if key not in blocks_seen:
+            blocks_seen.append(key)
+        summary_counter[(function, block, risk)] += 1
+
+        if not TITLE_PREFIX_RE.match(scenario):
+            fail(errors, f"Dòng {i+1} ({tc_id}): 'Test Case Title' = '{scenario[:70]}' không bắt đầu bằng 'Kiểm tra ...'. Convention bắt buộc: 'Kiểm tra <hành động> <đối tượng> với <dữ liệu/điều kiện>'.")
+
+        if not API_TD_REF_RE.search(notes):
+            fail(errors, f"Dòng {i+1} ({tc_id}): cột 'Notes' thiếu mỏ neo traceability 'TD: <Node ID>' (vd 'TD: TD_P3_003') — bắt buộc từ contract 19 cột.")
+
+        vm = VAGUE_EXPECTED_RE.search(cells[8])
+        if vm:
+            fail(errors, f"Dòng {i+1} ({tc_id}): 'Expected result' chứa cụm mơ hồ không verify được: '{vm.group(0)}'.")
+
+        tdm = API_TESTDATA_NUMBERED_RE.search(cells[6])
+        if tdm:
+            fail(errors, f"Dòng {i+1} ({tc_id}): 'Test Data' đang đánh số `1. 2. 3.` (thấy '{tdm.group(1)}:') — phải dùng gạch đầu dòng `- `. Đánh số chỉ dành cho Test Steps / Expected result.")
+        if API_PRECOND_NUMBERED_RE.search(precond):
+            fail(errors, f"Dòng {i+1} ({tc_id}): 'Pre-conditions' đang đánh số `1. 2. 3.` — phải dùng gạch đầu dòng `- `. Đánh số chỉ dành cho Test Steps / Expected result.")
+        bm = API_PRECOND_BANNED_RE.search(precond)
+        if bm:
+            fail(errors, f"Dòng {i+1} ({tc_id}): 'Pre-conditions' còn chứa '{bm.group(1)}:' — Env/URL/Endpoint/Header phải nằm ở cột 'Test Data', không lặp ở đây.")
+        for part in ("User/Quyền", "Trạng thái hệ thống", "Dữ liệu có sẵn"):
+            if part.lower() not in precond.lower():
+                warnings.append(f"Dòng {i+1} ({tc_id}): 'Pre-conditions' thiếu thành phần '{part}' (bắt buộc đủ 3 thành phần).")
+                break
+
+    # ---- TC ID: 1 prefix duy nhat, danh so lien tuc 001..N ----
+    if len(prefixes) > 1:
+        fail(errors, f"File dùng nhiều prefix TC ID khác nhau: {dict(prefixes)} — contract yêu cầu 1 prefix `<DỰ_ÁN>_<MODULE>` duy nhất cho cả file.")
+    dupes = [i for i, c in Counter(tc_ids).items() if c > 1]
+    if dupes:
+        fail(errors, f"TC ID bị trùng: {sorted(dupes)[:10]}")
+    if tc_nums:
+        expected = list(range(1, len(tc_nums) + 1))
+        if sorted(tc_nums) != expected:
+            missing = sorted(set(expected) - set(tc_nums))
+            fail(errors, f"Số thứ tự TC ID không liên tục 001..{len(tc_nums):03d} (KHÔNG reset theo cấu phần). Số bị thiếu: {missing[:10]}")
+        if tc_nums != sorted(tc_nums):
+            fail(errors, "TC ID không tăng dần theo thứ tự xuất hiện trong file.")
+
+    # ---- Dong tieu de nhom: moi block dung 1 dong ----
+    if not group_labels:
+        fail(errors, "Không tìm thấy dòng tiêu đề nhóm nào (`| **NHÓM ... · BLOCK: ... · Risk: ...** | | ... |`) — contract mục VI.4 bắt buộc mỗi block có 1 dòng đứng trước TC đầu tiên.")
+    elif len(group_labels) != len(blocks_seen):
+        fail(errors, f"Số dòng tiêu đề nhóm ({len(group_labels)}) khác số block thực tế trong bảng TC ({len(blocks_seen)}) — mỗi block phải có đúng 1 dòng tiêu đề.")
+
+    # ---- Tong so TC khai bao ----
+    text = "\n".join(lines)
+    dm = API_TOTAL_DECLARED_RE.search(text)
+    if dm and int(dm.group(1)) != len(tc_ids):
+        fail(errors, f"'Tổng số Test Case' khai báo = {dm.group(1)} nhưng đếm thật trong bảng = {len(tc_ids)}.")
+    elif not dm:
+        warnings.append("Không tìm thấy dòng 'Tổng số Test Case: **N**' để đối chiếu.")
+
+    # ---- Bang 'Tong hop theo nhom' phai khop dem that ----
+    for i, line in enumerate(lines):
+        if line.strip().startswith("| Cấu phần (Function) | Block (Group Tests) | Risk Level |") or line.strip().startswith("| Nhóm rủi ro (Function) | Block (Group Tests) | Risk Level |"):
+            for j in range(i + 2, len(lines)):
+                row = lines[j]
+                if not row.startswith("|"):
+                    break
+                if set(row.strip()) <= set("|-: "):
+                    continue
+                c = split_md_row(row)
+                if len(c) < 4 or c[0].startswith("**"):
+                    continue
+                try:
+                    declared = int(c[3])
+                except ValueError:
+                    continue
+                actual = summary_counter.get((c[0], c[1], c[2]), 0)
+                if declared != actual:
+                    fail(errors, f"Dòng {j+1}: bảng 'Tổng hợp theo nhóm' ghi {declared} TC cho ({c[0]} / {c[1]} / {c[2]}) nhưng đếm thật = {actual}.")
+            break
+
+    return errors, warnings
+
+
 def is_ui_tc_file(path):
     normalized = path.replace("\\", "/")
     return "/ui/" in normalized
@@ -395,6 +578,10 @@ def validate_file(path):
     with open(path, encoding="utf-8") as f:
         lines = f.read().splitlines()
 
+    for line in lines:
+        if line.strip().startswith(API_HEADER_START):
+            return _validate_api(path, lines)
+
     header_idx = None
     for i, line in enumerate(lines):
         if line.strip().startswith("| TC ID | Module | Risk Level"):
@@ -417,8 +604,9 @@ def validate_file(path):
 
     return (
         [
-            "Không tìm thấy header bảng TC chính ('| TC ID | Module | Risk Level ...') và cũng không tìm thấy "
-            "bảng 'Danh sách file con' (rollup) — có thể sai schema, chưa tới Bước 6, hoặc thiếu header đúng format."
+            "Không tìm thấy header bảng TC UI ('| TC ID | Module | Risk Level ...'), header bảng TC API "
+            "('| Test Case ID | Function | Group Tests | Risk Level ...'), và cũng không tìm thấy bảng "
+            "'Danh sách file con' (rollup) — có thể sai schema, chưa tới Bước 6, hoặc thiếu header đúng format."
         ],
         [],
     )

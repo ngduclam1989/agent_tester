@@ -68,7 +68,7 @@ Thực hiện theo hướng dẫn chi tiết trong skill `rbt_manual_testing` �
 
 > **Rẽ nhánh theo Scope (tự động, dựa trên phân loại UI/API/BOTH ở Bước 1):**
 > - **UI-only** → làm theo các bước bên dưới, không đổi.
-> - **API-only** → rẽ sang skill `api_test_design` (`.claude/skills/api_test_design/SKILL.md`): sinh Test Design 4-phase → chờ confirm → sinh TC (TSV 19 cột) theo `references/API-Gen-TC-From-TD-v4.md`. Bỏ qua các bước UI bên dưới.
+> - **API-only** → rẽ sang skill `api_test_design` (`.claude/skills/api_test_design/SKILL.md`): sinh Test Design 4-phase → chờ confirm → sinh TC (TSV 20 cột, có Risk Level + chia block) theo `references/API-Gen-TC-From-TD-v4.md`. Bỏ qua các bước UI bên dưới.
 > - **BOTH** → làm API trước (theo nhánh trên, chờ confirm TC API) rồi mới làm UI (các bước bên dưới). TC API (`.tsv`) và TC UI (`.md`/`.xlsx`) là 2 file riêng biệt, không gộp.
 
 1. **Đánh giá Risk Level (High/Medium/Low) cho mỗi Module:**

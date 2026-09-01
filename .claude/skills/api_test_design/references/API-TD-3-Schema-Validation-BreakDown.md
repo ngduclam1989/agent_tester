@@ -144,51 +144,56 @@ Chỉ kiểm thử Cấu trúc dữ liệu (Schema) của Request Body/Params th
 
 ```markdown
 ## Schema Validation
+
+### BLOCK: Common — Risk: Medium
 <!-- Happy Path này chỉ verify lớp Schema. Không thay thế HP ở C1, C3, C4. -->
-### TD_P2_001 - [Smoke] - Happy Path (Valid Schema)
+#### TD_P2_001 - [Smoke] - Happy Path (Valid Schema)
 - **Steps**: Request body đầy đủ, đúng kiểu dữ liệu, đúng định dạng.
 - **Expected**: HTTP 200, Code 'SUCCESS'. DB lưu 1 record mới.
 
 <!-- BƯỚC 1.5: MALFORMED JSON (NEW v1.2.0) -->
-### TD_P2_002 - [Malformed] - Request body không hợp lệ về cú pháp JSON
+#### TD_P2_002 - [Malformed] - Request body không hợp lệ về cú pháp JSON
 - **Steps**: Gửi request với body JSON bị lỗi cú pháp: `{"amount": 50000, "desc": "test"` (thiếu `}`).
 - **Expected**: HTTP 400, Code 'ERR_INVALID_JSON' hoặc 'ERR_BAD_REQUEST'.
 
-<!-- VÒNG LẶP FIELD: 'amount' (Type: Integer, Required: Y, Max-len: N/A) -->
-<!-- Integer → [Empty] bỏ qua theo Bảng quy đổi Mục I. Chỉ sinh [Missing] và [Type]. -->
-### TD_P2_003 - [Missing] - Field 'amount' bị Missing
-- **Steps**: Request thiếu key 'amount'.
-- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
-### TD_P2_004 - [Type] - Field 'amount' sai kiểu (String)
-- **Steps**: Request với 'amount' = "một triệu".
-- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
-
-<!-- VÒNG LẶP FIELD: 'description' (Type: String, Required: Y, Max-len: 200) -->
-### TD_P2_005 - [Missing] - Field 'description' bị Missing
-- **Steps**: Request thiếu key 'description'.
-- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
-### TD_P2_006 - [Empty] - Field 'description' truyền rỗng
-- **Steps**: Request với 'description' = "" (String → Empty = "").
-- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
-### TD_P2_007 - [Type] - Field 'description' sai kiểu (Integer)
-- **Steps**: Request với 'description' = 12345.
-- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
-### TD_P2_008 - [Max Length] - Field 'description' vượt Max Length (201 ký tự)
-- **Steps**: Request với 'description' = chuỗi 201 ký tự (Max=200, nhập N+1=201).
-- **Expected**: HTTP 400, Code 'ERR_MAX_LENGTH_EXCEEDED'.
-
-<!-- VÒNG LẶP FIELD: 'note' (Type: String, Required: N — Optional field) -->
-<!-- Optional field → KHÔNG sinh [Missing]/[Empty]. Chỉ sinh [Type] nếu TYPE_CHECK bật. -->
-### TD_P2_009 - [Type] - Optional field 'note' được truyền nhưng sai kiểu (Integer)
-- **Steps**: Request có field 'note' = 999 (số nguyên thay vì String).
-- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
-
-<!-- BƯỚC 4: EXTRA FIELDS (NEW v1.2.0) — sau khi xong toàn bộ vòng lặp -->
-### TD_P2_010 - [Extra-Fields] - Payload chứa field lạ không định nghĩa trong PTTK
+<!-- BƯỚC 4: EXTRA FIELDS (NEW v1.2.0) — không thuộc field nào nên nằm ở block Common -->
+#### TD_P2_003 - [Extra-Fields] - Payload chứa field lạ không định nghĩa trong PTTK
 - **Steps**: Gửi request hợp lệ + thêm field lạ: `"injected_admin": true`.
 - **Expected**: HTTP 400 'ERR_UNEXPECTED_FIELD' HOẶC HTTP 200 với 'injected_admin'
   bị bỏ qua hoàn toàn (không lưu DB, không xuất hiện trong response).
   [ASSUMPTION nếu PTTK không định nghĩa behavior: expect HTTP 400].
+
+### BLOCK: Field 'amount' — Risk: Medium
+<!-- VÒNG LẶP FIELD: 'amount' (Type: Integer, Required: Y, Max-len: N/A) -->
+<!-- Integer → [Empty] bỏ qua theo Bảng quy đổi Mục I. Chỉ sinh [Missing] và [Type]. -->
+#### TD_P2_004 - [Missing] - Field 'amount' bị Missing
+- **Steps**: Request thiếu key 'amount'.
+- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
+#### TD_P2_005 - [Type] - Field 'amount' sai kiểu (String)
+- **Steps**: Request với 'amount' = "một triệu".
+- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
+
+### BLOCK: Field 'description' — Risk: Medium
+<!-- VÒNG LẶP FIELD: 'description' (Type: String, Required: Y, Max-len: 200) -->
+#### TD_P2_006 - [Missing] - Field 'description' bị Missing
+- **Steps**: Request thiếu key 'description'.
+- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
+#### TD_P2_007 - [Empty] - Field 'description' truyền rỗng
+- **Steps**: Request với 'description' = "" (String → Empty = "").
+- **Expected**: HTTP 400, Code 'ERR_MISSING_FIELD'.
+#### TD_P2_008 - [Type] - Field 'description' sai kiểu (Integer)
+- **Steps**: Request với 'description' = 12345.
+- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
+#### TD_P2_009 - [Max Length] - Field 'description' vượt Max Length (201 ký tự)
+- **Steps**: Request với 'description' = chuỗi 201 ký tự (Max=200, nhập N+1=201).
+- **Expected**: HTTP 400, Code 'ERR_MAX_LENGTH_EXCEEDED'.
+
+### BLOCK: Field 'note' (Optional) — Risk: Medium
+<!-- VÒNG LẶP FIELD: 'note' (Type: String, Required: N — Optional field) -->
+<!-- Optional field → KHÔNG sinh [Missing]/[Empty]. Chỉ sinh [Type] nếu TYPE_CHECK bật. -->
+#### TD_P2_010 - [Type] - Optional field 'note' được truyền nhưng sai kiểu (Integer)
+- **Steps**: Request có field 'note' = 999 (số nguyên thay vì String).
+- **Expected**: HTTP 400, Code 'ERR_INVALID_TYPE'.
 ```
 
 ## V. Thực Thi Cuối

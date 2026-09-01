@@ -10,13 +10,38 @@
 const fs = require("fs");
 const path = require("path");
 
+// xlsx-js-style: fork của SheetJS, API y hệt nhưng GHI được style (fill/font/border/wrap).
+// Bản `xlsx` community chỉ đọc được style, ghi ra sẽ mất màu.
 let XLSX;
 try {
-  XLSX = require("xlsx");
+  XLSX = require("xlsx-js-style");
 } catch {
-  console.error("❌ Thiếu thư viện xlsx. Cài đặt bằng lệnh:");
-  console.error("   npm install xlsx");
+  console.error("❌ Thiếu thư viện xlsx-js-style. Cài đặt bằng lệnh:");
+  console.error("   cd scripts/convert_excel && npm install");
   process.exit(1);
+}
+
+// Bảng màu lấy từ .claude/skills/rbt_manual_testing/templates/Testcase_mẫu AI_v1.0.0.xlsx
+const PALETTE = {
+  header: "2F5597", // navy — dòng tên cột
+  group1: "9DC3E6", // xanh vừa — dòng nhóm rủi ro (**NHÓM ...**)
+  group2: "BDD7EE", // xanh nhạt — dòng nhóm con trong nhóm Validate (**— Trường: ...**)
+  border: "4472C4",
+};
+const FONT = "Arial";
+// Cột căn giữa: TC ID(0) · Risk Level(2) · Priority(7)
+const CENTERED = new Set([0, 2, 7]);
+
+/** Dòng tiêu đề nhóm: ô đầu dạng **...**, 8 ô còn lại rỗng */
+function isGroupRow(row) {
+  const first = (row[0] || "").trim();
+  if (!/^\*\*.*\*\*$/.test(first)) return false;
+  return row.slice(1).every((c) => (c || "").trim() === "");
+}
+
+/** Nhóm con (Validate tách theo từng trường) bắt đầu bằng — hoặc - */
+function isSubGroup(label) {
+  return /^[—–-]\s/.test(label.replace(/^\*+|\*+$/g, "").trim());
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -131,6 +156,15 @@ function buildXlsx(tables, outputPath) {
     }
   }
 
+  // Phân loại từng dòng TRƯỚC khi bỏ dấu ** (bỏ rồi thì không nhận diện được nữa)
+  const kinds = allRows.map((row) =>
+    isGroupRow(row) ? (isSubGroup(row[0]) ? "g2" : "g1") : "tc"
+  );
+  // Nhãn dòng nhóm trong .md phải bọc ** để in đậm; trong Excel đã có nền + font đậm
+  allRows.forEach((row, i) => {
+    if (kinds[i] !== "tc") row[0] = row[0].replace(/^\*\*|\*\*$/g, "");
+  });
+
   // Build worksheet data (header + data rows)
   const wsData = [headers, ...allRows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -144,12 +178,47 @@ function buildXlsx(tables, outputPath) {
   // ── AutoFilter ─────────────────────────────────────────────────────────
   ws["!autofilter"] = { ref: `A1:I${allRows.length + 1}` };
 
+  // ── Tô màu theo bảng màu template ──────────────────────────────────────
+  const base = { name: FONT, sz: 10 };
+  const e = { style: "thin", color: { rgb: PALETTE.border } };
+  const border = { top: e, bottom: e, left: e, right: e };
+
+  for (let c = 0; c < headers.length; c++) {
+    const addr = XLSX.utils.encode_cell({ r: 0, c });
+    if (!ws[addr]) continue;
+    ws[addr].s = {
+      font: { ...base, bold: true, color: { rgb: "FFFFFF" } },
+      fill: { fgColor: { rgb: PALETTE.header } },
+      alignment: { horizontal: "center", vertical: "top", wrapText: true },
+      border,
+    };
+  }
+
+  kinds.forEach((kind, idx) => {
+    const fill = kind === "g1" ? PALETTE.group1 : kind === "g2" ? PALETTE.group2 : null;
+    for (let c = 0; c < headers.length; c++) {
+      const addr = XLSX.utils.encode_cell({ r: idx + 1, c });
+      if (!ws[addr]) continue;
+      ws[addr].s = {
+        font: { ...base, bold: kind !== "tc" },
+        ...(fill ? { fill: { fgColor: { rgb: fill } } } : {}),
+        alignment: {
+          vertical: "top",
+          wrapText: true,
+          horizontal: kind !== "tc" ? "left" : CENTERED.has(c) ? "center" : "left",
+        },
+        border,
+      };
+    }
+  });
+
   // ── Create workbook & save ─────────────────────────────────────────────
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Test Cases");
   XLSX.writeFile(wb, outputPath);
 
-  return allRows.length;
+  // Chỉ đếm dòng TC thật, không tính dòng tiêu đề nhóm
+  return kinds.filter((k) => k === "tc").length;
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -180,8 +249,11 @@ function main() {
     process.exit(1);
   }
 
-  const totalRows = tables.reduce((sum, t) => sum + t.length, 0);
-  console.log(`📊 Tìm thấy ${tables.length} bảng, tổng ${totalRows} test cases`);
+  const flat = tables.flat();
+  const groupRows = flat.filter(isGroupRow).length;
+  console.log(
+    `📊 Tìm thấy ${tables.length} bảng, ${flat.length - groupRows} test case + ${groupRows} dòng tiêu đề nhóm`
+  );
 
   const count = buildXlsx(tables, outputPath);
   console.log(`✅ Đã xuất ${count} test cases → ${outputPath}`);

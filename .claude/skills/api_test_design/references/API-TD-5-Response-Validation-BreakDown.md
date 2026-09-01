@@ -146,10 +146,12 @@ Ví dụ cho: `POST /v1/trans/minval` — tạo yêu cầu cập nhật ngưỡn
 
 ```markdown
 ## Response Validation
+
+### BLOCK: Common — Risk: Medium
 <!-- Happy Path này chỉ verify lớp Response. Không thay thế HP ở C1, C2, C3. -->
 
 <!-- BƯỚC 1: RSP-SCHEMA — Cấu trúc response body -->
-### TD_P4_001 - [Smoke] - Happy Path (Response Schema đầy đủ và đúng kiểu)
+#### TD_P4_001 - [Smoke] - Happy Path (Response Schema đầy đủ và đúng kiểu)
 - **Steps**: Gửi request hợp lệ hoàn toàn.
 - **Expected**:
   - HTTP 200.
@@ -158,63 +160,67 @@ Ví dụ cho: `POST /v1/trans/minval` — tạo yêu cầu cập nhật ngưỡn
     `data.created_at` (String ISO8601), `data.amount` (Number).
   - KHÔNG có field lạ không định nghĩa trong PTTK.
 
-### TD_P4_002 - [RSP-Schema] - Field bắt buộc 'data.request_id' luôn có trong response
+#### TD_P4_002 - [RSP-Schema] - Field bắt buộc 'data.request_id' luôn có trong response
 - **Steps**: Gửi nhiều request hợp lệ khác nhau (amount thấp, amount cao, lý do khác nhau).
 - **Expected**: Mỗi response đều có 'data.request_id' là chuỗi UUID không rỗng,
   không bao giờ null hoặc undefined.
 
-### TD_P4_003 - [RSP-Schema] - Field 'data.amount' trong response là Number (không phải String)
+#### TD_P4_003 - [RSP-Schema] - Field 'data.amount' trong response là Number (không phải String)
 - **Steps**: Gửi request với 'amount' = 50000.
 - **Expected**: Response 'data.amount' = 50000 (kiểu Number/Integer), KHÔNG phải "50000" (String).
 
+<!-- BƯỚC 5: RSP-CONTENT-TYPE — thuộc cấu trúc chung nên gom vào block Common -->
+#### TD_P4_004 - [RSP-Schema] - Response header Content-Type là application/json
+- **Steps**: Gửi request hợp lệ (Success) và gửi request lỗi (HTTP 400).
+- **Expected**: Cả 2 response đều có header Content-Type = 'application/json' hoặc
+  'application/json; charset=utf-8'. Không được trả 'text/html' hoặc 'text/plain'.
+
+### BLOCK: Response Data — Risk: High
+<!-- Block chứa [RSP-Data] → Risk High theo API-TD-1 mục IV.2. -->
 <!-- BƯỚC 2: RSP-DATA — Tính chính xác dữ liệu trả về -->
-### TD_P4_004 - [RSP-Data] - Giá trị 'amount' trong response khớp chính xác với input
+#### TD_P4_005 - [RSP-Data] - Giá trị 'amount' trong response khớp chính xác với input
 - **Steps**: Gửi request với 'amount' = 123456.
 - **Expected**: Response 'data.amount' = 123456. Đối chiếu DB: bảng 'Threshold_Requests'
   lưu amount = 123456. Không được làm tròn hay format lại.
 
-### TD_P4_005 - [RSP-Data] - Trạng thái 'status' trong response khớp với trạng thái DB
+#### TD_P4_006 - [RSP-Data] - Trạng thái 'status' trong response khớp với trạng thái DB
 - **Steps**: Gửi request hợp lệ → ghi nhận 'data.request_id' → query DB trực tiếp.
 - **Expected**: Response 'data.status' = 'PENDING' = status trong DB. Không được trả
   'APPROVED' hay status sai trạng thái ban đầu.
 
+### BLOCK: Response Error — Risk: Medium
 <!-- BƯỚC 3: RSP-ERROR — Cấu trúc error response nhất quán -->
-### TD_P4_006 - [RSP-Error] - Error response HTTP 400 có cấu trúc nhất quán
+#### TD_P4_007 - [RSP-Error] - Error response HTTP 400 có cấu trúc nhất quán
 - **Steps**: Gửi request thiếu field bắt buộc để trigger HTTP 400.
 - **Expected**: Response body là JSON (không phải HTML) với đúng cấu trúc:
   `{"code": "ERR_*", "message": "<mô tả lỗi>"}`. Không có stack trace, không có HTML.
   Header Content-Type = application/json.
 
-### TD_P4_007 - [RSP-Error] - Error response HTTP 401 có cấu trúc nhất quán
+#### TD_P4_008 - [RSP-Error] - Error response HTTP 401 có cấu trúc nhất quán
 - **Steps**: Gửi request không có Authorization header để trigger HTTP 401.
 - **Expected**: Response body JSON với `{"code": "ERR_UNAUTHORIZED", "message": "..."}`.
-  Cùng cấu trúc với TD_P4_006 (nhất quán).
+  Cùng cấu trúc với TD_P4_007 (nhất quán).
 
-### TD_P4_008 - [RSP-Error] - Error response HTTP 404 có cấu trúc nhất quán
+#### TD_P4_009 - [RSP-Error] - Error response HTTP 404 có cấu trúc nhất quán
 - **Steps**: Gửi request với account_id không tồn tại để trigger HTTP 404.
 - **Expected**: Response body JSON với `{"code": "ERR_NOT_FOUND", "message": "..."}`.
-  Cùng cấu trúc với TD_P4_006 và TD_P4_007 (nhất quán).
-
-<!-- BƯỚC 5: RSP-CONTENT-TYPE -->
-### TD_P4_009 - [RSP-Schema] - Response header Content-Type là application/json
-- **Steps**: Gửi request hợp lệ (Success) và gửi request lỗi (HTTP 400).
-- **Expected**: Cả 2 response đều có header Content-Type = 'application/json' hoặc
-  'application/json; charset=utf-8'. Không được trả 'text/html' hoặc 'text/plain'.
+  Cùng cấu trúc với TD_P4_007 và TD_P4_008 (nhất quán).
 ```
 
 Ví dụ bổ sung cho List/Search API khi `RSP_PAGINATION_CHECK=AUTO/ON`:
 
 ```markdown
+### BLOCK: Response Pagination — Risk: Medium
 <!-- BƯỚC 4: RSP-PAGINATION (chỉ khi là List/Search API) -->
-### TD_P4_010 - [RSP-Pagination] - Trang giữa: data.length = size và total chính xác
+#### TD_P4_010 - [RSP-Pagination] - Trang giữa: data.length = size và total chính xác
 - **Steps**: Gọi API với page=1, size=10. DB có 25 records.
 - **Expected**: `data.length` = 10, `total` = 25, `page` = 1, `size` = 10.
 
-### TD_P4_011 - [RSP-Pagination] - Trang cuối: data.length < size
+#### TD_P4_011 - [RSP-Pagination] - Trang cuối: data.length < size
 - **Steps**: Gọi API với page=3, size=10. DB có 25 records (trang 3 chỉ có 5 records).
 - **Expected**: `data.length` = 5, `total` = 25, `page` = 3.
 
-### TD_P4_012 - [RSP-Pagination] - Trang vượt quá tổng số trang (empty page)
+#### TD_P4_012 - [RSP-Pagination] - Trang vượt quá tổng số trang (empty page)
 - **Steps**: Gọi API với page=99, size=10. DB có 25 records (chỉ có 3 trang).
 - **Expected**: `data` = [] (mảng rỗng), `total` = 25. KHÔNG trả HTTP 404 hoặc HTTP 400.
 ```
