@@ -1,28 +1,16 @@
-/**
- * Template: API spec data-driven từ Excel (Playwright + TypeScript).
- *
- * Pattern chuẩn của project — tham chiếu code thật đang chạy:
- *   - tests/api/product-add.spec.ts   (runner)
- *   - utils/api-function.ts           (validate 3 tầng)
- *   - utils/excel-reader.ts           (đọc Excel)
- *   - common/api-common.ts            (login, header, random data)
- *   - config/env.ts                   (base URL + credentials từ .env)
- *
- * Nguyên tắc bắt buộc:
- *   1. KHÔNG hardcode credentials/URL trong spec — lấy qua config/env.ts (.env).
- *   2. Validate 3 tầng bằng expect.soft: status → schema → JSON node.
- *      Dùng soft để 1 lần chạy báo đủ cả 3 tầng, không dừng ở tầng đầu.
- *   3. KHÔNG console.log — đính kèm request/response vào report bằng testInfo.attach().
- *   4. Test data unique + traceable qua replaceDataWithRandom() (timestamp + random).
- */
 import { test } from '@playwright/test';
 import * as path from 'path';
 import { readExcel, ExcelRow } from '../../utils/excel-reader';
 import { login, createAuthHeaders, replaceDataWithRandom } from '../../common/api-common';
-import { validateStatusCode, validateSchema, validateJsonNodes, loadSchema } from '../../utils/api-function';
+import {
+    validateStatusCode,
+    validateSchema,
+    validateJsonNodes,
+    loadSchema,
+} from '../../utils/api-function';
 import { env, resolveUrl } from '../../config/env';
 
-// Tên cột trong file Excel test data
+// Tên các cột trong file Excel test data
 const COL = {
     STT: '${STT}',
     NAME: '${Name}',
@@ -36,10 +24,12 @@ const COL = {
     VALUE: '${ResponseValue}',
 } as const;
 
-const EXCEL_PATH = path.join(__dirname, '..', '..', 'test-data', 'data', '{TEN_FILE}.xlsx');
-const testData: ExcelRow[] = readExcel(EXCEL_PATH, 'Sheet1');
+const EXCEL_PATH = path.join(__dirname, '..', '..', 'test-data', 'data', 'test_addAPI.xlsx');
+const SHEET_NAME = 'Sheet1';
 
-test.describe('API — {Ten Nghiep Vu} (data-driven từ Excel)', () => {
+const testData: ExcelRow[] = readExcel(EXCEL_PATH, SHEET_NAME);
+
+test.describe('API — Thêm sản phẩm (data-driven từ Excel)', () => {
     let token: string;
 
     test.beforeAll(async ({ request }) => {
@@ -49,9 +39,13 @@ test.describe('API — {Ten Nghiep Vu} (data-driven từ Excel)', () => {
     // Duyệt từ index 1 vì phần tử 0 là dòng header do readExcel trả về.
     for (let i = 1; i < testData.length; i++) {
         const row = testData[i];
-        if (!row[COL.STT]) break; // Hết vùng data
 
-        test(`TC${row[COL.STT]} - ${row[COL.NAME]}`, async ({ request }, testInfo) => {
+        // Cột STT không có giá trị thì dừng đọc data.
+        if (!row[COL.STT]) break;
+
+        const tcName = `TC${row[COL.STT]} - ${row[COL.NAME]}`;
+
+        test(tcName, async ({ request }, testInfo) => {
             const url = resolveUrl(
                 String(row[COL.DOMAIN] ?? '').trim() || env.apiBaseUrl,
                 String(row[COL.ENDPOINT] ?? '')
@@ -64,9 +58,10 @@ test.describe('API — {Ten Nghiep Vu} (data-driven từ Excel)', () => {
             try {
                 requestData = JSON.parse(rawData);
             } catch {
-                requestData = rawData;
+                requestData = rawData; // Data không phải JSON hợp lệ — gửi nguyên chuỗi
             }
 
+            // FIX #8: đính kèm request/response vào report thay vì console.log ra stdout
             await testInfo.attach('request', {
                 body: JSON.stringify({ method, url, headers, body: requestData }, null, 2),
                 contentType: 'application/json',
@@ -83,7 +78,11 @@ test.describe('API — {Ten Nghiep Vu} (data-driven từ Excel)', () => {
 
             await testInfo.attach('response', {
                 body: JSON.stringify(
-                    { status: `${response.status()} ${response.statusText()}`, body: responseBody },
+                    {
+                        status: `${response.status()} ${response.statusText()}`,
+                        headers: response.headers(),
+                        body: responseBody,
+                    },
                     null,
                     2
                 ),
@@ -93,14 +92,21 @@ test.describe('API — {Ten Nghiep Vu} (data-driven từ Excel)', () => {
             // Tầng 1 — HTTP status code
             validateStatusCode(response, Number(row[COL.STATUS]));
 
-            // Tầng 2 — JSON Schema
+            // Tầng 2 — JSON Schema (đường dẫn lấy từ cột ${ResponseStructure})
             const schemaPath = String(row[COL.SCHEMA] ?? '').trim();
             if (schemaPath) {
                 const schema = loadSchema(path.join('test-data', schemaPath));
-                if (schema) await validateSchema(response, schema);
+                if (schema) {
+                    await validateSchema(response, schema);
+                } else {
+                    await testInfo.attach('schema-warning', {
+                        body: `Không tìm thấy file schema khai báo trong Excel: ${schemaPath}`,
+                        contentType: 'text/plain',
+                    });
+                }
             }
 
-            // Tầng 3 — node cụ thể trong response body
+            // Tầng 3 — kiểm tra node cụ thể trong response body
             validateJsonNodes(responseBody, row[COL.PARAM], row[COL.VALUE]);
         });
     }

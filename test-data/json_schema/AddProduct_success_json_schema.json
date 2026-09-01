@@ -1,0 +1,42 @@
+{
+	"type": "object",
+	"required": ["code", "data"],
+	"properties": {
+		"code": {"type": "number"},
+		"data": {
+			"type": "object",
+			"properties": {
+			"id": {"type": "string"},
+			"productCode": {"type": "string"},
+			"productName": {"type": "string"},
+			"productDesc": {"type": "string"},
+			"status": {"type": "string"},
+			"quantity": {"type": "number"},
+			"category": {
+				"type": "object",
+				"properties": {
+					"id": {"type": "string"},
+					"categoryName": {"type": "string"},
+					"cateDesc": {"type": "string"},
+					"status": {"type": "string"}
+					}
+			},
+			"supplier": {
+				"type": "object",
+				"properties": {
+					"id": {"type": "string"},
+					"supName": {"type": "string"},
+					"supContactName": {"type": "string"},
+					"supAddress": {"type": "string"},
+					"supCity": {"type": "string"},
+					"supPostalCode": {"type": "string"},
+					"supCountry": {"type": "string"},
+					"supPhone": {"type": "string"}
+				}
+			},
+			"unit": {"type": "string"},
+			"price": {"type": "number"}
+			}
+		}
+	}
+}

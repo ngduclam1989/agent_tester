@@ -1,5 +1,24 @@
 {
+  "name": "agent-tester",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:api": "npx playwright test --project=api",
+    "test:api:ui": "npx playwright test --project=api --ui",
+    "test:web": "npx playwright test --project=web --headed",
+    "report": "npx playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1",
+    "@types/node": "^25.6.0",
+    "dotenv": "^17.2.3",
+    "monocart-reporter": "^2.10.1"
+  },
   "dependencies": {
+    "ajv": "^8.20.0",
+    "ajv-formats": "^3.0.1",
     "xlsx": "^0.18.5"
   }
 }

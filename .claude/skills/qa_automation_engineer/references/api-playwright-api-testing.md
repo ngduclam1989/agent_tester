@@ -152,3 +152,82 @@ test.describe("Pagination", () => {
   });
 });
 ```
+
+---
+
+## Pattern chuẩn của project: Data-Driven từ Excel + validate 3 tầng
+
+> Đây là pattern **đang chạy thật** trong repo, ưu tiên dùng thay cho các ví dụ hardcode ở trên
+> khi số lượng test case lớn (hàng chục — hàng trăm TC cùng endpoint).
+> Code tham chiếu: `tests/api/`, `utils/api-function.ts`, `utils/excel-reader.ts`,
+> `common/api-common.ts`, `config/env.ts`. Template: `templates/api-playwright-api-spec.ts`.
+
+### Vì sao data-driven
+
+Test case API sinh ra từ skill `api_test_design` (schema 19 cột) thường lên tới vài chục TC cho
+1 endpoint. Viết mỗi TC thành 1 khối `test()` riêng làm file phình và trùng lặp gần như hoàn toàn.
+Cách làm: đưa TC vào file Excel, spec đọc file rồi sinh test động trong vòng lặp.
+
+**Cấu trúc cột Excel:**
+
+| Cột | Ý nghĩa |
+|---|---|
+| `${STT}` | Số thứ tự — trống là hết vùng data |
+| `${Name}` | Tên test case hiển thị trong report |
+| `${Domain}` | Base URL — để trống thì lấy từ `config/env.ts` |
+| `${EndPoint}` | Path của API |
+| `${Method}` | GET/POST/PUT/DELETE... |
+| `${Data}` | Request body dạng JSON string |
+| `${StatusCode}` | HTTP status mong đợi |
+| `${ResponseStructure}` | Đường dẫn file JSON Schema để validate |
+| `${ResponseParam}` | Danh sách node cần check, cách nhau bằng `;` (VD `code;data.id`) |
+| `${ResponseValue}` | Giá trị mong đợi tương ứng, để trống = chỉ check node tồn tại |
+
+### Validate 3 tầng bằng `expect.soft`
+
+```typescript
+validateStatusCode(response, Number(row[COL.STATUS]));   // Tầng 1
+await validateSchema(response, schema);                   // Tầng 2
+validateJsonNodes(responseBody, row[COL.PARAM], row[COL.VALUE]); // Tầng 3
+```
+
+**BẮT BUỘC dùng `expect.soft()` bên trong 3 hàm này, KHÔNG tự `throw new Error`.** Nếu throw thủ công,
+fail ở tầng 1 (status) làm tầng 2 và 3 không bao giờ chạy — mỗi lần chạy chỉ biết 1 lỗi, phải sửa và
+chạy lại nhiều vòng. Với soft assertion, 1 lần chạy báo đủ cả 3 tầng và test vẫn được đánh FAIL.
+
+### JSON Schema với Ajv
+
+Project dùng **Ajv + file JSON Schema** (`test-data/json_schema/*.json`) thay vì Zod, vì schema
+là file dữ liệu tách rời — người viết test case khai đường dẫn ngay trong cột Excel, không cần sửa code.
+
+```typescript
+import Ajv from 'ajv';
+import addFormats from 'ajv-formats';
+
+const ajv = new Ajv({ allErrors: true, strict: false });
+addFormats(ajv); // BẮT BUỘC
+```
+
+⚠️ **Thiếu `addFormats(ajv)` là bug âm thầm:** mọi `"format": "email"`, `"date-time"`, `"uri"` trong
+schema sẽ bị Ajv bỏ qua hoàn toàn mà không báo gì — schema trông như có validate nhưng thực tế không.
+`allErrors: true` để báo hết lỗi schema trong 1 lần thay vì dừng ở lỗi đầu.
+
+### Không `console.log` — dùng `testInfo.attach()`
+
+Rule Cleanup trong `CLAUDE.md` cấm để lại `console.log`. Với API test vẫn cần xem request/response
+khi debug, cách đúng là đính kèm vào report:
+
+```typescript
+await testInfo.attach('request', {
+    body: JSON.stringify({ method, url, headers, body: requestData }, null, 2),
+    contentType: 'application/json',
+});
+```
+
+Log vào report thì xem được ngay tại TC bị fail, không trôi mất trong stdout khi chạy parallel.
+
+### Credentials và base URL
+
+**KHÔNG hardcode** username/password/URL trong spec hay file common. Đọc qua `config/env.ts` lấy từ
+`.env` (đã nằm trong `.gitignore`), có `.env.example` làm mẫu. `config/env.ts` throw message rõ ràng
+khi thiếu biến, để lỗi thiếu cấu hình lộ ra ngay thay vì gửi `Bearer undefined` lên server.

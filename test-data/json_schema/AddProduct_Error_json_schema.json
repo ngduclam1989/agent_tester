@@ -1,0 +1,66 @@
+{
+  "type": "object",
+  "required": [
+    "code",
+    "message",
+    "error",
+    "errors"
+  ],
+  "properties": {
+    "code": {
+      "type": "number"
+    },
+    "message": {
+      "type": "string"
+    },
+    "error": {
+      "type": "string"
+    },
+    "errors": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "required": [
+              "field",
+              "objectName",
+              "message",
+              "error"
+            ],
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "objectName": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "error": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "field",
+              "message"
+            ],
+            "properties": {
+              "field": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

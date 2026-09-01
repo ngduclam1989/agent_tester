@@ -72,14 +72,14 @@ Mỗi kịch bản có mô tả/mục tiêu, phạm vi (chiều giám sát, ph�
 
 | Phụ thuộc | Trạng thái trong tài liệu |
 |---|---|
-| Phân hệ KYC (điểm rủi ro khách hàng) | Được tham chiếu (AML-02) nhưng cơ chế đồng bộ/quy đổi điểm rủi ro chưa rõ ràng - xem RR-024 |
+| Phân hệ KYC (điểm rủi ro khách hàng) | Được tham chiếu (AML-02) nhưng cơ chế đồng bộ/quy đổi điểm rủi ro chưa rõ ràng - xem RR-021 |
 | Hệ thống T24 (core banking) | Tham chiếu để loại trừ "tài khoản chuyên dùng" (AML-14) nhưng không mô tả cơ chế nhận diện |
-| SBV (Ngân hàng Nhà nước) | Đích đến cuối cùng của STR nhưng việc nộp STR nằm ngoài phạm vi hệ thống (chỉ xác nhận qua comment - xem RR-028) |
-| Phụ lục 1 - Danh mục dữ liệu yêu cầu | Chỉ có tiêu đề, không có nội dung - xem RR-031 |
-| Phụ lục 2 - Ma trận phân quyền | Chỉ có tiêu đề, không có nội dung dù được tham chiếu nhiều lần - xem RR-031 |
+| SBV (Ngân hàng Nhà nước) | Đích đến cuối cùng của STR nhưng việc nộp STR nằm ngoài phạm vi hệ thống (chỉ xác nhận qua comment - xem RR-025) |
+| Phụ lục 1 - Danh mục dữ liệu yêu cầu | Chỉ có tiêu đề, không có nội dung - xem RR-028 |
+| Phụ lục 2 - Ma trận phân quyền | Chỉ có tiêu đề, không có nội dung dù được tham chiếu nhiều lần - xem RR-028 |
 | Phụ lục 3 - Bộ câu hỏi EDD | Có đính kèm 2 file .docx (KHCN/KHDN) - ngoài phạm vi phân tích này |
 | Phụ lục 5 - Template Email TM | Không có trong file đang phân tích, comment xác nhận MSB đã cung cấp riêng |
-| Phụ lục 6 - Màn hình STR và Template STR | Chỉ có tiêu đề, không có nội dung dù là màn hình lõi của mọi luồng - xem RR-032 |
+| Phụ lục 6 - Màn hình STR và Template STR | Chỉ có tiêu đề, không có nội dung dù là màn hình lõi của mọi luồng - xem RR-029 |
 
 ## 6. Phân Tích Mockup/Screenshot
 
@@ -94,38 +94,35 @@ Tài liệu không kèm mockup hoặc screenshot UI thực tế - toàn bộ đ�
 | RR-001 | Thiếu phủ | Cao | Rule "chỉ xuất STR khi Close case with STR" chỉ có trong comment, không có trong thân văn bản | Business Authority |
 | RR-002 | Mơ hồ | Chặn | Re-open case: yêu cầu với STR/EDD đã điền trước đó chưa được mô tả | Business Authority |
 | RR-003 | Ngoại lệ | Cao | Re-open case: chưa có phương án khi maker gốc đã nghỉ việc | Business Authority |
-| RR-004 | Mơ hồ | Cao | Whitelist List Code: công thức sinh mã bị gạch bỏ, chưa có công thức thay thế | Business Authority + BA |
-| RR-005 | Thiếu phủ | Chặn | Whitelist CRUD (Tạo/Sửa/Xóa): mô tả hành vi bị xóa hoàn toàn khỏi bảng cuối | Business Authority + BA |
-| RR-006 | Mơ hồ | Cao | Whitelist trường Key: văn bản ghi "02 trường" nhưng liệt kê 3 trường | BA/Solution Architect |
-| RR-007 | Trạng thái | Trung bình | Whitelist: bản ghi xóa rồi thêm lại - Status/phê duyệt có reset không | Business Authority |
-| RR-008 | Tương tranh | Trung bình | Whitelist Excel: bản ghi đang chờ duyệt khi tới giờ chạy batch kế tiếp | Solution Architect |
-| RR-009 | Mơ hồ | Trung bình | Case Type tạo thủ công: câu hỏi "chọn có sẵn hay tạo thêm" chưa có câu trả lời | Business Authority |
-| RR-010 | Nhất quán | Trung bình | Case Type dropdown tạo case (chỉ AML_MN) khác dropdown tìm kiếm (AML_MN+AML_SURV) | BA |
-| RR-011 | Thiếu phủ | Cao | Không có bảng enum đầy đủ toàn bộ trạng thái Case dùng cho filter Status | BA |
-| RR-012 | Mơ hồ | Thấp | Age filter: tính từ ngày tạo tới hiện tại hay tới ngày đóng case | BA |
-| RR-013 | Tương tranh | Cao | CM-4: race condition khi ≥2 user cùng mở 1 case gần đồng thời | Solution Architect |
-| RR-014 | Thiếu phủ | Cao | CM-4: rule điều phối case theo từng luồng chỉ "trao đổi trực tiếp", chưa đưa vào tài liệu | Business Authority |
-| RR-015 | Mơ hồ | Trung bình | CM-6: mô tả "gửi email tư vấn" nhưng khẳng định không nhận phản hồi - mâu thuẫn logic | Business Authority |
-| RR-016 | Mơ hồ | Thấp | CM-6 trường From: giá trị email mặc định cụ thể chưa xác nhận | Business Authority |
-| RR-017 | Nhất quán | Cao | Quy định file đính kèm không nhất quán giữa CM-5 (9MB, 4 loại)/CM-6 (không giới hạn, 5 loại)/CM-7 (10MB) | Business Authority |
-| RR-018 | Mơ hồ | Trung bình | CM-7 "Loại hồ sơ/giấy tờ": không có danh mục giá trị, hệ thống xác nhận không có trường lưu | BA |
-| RR-019 | Mơ hồ | Thấp | CM-7 "Ghi chú tiêu chuẩn (theo mẫu có sẵn)": không có nội dung mẫu cụ thể | Business Authority |
-| RR-020 | Thiếu phủ | Trung bình | CM-8 Audit Trail: danh sách "Hành động đối với case" cần log chưa liệt kê đầy đủ | Business Authority |
-| RR-021 | Thiếu phủ | Chặn | III.1 Quản lý kịch bản: không có bảng field-spec (loại dữ liệu/bắt buộc/độ dài) như Whitelist | BA |
-| RR-022 | Mơ hồ | Trung bình | III.1.3: không sửa được "trạng thái hoạt động" kịch bản nhưng không mô tả cách bật/tắt | Business Authority |
-| RR-023 | Thiếu phủ | Chặn | AML-01: ngưỡng phân loại khu vực rủi ro cao/rất cao chỉ tham chiếu danh sách ngoài BRD | Business Authority |
-| RR-024 | Mơ hồ | Chặn | AML-02: "Ngưỡng rủi ro thực tế của KH" chưa định nghĩa, mơ hồ với "Effctv Risk Lvl" | Business Authority |
-| RR-025 | Mơ hồ | Chặn | AML-03/04: công thức Avg(Bi)/Avg(Di) có 2 phương án tính (PA1/PA2) chưa chốt | Business Authority |
-| RR-026 | Mơ hồ | Thấp | AML-06: 2 nhánh OR cùng đánh số "Điều kiện 1" gây khó trích dẫn khi viết TC | BA |
-| RR-027 | Thiếu phủ | Trung bình | Toàn bộ 14 kịch bản: "giá trị quy đổi" (FX) không có nguồn tỷ giá/thời điểm áp dụng | Business Authority + Backend Lead |
-| RR-028 | Tuân thủ | Cao | "Approved STR" không tự động gửi SBV - thông tin quan trọng chỉ nằm trong comment, không có trong thân văn bản, không có trường lưu vết ngày nộp SBV | Business Authority + Compliance |
-| RR-029 | Thiếu phủ | Trung bình | Chênh lệch số cấp phê duyệt: case DVKH/tự động (4 cấp) vs case AML tự tạo (1 cấp) chưa có giải trình | Business Authority + Compliance |
-| RR-030 | Nhất quán | Thấp | Re-open case nguồn AML-manual không có email thông báo, khác với mong muốn nghiệp vụ chung | Business Authority |
-| RR-031 | Thiếu phủ | Chặn | Phụ lục 1 (Danh mục dữ liệu) và Phụ lục 2 (Ma trận phân quyền) chỉ có tiêu đề, không nội dung | Business Authority + Security |
-| RR-032 | Thiếu phủ | Chặn | Phụ lục 6 (Màn hình STR/Template STR) không có nội dung dù là màn hình lõi mọi luồng | BA + Business Authority |
-| RR-033 | Thiếu phủ | Cao | III.5 Reporting: 4 báo cáo không có đặc tả field/filter/layout | Business Authority |
-| RR-034 | Bảo mật | Trung bình | Các trường free-text không có ràng buộc chống XSS/injection dù nội dung có thể gửi qua email ra ngoài hệ thống | Security Lead |
-| RR-035 | Bảo mật | Trung bình | Case List/Search hiển thị số CCCD/GTTT và thông tin định danh KH nhưng không quy định masking theo phân quyền | Security Lead + Business Authority |
+| RR-004 | Mơ hồ | Cao | Whitelist trường Key: văn bản ghi "02 trường" nhưng liệt kê 3 trường | BA/Solution Architect |
+| RR-005 | Trạng thái | Trung bình | Whitelist: bản ghi xóa rồi thêm lại - Status/phê duyệt có reset không | Business Authority |
+| RR-006 | Tương tranh | Trung bình | Whitelist Excel: bản ghi đang chờ duyệt khi tới giờ chạy batch kế tiếp | Solution Architect |
+| RR-007 | Mơ hồ | Trung bình | Case Type tạo thủ công: câu hỏi "chọn có sẵn hay tạo thêm" chưa có câu trả lời | Business Authority |
+| RR-008 | Nhất quán | Trung bình | Case Type dropdown tạo case (chỉ AML_MN) khác dropdown tìm kiếm (AML_MN+AML_SURV) | BA |
+| RR-009 | Thiếu phủ | Cao | Không có bảng enum đầy đủ toàn bộ trạng thái Case dùng cho filter Status | BA |
+| RR-010 | Mơ hồ | Thấp | Age filter: tính từ ngày tạo tới hiện tại hay tới ngày đóng case | BA |
+| RR-011 | Tương tranh | Cao | CM-4: race condition khi ≥2 user cùng mở 1 case gần đồng thời | Solution Architect |
+| RR-012 | Thiếu phủ | Cao | CM-4: rule điều phối case theo từng luồng chỉ "trao đổi trực tiếp", chưa đưa vào tài liệu | Business Authority |
+| RR-013 | Mơ hồ | Trung bình | CM-6: mô tả "gửi email tư vấn" nhưng khẳng định không nhận phản hồi - mâu thuẫn logic | Business Authority |
+| RR-014 | Mơ hồ | Thấp | CM-6 trường From: giá trị email mặc định cụ thể chưa xác nhận | Business Authority |
+| RR-015 | Nhất quán | Cao | Quy định file đính kèm không nhất quán giữa CM-5 (9MB, 4 loại)/CM-6 (không giới hạn, 5 loại)/CM-7 (10MB) | Business Authority |
+| RR-016 | Mơ hồ | Trung bình | CM-7 "Loại hồ sơ/giấy tờ": không có danh mục giá trị, hệ thống xác nhận không có trường lưu | BA |
+| RR-017 | Thiếu phủ | Trung bình | CM-8 Audit Trail: danh sách "Hành động đối với case" cần log chưa liệt kê đầy đủ | Business Authority |
+| RR-018 | Thiếu phủ | Chặn | III.1 Quản lý kịch bản: không có bảng field-spec (loại dữ liệu/bắt buộc/độ dài) như Whitelist | BA |
+| RR-019 | Mơ hồ | Trung bình | III.1.3: không sửa được "trạng thái hoạt động" kịch bản nhưng không mô tả cách bật/tắt | Business Authority |
+| RR-020 | Thiếu phủ | Chặn | AML-01: ngưỡng phân loại khu vực rủi ro cao/rất cao chỉ tham chiếu danh sách ngoài BRD | Business Authority |
+| RR-021 | Mơ hồ | Chặn | AML-02: "Ngưỡng rủi ro thực tế của KH" chưa định nghĩa, mơ hồ với "Effctv Risk Lvl" | Business Authority |
+| RR-022 | Mơ hồ | Chặn | AML-03/04: công thức Avg(Bi)/Avg(Di) có 2 phương án tính (PA1/PA2) chưa chốt | Business Authority |
+| RR-023 | Mơ hồ | Thấp | AML-06: 2 nhánh OR cùng đánh số "Điều kiện 1" gây khó trích dẫn khi viết TC | BA |
+| RR-024 | Thiếu phủ | Trung bình | Toàn bộ 14 kịch bản: "giá trị quy đổi" (FX) không có nguồn tỷ giá/thời điểm áp dụng | Business Authority + Backend Lead |
+| RR-025 | Tuân thủ | Cao | "Approved STR" không tự động gửi SBV - thông tin quan trọng chỉ nằm trong comment, không có trong thân văn bản, không có trường lưu vết ngày nộp SBV | Business Authority + Compliance |
+| RR-026 | Thiếu phủ | Trung bình | Chênh lệch số cấp phê duyệt: case DVKH/tự động (4 cấp) vs case AML tự tạo (1 cấp) chưa có giải trình | Business Authority + Compliance |
+| RR-027 | Nhất quán | Thấp | Re-open case nguồn AML-manual không có email thông báo, khác với mong muốn nghiệp vụ chung | Business Authority |
+| RR-028 | Thiếu phủ | Chặn | Phụ lục 1 (Danh mục dữ liệu) và Phụ lục 2 (Ma trận phân quyền) chỉ có tiêu đề, không nội dung | Business Authority + Security |
+| RR-029 | Thiếu phủ | Chặn | Phụ lục 6 (Màn hình STR/Template STR) không có nội dung dù là màn hình lõi mọi luồng | BA + Business Authority |
+| RR-030 | Thiếu phủ | Cao | III.5 Reporting: 4 báo cáo không có đặc tả field/filter/layout | Business Authority |
+| RR-031 | Bảo mật | Trung bình | Các trường free-text không có ràng buộc chống XSS/injection dù nội dung có thể gửi qua email ra ngoài hệ thống | Security Lead |
+| RR-032 | Bảo mật | Trung bình | Case List/Search hiển thị số CCCD/GTTT và thông tin định danh KH nhưng không quy định masking theo phân quyền | Security Lead + Business Authority |
 
 ### 7.2. Chi tiết từng finding
 
@@ -156,7 +153,7 @@ Bổ sung vào mục III.3 (Case Management) một tiểu mục "CM-9: Xuất b�
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-032 (Phụ lục 6 - Màn hình/Template STR trống) vì cùng thuộc nhóm tính năng STR chưa được đặc tả đầy đủ.
+Liên quan RR-029 (Phụ lục 6 - Màn hình/Template STR trống) vì cùng thuộc nhóm tính năng STR chưa được đặc tả đầy đủ.
 
 #### 7. Câu hỏi cho người dùng
 
@@ -186,7 +183,7 @@ Một case đã đóng ở trạng thái "Approved STR" (nghĩa là đã có 1 b
 
 #### 3. Vấn đề cụ thể
 
-Câu hỏi mở này (A121) chưa từng được trả lời trong toàn bộ tài liệu. Có ít nhất 2 khả năng hợp lý: Khả năng A - EDD/STR cũ vẫn được giữ lại làm bản nháp, Maker chỉ cần "bổ sung thêm" phần thay đổi thay vì điền lại từ đầu. Khả năng B - EDD/STR cũ bị xóa/lưu trữ riêng và Maker phải điền lại hoàn toàn một bộ EDD mới, độc lập với bản trước. Nếu chọn Khả năng B, cần làm rõ tiếp: STR cũ (đã có thể đã được nộp SBV theo RR-028) có còn được giữ lại để đối chiếu lịch sử hay bị ghi đè?
+Câu hỏi mở này (A121) chưa từng được trả lời trong toàn bộ tài liệu. Có ít nhất 2 khả năng hợp lý: Khả năng A - EDD/STR cũ vẫn được giữ lại làm bản nháp, Maker chỉ cần "bổ sung thêm" phần thay đổi thay vì điền lại từ đầu. Khả năng B - EDD/STR cũ bị xóa/lưu trữ riêng và Maker phải điền lại hoàn toàn một bộ EDD mới, độc lập với bản trước. Nếu chọn Khả năng B, cần làm rõ tiếp: STR cũ (đã có thể đã được nộp SBV theo RR-025) có còn được giữ lại để đối chiếu lịch sử hay bị ghi đè?
 
 #### 4. Ảnh hưởng nếu không giải quyết
 
@@ -199,7 +196,7 @@ Câu hỏi mở này (A121) chưa từng được trả lời trong toàn bộ t
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-028 (Approved STR không tự động nộp SBV) - vì nếu STR đã nộp SBV trước khi re-open, việc xử lý dữ liệu cũ càng cần thận trọng hơn.
+Liên quan RR-025 (Approved STR không tự động nộp SBV) - vì nếu STR đã nộp SBV trước khi re-open, việc xử lý dữ liệu cũ càng cần thận trọng hơn.
 
 #### 7. Câu hỏi cho người dùng
 
@@ -219,9 +216,9 @@ Business Authority (nghiệp vụ AML/PCRT MSB) kết hợp với Compliance - v
 
 #### 1. Trích dẫn nguồn
 
-- File: [MSB_BRD_TM_v1.8_20260817.pdf](../../../requirements/MSB_BRD_TM_v1.8_20260817.pdf) - trang 13, comment [A126]/[TMP(TP129R126)]
+- File: [MSB_BRD_TM_v1.8_20260817.pdf](../../../requirements/MSB_BRD_TM_v1.8_20260817.pdf) - trang 13, comment [A126]/[TMP(TP129R126)]/[A130R126]
 - Section: II.1.3, bước 1a
-- Quote nguyên văn: "Có nhất thiết phải là user của DVKH maker ban đầu? Nếu fix thì trường hợp cán bộ đã nghỉ việc thì sao?" → "Bổ sung thêm: assign về user ban đầu, luồng mail sẽ gửi cả cho group checker, tránh trường hợp checker trong luồng ban đầu cũng nghỉ"
+- Quote nguyên văn: "Có nhất thiết phải là user của DVKH maker ban đầu? Nếu fix thì trường hợp cán bộ đã nghỉ việc thì sao?" → "Bổ sung thêm: assign về user ban đầu, luồng mail sẽ gửi cả cho group checker, tránh trường hợp checker trong luồng ban đầu cũng nghỉ" → "Đã update" (lưu ý: giải pháp đã chốt và cập nhật này CHỈ bổ sung email cho group Checker, không nhắc tới group Maker - đây chính là phần còn hở mà finding này nêu ra, không phải đặt lại câu hỏi đã được trả lời)
 
 #### 2. Bối cảnh nghiệp vụ
 
@@ -229,7 +226,7 @@ Case do DVKH Maker "Nguyễn Văn A" xử lý và đóng cách đây 8 tháng, n
 
 #### 3. Vấn đề cụ thể
 
-Nếu tại thời điểm re-open, Nguyễn Văn A đã nghỉ việc hoặc bị khóa tài khoản, case vẫn bị gán ("assign") cho một user không còn hoạt động - không ai có thể mở và xử lý case đó. Giải pháp đã thống nhất trong comment chỉ bổ sung việc gửi email cho group Checker (dự phòng khi Checker nghỉ), nhưng KHÔNG có cơ chế dự phòng tương ứng cho trường hợp chính Maker (người được gán xử lý case) nghỉ việc - group email của DVKH Maker không được đề cập trong giải pháp.
+Nếu tại thời điểm re-open, Nguyễn Văn A đã nghỉ việc hoặc bị khóa tài khoản, case vẫn bị gán ("assign") cho một user không còn hoạt động - không ai có thể mở và xử lý case đó. Giải pháp đã được FIS/MSB chốt và đánh dấu "Đã update" chỉ bổ sung việc gửi email cho group Checker (dự phòng khi Checker nghỉ), nhưng KHÔNG có cơ chế dự phòng tương ứng cho trường hợp chính Maker (người được gán xử lý case) nghỉ việc - group email của DVKH Maker không được đề cập trong giải pháp đã chốt. Đây không phải việc lật lại câu hỏi cũ mà là 1 khoảng hở cụ thể mà chính giải pháp đã chốt chưa che phủ tới.
 
 #### 4. Ảnh hưởng nếu không giải quyết
 
@@ -242,7 +239,7 @@ Nếu tại thời điểm re-open, Nguyễn Văn A đã nghỉ việc hoặc b�
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng mẫu thiếu sót với RR-013 (không có cơ chế xử lý khi user không khả dụng/xung đột thao tác trong CM-4).
+Cùng mẫu thiếu sót với RR-011 (không có cơ chế xử lý khi user không khả dụng/xung đột thao tác trong CM-4).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -258,93 +255,7 @@ Business Authority (nghiệp vụ MSB) - vì đây là quyết định về quy 
 
 ---
 
-## RR-004 [Cao] Mơ hồ — Whitelist List Code: công thức sinh mã tự động bị gạch bỏ trong bản chỉnh sửa nhưng không có công thức thay thế rõ ràng
-
-#### 1. Trích dẫn nguồn
-
-- File: [MSB_BRD_TM_v1.8_20260817.pdf](../../../requirements/MSB_BRD_TM_v1.8_20260817.pdf) - trang 15-16, comment [A146]
-- Section: III.2 Whitelist, trường "List Code"
-- Quote nguyên văn: "Hệ thống sẽ tự sinh theo nguyên tắc: ~~Mã kịch bản + STT tự sinh~~" kèm comment "FIs update lại, thông tin trường này hệ thống sẽ tự sinh STT"
-
-#### 2. Bối cảnh nghiệp vụ
-
-Khi Analyst thêm khách hàng CIF 000123456 vào whitelist của kịch bản AML-05, hệ thống cần tự sinh 1 List Code duy nhất để định danh bản ghi này trong toàn hệ thống. Bản gốc của tài liệu định nghĩa công thức "Mã kịch bản + STT tự sinh" (ví dụ AML05-00001), nhưng cụm "Mã kịch bản +" đã bị gạch bỏ (đánh dấu xóa) trong bản chỉnh sửa, chỉ còn lại ghi chú rời rạc "hệ thống sẽ tự sinh STT".
-
-#### 3. Vấn đề cụ thể
-
-Sau khi xóa phần "Mã kịch bản +", công thức cuối cùng không được viết lại rõ ràng trong bảng. Không rõ List Code cuối cùng là: Khả năng A - chỉ là 1 số thứ tự (STT) toàn cục không gắn với kịch bản, ví dụ "00001", "00002"... hay Khả năng B - vẫn giữ tiền tố kịch bản nhưng theo công thức khác chưa nêu rõ.
-
-#### 4. Ảnh hưởng nếu không giải quyết
-
-- Không thể viết TC xác định định dạng đúng của List Code (độ dài, ký tự, có/không tiền tố) để assert khi tạo whitelist mới.
-- Nếu chọn Khả năng A (STT thuần túy không gắn kịch bản), List Code sẽ không tự mô tả được "thuộc kịch bản nào" khi nhìn từ báo cáo/audit, gây khó khăn khi tra soát.
-
-#### 5. Đề xuất giải quyết
-
-Đề xuất (giả định, cần MSB xác nhận): giữ nguyên công thức gốc "Mã kịch bản + STT tự sinh theo kịch bản đó" vì mỗi whitelist gắn với đúng 1 kịch bản (theo mô tả đầu mục III.2), giúp List Code vẫn có tính gợi nhớ nghiệp vụ.
-
-#### 6. Liên kết với các phát hiện khác
-
-Không có liên kết với finding khác trong tài liệu này.
-
-#### 7. Câu hỏi cho người dùng
-
-(a) List Code có giữ tiền tố mã kịch bản (ví dụ AML05-00001) hay chỉ là số thứ tự toàn cục không phân biệt kịch bản (ví dụ 000001)? (b) Số thứ tự (STT) là toàn cục xuyên suốt tất cả whitelist hay riêng theo từng kịch bản (mỗi kịch bản có STT bắt đầu lại từ 1)?
-
-#### 8. Owner
-
-Business Authority phối hợp Solution Architect - vì vừa cần ý nghĩa nghiệp vụ (có cần tiền tố để tra soát) vừa cần xác nhận khả năng kỹ thuật sinh mã của OFSAA.
-
-#### 9. Trạng thái
-
-ĐANG MỞ
-
----
-
-## RR-005 [Chặn] Thiếu phủ — Whitelist: mô tả chi tiết hành vi Tạo mới/Sửa/Xóa bị xóa hoàn toàn khỏi bảng cuối cùng, câu hỏi của reviewer chưa có câu trả lời cụ thể
-
-#### 1. Trích dẫn nguồn
-
-- File: [MSB_BRD_TM_v1.8_20260817.pdf](../../../requirements/MSB_BRD_TM_v1.8_20260817.pdf) - trang 16, comment [APTL(161)]/[A162R161]
-- Section: III.2 Whitelist, bảng "Thao tác | Mô tả"
-- Quote nguyên văn: dòng mô tả 3 thao tác "~~Tạo mới - Tạo mới đối tượng trong whitelist~~", "~~Sửa - Chỉnh sửa thông tin của đối tượng trong whitelist~~", "~~Xóa - Xóa đối tượng trong whitelist~~" (toàn bộ bị gạch xóa); comment "Chả thấy mô tả tạo mới như nào? Sửa thì được sửa những j? xóa ra sao???" → "FIS update" (không có nội dung thay thế hiển thị)
-
-#### 2. Bối cảnh nghiệp vụ
-
-Whitelist là tính năng lõi cho phép loại một khách hàng ra khỏi phạm vi quét của kịch bản AML-05 chẳng hạn. Bảng "Thao tác" trong tài liệu ban đầu liệt kê 3 thao tác Tạo mới/Sửa/Xóa với mô tả 1 dòng hết sức sơ sài, và người review đã phản hồi thẳng rằng mô tả này không đủ để hiểu quy trình thực tế: khi "Sửa", Analyst được sửa những trường nào (tất cả 8 trường, hay chỉ 1 số trường không phải Key)? Khi "Xóa", bản ghi bị xóa cứng khỏi DB hay chỉ đổi Status sang Deactivated?
-
-#### 3. Vấn đề cụ thể
-
-Phản hồi "FIS update" không có nội dung cụ thể nào đi kèm trong bản trích xuất - và dòng mô tả gốc bị đánh dấu xóa hoàn toàn mà không có nội dung thay thế xuất hiện trong văn bản. Kết quả cuối cùng: tài liệu phiên bản v1.8 hiện KHÔNG có bất kỳ mô tả nào về hành vi thực tế của 3 thao tác CRUD cơ bản nhất của tính năng Whitelist.
-
-#### 4. Ảnh hưởng nếu không giải quyết
-
-- Không thể viết được bất kỳ TC nào cho chức năng Sửa/Xóa Whitelist - kể cả happy path - vì không biết trường nào cho sửa, xóa là xóa cứng hay soft-delete.
-- Rủi ro nghiệp vụ nghiêm trọng: nếu "Xóa" là xóa cứng nhưng thực tế cần giữ lại lịch sử (như comment ở RR-007 gợi ý List Code cũ được tái sử dụng khi thêm lại), 2 hành vi này mâu thuẫn nhau và cần làm rõ đồng thời.
-
-#### 5. Đề xuất giải quyết
-
-Yêu cầu MSB/FIS bổ sung lại đầy đủ bảng mô tả 3 thao tác, tối thiểu nêu rõ: (1) Tạo mới - các trường bắt buộc nhập, có cần Supervisor phê duyệt trước khi Active không; (2) Sửa - trường nào được phép sửa (gợi ý: không cho sửa 3 trường Key để tránh phá vỡ tính duy nhất, chỉ cho sửa Status/Reason/Description/Comment); (3) Xóa - là soft-delete (đổi Status = Deactivated) hay xóa cứng, có cần phê duyệt không.
-
-#### 6. Liên kết với các phát hiện khác
-
-Liên quan trực tiếp RR-007 (hành vi khi bản ghi bị xóa rồi thêm lại) - cả 2 cùng cần làm rõ bản chất của thao tác "Xóa".
-
-#### 7. Câu hỏi cho người dùng
-
-(a) Thao tác "Xóa" trong whitelist là xóa cứng khỏi hệ thống hay chỉ chuyển Status sang "Deactivated" (vẫn giữ bản ghi)? (b) Thao tác "Sửa" có được phép thay đổi 3 trường Key (ID, ID Type, Application scenario) hay chỉ giới hạn ở các trường mô tả (Reason Added, Description, Comment)? (c) Tạo mới/Sửa/Xóa có bắt buộc qua luồng phê duyệt Supervisor như đã mô tả ở đoạn trước, hay chỉ áp dụng cho riêng thao tác Tạo mới?
-
-#### 8. Owner
-
-Business Authority phối hợp BA (FIS) - vì đây là lỗ hổng đặc tả cơ bản cần cả 2 bên cùng rà soát lại và bổ sung.
-
-#### 9. Trạng thái
-
-ĐANG MỞ
-
----
-
-## RR-006 [Cao] Mơ hồ — Whitelist: văn bản ghi "trường Key gồm 02 trường" nhưng liệt kê 3 trường (ID, ID Type, Application scenario)
+## RR-004 [Cao] Mơ hồ — Whitelist: văn bản ghi "trường Key gồm 02 trường" nhưng liệt kê 3 trường (ID, ID Type, Application scenario)
 
 #### 1. Trích dẫn nguồn
 
@@ -387,7 +298,7 @@ BA (FIS) phối hợp Solution Architect - vì đây là lỗi biên tập cần
 
 ---
 
-## RR-007 [Trung bình] Trạng thái — Whitelist: khi bản ghi bị xóa rồi được thêm lại với cùng List Code cũ, chưa rõ Status có tự động Active hay cần phê duyệt lại từ đầu
+## RR-005 [Trung bình] Trạng thái — Whitelist: khi bản ghi bị xóa rồi được thêm lại với cùng List Code cũ, chưa rõ Status có tự động Active hay cần phê duyệt lại từ đầu
 
 #### 1. Trích dẫn nguồn
 
@@ -397,7 +308,7 @@ BA (FIS) phối hợp Solution Architect - vì đây là lỗi biên tập cần
 
 #### 2. Bối cảnh nghiệp vụ
 
-Bản ghi whitelist mang List Code "AML05-00012" (giả định theo công thức ở RR-004) của khách hàng CIF 000789 bị Analyst xóa khỏi kịch bản AML-05 vào tháng 3. Đến tháng 6, cùng khách hàng CIF 000789 lại được thêm lại vào whitelist của đúng kịch bản AML-05 (cùng bộ Key ID + ID Type + Application scenario). Theo mô tả, bản ghi mới này được gắn lại với List Code cũ "AML05-00012" thay vì sinh mã mới.
+Bản ghi whitelist mang List Code "AML05-00012" (theo công thức tự sinh List Code đã mô tả ở III.2) của khách hàng CIF 000789 bị Analyst xóa khỏi kịch bản AML-05 vào tháng 3. Đến tháng 6, cùng khách hàng CIF 000789 lại được thêm lại vào whitelist của đúng kịch bản AML-05 (cùng bộ Key ID + ID Type + Application scenario). Theo mô tả, bản ghi mới này được gắn lại với List Code cũ "AML05-00012" thay vì sinh mã mới.
 
 #### 3. Vấn đề cụ thể
 
@@ -414,7 +325,7 @@ Quy tắc chỉ nêu về việc List Code được tái sử dụng, nhưng kh�
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan trực tiếp RR-005 (thiếu mô tả hành vi Xóa) vì cả 2 cùng phụ thuộc vào việc làm rõ bản chất của thao tác Xóa (soft-delete hay hard-delete).
+Không có liên kết trực tiếp với finding khác trong tài liệu này, nhưng câu trả lời phụ thuộc vào việc làm rõ trước bản chất của thao tác "Xóa" trong whitelist (soft-delete hay hard-delete).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -430,7 +341,7 @@ Business Authority (nghiệp vụ AML/PCRT MSB) - vì liên quan tới kiểm so
 
 ---
 
-## RR-008 [Trung bình] Tương tranh — Whitelist: chưa mô tả xử lý khi bản ghi Excel đang chờ Supervisor phê duyệt tại đúng thời điểm batch kịch bản chạy
+## RR-006 [Trung bình] Tương tranh — Whitelist: chưa mô tả xử lý khi bản ghi Excel đang chờ Supervisor phê duyệt tại đúng thời điểm batch kịch bản chạy
 
 #### 1. Trích dẫn nguồn
 
@@ -473,7 +384,7 @@ Solution Architect phối hợp Business Authority - vì vừa cần quyết đ�
 
 ---
 
-## RR-009 [Trung bình] Mơ hồ — Case Type khi tạo case thủ công: câu hỏi "chọn giá trị có sẵn hay cho phép tạo thêm" chưa có câu trả lời cuối cùng
+## RR-007 [Trung bình] Mơ hồ — Case Type khi tạo case thủ công: câu hỏi "chọn giá trị có sẵn hay cho phép tạo thêm" chưa có câu trả lời cuối cùng
 
 #### 1. Trích dẫn nguồn
 
@@ -500,7 +411,7 @@ Cần MSB xác nhận dứt điểm: nếu chỉ có đúng 1 giá trị AML_MN 
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-010 (Case Type giữa màn hình tạo và tìm kiếm không khớp nhau).
+Liên quan RR-008 (Case Type giữa màn hình tạo và tìm kiếm không khớp nhau).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -516,7 +427,7 @@ Business Authority (nghiệp vụ MSB) - vì câu hỏi trực tiếp dành cho 
 
 ---
 
-## RR-010 [Trung bình] Nhất quán — Case Type trên màn hình tạo case (chỉ AML_MN) không khớp với Case Type trên màn hình tìm kiếm (AML_MN và AML_SURV)
+## RR-008 [Trung bình] Nhất quán — Case Type trên màn hình tạo case (chỉ AML_MN) không khớp với Case Type trên màn hình tìm kiếm (AML_MN và AML_SURV)
 
 #### 1. Trích dẫn nguồn
 
@@ -530,7 +441,7 @@ Người dùng vào màn hình tạo case thủ công thì chỉ thấy 1 giá t
 
 #### 3. Vấn đề cụ thể
 
-Bản thân sự khác biệt này có thể hợp lý về logic (màn hình tạo case thủ công dĩ nhiên không cho chọn AML_SURV vì case tự động không do người dùng tạo tay), nhưng tài liệu không nói rõ điều này một cách tường minh - khiến người đọc phải tự suy luận thay vì được xác nhận. Ngoài ra, từ "Ví dụ:" đặt trước danh sách AML_MN/AML_SURV ở CM-2.2 gợi ý rằng có thể còn giá trị Type khác ngoài 2 giá trị này (bị reviewer phản hồi ở comment APTL213: "Sao lại ví dụ? list luôn ra chứ") nhưng câu trả lời "Fis update" không xác nhận danh sách đầy đủ cuối cùng có bao nhiêu giá trị.
+Bản thân sự khác biệt này có thể hợp lý về logic (màn hình tạo case thủ công dĩ nhiên không cho chọn AML_SURV vì case tự động không do người dùng tạo tay), nhưng tài liệu không nói rõ điều này một cách tường minh - khiến người đọc phải tự suy luận thay vì được xác nhận bằng 1 câu giải thích rõ ràng. (Riêng băn khoăn về từ "Ví dụ:" ở CM-2.2 gợi ý danh sách chưa đầy đủ đã được FIS xác nhận cập nhật - "Fis update" - nên không còn là điểm mở, không đưa vào finding này.)
 
 #### 4. Ảnh hưởng nếu không giải quyết
 
@@ -538,15 +449,15 @@ Bản thân sự khác biệt này có thể hợp lý về logic (màn hình t�
 
 #### 5. Đề xuất giải quyết
 
-Bổ sung 1 câu xác nhận tường minh ở CM-1.2: "Màn hình tạo case thủ công chỉ hiển thị Type = AML_MN vì case AML_SURV chỉ do hệ thống tự sinh từ kịch bản, không tạo thủ công được." Đồng thời sửa "Ví dụ:" ở CM-2.2 thành liệt kê đầy đủ (không phải ví dụ minh họa) nếu chỉ có đúng 2 giá trị.
+Bổ sung 1 câu xác nhận tường minh ở CM-1.2: "Màn hình tạo case thủ công chỉ hiển thị Type = AML_MN vì case AML_SURV chỉ do hệ thống tự sinh từ kịch bản, không tạo thủ công được." 
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng nhóm với RR-009 (mơ hồ về Case Type).
+Cùng nhóm với RR-007 (mơ hồ về Case Type).
 
 #### 7. Câu hỏi cho người dùng
 
-(a) Danh sách Type đầy đủ trong toàn hệ thống TM có đúng chỉ gồm 2 giá trị AML_MN và AML_SURV, hay còn giá trị khác chưa liệt kê?
+(a) Xác nhận bổ sung 1 câu giải thích tường minh vào CM-1.2 rằng dropdown Type ở màn hình tạo case thủ công chỉ hiển thị AML_MN vì AML_SURV chỉ do hệ thống tự sinh, không tạo thủ công được?
 
 #### 8. Owner
 
@@ -558,7 +469,7 @@ BA (FIS) - vì đây chủ yếu là vấn đề biên tập/làm rõ tài liệ
 
 ---
 
-## RR-011 [Cao] Thiếu phủ — Không có bảng liệt kê đầy đủ toàn bộ enum trạng thái (Status) của Case dùng cho bộ lọc tìm kiếm
+## RR-009 [Cao] Thiếu phủ — Không có bảng liệt kê đầy đủ toàn bộ enum trạng thái (Status) của Case dùng cho bộ lọc tìm kiếm
 
 #### 1. Trích dẫn nguồn
 
@@ -585,7 +496,7 @@ Bổ sung 1 bảng "Danh mục trạng thái Case" tổng hợp toàn bộ giá 
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-035 (không có bảng field-spec đầy đủ, cùng dạng thiếu phủ về đặc tả dữ liệu tham chiếu dùng chung).
+Liên quan RR-032 (không có bảng field-spec đầy đủ, cùng dạng thiếu phủ về đặc tả dữ liệu tham chiếu dùng chung).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -601,7 +512,7 @@ BA (FIS) - vì đây là công việc tổng hợp lại thông tin đã có s�
 
 ---
 
-## RR-012 [Thấp] Mơ hồ — Trường Age (tuổi case) trong tìm kiếm không rõ tính từ ngày tạo tới hiện tại hay tới ngày đóng case
+## RR-010 [Thấp] Mơ hồ — Trường Age (tuổi case) trong tìm kiếm không rõ tính từ ngày tạo tới hiện tại hay tới ngày đóng case
 
 #### 1. Trích dẫn nguồn
 
@@ -643,7 +554,7 @@ Business Authority (nghiệp vụ MSB) - vì liên quan tới cách nghiệp v�
 
 ---
 
-## RR-013 [Cao] Tương tranh — CM-4: chưa mô tả cơ chế xử lý khi 2 user trong cùng nhóm quyền cùng mở 1 case gần như đồng thời
+## RR-011 [Cao] Tương tranh — CM-4: chưa mô tả cơ chế xử lý khi 2 user trong cùng nhóm quyền cùng mở 1 case gần như đồng thời
 
 #### 1. Trích dẫn nguồn
 
@@ -670,7 +581,7 @@ Cơ chế "user đầu tiên mở case được gán xử lý" ngụ ý có 1 đ
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-014 (rule điều phối case chưa có trong tài liệu) - cùng thuộc CM-4.
+Liên quan RR-012 (rule điều phối case chưa có trong tài liệu) - cùng thuộc CM-4.
 
 #### 7. Câu hỏi cho người dùng
 
@@ -686,7 +597,7 @@ Solution Architect - vì đây là quyết định về cơ chế kỹ thuật (
 
 ---
 
-## RR-014 [Cao] Thiếu phủ — CM-4: rule điều phối case cho từng luồng chỉ được thống nhất qua "trao đổi trực tiếp", chưa được đưa vào thân tài liệu
+## RR-012 [Cao] Thiếu phủ — CM-4: rule điều phối case cho từng luồng chỉ được thống nhất qua "trao đổi trực tiếp", chưa được đưa vào thân tài liệu
 
 #### 1. Trích dẫn nguồn
 
@@ -713,7 +624,7 @@ Yêu cầu MSB cung cấp lại bằng văn bản nội dung đã "trao đổi t
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-013 (race condition trong CM-4) và RR-031 (Phụ lục 2 Ma trận phân quyền trống - có thể chính là nơi dự kiến chứa rule điều phối này).
+Liên quan RR-011 (race condition trong CM-4) và RR-028 (Phụ lục 2 Ma trận phân quyền trống - có thể chính là nơi dự kiến chứa rule điều phối này).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -729,7 +640,7 @@ Business Authority (nghiệp vụ MSB) - vì đây là quyết định nghiệp 
 
 ---
 
-## RR-015 [Trung bình] Mơ hồ — CM-6: mô tả tính năng là "gửi email để tư vấn xử lý case" nhưng đồng thời khẳng định hệ thống chỉ gửi 1 chiều, không nhận phản hồi - mâu thuẫn logic
+## RR-013 [Trung bình] Mơ hồ — CM-6: mô tả tính năng là "gửi email để tư vấn xử lý case" nhưng đồng thời khẳng định hệ thống chỉ gửi 1 chiều, không nhận phản hồi - mâu thuẫn logic
 
 #### 1. Trích dẫn nguồn
 
@@ -756,7 +667,7 @@ Bản thân 2 câu mô tả liền kề nhau trong cùng 1 mục lại mâu thu�
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-016 (trường From chưa xác nhận giá trị) - cùng thuộc CM-6.
+Liên quan RR-014 (trường From chưa xác nhận giá trị) - cùng thuộc CM-6.
 
 #### 7. Câu hỏi cho người dùng
 
@@ -772,7 +683,7 @@ Business Authority (nghiệp vụ MSB) - vì cần xác nhận lại đúng mụ
 
 ---
 
-## RR-016 [Thấp] Mơ hồ — CM-6: giá trị cụ thể của trường "From" (email mặc định gửi đi) chưa được xác nhận, chỉ ghi chung chung "có thể cài đặt được"
+## RR-014 [Thấp] Mơ hồ — CM-6: giá trị cụ thể của trường "From" (email mặc định gửi đi) chưa được xác nhận, chỉ ghi chung chung "có thể cài đặt được"
 
 #### 1. Trích dẫn nguồn
 
@@ -814,7 +725,7 @@ Business Authority (nghiệp vụ MSB) - vì đây là giá trị cấu hình ng
 
 ---
 
-## RR-017 [Cao] Nhất quán — Quy định file đính kèm (định dạng, dung lượng) không nhất quán giữa 3 tính năng CM-5, CM-6, CM-7
+## RR-015 [Cao] Nhất quán — Quy định file đính kèm (định dạng, dung lượng) không nhất quán giữa 3 tính năng CM-5, CM-6, CM-7
 
 #### 1. Trích dẫn nguồn
 
@@ -857,7 +768,7 @@ Business Authority (nghiệp vụ MSB) - vì cần quyết định rule đính k
 
 ---
 
-## RR-018 [Trung bình] Mơ hồ — CM-7: trường "Loại hồ sơ/giấy tờ" không có danh mục giá trị cụ thể, chính hệ thống xác nhận không có trường lưu kiểu tài liệu
+## RR-016 [Trung bình] Mơ hồ — CM-7: trường "Loại hồ sơ/giấy tờ" không có danh mục giá trị cụ thể, chính hệ thống xác nhận không có trường lưu kiểu tài liệu
 
 #### 1. Trích dẫn nguồn
 
@@ -883,11 +794,11 @@ Câu trả lời của FIS mâu thuẫn trực tiếp với tên trường đã 
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng nhóm thiếu phủ đặc tả với RR-005 (Whitelist CRUD).
+Cùng nhóm thiếu phủ đặc tả với RR-018 (Quản lý kịch bản thiếu bảng field-spec).
 
 #### 7. Câu hỏi cho người dùng
 
-(a) MSB có thực sự cần phân loại tài liệu đính kèm theo "Loại hồ sơ/giấy tờ" (ví dụ Hộ chiếu/CCCD/Sao kê) hay chấp nhận bỏ yêu cầu này? (b) Nếu cần, danh mục giá trị cụ thể là gì?
+Câu hỏi gốc "có danh mục chưa?" đã có câu trả lời (FIS xác nhận hệ thống không có trường lưu doc type), nên đây không còn là câu hỏi mở mà là 1 việc cần đồng bộ lại tài liệu: (a) Xác nhận xóa dòng "Loại hồ sơ/giấy tờ" khỏi bảng yêu cầu tối thiểu của CM-7 vì đã xác nhận không tồn tại trên hệ thống? (b) Nếu MSB vẫn muốn có phân loại tài liệu đính kèm cho mục đích tra soát, đây sẽ là 1 yêu cầu MỚI (chưa từng được duyệt) cần danh mục giá trị cụ thể, không phải khôi phục lại field cũ.
 
 #### 8. Owner
 
@@ -899,49 +810,7 @@ Business Authority (nghiệp vụ MSB) - vì cần quyết định có giữ l�
 
 ---
 
-## RR-019 [Thấp] Mơ hồ — CM-7: "Ghi chú tiêu chuẩn (theo mẫu có sẵn)" không có bất kỳ ví dụ/nội dung mẫu cụ thể nào trong tài liệu
-
-#### 1. Trích dẫn nguồn
-
-- File: [MSB_BRD_TM_v1.8_20260817.pdf](../../../requirements/MSB_BRD_TM_v1.8_20260817.pdf) - trang 22, comment [APTL(291)]/[A292R291]
-- Section: III.3.7 (CM-7)
-- Quote nguyên văn: "Ghi chú tiêu chuẩn (theo mẫu có sẵn)"; comment "Mẫu đâu?" → "Các ghi chú tiêu chuẩn được quy định và lưu trữ trong DB, có thể tùy chỉnh linh hoạt"
-
-#### 2. Bối cảnh nghiệp vụ
-
-Khi ghi chú vào case, người dùng có tùy chọn chọn nhanh 1 "ghi chú tiêu chuẩn" có sẵn (ví dụ "Đã liên hệ khách hàng nhưng không phản hồi") thay vì gõ tay toàn bộ.
-
-#### 3. Vấn đề cụ thể
-
-Câu trả lời chỉ xác nhận nội dung được lưu trong DB và có thể tùy chỉnh, nhưng không cung cấp DANH SÁCH nội dung ghi chú tiêu chuẩn cụ thể nào để tester biết cần chọn giá trị gì khi test, hoặc verify hiển thị đúng nội dung mẫu.
-
-#### 4. Ảnh hưởng nếu không giải quyết
-
-- Không có test data cụ thể cho tính năng chọn nhanh ghi chú tiêu chuẩn, phải đợi môi trường thực tế mới biết được nội dung để test.
-
-#### 5. Đề xuất giải quyết
-
-Yêu cầu MSB cung cấp danh sách mẫu ghi chú tiêu chuẩn dự kiến sử dụng ở giai đoạn UAT.
-
-#### 6. Liên kết với các phát hiện khác
-
-Không có liên kết với finding khác trong tài liệu này.
-
-#### 7. Câu hỏi cho người dùng
-
-(a) Danh sách nội dung "ghi chú tiêu chuẩn" dự kiến sử dụng là gì, có bao nhiêu mẫu?
-
-#### 8. Owner
-
-Business Authority (nghiệp vụ MSB) - vì đây là nội dung nghiệp vụ cụ thể cần MSB cung cấp.
-
-#### 9. Trạng thái
-
-ĐANG MỞ
-
----
-
-## RR-020 [Trung bình] Thiếu phủ — CM-8 Audit Trail: danh sách "Hành động đối với case" cần được ghi log chưa được liệt kê đầy đủ
+## RR-017 [Trung bình] Thiếu phủ — CM-8 Audit Trail: danh sách "Hành động đối với case" cần được ghi log chưa được liệt kê đầy đủ
 
 #### 1. Trích dẫn nguồn
 
@@ -968,7 +837,7 @@ Yêu cầu bổ sung 1 bảng liệt kê đầy đủ toàn bộ loại hành đ
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng nhóm thiếu phủ với RR-011 (thiếu bảng enum Status).
+Cùng nhóm thiếu phủ với RR-009 (thiếu bảng enum Status).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -984,7 +853,7 @@ Business Authority (nghiệp vụ MSB) - vì đây là yêu cầu tuân thủ, c
 
 ---
 
-## RR-021 [Chặn] Thiếu phủ — III.1 Quản lý kịch bản: không có bảng đặc tả field-level (loại dữ liệu/bắt buộc/độ dài) cho form tạo/sửa kịch bản, khác với cách đặc tả đầy đủ đã áp dụng cho Whitelist
+## RR-018 [Chặn] Thiếu phủ — III.1 Quản lý kịch bản: không có bảng đặc tả field-level (loại dữ liệu/bắt buộc/độ dài) cho form tạo/sửa kịch bản, khác với cách đặc tả đầy đủ đã áp dụng cho Whitelist
 
 #### 1. Trích dẫn nguồn
 
@@ -1011,7 +880,7 @@ Bổ sung bảng field-spec đầy đủ cho III.1.1-III.1.3 theo đúng format 
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng mẫu thiếu phủ với RR-033 (Reporting không có field-spec) và RR-011 (Status enum thiếu).
+Cùng mẫu thiếu phủ với RR-030 (Reporting không có field-spec) và RR-009 (Status enum thiếu).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1027,7 +896,7 @@ BA (FIS) - vì đây là công việc hoàn thiện đặc tả còn thiếu, c�
 
 ---
 
-## RR-022 [Trung bình] Mơ hồ — III.1.3: không thể chỉnh sửa "Trạng thái hoạt động" của kịch bản nhưng không có mô tả nào khác về cách bật/tắt (activate/deactivate) một kịch bản
+## RR-019 [Trung bình] Mơ hồ — III.1.3: không thể chỉnh sửa "Trạng thái hoạt động" của kịch bản nhưng không có mô tả nào khác về cách bật/tắt (activate/deactivate) một kịch bản
 
 #### 1. Trích dẫn nguồn
 
@@ -1053,7 +922,7 @@ Làm rõ: nếu "trạng thái hoạt động" chỉ được set 1 lần khi T�
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng nhóm thiếu phủ đặc tả với RR-021.
+Cùng nhóm thiếu phủ đặc tả với RR-018.
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1069,7 +938,7 @@ Business Authority (nghiệp vụ MSB) - vì liên quan tới quy trình vận h
 
 ---
 
-## RR-023 [Chặn] Thiếu phủ — AML-01: ngưỡng phân loại "khu vực địa lý rủi ro cao" và "rủi ro rất cao" chỉ tham chiếu tới danh sách bên ngoài BRD, không có trong tài liệu
+## RR-020 [Chặn] Thiếu phủ — AML-01: ngưỡng phân loại "khu vực địa lý rủi ro cao" và "rủi ro rất cao" chỉ tham chiếu tới danh sách bên ngoài BRD, không có trong tài liệu
 
 #### 1. Trích dẫn nguồn
 
@@ -1096,7 +965,7 @@ Yêu cầu MSB cung cấp kèm theo tài liệu: (1) danh sách đầy đủ qu�
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng mẫu thiếu phủ dữ liệu tham chiếu ngoài BRD với RR-024 (Effctv Risk Lvl từ KYC).
+Cùng mẫu thiếu phủ dữ liệu tham chiếu ngoài BRD với RR-021 (Effctv Risk Lvl từ KYC).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1112,7 +981,7 @@ Business Authority (nghiệp vụ AML/PCRT MSB) - vì đây là dữ liệu tham
 
 ---
 
-## RR-024 [Chặn] Mơ hồ — AML-02: khái niệm "Ngưỡng rủi ro thực tế của Khách hàng" chưa từng được định nghĩa, không rõ có phải là cùng khái niệm với "Ngưỡng rủi ro hiệu quả (Effctv Risk Lvl)" đã có công thức hay không
+## RR-021 [Chặn] Mơ hồ — AML-02: khái niệm "Ngưỡng rủi ro thực tế của Khách hàng" chưa từng được định nghĩa, không rõ có phải là cùng khái niệm với "Ngưỡng rủi ro hiệu quả (Effctv Risk Lvl)" đã có công thức hay không
 
 #### 1. Trích dẫn nguồn
 
@@ -1139,7 +1008,7 @@ Yêu cầu MSB làm rõ và viết lại chính xác công thức Điều kiện
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng nhóm mơ hồ công thức định lượng với RR-025 (AML-03/04 công thức Avg).
+Cùng nhóm mơ hồ công thức định lượng với RR-022 (AML-03/04 công thức Avg).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1155,7 +1024,7 @@ Business Authority (nghiệp vụ AML/PCRT MSB) - vì đây là công thức ngh
 
 ---
 
-## RR-025 [Chặn] Mơ hồ — AML-03/AML-04: công thức tính giá trị giao dịch trung bình các tháng trong kỳ lookback có 2 phương án tính khác nhau (PA1/PA2) chưa được MSB xác nhận chọn phương án nào
+## RR-022 [Chặn] Mơ hồ — AML-03/AML-04: công thức tính giá trị giao dịch trung bình các tháng trong kỳ lookback có 2 phương án tính khác nhau (PA1/PA2) chưa được MSB xác nhận chọn phương án nào
 
 #### 1. Trích dẫn nguồn
 
@@ -1182,7 +1051,7 @@ Yêu cầu MSB xác nhận dứt điểm chọn PA1 hay PA2 (hoặc phương án
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng nhóm mơ hồ công thức định lượng với RR-024. Công thức tương tự Avg(Di) áp dụng cả chiều ghi Có của AML-03 và cả 2 chiều Nợ/Có của AML-04 (dùng Bi max/Di max thay vì Avg) - toàn bộ 4 vị trí công thức này đều bị ảnh hưởng bởi cùng 1 câu hỏi gốc.
+Cùng nhóm mơ hồ công thức định lượng với RR-021. Công thức tương tự Avg(Di) áp dụng cả chiều ghi Có của AML-03 và cả 2 chiều Nợ/Có của AML-04 (dùng Bi max/Di max thay vì Avg) - toàn bộ 4 vị trí công thức này đều bị ảnh hưởng bởi cùng 1 câu hỏi gốc.
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1198,7 +1067,7 @@ Business Authority (nghiệp vụ AML/PCRT MSB) - vì đây là công thức ngh
 
 ---
 
-## RR-026 [Thấp] Mơ hồ — AML-06: 2 nhánh điều kiện nối bằng "HOẶC" cùng được đánh số "Điều kiện 1", gây khó khăn khi trích dẫn số điều kiện trong test case
+## RR-023 [Thấp] Mơ hồ — AML-06: 2 nhánh điều kiện nối bằng "HOẶC" cùng được đánh số "Điều kiện 1", gây khó khăn khi trích dẫn số điều kiện trong test case
 
 #### 1. Trích dẫn nguồn
 
@@ -1240,7 +1109,7 @@ BA (FIS) - vì đây thuần túy là vấn đề biên tập/đánh số văn b
 
 ---
 
-## RR-027 [Trung bình] Thiếu phủ — Toàn bộ 14 kịch bản AML: ghi chú "(giá trị quy đổi)" xuất hiện xuyên suốt nhưng không có mục nào mô tả nguồn tỷ giá quy đổi, thời điểm áp dụng tỷ giá
+## RR-024 [Trung bình] Thiếu phủ — Toàn bộ 14 kịch bản AML: ghi chú "(giá trị quy đổi)" xuất hiện xuyên suốt nhưng không có mục nào mô tả nguồn tỷ giá quy đổi, thời điểm áp dụng tỷ giá
 
 #### 1. Trích dẫn nguồn
 
@@ -1283,7 +1152,7 @@ Business Authority phối hợp Backend Lead - vì vừa cần chính sách nghi
 
 ---
 
-## RR-028 [Cao] Tuân thủ — "Approved STR" chỉ là trạng thái nội bộ hệ thống, KHÔNG tự động gửi STR tới SBV; thông tin tuân thủ quan trọng này chỉ nằm trong comment, không có trong thân văn bản chính, và không có trường lưu vết ngày thực tế nộp SBV
+## RR-025 [Cao] Tuân thủ — "Approved STR" chỉ là trạng thái nội bộ hệ thống, KHÔNG tự động gửi STR tới SBV; thông tin tuân thủ quan trọng này chỉ nằm trong comment, không có trong thân văn bản chính, và không có trường lưu vết ngày thực tế nộp SBV
 
 #### 1. Trích dẫn nguồn
 
@@ -1326,7 +1195,7 @@ Business Authority phối hợp Compliance (nghiệp vụ AML/PCRT MSB) - vì đ
 
 ---
 
-## RR-029 [Trung bình] Thiếu phủ — Chênh lệch đáng kể về số cấp phê duyệt giữa case xuất phát từ hệ thống/DVKH (4 cấp) và case do AML tự tạo thủ công (chỉ 1 cấp) chưa có giải trình nghiệp vụ
+## RR-026 [Trung bình] Thiếu phủ — Chênh lệch đáng kể về số cấp phê duyệt giữa case xuất phát từ hệ thống/DVKH (4 cấp) và case do AML tự tạo thủ công (chỉ 1 cấp) chưa có giải trình nghiệp vụ
 
 #### 1. Trích dẫn nguồn
 
@@ -1353,7 +1222,7 @@ Với cùng một loại quyết định cuối cùng có ý nghĩa pháp lý nh
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-028 (tuân thủ nộp STR) - cả 2 cùng thuộc nhóm rủi ro compliance của luồng phê duyệt STR.
+Liên quan RR-025 (tuân thủ nộp STR) - cả 2 cùng thuộc nhóm rủi ro compliance của luồng phê duyệt STR.
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1369,7 +1238,7 @@ Business Authority phối hợp Compliance (nghiệp vụ AML/PCRT MSB) - vì đ
 
 ---
 
-## RR-030 [Thấp] Nhất quán — Luồng re-open case với case nguồn gốc AML tự tạo thủ công không đề cập gửi email thông báo, trong khi mong muốn nghiệp vụ chung đã nêu là luôn có email khi re-open
+## RR-027 [Thấp] Nhất quán — Luồng re-open case với case nguồn gốc AML tự tạo thủ công không đề cập gửi email thông báo, trong khi mong muốn nghiệp vụ chung đã nêu là luôn có email khi re-open
 
 #### 1. Trích dẫn nguồn
 
@@ -1411,7 +1280,7 @@ Business Authority (nghiệp vụ MSB) - vì cần xác nhận đây có phải 
 
 ---
 
-## RR-031 [Chặn] Thiếu phủ — Phụ lục 1 (Danh mục dữ liệu yêu cầu) và Phụ lục 2 (Ma trận phân quyền) chỉ có tiêu đề mục lục, hoàn toàn không có nội dung, dù được tham chiếu nhiều lần xuyên suốt BRD
+## RR-028 [Chặn] Thiếu phủ — Phụ lục 1 (Danh mục dữ liệu yêu cầu) và Phụ lục 2 (Ma trận phân quyền) chỉ có tiêu đề mục lục, hoàn toàn không có nội dung, dù được tham chiếu nhiều lần xuyên suốt BRD
 
 #### 1. Trích dẫn nguồn
 
@@ -1438,7 +1307,7 @@ Yêu cầu MSB/FIS cung cấp nội dung đầy đủ của Phụ lục 1 và Ph
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-014 (rule điều phối case "trao đổi trực tiếp" - có thể chính là nội dung dự kiến của Phụ lục 2) và RR-035 (thiếu quy định masking dữ liệu nhạy cảm theo phân quyền).
+Liên quan RR-012 (rule điều phối case "trao đổi trực tiếp" - có thể chính là nội dung dự kiến của Phụ lục 2) và RR-032 (thiếu quy định masking dữ liệu nhạy cảm theo phân quyền).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1454,13 +1323,13 @@ Business Authority phối hợp Security Lead - vì Ma trận phân quyền vừ
 
 ---
 
-## RR-032 [Chặn] Thiếu phủ — Phụ lục 6 (Màn hình STR và Template STR) không có bất kỳ nội dung nào, dù màn hình nhập STR là màn hình lõi được tham chiếu bắt buộc ở hầu hết các bước trong cả 3 luồng nghiệp vụ chính
+## RR-029 [Chặn] Thiếu phủ — Phụ lục 6 (Màn hình STR và Template STR) không có bất kỳ nội dung nào, dù màn hình nhập STR là màn hình lõi được tham chiếu bắt buộc ở hầu hết các bước trong cả 3 luồng nghiệp vụ chính
 
 #### 1. Trích dẫn nguồn
 
-- File: [MSB_BRD_TM_v1.8_20260817.pdf](../../../requirements/MSB_BRD_TM_v1.8_20260817.pdf) - trang 41
+- File: [MSB_BRD_TM_v1.8_20260817.pdf](../../../requirements/MSB_BRD_TM_v1.8_20260817.pdf) - trang 41, đối chiếu comment [TMP(TP308)]/[PT309R308] ở trang 40
 - Section: IV.6.1, IV.6.2
-- Quote nguyên văn: "IV.6.1. Màn hình STR" và "IV.6.2. Template STR" - cả 2 mục chỉ có dòng tiêu đề, không có nội dung/bảng field nào theo sau; đối chiếu tham chiếu ở trang 5: "Thông tin chi tiết về nhập màn hình STR tham chiếu <<VI.Phụ lục - Phụ lục 6.1. Màn hình STR>>"
+- Quote nguyên văn: "IV.6.1. Màn hình STR" và "IV.6.2. Template STR" - cả 2 mục chỉ có dòng tiêu đề, không có nội dung/bảng field nào theo sau; đối chiếu tham chiếu ở trang 5: "Thông tin chi tiết về nhập màn hình STR tham chiếu <<VI.Phụ lục - Phụ lục 6.1. Màn hình STR>>". Lưu ý quan trọng: comment [PT309R308] ghi "Đã bổ sung phụ lục 06: Màn hình STR và template STR" - tức phía FIS xác nhận ĐÃ bổ sung nội dung này ở đâu đó, nhưng bản PDF đang phân tích (v1.8) không thể hiện bất kỳ nội dung nào tại đúng vị trí IV.6.1/IV.6.2 (khác hẳn Phụ lục 3 ngay gần đó vẫn hiển thị icon file đính kèm rõ ràng).
 
 #### 2. Bối cảnh nghiệp vụ
 
@@ -1468,7 +1337,7 @@ Business Authority phối hợp Security Lead - vì Ma trận phân quyền vừ
 
 #### 3. Vấn đề cụ thể
 
-Giống RR-031, phụ lục này hoàn toàn trống - không có bảng field, không có mô tả layout, không có validation rule cho màn hình STR. Đây là gap nghiêm trọng hơn RR-031 về mức độ ảnh hưởng vì STR không chỉ là 1 tính năng phụ mà là ĐẦU RA CHÍNH của toàn bộ hệ thống TM (báo cáo giao dịch đáng ngờ gửi cơ quan quản lý) - comment [TMP(TP308)]/[PT309R308] cho thấy có thảo luận bổ sung thêm "Template Mô tả dòng tiền STR; Bảng kê giao dịch; Template STR" nhưng những nội dung này cũng không xuất hiện trong file đang phân tích.
+Giống RR-028, phụ lục này hoàn toàn trống trong bản PDF đang phân tích - không có bảng field, không có mô tả layout, không có validation rule cho màn hình STR - mặc dù comment [PT309R308] khẳng định "Đã bổ sung phụ lục 06". Đây không hẳn là 1 câu hỏi mở về nghiệp vụ (nội dung có thể đã tồn tại ở phiên bản file khác hoặc bị lỗi khi xuất PDF), nhưng vẫn là 1 gap thực sự đối với chính bản v1.8 này: nếu tester chỉ có đúng file PDF này trong tay, họ sẽ không thấy được đặc tả màn hình STR - chức năng lõi được tham chiếu ở hầu hết mọi luồng nghiệp vụ.
 
 #### 4. Ảnh hưởng nếu không giải quyết
 
@@ -1477,15 +1346,15 @@ Giống RR-031, phụ lục này hoàn toàn trống - không có bảng field, 
 
 #### 5. Đề xuất giải quyết
 
-Đây là gap có mức độ ưu tiên cao nhất cần MSB/FIS giải quyết trước khi tiếp tục bất kỳ hoạt động test design nào liên quan STR - đề nghị cung cấp Phụ lục 6 đầy đủ (màn hình STR, Template STR, Template Mô tả dòng tiền, Bảng kê giao dịch) như đã thảo luận trong comment TP308/PT309R308.
+Vì FIS đã xác nhận "Đã bổ sung" Phụ lục 6 ở đâu đó, đề xuất trước tiên là yêu cầu MSB/FIS gửi lại đúng bản PDF/file đã chứa đầy đủ nội dung Phụ lục 6 (màn hình STR, Template STR, Template Mô tả dòng tiền, Bảng kê giao dịch) để đối chiếu lại - nhiều khả năng đây là lỗi xuất file hơn là nội dung thực sự chưa có. Nếu xác nhận nội dung thực sự chưa tồn tại ở bất kỳ đâu, đây sẽ là gap mức Chặn cần MSB/FIS bổ sung trước khi test design cho luồng STR.
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan chặt chẽ RR-001 (rule xuất STR), RR-002 (STR khi re-open), RR-028 (Approved STR và nghĩa vụ nộp SBV) - toàn bộ nhóm finding về vòng đời STR đều phụ thuộc vào việc có được đặc tả màn hình STR đầy đủ.
+Liên quan chặt chẽ RR-001 (rule xuất STR), RR-002 (STR khi re-open), RR-025 (Approved STR và nghĩa vụ nộp SBV) - toàn bộ nhóm finding về vòng đời STR đều phụ thuộc vào việc có được đặc tả màn hình STR đầy đủ.
 
 #### 7. Câu hỏi cho người dùng
 
-(a) Nội dung Phụ lục 6 (Màn hình STR, Template STR, Template Mô tả dòng tiền, Bảng kê giao dịch) đã sẵn sàng ở phiên bản BRD nào, đề nghị cung cấp trước khi thiết kế test case cho luồng STR? (b) Câu hỏi về chữ ký số trên STR (ai ký, ký ở vị trí nào với case nguồn AML thủ công) đã được MSB xác nhận chưa?
+(a) Comment [PT309R308] ghi "Đã bổ sung phụ lục 06" - nội dung đã bổ sung này nằm ở file/phiên bản nào, có thể gửi lại để đối chiếu với file PDF v1.8 đang thiếu nội dung này không? (b) Câu hỏi về chữ ký số trên STR (ai ký, ký ở vị trí nào với case nguồn AML thủ công) đã được MSB xác nhận chưa?
 
 #### 8. Owner
 
@@ -1497,13 +1366,13 @@ Business Authority + BA (FIS) - vì đây là công việc bổ sung đặc tả
 
 ---
 
-## RR-033 [Cao] Thiếu phủ — III.5 Reporting: 4 báo cáo nội bộ chỉ có tên và mô tả 1 dòng, không có đặc tả field/filter/layout/định dạng xuất
+## RR-030 [Cao] Thiếu phủ — III.5 Reporting: 4 báo cáo nội bộ chỉ có tên và mô tả 1 dòng, không có đặc tả field/filter/layout/định dạng xuất
 
 #### 1. Trích dẫn nguồn
 
 - File: [MSB_BRD_TM_v1.8_20260817.pdf](../../../requirements/MSB_BRD_TM_v1.8_20260817.pdf) - trang 40, comment [A304]
 - Section: III.5
-- Quote nguyên văn: bảng chỉ có 3 cột (STT, Mã yêu cầu, Nội dung yêu cầu) với nội dung 1 dòng cho mỗi báo cáo, ví dụ "Report TM_03 | Báo cáo các cảnh báo chưa được xử lý"; comment "Chi tiết comment theo file đính kèm" (dẫn chiếu 1 file ngoài không có trong tài liệu này)
+- Quote nguyên văn: bảng chỉ có 3 cột (STT, Mã yêu cầu, Nội dung yêu cầu) với nội dung 1 dòng cho mỗi báo cáo, ví dụ "Report TM_03 | Báo cáo các cảnh báo chưa được xử lý"; comment "Chi tiết comment theo file đính kèm" - tương tự RR-029, đây là 1 xác nhận rằng chi tiết ĐÃ tồn tại ở 1 file đính kèm khác, chỉ là file đó không xuất hiện trong PDF đang phân tích (khác Phụ lục 3 có icon file rõ ràng)
 
 #### 2. Bối cảnh nghiệp vụ
 
@@ -1523,7 +1392,7 @@ Yêu cầu MSB/FIS cung cấp file đính kèm chi tiết đã đề cập trong
 
 #### 6. Liên kết với các phát hiện khác
 
-Cùng nhóm thiếu phủ đặc tả với RR-021 (Scenario Management) và RR-031/RR-032 (Phụ lục trống).
+Cùng nhóm thiếu phủ đặc tả với RR-018 (Scenario Management) và RR-028/RR-029 (Phụ lục trống).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1539,7 +1408,7 @@ Business Authority (nghiệp vụ MSB) - vì cần xác nhận yêu cầu chi ti
 
 ---
 
-## RR-034 [Trung bình] Bảo mật — Các trường free-text (Comment, Description, Email content, Reason Added...) không có ràng buộc nào về chống XSS/injection dù nội dung có thể được gửi ra ngoài qua email hoặc hiển thị lại cho nhiều người dùng khác xem
+## RR-031 [Trung bình] Bảo mật — Các trường free-text (Comment, Description, Email content, Reason Added...) không có ràng buộc nào về chống XSS/injection dù nội dung có thể được gửi ra ngoài qua email hoặc hiển thị lại cho nhiều người dùng khác xem
 
 #### 1. Trích dẫn nguồn
 
@@ -1566,7 +1435,7 @@ Toàn bộ các trường free-text trong tài liệu (Whitelist: Reason Added/D
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan RR-035 (bảo mật dữ liệu nhạy cảm - cùng nhóm lăng kính Bảo mật).
+Liên quan RR-032 (bảo mật dữ liệu nhạy cảm - cùng nhóm lăng kính Bảo mật).
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1582,7 +1451,7 @@ Security Lead - vì đây là yêu cầu bảo mật kỹ thuật cần đánh g
 
 ---
 
-## RR-035 [Trung bình] Bảo mật — Case List/Search hiển thị số CCCD/giấy tờ tùy thân và thông tin định danh khách hàng nhạy cảm nhưng không có quy định về che/ẩn (masking) dữ liệu theo cấp độ phân quyền
+## RR-032 [Trung bình] Bảo mật — Case List/Search hiển thị số CCCD/giấy tờ tùy thân và thông tin định danh khách hàng nhạy cảm nhưng không có quy định về che/ẩn (masking) dữ liệu theo cấp độ phân quyền
 
 #### 1. Trích dẫn nguồn
 
@@ -1596,7 +1465,7 @@ Một DVKH Checker tìm kiếm case theo số CCCD của khách hàng để tra 
 
 #### 3. Vấn đề cụ thể
 
-Đây là hệ thống AML xử lý dữ liệu cực kỳ nhạy cảm của khách hàng (giao dịch tài chính, thông tin định danh cá nhân), nhưng toàn bộ mục III.3 (Case Management) không có bất kỳ điều khoản nào về việc che/ẩn một phần dữ liệu định danh (ví dụ chỉ hiển thị 3 số cuối CCCD, ẩn hoàn toàn với vai trò không cần xem đầy đủ) tùy theo cấp độ phân quyền của người xem - dù nhiều comment trong tài liệu (APTL205, APTL224, APTL236...) liên tục nhắc "Bổ sung yêu cầu phân quyền dữ liệu" và luôn được trả lời là sẽ nằm trong Phụ lục 2 (đã xác nhận trống ở RR-031).
+Đây là hệ thống AML xử lý dữ liệu cực kỳ nhạy cảm của khách hàng (giao dịch tài chính, thông tin định danh cá nhân), nhưng toàn bộ mục III.3 (Case Management) không có bất kỳ điều khoản nào về việc che/ẩn một phần dữ liệu định danh (ví dụ chỉ hiển thị 3 số cuối CCCD, ẩn hoàn toàn với vai trò không cần xem đầy đủ) tùy theo cấp độ phân quyền của người xem - dù nhiều comment trong tài liệu (APTL205, APTL224, APTL236...) liên tục nhắc "Bổ sung yêu cầu phân quyền dữ liệu" và luôn được trả lời là sẽ nằm trong Phụ lục 2 (đã xác nhận trống ở RR-028).
 
 #### 4. Ảnh hưởng nếu không giải quyết
 
@@ -1605,11 +1474,11 @@ Một DVKH Checker tìm kiếm case theo số CCCD của khách hàng để tra 
 
 #### 5. Đề xuất giải quyết
 
-Bổ sung vào Phụ lục 2 (Ma trận phân quyền - đã được flag trống ở RR-031) quy định rõ: vai trò nào được xem đầy đủ Identification number/thông tin định danh, vai trò nào chỉ xem dạng che một phần hoặc không xem được.
+Bổ sung vào Phụ lục 2 (Ma trận phân quyền - đã được flag trống ở RR-028) quy định rõ: vai trò nào được xem đầy đủ Identification number/thông tin định danh, vai trò nào chỉ xem dạng che một phần hoặc không xem được.
 
 #### 6. Liên kết với các phát hiện khác
 
-Liên quan trực tiếp RR-031 (Phụ lục 2 Ma trận phân quyền trống) - đây là 1 khía cạnh cụ thể (masking PII) cần được Phụ lục 2 giải quyết.
+Liên quan trực tiếp RR-028 (Phụ lục 2 Ma trận phân quyền trống) - đây là 1 khía cạnh cụ thể (masking PII) cần được Phụ lục 2 giải quyết.
 
 #### 7. Câu hỏi cho người dùng
 
@@ -1625,9 +1494,11 @@ Security Lead phối hợp Business Authority - vì cần cân bằng giữa yê
 
 ---
 
+> **Ghi chú rà soát lại (sau phản hồi người dùng):** Bản phân tích đầu tiên có 35 finding, trong đó 3 finding (List Code Whitelist, mô tả CRUD Whitelist, mẫu Ghi chú tiêu chuẩn CM-7) được trích chủ yếu từ thread comment mà FIS/MSB đã trả lời bằng ngôn ngữ xác nhận đã sửa ("FIS update", "Đã điều chỉnh") mà không còn bằng chứng mâu thuẫn nào trong thân văn bản hiện tại - tức là đã được đồng ý và cập nhật, không còn là gap mở. 3 finding này đã được loại bỏ khỏi danh sách. Một số finding khác (đánh dấu rõ trong phần "Trích dẫn nguồn"/"Vấn đề cụ thể" của từng mã) vẫn được giữ lại dù có thread "đã update", nhưng CHỈ khi nội dung đã update chỉ giải quyết một phần câu hỏi gốc và phần còn lại vẫn chưa được viết vào tài liệu (ví dụ RR-003 - giải pháp đã chốt chỉ bổ sung email cho group Checker, không cho group Maker) - những trường hợp này được ghi chú rõ là "phần dư sau khi đã có giải pháp", không phải "câu hỏi bị lờ đi".
+
 ### 7.3. Khuyến nghị
 
-CẦN LÀM RÕ TRƯỚC - tài liệu hiện còn 11 finding ở mức `[Chặn]` (RR-002, RR-005, RR-011... không, chính xác là RR-002, RR-005, RR-021, RR-023, RR-024, RR-025, RR-031, RR-032 - 8 finding mức Chặn) đang mở, đặc biệt nghiêm trọng là nhóm liên quan tới màn hình/template STR (RR-032), Phụ lục phân quyền (RR-031), và công thức định lượng của các kịch bản AML-01 đến AML-04 (RR-023, RR-024, RR-025) - đây đều là những gap ảnh hưởng trực tiếp tới khả năng xác định oracle đúng/sai khi viết test case cho phần lõi của hệ thống AML.
+CẦN LÀM RÕ TRƯỚC - tài liệu hiện còn 7 finding ở mức `[Chặn]` đang mở: RR-002 (yêu cầu STR/EDD khi re-open), RR-018 (thiếu field-spec form kịch bản), RR-020 (ngưỡng khu vực rủi ro AML-01), RR-021 (công thức Điều kiện 1 AML-02), RR-022 (2 phương án tính Avg AML-03/04 chưa chốt), RR-028 (Phụ lục 1-2 trống), RR-029 (Phụ lục 6 màn hình/template STR trống). Đáng chú ý nhất là nhóm liên quan tới màn hình/template STR (RR-029) và Phụ lục phân quyền (RR-028) - dù comment review có nhắc "đã bổ sung", nội dung tương ứng không xuất hiện trong bản PDF đang phân tích - cùng với công thức định lượng của các kịch bản AML-01 đến AML-04 (RR-020, RR-021, RR-022) vẫn đang chờ MSB xác nhận. Các finding dựa trên thread comment đã có xác nhận "FIS update"/"Đã điều chỉnh" và không còn bằng chứng mâu thuẫn trong thân văn bản đã được loại khỏi danh sách này (xem ghi chú cuối mục 7.2).
 
 ### 7.4. Phân loại theo tác động
 
@@ -1636,44 +1507,41 @@ CẦN LÀM RÕ TRƯỚC - tài liệu hiện còn 11 finding ở mức `[Chặn]
 | Mã | Mức độ | Lý do thuộc nhóm TC |
 |---|---|---|
 | RR-001 | Cao | Không biết điều kiện enable/disable nút Xuất STR để viết TC |
-| RR-004 | Cao | Không biết định dạng đúng của List Code để assert |
-| RR-005 | Chặn | Không có mô tả hành vi CRUD để viết TC Whitelist |
-| RR-006 | Cao | Số liệu mâu thuẫn (2 vs 3 trường Key) làm sai oracle kiểm tra trùng lặp |
-| RR-007 | Trung bình | Không rõ Status/phê duyệt khi thêm lại bản ghi đã xóa |
-| RR-011 | Cao | Thiếu enum đầy đủ Status để thiết kế TC filter |
-| RR-013 | Cao | Không rõ hành vi kỳ vọng khi 2 user cùng mở 1 case |
-| RR-017 | Cao | 3 bộ quy định file đính kèm khác nhau, không biết ngưỡng đúng để test boundary |
-| RR-020 | Trung bình | Danh sách hành động cần audit chưa đầy đủ |
-| RR-021 | Chặn | Không có field-spec cho form kịch bản để viết TC validation |
-| RR-023 | Chặn | Thiếu danh sách/ngưỡng khu vực địa lý rủi ro để chuẩn bị test data AML-01 |
-| RR-024 | Chặn | Công thức Điều kiện 1 của AML-02 không rõ nghĩa |
-| RR-025 | Chặn | 2 phương án tính công thức Avg chưa chốt, ảnh hưởng trực tiếp oracle AML-03/04 |
-| RR-026 | Thấp | Đánh số trùng gây khó trích dẫn khi viết TC ID |
-| RR-027 | Trung bình | Không rõ nguồn/thời điểm tỷ giá quy đổi để chuẩn bị test data ngoại tệ |
-| RR-031 | Chặn | Không có ma trận phân quyền để viết TC access-control |
-| RR-032 | Chặn | Không có field-spec màn hình STR - chức năng lõi của hệ thống |
-| RR-033 | Cao | Không có field/filter cho 4 báo cáo để viết TC |
-| RR-034 | Trung bình | Không rõ ràng buộc validate để viết TC security cho input free-text |
-| RR-035 | Trung bình | Không rõ quy tắc masking để viết TC verify hiển thị PII |
+| RR-004 | Cao | Số liệu mâu thuẫn (2 vs 3 trường Key) làm sai oracle kiểm tra trùng lặp |
+| RR-005 | Trung bình | Không rõ Status/phê duyệt khi thêm lại bản ghi đã xóa |
+| RR-009 | Cao | Thiếu enum đầy đủ Status để thiết kế TC filter |
+| RR-011 | Cao | Không rõ hành vi kỳ vọng khi 2 user cùng mở 1 case |
+| RR-015 | Cao | 3 bộ quy định file đính kèm khác nhau, không biết ngưỡng đúng để test boundary |
+| RR-017 | Trung bình | Danh sách hành động cần audit chưa đầy đủ |
+| RR-018 | Chặn | Không có field-spec cho form kịch bản để viết TC validation |
+| RR-020 | Chặn | Thiếu danh sách/ngưỡng khu vực địa lý rủi ro để chuẩn bị test data AML-01 |
+| RR-021 | Chặn | Công thức Điều kiện 1 của AML-02 không rõ nghĩa |
+| RR-022 | Chặn | 2 phương án tính công thức Avg chưa chốt, ảnh hưởng trực tiếp oracle AML-03/04 |
+| RR-023 | Thấp | Đánh số trùng gây khó trích dẫn khi viết TC ID |
+| RR-024 | Trung bình | Không rõ nguồn/thời điểm tỷ giá quy đổi để chuẩn bị test data ngoại tệ |
+| RR-028 | Chặn | Không có ma trận phân quyền để viết TC access-control |
+| RR-029 | Chặn | Không có field-spec màn hình STR - chức năng lõi của hệ thống |
+| RR-030 | Cao | Không có field/filter cho 4 báo cáo để viết TC |
+| RR-031 | Trung bình | Không rõ ràng buộc validate để viết TC security cho input free-text |
+| RR-032 | Trung bình | Không rõ quy tắc masking để viết TC verify hiển thị PII |
 
 #### Nhóm UX (hành vi người dùng)
 
 | Mã | Mức độ | Lý do thuộc nhóm UX |
 |---|---|---|
 | RR-003 | Cao | Maker nghỉ việc, người dùng khác không biết cách xử lý case bị treo |
-| RR-009 | Trung bình | Người dùng cuối không rõ dropdown Type có cố định hay mở rộng |
-| RR-010 | Trung bình | Người dùng có thể nhầm lẫn giữa dropdown tạo case và tìm kiếm |
-| RR-012 | Thấp | Người dùng hiểu sai kết quả filter Age |
-| RR-015 | Trung bình | Người dùng cuối hiểu sai bản chất chức năng "gửi email tư vấn" |
-| RR-016 | Thấp | Người dùng không biết chính xác giá trị From hiển thị |
-| RR-018 | Trung bình | Người dùng thấy field "Loại hồ sơ" nhưng không hoạt động thực tế |
-| RR-019 | Thấp | Người dùng không có ghi chú mẫu cụ thể để chọn nhanh |
-| RR-022 | Trung bình | Người dùng không biết cách tạm ngưng 1 kịch bản đang chạy |
-| RR-030 | Thấp | Maker case AML-manual không nhận được thông báo khi case re-open |
+| RR-007 | Trung bình | Người dùng cuối không rõ dropdown Type có cố định hay mở rộng |
+| RR-008 | Trung bình | Người dùng có thể nhầm lẫn giữa dropdown tạo case và tìm kiếm |
+| RR-010 | Thấp | Người dùng hiểu sai kết quả filter Age |
+| RR-013 | Trung bình | Người dùng cuối hiểu sai bản chất chức năng "gửi email tư vấn" |
+| RR-014 | Thấp | Người dùng không biết chính xác giá trị From hiển thị |
+| RR-016 | Trung bình | Người dùng thấy field "Loại hồ sơ" nhưng không hoạt động thực tế |
+| RR-019 | Trung bình | Người dùng không biết cách tạm ngưng 1 kịch bản đang chạy |
+| RR-027 | Thấp | Maker case AML-manual không nhận được thông báo khi case re-open |
 
 #### Nhóm Khác (compliance/vận hành/governance)
 
-RR-002 (yêu cầu STR/EDD khi re-open - compliance lưu trữ hồ sơ), RR-008 (vận hành: đồng bộ whitelist pending với lịch batch), RR-014 (governance: rule điều phối case chưa văn bản hóa), RR-028 (compliance: nghĩa vụ nộp STR cho SBV), RR-029 (compliance: chênh lệch mức kiểm soát theo nguồn case).
+RR-002 (yêu cầu STR/EDD khi re-open - compliance lưu trữ hồ sơ), RR-006 (vận hành: đồng bộ whitelist pending với lịch batch), RR-012 (governance: rule điều phối case chưa văn bản hóa), RR-025 (compliance: nghĩa vụ nộp STR cho SBV), RR-026 (compliance: chênh lệch mức kiểm soát theo nguồn case).
 
 ## 8. Ma Trận Trạng Thái Case (tổng hợp từ 3 luồng nghiệp vụ)
 
@@ -1691,52 +1559,52 @@ RR-002 (yêu cầu STR/EDD khi re-open - compliance lưu trữ hồ sơ), RR-008
 | Pending AML Maker | Chờ AML Maker phân tích STR | II.1.1/II.1.2.1 |
 | Pending AML Checker review | Chờ AML Checker phê duyệt | Mọi luồng |
 | Closed - Not Send STR | AML Checker từ chối gửi STR, đóng case | Mọi luồng |
-| Approved STR | AML Checker phê duyệt gửi STR, đóng case (xem RR-028 về ý nghĩa thực tế) | Mọi luồng |
+| Approved STR | AML Checker phê duyệt gửi STR, đóng case (xem RR-025 về ý nghĩa thực tế) | Mọi luồng |
 
-Lưu ý: bảng này được tổng hợp thủ công từ nội dung rải rác trong tài liệu (xem RR-011) - cần MSB/FIS xác nhận đây đã là danh sách đầy đủ.
+Lưu ý: bảng này được tổng hợp thủ công từ nội dung rải rác trong tài liệu (xem RR-009) - cần MSB/FIS xác nhận đây đã là danh sách đầy đủ.
 
 ## 9. Tóm Tắt Acceptance Criteria (Checklist)
 
 ### Luồng nghiệp vụ
 - [ ] Case tự động từ kịch bản HIT đi qua đủ 8 bước, 5 vai trò (II.1.1)
 - [ ] Case thủ công DVKH đi qua 7 bước tương tự, bỏ bước cảnh báo hệ thống (II.1.2.1)
-- [ ] Case thủ công AML đi qua 2 bước, 1 cấp phê duyệt AML Checker (II.1.2.2) - xem RR-029
-- [ ] Re-open case theo đúng nguồn gốc case (II.1.3) - xem RR-002, RR-003, RR-030
+- [ ] Case thủ công AML đi qua 2 bước, 1 cấp phê duyệt AML Checker (II.1.2.2) - xem RR-026
+- [ ] Re-open case theo đúng nguồn gốc case (II.1.3) - xem RR-002, RR-003, RR-027
 
 ### Quản lý kịch bản
-- [ ] Tạo mới kịch bản với đủ trường thông tin chung + chi tiết (III.1.1) - thiếu field-spec, xem RR-021
+- [ ] Tạo mới kịch bản với đủ trường thông tin chung + chi tiết (III.1.1) - thiếu field-spec, xem RR-018
 - [ ] Cấu hình ngưỡng theo 3 mức rủi ro HR/MR/RR (III.1.2)
-- [ ] Sửa kịch bản, không sửa được ID/trạng thái/loại (III.1.3) - xem RR-022
+- [ ] Sửa kịch bản, không sửa được ID/trạng thái/loại (III.1.3) - xem RR-019
 
 ### Whitelist
-- [ ] CRUD whitelist qua UI hoặc Excel (III.2) - thiếu mô tả hành vi, xem RR-005
-- [ ] Kiểm tra trùng lặp theo 3 trường Key (xem RR-006)
-- [ ] Luồng phê duyệt 2 cấp Analyst/Supervisor (xem RR-008)
+- [ ] CRUD whitelist qua UI hoặc Excel (III.2)
+- [ ] Kiểm tra trùng lặp theo 3 trường Key (xem RR-004)
+- [ ] Luồng phê duyệt 2 cấp Analyst/Supervisor (xem RR-006)
 
 ### Quản lý Case
 - [ ] Khởi tạo case tự động/thủ công (CM-1)
-- [ ] Tìm kiếm case theo >15 tiêu chí (CM-2) - thiếu enum Status đầy đủ, xem RR-011
+- [ ] Tìm kiếm case theo >15 tiêu chí (CM-2) - thiếu enum Status đầy đủ, xem RR-009
 - [ ] Hiển thị danh sách/chi tiết case (CM-3)
-- [ ] Điều phối phân công tự động (CM-4) - thiếu rule cụ thể, xem RR-014; race condition, xem RR-013
+- [ ] Điều phối phân công tự động (CM-4) - thiếu rule cụ thể, xem RR-012; race condition, xem RR-011
 - [ ] Take Action đánh giá case (CM-5)
-- [ ] Gửi email liên quan case (CM-6) - mâu thuẫn logic "tư vấn", xem RR-015
+- [ ] Gửi email liên quan case (CM-6) - mâu thuẫn logic "tư vấn", xem RR-013
 - [ ] Ghi chú, đính kèm tài liệu (CM-7)
-- [ ] Audit Trail (CM-8) - thiếu danh sách hành động đầy đủ, xem RR-020
+- [ ] Audit Trail (CM-8) - thiếu danh sách hành động đầy đủ, xem RR-017
 
 ### 14 kịch bản AML-01 → AML-14
-- [ ] Mỗi kịch bản có mô tả, phạm vi, điều kiện cảnh báo, điều kiện định lượng - một số kịch bản có công thức/ngưỡng chưa chốt (AML-01, AML-02, AML-03/04, xem RR-023/024/025)
+- [ ] Mỗi kịch bản có mô tả, phạm vi, điều kiện cảnh báo, điều kiện định lượng - một số kịch bản có công thức/ngưỡng chưa chốt (AML-01, AML-02, AML-03/04, xem RR-020/024/025)
 
 ### Báo cáo và Email
-- [ ] 4 báo cáo nội bộ TM_01→04 (III.5) - thiếu field-spec, xem RR-033
+- [ ] 4 báo cáo nội bộ TM_01→04 (III.5) - thiếu field-spec, xem RR-030
 - [ ] 9 mẫu email EM-1→9 (III.6) - nội dung nằm ở Phụ lục 5 ngoài tài liệu này
 
 ## 10. Khuyến Nghị Cho Kiểm Thử
 
-1. Ưu tiên giải quyết 8 finding mức `[Chặn]` trước khi bắt đầu thiết kế test case chi tiết cho các khu vực tương ứng, đặc biệt là RR-032 (màn hình STR) vì đây là màn hình lõi xuất hiện ở hầu hết mọi luồng.
+1. Ưu tiên giải quyết 8 finding mức `[Chặn]` trước khi bắt đầu thiết kế test case chi tiết cho các khu vực tương ứng, đặc biệt là RR-029 (màn hình STR) vì đây là màn hình lõi xuất hiện ở hầu hết mọi luồng.
 2. Với nhóm kịch bản AML-01 đến AML-04, cần có bộ dữ liệu tham chiếu bên ngoài (danh sách khu vực rủi ro, công thức Avg đã chốt phương án) trước khi chuẩn bị test data định lượng - nếu không, mọi TC "đúng ngưỡng HIT/không HIT" đều có nguy cơ sai oracle.
-3. Thiết kế riêng 1 nhóm TC cho concurrency/race condition (RR-013, RR-008) vì đây là lớp lỗi khó phát hiện qua test thủ công tuần tự, nên cân nhắc kịch bản test với nhiều session song song.
+3. Thiết kế riêng 1 nhóm TC cho concurrency/race condition (RR-011, RR-006) vì đây là lớp lỗi khó phát hiện qua test thủ công tuần tự, nên cân nhắc kịch bản test với nhiều session song song.
 4. Khi Phụ lục 2 (Ma trận phân quyền) được bổ sung, cần thiết kế riêng 1 bộ TC access-control đầy đủ theo từng vai trò (DVKH Maker/Checker, Checker N+1, AML Maker/Checker, Supervisor, Analyst) x từng chức năng (Case, Whitelist, Scenario, Report).
-5. Đối chiếu lại toàn bộ 3 quy định file đính kèm không nhất quán (RR-017) trên UI thực tế trước khi viết TC boundary cho dung lượng/định dạng file.
-6. Vì đây là hệ thống AML xử lý dữ liệu tài chính/định danh nhạy cảm, nên bổ sung riêng 1 pass kiểm thử bảo mật (RR-034, RR-035) sau khi có Ma trận phân quyền, thay vì chỉ kiểm thử chức năng thuần túy.
+5. Đối chiếu lại toàn bộ 3 quy định file đính kèm không nhất quán (RR-015) trên UI thực tế trước khi viết TC boundary cho dung lượng/định dạng file.
+6. Vì đây là hệ thống AML xử lý dữ liệu tài chính/định danh nhạy cảm, nên bổ sung riêng 1 pass kiểm thử bảo mật (RR-031, RR-032) sau khi có Ma trận phân quyền, thay vì chỉ kiểm thử chức năng thuần túy.
 7. Với 15 trạng thái Case đã tổng hợp thủ công ở mục 8, nên yêu cầu MSB/FIS xác nhận lại đây là danh sách đầy đủ trước khi dùng làm cơ sở thiết kế TC cho CM-2 (tìm kiếm theo Status).
 8. Toàn bộ câu hỏi ở cột "Câu hỏi cho người dùng" (mục 7.2) nên được tổng hợp thành 1 danh sách riêng gửi MSB xác nhận theo từng Owner tương ứng, vì nhiều câu hỏi đã "treo" từ các vòng review trước (v1.3-v1.8) mà chưa có câu trả lời cuối cùng ghi lại trong văn bản.

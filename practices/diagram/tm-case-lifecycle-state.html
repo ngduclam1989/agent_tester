@@ -1,0 +1,327 @@
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f5f5f5; --paper-2:#ececec; --ink:#2d3142; --muted:#4f5d75; --soft:#7a8399;
+    --rule:rgba(45,49,66,0.12); --rule-solid:#bfc0c0; --accent:#eb6c36; --accent-tint:rgba(235,108,54,0.08);
+    --link:#2e5aa8;
+  }
+  body{background:var(--paper);color:var(--ink);font-family:'Geist',sans-serif;margin:0;padding:2.5rem 2rem 3rem;}
+  .eyebrow{font-family:'Geist Mono',monospace;font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--soft);margin:0 0 6px;}
+  h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:1.75rem;margin:0 0 6px;}
+  .subtitle{color:var(--muted);font-size:14px;margin:0 0 28px;max-width:760px;}
+  .diagram-wrap{overflow-x:auto;}
+  .aside{font-family:'Instrument Serif',serif;font-style:italic;font-size:14px;color:var(--muted);
+    border-left:2px solid var(--rule-solid);padding:10px 16px;margin:24px 0 0;max-width:820px;background:#ffffff;border-radius:0 6px 6px 0;}
+  .cards{display:grid;grid-template-columns:1.2fr 1fr 0.9fr;gap:16px;margin-top:24px;}
+  .card{background:#ffffff;border:1px solid var(--rule);border-radius:6px;padding:1.25rem;}
+  .card .card-eyebrow{font-family:'Geist Mono',monospace;font-size:8px;letter-spacing:0.12em;text-transform:uppercase;color:var(--soft);margin:0 0 8px;}
+  .card h3{font-size:13px;margin:0 0 8px;font-weight:600;}
+  .card ul{margin:0;padding-left:18px;font-size:12.5px;color:var(--muted);line-height:1.6;}
+  .colophon{margin-top:28px;padding-top:12px;border-top:1px solid var(--rule);font-family:'Geist Mono',monospace;font-size:10px;color:var(--soft);}
+</style>
+
+<p class="eyebrow">Practices / Diagram / MSB TM</p>
+<h1>Vòng đời Case — Transaction Monitoring</h1>
+<p class="subtitle">Sơ đồ trạng thái hợp nhất từ 4 luồng nghiệp vụ trong BRD (tự động HIT kịch bản, thủ công DVKH, thủ công AML, re-open) — dùng làm căn cứ cho kỹ thuật State Transition Testing ở Bước 5 quy trình AI-RBT.</p>
+
+<div class="diagram-wrap">
+<svg viewBox="0 0 1000 1300" role="img" aria-labelledby="tmcase-title tmcase-desc" xmlns="http://www.w3.org/2000/svg">
+  <title id="tmcase-title">Vòng đời trạng thái Case module Transaction Monitoring</title>
+  <desc id="tmcase-desc">Sơ đồ trạng thái tổng hợp toàn bộ 13 trạng thái case và các transition giữa chúng, xuyên suốt 4 luồng nghiệp vụ (tự động, thủ công DVKH, thủ công AML, re-open) trong BRD module Transaction Monitoring, dùng để thiết kế test case theo kỹ thuật State Transition Testing.</desc>
+
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#4f5d75"/>
+    </marker>
+    <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#eb6c36"/>
+    </marker>
+    <marker id="arrow-ink" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#2d3142"/>
+    </marker>
+  </defs>
+
+  <rect width="1000" height="1300" fill="#f5f5f5"/>
+
+  <!-- ============ ARROWS (drawn before boxes) ============ -->
+  <g fill="none" stroke="#4f5d75" stroke-width="1.2">
+    <!-- S1 -> N1 -->
+    <path d="M460,92 L460,120" marker-end="url(#arrow)"/>
+    <!-- E2: N1 -> N2 -->
+    <path d="M460,200 L460,260" marker-end="url(#arrow)"/>
+    <!-- ES2: S2 -> N2 -->
+    <path d="M280,270 L360,270" marker-end="url(#arrow)"/>
+    <!-- E3: N2 -> N3 (Not suspicious) -->
+    <path d="M360,290 L140,290 A8,8 0 0 0 132,298 L132,392 A8,8 0 0 0 140,400" marker-end="url(#arrow)"/>
+    <!-- E4: N2 -> N5 (Suspicious) -->
+    <path d="M460,340 L460,400" marker-end="url(#arrow)"/>
+    <!-- E5: N2 -> N4 (Under monitoring) -->
+    <path d="M560,290 L780,290 A0,0 0 0 1 780,290 L780,400" marker-end="url(#arrow)"/>
+    <!-- E6: N2 -> N13 (Return to Maker) -->
+    <path d="M360,310 L120,310 L120,540" marker-end="url(#arrow)"/>
+    <!-- E7: N13 -> N2 (Add Info -> resume B2) -->
+    <path d="M160,540 L160,330 L360,330" marker-end="url(#arrow)"/>
+    <!-- ES3: S3 -> N5 -->
+    <path d="M620,400 L560,400" marker-end="url(#arrow)"/>
+    <!-- E8: N5 -> N6 -->
+    <path d="M460,480 L460,540" marker-end="url(#arrow)"/>
+    <!-- E9: N5 -> N10 (AML bypass) -->
+    <path d="M560,420 L900,420 L900,980 L560,980" marker-end="url(#arrow)" stroke="#2e5aa8"/>
+    <!-- E10: N6 -> N8 -->
+    <path d="M460,620 L460,680" marker-end="url(#arrow)"/>
+    <!-- E11: N6 -> N7 (Close & Reject) -->
+    <path d="M400,620 L400,660 L140,660 L140,680" marker-end="url(#arrow)"/>
+    <!-- E12: N6 -> N13 (Return to Maker) -->
+    <path d="M360,560 L240,560" marker-end="url(#arrow)"/>
+    <!-- E13: N13 -> N6 (Add Info -> resume B4) -->
+    <path d="M240,580 L360,580" marker-end="url(#arrow)"/>
+    <!-- E14: N8 -> N9 -->
+    <path d="M460,760 L460,820" marker-end="url(#arrow)"/>
+    <!-- E15: N8 -> N7 (Close & Reject) -->
+    <path d="M360,700 L240,700" marker-end="url(#arrow)"/>
+    <!-- E16: N8 -> N13 (Return to Maker) -->
+    <path d="M420,680 L420,630 L140,630 L140,620" marker-end="url(#arrow)"/>
+    <!-- E17: N9 -> N10 -->
+    <path d="M440,900 L440,960" marker-end="url(#arrow)"/>
+    <!-- E18: N10 -> N9 (Return to Maker, AML-manual) -->
+    <path d="M480,960 L480,900" marker-end="url(#arrow)" stroke="#2e5aa8"/>
+    <!-- E19: N10 -> N11 -->
+    <path d="M360,1000 L140,1000 L140,1100" marker-end="url(#arrow)"/>
+  </g>
+  <!-- E20: N10 -> N12 (accent, focal) -->
+  <path d="M560,1020 L780,1020 L780,1100" fill="none" stroke="#eb6c36" stroke-width="1.4" marker-end="url(#arrow-accent)"/>
+
+  <!-- ============ ARROW LABELS ============ -->
+  <g font-family="'Geist Mono', monospace" font-size="8" letter-spacing="0.04em">
+    <rect x="424" y="98" width="72" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="460" y="107" fill="#7a8399" text-anchor="middle">AUTO: HIT</text>
+
+    <rect x="404" y="218" width="112" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="460" y="227" fill="#4f5d75" text-anchor="middle">RECOMMEND *</text>
+
+    <rect x="290" y="262" width="60" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="320" y="271" fill="#4f5d75" text-anchor="middle">CREATE CASE</text>
+
+    <rect x="184" y="278" width="90" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="229" y="287" fill="#4f5d75" text-anchor="middle">NOT SUSPICIOUS</text>
+
+    <rect x="424" y="358" width="72" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="460" y="367" fill="#4f5d75" text-anchor="middle">SUSPICIOUS</text>
+
+    <rect x="614" y="278" width="112" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="670" y="287" fill="#4f5d75" text-anchor="middle">UNDER MONITORING</text>
+
+    <rect x="182" y="298" width="96" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="230" y="307" fill="#4f5d75" text-anchor="middle">RETURN TO MAKER</text>
+
+    <rect x="204" y="318" width="98" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="253" y="327" fill="#4f5d75" text-anchor="middle">ADD INFO → B2</text>
+
+    <rect x="580" y="382" width="60" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="610" y="391" fill="#4f5d75" text-anchor="middle">CREATE CASE</text>
+
+    <rect x="392" y="498" width="136" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="460" y="507" fill="#4f5d75" text-anchor="middle">CREATE STR (DVKH)</text>
+
+    <rect x="700" y="414" width="140" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="770" y="423" fill="#2e5aa8" text-anchor="middle">CREATE STR (AML)</text>
+
+    <rect x="380" y="638" width="160" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="460" y="647" fill="#4f5d75" text-anchor="middle">CHECKER APPROVE STR</text>
+
+    <rect x="180" y="638" width="98" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="229" y="647" fill="#4f5d75" text-anchor="middle">CLOSE &amp; REJECT</text>
+
+    <rect x="252" y="554" width="96" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="300" y="563" fill="#4f5d75" text-anchor="middle">RETURN TO MAKER</text>
+
+    <rect x="252" y="574" width="98" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="300" y="583" fill="#4f5d75" text-anchor="middle">ADD INFO → B4</text>
+
+    <rect x="392" y="778" width="146" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="465" y="787" fill="#4f5d75" text-anchor="middle">SUPERVISOR APPROVE</text>
+
+    <rect x="252" y="694" width="98" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="300" y="703" fill="#4f5d75" text-anchor="middle">CLOSE &amp; REJECT</text>
+
+    <rect x="184" y="608" width="98" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="233" y="617" fill="#4f5d75" text-anchor="middle">RETURN TO MAKER</text>
+
+    <rect x="404" y="918" width="150" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="479" y="927" fill="#4f5d75" text-anchor="middle">RECOMMEND ± SEND</text>
+
+    <rect x="486" y="928" width="98" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="535" y="937" fill="#2e5aa8" text-anchor="middle">RETURN (AML)</text>
+
+    <rect x="184" y="978" width="132" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="250" y="987" fill="#4f5d75" text-anchor="middle">CLOSE &amp; NOT SEND</text>
+
+    <rect x="702" y="998" width="134" height="12" rx="2" fill="#f5f5f5"/>
+    <text x="769" y="1007" fill="#eb6c36" text-anchor="middle">APPROVE SEND STR</text>
+  </g>
+
+  <!-- Start dots -->
+  <circle cx="460" cy="86" r="6" fill="#2d3142"/>
+  <circle cx="280" cy="270" r="6" fill="#2d3142"/>
+  <circle cx="620" cy="400" r="6" fill="#2d3142"/>
+  <g font-family="'Geist Mono', monospace" font-size="8" fill="#7a8399" letter-spacing="0.04em">
+    <text x="460" y="72" text-anchor="middle">AUTO (KỊCH BẢN HIT)</text>
+    <text x="280" y="256" text-anchor="middle">DVKH THỦ CÔNG</text>
+    <text x="700" y="386" text-anchor="middle">AML THỦ CÔNG</text>
+  </g>
+
+  <!-- ============ NODES ============ -->
+  <!-- helper visual language: left 4px role bar; dashed = transient hub; accent = focal end state -->
+
+  <!-- N1 New -->
+  <rect x="360" y="120" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="360" y="120" width="200" height="80" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="360" y="120" width="4" height="80" fill="#7a8399"/>
+  <text x="460" y="166" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">New</text>
+  <text x="460" y="182" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">SYSTEM</text>
+
+  <!-- N2 Pending Checker Review -->
+  <rect x="360" y="260" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="360" y="260" width="200" height="80" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="360" y="260" width="4" height="80" fill="#4f5d75"/>
+  <text x="460" y="298" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Pending Checker</text>
+  <text x="460" y="313" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Review</text>
+  <text x="460" y="328" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">DVKH CHECKER</text>
+
+  <!-- N3 Closed - No Further Action [end] -->
+  <rect x="40" y="400" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="40" y="400" width="200" height="80" rx="8" fill="rgba(45,49,66,0.05)" stroke="#2d3142" stroke-width="1.4"/>
+  <text x="140" y="438" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Closed – No</text>
+  <text x="140" y="453" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Further Action</text>
+  <text x="140" y="468" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">END STATE</text>
+
+  <!-- N5 Pending Generate STR -->
+  <rect x="360" y="400" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="360" y="400" width="200" height="80" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="360" y="400" width="4" height="80" fill="#4f5d75"/>
+  <text x="460" y="438" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Pending Generate</text>
+  <text x="460" y="453" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">STR</text>
+  <text x="460" y="468" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">DVKH / AML MAKER</text>
+
+  <!-- N4 Closed - Under Monitoring [end] -->
+  <rect x="680" y="400" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="680" y="400" width="200" height="80" rx="8" fill="rgba(45,49,66,0.05)" stroke="#2d3142" stroke-width="1.4"/>
+  <text x="780" y="438" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Closed – Under</text>
+  <text x="780" y="453" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Monitoring</text>
+  <text x="780" y="468" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">END STATE</text>
+
+  <!-- N13 Pending Maker (hub, dashed) -->
+  <rect x="40" y="540" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="40" y="540" width="200" height="80" rx="8" fill="rgba(79,93,117,0.08)" stroke="#7a8399" stroke-width="1.2" stroke-dasharray="4,3"/>
+  <text x="140" y="586" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Pending Maker</text>
+  <text x="140" y="601" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">RESUME HUB</text>
+
+  <!-- N6 Pending Checker Review STR -->
+  <rect x="360" y="540" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="360" y="540" width="200" height="80" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="360" y="540" width="4" height="80" fill="#4f5d75"/>
+  <text x="460" y="578" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Pending Checker</text>
+  <text x="460" y="593" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Review STR</text>
+  <text x="460" y="608" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">DVKH CHECKER</text>
+
+  <!-- N7 Rejected sending STR [end] -->
+  <rect x="40" y="680" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="40" y="680" width="200" height="80" rx="8" fill="rgba(45,49,66,0.05)" stroke="#2d3142" stroke-width="1.4"/>
+  <text x="140" y="718" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Rejected sending</text>
+  <text x="140" y="733" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">STR</text>
+  <text x="140" y="748" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">END STATE</text>
+
+  <!-- N8 Pending Supervisor Review -->
+  <rect x="360" y="680" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="360" y="680" width="200" height="80" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="360" y="680" width="4" height="80" fill="#2d3142"/>
+  <text x="460" y="718" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Pending Supervisor</text>
+  <text x="460" y="733" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Review</text>
+  <text x="460" y="748" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">CHECKER N+1</text>
+
+  <!-- N9 Pending AML Maker -->
+  <rect x="360" y="820" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="360" y="820" width="200" height="80" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="360" y="820" width="4" height="80" fill="#2e5aa8"/>
+  <text x="460" y="858" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Pending AML</text>
+  <text x="460" y="873" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Maker</text>
+  <text x="460" y="888" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">AML MAKER</text>
+
+  <!-- N10 Pending AML Checker review -->
+  <rect x="360" y="960" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="360" y="960" width="200" height="80" rx="8" fill="#ffffff" stroke="#2d3142" stroke-width="1"/>
+  <rect x="360" y="960" width="4" height="80" fill="#2e5aa8"/>
+  <text x="460" y="998" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Pending AML</text>
+  <text x="460" y="1013" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Checker review</text>
+  <text x="460" y="1028" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">AML CHECKER</text>
+
+  <!-- N11 Closed - Not Send STR [end] -->
+  <rect x="40" y="1100" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="40" y="1100" width="200" height="80" rx="8" fill="rgba(45,49,66,0.05)" stroke="#2d3142" stroke-width="1.4"/>
+  <text x="140" y="1138" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Closed – Not</text>
+  <text x="140" y="1153" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Send STR</text>
+  <text x="140" y="1168" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#7a8399" letter-spacing="0.06em">END STATE</text>
+
+  <!-- N12 Approved STR [end, focal] -->
+  <rect x="680" y="1100" width="200" height="80" rx="8" fill="#f5f5f5"/>
+  <rect x="680" y="1100" width="200" height="80" rx="8" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.6"/>
+  <text x="780" y="1138" text-anchor="middle" font-family="'Geist',sans-serif" font-size="12" font-weight="600" fill="#2d3142">Approved STR</text>
+  <text x="780" y="1153" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#eb6c36" letter-spacing="0.06em">END STATE · RR-025</text>
+  <text x="780" y="1166" text-anchor="middle" font-family="'Geist Mono',monospace" font-size="8" fill="#eb6c36" letter-spacing="0.06em">compliance-critical</text>
+
+  <!-- ============ LEGEND ============ -->
+  <line x1="30" y1="1224" x2="970" y2="1224" stroke="rgba(45,49,66,0.10)" stroke-width="0.8"/>
+  <text x="30" y="1244" fill="#4f5d75" font-size="8" font-family="'Geist Mono', monospace" letter-spacing="0.14em">LEGEND</text>
+
+  <rect x="30" y="1256" width="12" height="12" rx="2" fill="#ffffff" stroke="#2d3142"/>
+  <text x="50" y="1266" font-family="'Geist',sans-serif" font-size="10" fill="#2d3142">Trạng thái xử lý (màu vạch trái = vai trò)</text>
+
+  <rect x="330" y="1256" width="12" height="12" rx="2" fill="rgba(45,49,66,0.05)" stroke="#2d3142" stroke-width="1.4"/>
+  <text x="350" y="1266" font-family="'Geist',sans-serif" font-size="10" fill="#2d3142">Trạng thái kết thúc (end)</text>
+
+  <rect x="560" y="1256" width="12" height="12" rx="2" fill="rgba(79,93,117,0.08)" stroke="#7a8399" stroke-dasharray="3,2"/>
+  <text x="580" y="1266" font-family="'Geist',sans-serif" font-size="10" fill="#2d3142">Pending Maker (hub tạm, chờ resume)</text>
+
+  <line x1="850" y1="1262" x2="880" y2="1262" stroke="#2e5aa8" stroke-width="1.4"/>
+  <text x="890" y="1266" font-family="'Geist',sans-serif" font-size="10" fill="#2d3142">Nhánh AML thủ công</text>
+
+  <rect x="30" y="1278" width="12" height="12" rx="2" fill="rgba(235,108,54,0.08)" stroke="#eb6c36" stroke-width="1.4"/>
+  <text x="50" y="1288" font-family="'Geist',sans-serif" font-size="10" fill="#2d3142">Focal / compliance-critical</text>
+
+  <circle cx="336" cy="1284" r="5" fill="#2d3142"/>
+  <text x="350" y="1288" font-family="'Geist',sans-serif" font-size="10" fill="#2d3142">Điểm khởi tạo (3 nguồn: Auto / DVKH / AML)</text>
+</svg>
+</div>
+
+<div class="aside">Sơ đồ có mật độ cao theo chủ đích — đây là tài liệu tham chiếu kỹ thuật cho State Transition Testing (Bước 5 AI-RBT), không phải diagram trình bày cấp điều hành, nên ưu tiên đầy đủ transition hơn tối giản hình ảnh.</div>
+
+<div class="cards">
+  <div class="card">
+    <p class="card-eyebrow">Ghi chú kỹ thuật</p>
+    <h3>"Pending Maker" là 2 điểm resume khác nhau</h3>
+    <ul>
+      <li>Return từ <em>Pending Checker Review</em> → Add Info → quay lại <strong>chính nó</strong> (resume Bước 2/Recommend).</li>
+      <li>Return từ <em>Pending Checker Review STR / Pending Supervisor Review</em> → Add Info → quay lại <strong>Pending Checker Review STR</strong> (resume Bước 4/tạo lại STR) — không quay lại Bước 2.</li>
+      <li>Return từ nhánh AML (<em>Pending AML Checker review</em>) đi tới trạng thái <strong>Pending AML Maker</strong> riêng, không dùng chung hub "Pending Maker".</li>
+    </ul>
+  </div>
+  <div class="card">
+    <p class="card-eyebrow">Chưa vẽ do thiếu dữ liệu</p>
+    <h3>Re-open case (dashed, 8 cạnh tiềm năng)</h3>
+    <ul>
+      <li>Cả 5 end-state đều có thể re-open (BRD II.1.3 bước 1).</li>
+      <li>Đích resume phụ thuộc <strong>nguồn gốc case</strong> (hệ thống/DVKH → Pending Maker; AML thủ công → Pending AML Maker) — không vẽ literal để tránh rối, xem ghi chú prose.</li>
+      <li>Xem RR-002/RR-003 (requirements_TM.md) — yêu cầu MSB xác nhận thêm về EDD/STR cũ khi re-open.</li>
+    </ul>
+  </div>
+  <div class="card">
+    <p class="card-eyebrow">Nguồn</p>
+    <h3>Cần xác nhận</h3>
+    <ul>
+      <li>BRD v1.8, mục II.1.1/II.1.2/II.1.3.</li>
+      <li>Bảng trạng thái gốc (mục 8, requirements_TM.md) là tự tổng hợp thủ công — xem RR-009 (thiếu enum Status chính thức).</li>
+    </ul>
+  </div>
+</div>
+
+<p class="colophon">practices/diagram/tm-case-lifecycle-state.html — bản nháp Bước 1 (FULL RBT) — chờ user confirm trước khi dùng cho Bước 2.</p>
