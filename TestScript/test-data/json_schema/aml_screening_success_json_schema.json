@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AML Transaction Screening — response sàng lọc thành công",
+  "description": "Hợp đồng response đầy đủ 12 trường theo cột 'Json có dạng theo format' của bộ TC_AML_TRANSACTION_SCREENING_API 4. Kiểu dữ liệu để nullable vì TC mô tả nhiều trường trả null tuỳ kịch bản; schema chỉ khẳng định SỰ TỒN TẠI của trường trong hợp đồng.",
+  "type": "object",
+  "required": [
+    "result",
+    "transactionType",
+    "score",
+    "groupMessageId",
+    "requestId",
+    "processDate",
+    "channel",
+    "errorCode",
+    "errorDetail",
+    "alertId",
+    "transactionId",
+    "branchCd"
+  ],
+  "properties": {
+    "result": { "type": ["string", "null"] },
+    "transactionType": { "type": ["string", "null"] },
+    "score": { "type": ["string", "number", "null"] },
+    "groupMessageId": { "type": ["string", "null"] },
+    "requestId": { "type": ["string", "null"] },
+    "processDate": { "type": ["string", "null"] },
+    "channel": { "type": ["string", "null"] },
+    "errorCode": { "type": ["string", "null"] },
+    "errorDetail": { "type": ["string", "null"] },
+    "alertId": { "type": ["string", "number", "null"] },
+    "transactionId": { "type": ["string", "null"] },
+    "branchCd": { "type": ["string", "null"] }
+  }
+}

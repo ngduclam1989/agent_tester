@@ -60,7 +60,7 @@ export function loadSchema(relativePath: string): object | null {
 }
 
 /** Tìm giá trị của 1 key trong JSON: hỗ trợ path có dấu chấm hoặc deep-search theo tên key. */
-function findKeyInJson(obj: any, targetKey: string): any {
+export function findKeyInJson(obj: any, targetKey: string): any {
     if (targetKey.includes('.')) {
         return targetKey.split('.').reduce((acc, part) => (acc === null || acc === undefined ? acc : acc[part]), obj);
     }

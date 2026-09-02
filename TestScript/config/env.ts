@@ -36,6 +36,29 @@ export const env = {
     },
 };
 
+/**
+ * Config riêng cho API AML Transaction Screening (MSB).
+ * Tách khỏi `env` ở trên vì suite này dùng Basic Auth + base URL khác, không dùng
+ * luồng login lấy Bearer token. Getter lazy nên suite cũ không bị ép khai báo biến mới.
+ */
+export const amlEnv = {
+    /** Base URL của service transaction-screening (SIT mặc định lấy từ bộ TC). */
+    get baseUrl(): string {
+        return required('AML_BASE_URL');
+    },
+    /**
+     * Giá trị header Authorization dạng Basic.
+     * Ưu tiên AML_AUTH_HEADER (đã gồm prefix "Basic "); nếu không có thì tự dựng
+     * từ AML_USERNAME/AML_PASSWORD để không phải chép chuỗi base64 vào .env.
+     */
+    get basicAuthHeader(): string {
+        const raw = process.env.AML_AUTH_HEADER;
+        if (raw && raw.trim() !== '') return raw.trim();
+        const credentials = `${required('AML_USERNAME')}:${required('AML_PASSWORD')}`;
+        return 'Basic ' + Buffer.from(credentials, 'utf-8').toString('base64');
+    },
+};
+
 /** Ghép base URL với path, chấp nhận path đã là URL tuyệt đối. */
 export function resolveUrl(base: string, pathOrUrl: string): string {
     if (/^https?:\/\//i.test(pathOrUrl)) {

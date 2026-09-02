@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AML Transaction Screening — response lỗi nghiệp vụ (HTTP 200 + errorCode 01/03/05/07/08)",
+  "description": "Bộ TC mô tả response lỗi nghiệp vụ dưới nhiều tập trường khác nhau (6 trường, 5 trường, 3 trường...). Schema chỉ bắt buộc 3 trường có mặt ở MỌI biến thể để tránh FAIL giả; các trường còn lại khai báo optional kèm kiểu.",
+  "type": "object",
+  "required": ["result", "errorCode", "errorDetail"],
+  "properties": {
+    "result": { "type": ["string", "null"] },
+    "errorCode": { "type": ["string", "null"] },
+    "errorDetail": { "type": ["string", "null"] },
+    "score": { "type": ["string", "number", "null"] },
+    "alertId": { "type": ["string", "number", "null"] },
+    "processDate": { "type": ["string", "null"] },
+    "groupMessageId": { "type": ["string", "null"] },
+    "transactionType": { "type": ["string", "null"] },
+    "requestId": { "type": ["string", "null"] },
+    "channel": { "type": ["string", "null"] },
+    "transactionId": { "type": ["string", "null"] },
+    "branchCd": { "type": ["string", "null"] }
+  }
+}

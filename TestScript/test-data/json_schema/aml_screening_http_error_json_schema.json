@@ -1,0 +1,14 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AML Transaction Screening — response lỗi tầng HTTP (400 Bad Request)",
+  "description": "Cấu trúc lỗi framework (Spring Boot) mà TC MSB_AMLSCREEN_TC_057 / TC_059 mô tả khi body rỗng.",
+  "type": "object",
+  "required": ["timestamp", "status", "error", "path"],
+  "properties": {
+    "timestamp": { "type": ["string", "number"] },
+    "status": { "type": ["integer", "string"] },
+    "error": { "type": "string" },
+    "path": { "type": "string" },
+    "message": { "type": ["string", "null"] }
+  }
+}

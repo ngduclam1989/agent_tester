@@ -1,0 +1,130 @@
+================================================================================
+ REQUIREMENT — TestScript (Playwright + TypeScript)
+================================================================================
+ Thư mục TestScript/ là một npm project ĐỘC LẬP: copy riêng nó sang repo khác
+ phải chạy được ngay, không cần sửa gì.
+
+ LƯU Ý: file này chỉ để TRA CỨU. Trình cài đặt thật là package.json —
+ chạy `npm install` sẽ tự cài đúng những thư viện liệt kê dưới đây.
+ Sửa file này KHÔNG làm thay đổi thư viện được cài.
+
+ Cập nhật lần cuối: 2026-09-02
+================================================================================
+
+
+[1] MÔI TRƯỜNG NỀN (cài trước, không qua npm)
+--------------------------------------------------------------------------------
+ Node.js      >= 18.0.0    (đã kiểm chứng trên v24.19.0)
+ npm          >= 9         (đã kiểm chứng trên v11.17.0)
+
+ Tải Node.js: https://nodejs.org  (bản LTS, npm đi kèm sẵn)
+ Kiểm tra:    node -v  &&  npm -v
+
+
+[2] DEPENDENCIES — thư viện chạy test (mục "dependencies")
+--------------------------------------------------------------------------------
+ ajv                 ^8.20.0    Validate JSON Schema cho response API.
+                                Dùng tại: utils/api-function.ts -> validateSchema()
+
+ ajv-formats         ^3.0.1     Bổ sung bộ "format" cho ajv (email, date-time, uri...).
+                                Thiếu gói này thì các format trong schema bị bỏ qua
+                                ÂM THẦM — schema vẫn báo hợp lệ dù dữ liệu sai.
+
+ xlsx                ^0.18.5    Đọc/ghi file Excel test data (data-driven testing).
+                                Dùng tại: utils/excel-reader.ts
+
+
+[3] DEV DEPENDENCIES — công cụ chạy & báo cáo (mục "devDependencies")
+--------------------------------------------------------------------------------
+ @playwright/test    ^1.59.1    Test runner + API request fixture + assertion.
+                                Bản đang dùng: 1.62.1
+
+ @types/node         ^25.6.0    Type definitions cho Node (path, fs, Buffer...).
+                                Chỉ phục vụ IDE/typecheck, không ảnh hưởng lúc chạy.
+
+ dotenv              ^17.2.3    Nạp file .env vào process.env.
+                                Dùng tại: playwright.config.ts (dòng đầu)
+
+ monocart-reporter   ^2.10.1    Reporter MẶC ĐỊNH của project, xuất HTML.
+                                Xem báo cáo: npm run report
+
+ allure-playwright   ^3.7.1     Reporter thay thế, ĐÃ CÀI nhưng KHÔNG bật mặc định.
+                                Chạy kèm: npm run test:api:allure
+                                Muốn render HTML còn cần Allure CLI riêng
+                                (allure-commandline) — CHƯA cài trong project.
+
+ rimraf              ^6.1.3     Xoá thư mục kết quả cũ đa nền tảng.
+                                Dùng tại: npm run clean
+
+
+[4] BROWSER BINARY
+--------------------------------------------------------------------------------
+ Project "api"  (tests/api/)  -> KHÔNG cần tải browser.
+                                 Suite API dùng request fixture, không mở trình duyệt.
+
+ Project "web"  (tests/web/)  -> CẦN tải browser trước khi chạy:
+                                 npx playwright install chromium
+
+ Nếu chỉ chạy API test thì bỏ qua bước tải browser (tiết kiệm ~300MB).
+
+
+[5] FILE CẤU HÌNH BẮT BUỘC TỰ TẠO — .env
+--------------------------------------------------------------------------------
+ File .env nằm trong .gitignore nên KHÔNG theo repo. Sang máy mới phải tạo lại:
+
+     cp .env.example .env      (Windows PowerShell: Copy-Item .env.example .env)
+
+ Rồi điền giá trị thật. Các biến hiện đang được code đọc:
+
+     API_BASE_URL        Bắt buộc — base URL của API sản phẩm (suite product-add)
+     API_LOGIN_PATH      Tuỳ chọn — mặc định /login-with-local
+     API_USERNAME        Bắt buộc — tài khoản login lấy Bearer token
+     API_PASSWORD        Bắt buộc
+     API_LANG            Tuỳ chọn — mặc định VN
+
+     AML_BASE_URL        Bắt buộc — base URL API AML Transaction Screening
+     AML_USERNAME        Bắt buộc — tài khoản Basic Auth
+     AML_PASSWORD        Bắt buộc
+     AML_AUTH_HEADER     Tuỳ chọn — dán thẳng chuỗi "Basic xxx"; có giá trị thì
+                         ghi đè AML_USERNAME/AML_PASSWORD
+
+ Thiếu biến bắt buộc thì test dừng ngay với thông báo rõ tên biến còn thiếu
+ (xem config/env.ts -> hàm required()).
+
+
+[6] CÁC BƯỚC CÀI ĐẶT TỪ ĐẦU
+--------------------------------------------------------------------------------
+ 1. Cài Node.js LTS (>= 18)
+ 2. cd TestScript
+ 3. npm install                     # cài toàn bộ thư viện ở mục [2] và [3]
+ 4. cp .env.example .env            # rồi điền giá trị thật
+ 5. npx playwright install chromium # CHỈ khi cần chạy test web
+ 6. Chạy thử:  npm run test:api
+
+
+[7] LỆNH CHẠY (định nghĩa tại package.json -> scripts)
+--------------------------------------------------------------------------------
+ npm run test               Chạy toàn bộ test (cả api và web)
+ npm run test:api           Chạy toàn bộ suite API
+ npm run test:aml           Chạy riêng suite AML Transaction Screening
+ npm run test:api:ui        Chạy suite API ở chế độ UI mode của Playwright
+ npm run test:api:allure    Chạy suite API kèm ghi kết quả cho Allure
+ npm run test:web           Chạy suite Web ở chế độ headed (có hiện trình duyệt)
+ npm run report             Mở báo cáo monocart (test-results/report.html)
+ npm run clean              Xoá test-results, allure-results, allure-report
+
+ LƯU Ý: KHÔNG dùng `npx playwright show-report` — lệnh đó chỉ mở reporter 'html'
+ của Playwright, mà project này không bật 'html' nên sẽ không có gì để mở.
+
+
+[8] KHÔNG CÓ TRONG PROJECT (nêu rõ để khỏi mất công tìm)
+--------------------------------------------------------------------------------
+ typescript              Không cài riêng. Playwright tự transpile TypeScript nên
+                         KHÔNG chạy được `npx tsc`. Muốn typecheck thật thì phải
+                         tự cài: npm i -D typescript
+
+ allure-commandline      Không cài. Có allure-playwright (sinh kết quả thô) nhưng
+                         chưa có CLI để render ra HTML.
+
+ faker / @faker-js/faker Không cài. Test data random sinh bằng hàm tự viết tại
+                         common/api-common.ts -> generateTraceableToken()

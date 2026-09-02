@@ -7,6 +7,7 @@
     "clean": "rimraf test-results allure-results allure-report",
     "test": "npx playwright test",
     "test:api": "npx playwright test --project=api",
+    "test:aml": "npx playwright test --project=api tests/api/aml-transaction-screening.spec.ts",
     "test:api:ui": "npx playwright test --project=api --ui",
     "test:api:allure": "npx playwright test --project=api --reporter=line,allure-playwright",
     "test:web": "npx playwright test --project=web --headed",
