@@ -11,6 +11,18 @@ export default defineConfig({
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 1 : undefined,
 
+    /**
+     * REPORT — mặc định dùng monocart-reporter (theo setup gốc ở C:\playwright_Demo).
+     *   Xem báo cáo : npm run report        -> npx monocart show-report test-results/report.html
+     *   KHÔNG dùng `npx playwright show-report`: lệnh đó chỉ mở reporter 'html' của Playwright,
+     *   mà cấu hình này không bật 'html' nên sẽ không có gì để mở.
+     *
+     * Allure là lựa chọn thay thế, đã cài sẵn `allure-playwright` nhưng KHÔNG bật mặc định.
+     *   Chạy kèm Allure : npm run test:api:allure   (ghi kết quả thô vào ./allure-results)
+     *   Render HTML     : cần Allure CLI riêng (`allure-commandline`), chưa cài trong project.
+     *
+     * Dọn kết quả cũ trước khi chạy lại: npm run clean (dùng rimraf).
+     */
     reporter: [
         ['list'],
         ['monocart-reporter', {

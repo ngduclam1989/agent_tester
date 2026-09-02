@@ -50,7 +50,7 @@ export function generateTraceableToken(): string {
 
 /** Escape ký tự đặc biệt để dùng chuỗi thường làm pattern RegExp an toàn. */
 function escapeRegExp(value: string): string {
-    return value.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /**

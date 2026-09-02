@@ -1,0 +1,20 @@
+# Thư mục này là npm project độc lập — giữ .gitignore riêng để khi copy sang
+# repo khác vẫn ignore đúng, không phụ thuộc .gitignore ở gốc repo cha.
+
+node_modules/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+playwright/.auth/
+
+# Report (Allure)
+allure-results/
+allure-report/
+
+# Environment & credentials — KHÔNG commit
+.env
+.env.local
+.env.*.local

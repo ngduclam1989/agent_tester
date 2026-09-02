@@ -1,0 +1,19 @@
+{
+  // KHÔNG khai báo "moduleResolution" ở đây.
+  // Giá trị cũ "node" (alias của "node10") đã bị TypeScript gỡ bỏ — TS 6/7 báo lỗi
+  // TS5108 "Option 'moduleResolution=node10' has been removed".
+  // Bỏ trống thì TS tự suy ra đúng cách phân giải module từ "module": "commonjs",
+  // và cho kết quả giống hệt hành vi cũ trên mọi bản TS 5/6/7.
+  // Các giá trị còn lại đều KHÔNG dùng được ở đây: "bundler" đòi module phải là
+  // "preserve"/"es2015"+, còn "node16"/"nodenext" đòi module phải đặt tương ứng.
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true
+  },
+  "include": ["**/*.ts"]
+}

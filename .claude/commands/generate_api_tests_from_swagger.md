@@ -16,6 +16,22 @@ skills:
 > - **Reference:** `.claude/skills/qa_automation_engineer/references/AUTOTEST_REFERENCE_MAP.md` — chọn đúng API references, không load tràn lan
 > - **API References:** `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md`
 
+
+## ⚠️ Nơi lưu code (BẮT BUỘC)
+
+Toàn bộ code Playwright sinh ra **PHẢI** nằm trong `TestScript/` ở gốc repo. Thư mục này là một
+npm project độc lập — copy riêng nó sang repo khác phải chạy được ngay, không cần sửa gì.
+
+- Spec API → `TestScript/tests/api/` · Spec Web → `TestScript/tests/web/`
+- Page Object → `TestScript/pages/` · Helper dùng chung → `TestScript/common/`, `TestScript/utils/`
+- Test data → `TestScript/test-data/` · Config + credentials → `TestScript/config/env.ts` và `TestScript/.env`
+
+**TUYỆT ĐỐI KHÔNG** tạo `package.json` / `playwright.config.ts` / `tests/` ở gốc repo, không import
+vượt ra ngoài `TestScript/`, và luôn neo đường dẫn file bằng `__dirname` thay cho `process.cwd()`.
+Mọi lệnh chạy từ bên trong thư mục: `cd TestScript && npm install`, `cd TestScript && npm run test:api`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác định các endpoints, sinh API test cases có cấu trúc, và (tùy mode) tự động sinh automation scripts hoàn chỉnh.
 
 ## ⚠️ Nguyên tắc thực thi
@@ -206,16 +222,20 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 1. **Thiết kế project structure:**
 
    ```
-   tests/
-   ├── api/
-   │   ├── helpers/
-   │   │   ├── base-api.ts     # Base request context, auth
-   │   │   ├── user-api.ts     # API methods per resource
-   │   │   └── test-data.ts    # Data generators
-   │   ├── user.api.spec.ts    # Test file per resource
-   │   └── auth.api.spec.ts
-   └── fixtures/
-       └── api-fixtures.ts     # Shared fixtures (auth tokens, etc.)
+   TestScript/
+   ├── tests/
+   │   ├── api/
+   │   │   ├── user.api.spec.ts    # Test file per resource
+   │   │   └── auth.api.spec.ts
+   │   └── fixtures/
+   │       └── api-fixtures.ts     # Shared fixtures (auth tokens, etc.)
+   ├── common/
+   │   └── base-api.ts             # Base request context, auth
+   ├── utils/
+   │   └── api-function.ts         # Validate status/schema/JSON node
+   ├── config/
+   │   └── env.ts                  # Base URL + credentials từ .env
+   └── test-data/                  # Excel, JSON schema, fixtures
    ```
 
 2. **Sinh code** theo thứ tự:
@@ -247,7 +267,7 @@ Workflow này giúp agent phân tích Swagger/OpenAPI specification, xác địn
 
 1. **Chạy test** bằng `Bash`:
    ```bash
-   npx playwright test tests/api/
+   cd TestScript && npx playwright test tests/api/
    ```
 
 2. **Theo dõi** kết quả qua output trả về của `Bash`:

@@ -107,6 +107,19 @@ After fixing a flaky test, verify:
 
 ---
 
+## ⚠️ Nơi lưu code (BẮT BUỘC)
+
+Mọi file code sinh ra hoặc chỉnh sửa đều nằm trong `TestScript/` ở gốc repo:
+Page Object → `TestScript/pages/`, spec → `TestScript/tests/api/` và `TestScript/tests/web/`,
+helper dùng chung → `TestScript/common/` và `TestScript/utils/`, test data → `TestScript/test-data/`.
+
+KHÔNG tạo file code ở gốc repo, KHÔNG import vượt ra ngoài `TestScript/`, và luôn neo đường dẫn
+file bằng `__dirname` thay cho `process.cwd()`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
+---
+
 ## Rules References
 
 The agent MUST follow these rules when analyzing flaky tests:

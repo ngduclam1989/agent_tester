@@ -19,6 +19,22 @@ skills:
 > - **Reference:** `.claude/skills/qa_automation_engineer/references/AUTOTEST_HANDOFF_CONTRACT.md`
 > - **Reference:** `.claude/skills/qa_automation_engineer/references/AUTOTEST_REFERENCE_MAP.md`
 
+
+## ⚠️ Nơi lưu code (BẮT BUỘC)
+
+Toàn bộ code Playwright sinh ra **PHẢI** nằm trong `TestScript/` ở gốc repo. Thư mục này là một
+npm project độc lập — copy riêng nó sang repo khác phải chạy được ngay, không cần sửa gì.
+
+- Spec API → `TestScript/tests/api/` · Spec Web → `TestScript/tests/web/`
+- Page Object → `TestScript/pages/` · Helper dùng chung → `TestScript/common/`, `TestScript/utils/`
+- Test data → `TestScript/test-data/` · Config + credentials → `TestScript/config/env.ts` và `TestScript/.env`
+
+**TUYỆT ĐỐI KHÔNG** tạo `package.json` / `playwright.config.ts` / `tests/` ở gốc repo, không import
+vượt ra ngoài `TestScript/`, và luôn neo đường dẫn file bằng `__dirname` thay cho `process.cwd()`.
+Mọi lệnh chạy từ bên trong thư mục: `cd TestScript && npm install`, `cd TestScript && npm run test:api`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 Workflow này giúp agent **thực thi trực tiếp** một chuỗi thao tác UI trên browser thật, thu thập locators từ DOM thực tế, và sinh automation scripts hoàn chỉnh — tất cả trong một luồng tự động, không cần manual test case có sẵn.
 
 ## ⚠️ Nguyên tắc thực thi

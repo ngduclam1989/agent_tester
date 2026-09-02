@@ -37,6 +37,18 @@
           }
         ]
       }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/inject_playwright_default.js",
+            "timeout": 10,
+            "statusMessage": "Nhắc stack automation mặc định (Playwright + TypeScript)..."
+          }
+        ]
+      }
     ]
   }
 }

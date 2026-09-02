@@ -10,6 +10,18 @@ skills:
 
 > **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`flaky_test_analyzer`** (tại `.claude/skills/flaky_test_analyzer/SKILL.md`) trước khi bắt đầu. Ngoài ra, tham khảo thêm skill **`smart_locator_agent`** và **`locator_healer_agent`** khi cần sửa/thay locator.
 
+
+## ⚠️ Nơi lưu code (BẮT BUỘC)
+
+Mọi file code sinh ra hoặc chỉnh sửa đều nằm trong `TestScript/` ở gốc repo:
+Page Object → `TestScript/pages/`, spec → `TestScript/tests/api/` và `TestScript/tests/web/`,
+helper dùng chung → `TestScript/common/` và `TestScript/utils/`, test data → `TestScript/test-data/`.
+
+KHÔNG tạo file code ở gốc repo, KHÔNG import vượt ra ngoài `TestScript/`, luôn neo đường dẫn file
+bằng `__dirname` thay cho `process.cwd()`. Mọi lệnh chạy từ bên trong: `cd TestScript && npm run test:api`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 Workflow này giúp agent tự động phân tích các automation test không ổn định (lúc pass lúc fail), xác định root cause chính xác, và (tùy mode) tự động sửa code để stabilize test.
 
 ## ⚠️ Nguyên tắc thực thi

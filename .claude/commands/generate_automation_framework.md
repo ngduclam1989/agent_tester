@@ -10,6 +10,22 @@ skills:
 > **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`framework_architect`** (tại `.claude/skills/framework_architect/SKILL.md`) trước khi bắt đầu. Ngoài ra, tham khảo thêm skill **`qa_automation_engineer`** để nắm các quy tắc automation chung.
 > Với framework có API/hybrid/regression layer, đọc thêm `.claude/skills/qa_automation_engineer/references/AUTOTEST_REFERENCE_MAP.md` để chọn reference tối thiểu theo stack.
 
+
+## ⚠️ Nơi lưu code (BẮT BUỘC)
+
+Toàn bộ code Playwright sinh ra **PHẢI** nằm trong `TestScript/` ở gốc repo. Thư mục này là một
+npm project độc lập — copy riêng nó sang repo khác phải chạy được ngay, không cần sửa gì.
+
+- Spec API → `TestScript/tests/api/` · Spec Web → `TestScript/tests/web/`
+- Page Object → `TestScript/pages/` · Helper dùng chung → `TestScript/common/`, `TestScript/utils/`
+- Test data → `TestScript/test-data/` · Config + credentials → `TestScript/config/env.ts` và `TestScript/.env`
+
+**TUYỆT ĐỐI KHÔNG** tạo `package.json` / `playwright.config.ts` / `tests/` ở gốc repo, không import
+vượt ra ngoài `TestScript/`, và luôn neo đường dẫn file bằng `__dirname` thay cho `process.cwd()`.
+Mọi lệnh chạy từ bên trong thư mục: `cd TestScript && npm install`, `cd TestScript && npm run test:api`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 Workflow này giúp agent thiết kế, scaffold và triển khai một automation framework hoàn chỉnh từ đầu, phù hợp với nhu cầu cụ thể của project.
 
 ## ⚠️ Nguyên tắc thực thi
@@ -23,8 +39,8 @@ Workflow này giúp agent thiết kế, scaffold và triển khai một automati
 
 | Platform | Stack | Ngôn ngữ | Runner | Report |
 |---|---|---|---|---|
-| 🌐 Web | Playwright | TypeScript | Playwright Test | HTML Report, Allure |
-| 🔌 API | Playwright API | TypeScript | Playwright Test | HTML Report |
+| 🌐 Web | Playwright | TypeScript | Playwright Test | monocart-reporter (mặc định), Allure (tuỳ chọn) |
+| 🔌 API | Playwright API | TypeScript | Playwright Test | monocart-reporter (mặc định), Allure (tuỳ chọn) |
 
 ## Các bước thực hiện
 
@@ -37,7 +53,7 @@ Workflow này giúp agent thiết kế, scaffold và triển khai một automati
    | Ứng dụng cần test là gì? (Web / API / Hybrid) | Chọn scope | Web |
    | Project name? | Đặt tên thư mục | `automation-framework` |
    | Có cần CI/CD pipeline không? | Sinh pipeline config | Có (GitHub Actions) |
-   | Reporting tool? | Tích hợp report | HTML Report + Allure |
+   | Reporting tool? | Tích hợp report | monocart-reporter (mặc định) + Allure (tuỳ chọn) |
    | Có test API song song không? | Thêm API testing layer | Không |
    | Parallel execution? | Config parallel | Không |
 
@@ -48,7 +64,7 @@ Workflow này giúp agent thiết kế, scaffold và triển khai một automati
    - Framework: Playwright
    - Language: TypeScript
    - Runner: Playwright Test
-   - Report: HTML Report + Allure
+   - Report: monocart-reporter (mặc định) + Allure (tuỳ chọn)
    - CI/CD: GitHub Actions
    - Project name: my-automation
    
@@ -131,8 +147,14 @@ Workflow này giúp agent thiết kế, scaffold và triển khai một automati
 
 ### Bước 5: Cấu hình Reporting & CI/CD (Integration Layer)
 
-1. **Reporting setup:** HTML Report + Allure — cấu hình `reporter` trong `playwright.config.ts`
-   - Screenshot auto-attach on failure
+1. **Reporting setup:** `monocart-reporter` là reporter mặc định trong `playwright.config.ts`
+   (xuất `TestScript/test-results/report.html`, xem bằng `cd TestScript && npm run report`).
+   - **KHÔNG dùng `npx playwright show-report`** — config không bật reporter `html` nên lệnh đó
+     không mở được gì; cũng không đưa lệnh này vào npm script.
+   - Allure là tuỳ chọn, bật qua CLI override `npm run test:api:allure`, KHÔNG thêm vào mảng
+     `reporter` mặc định. Render HTML cần Allure CLI riêng (`allure-commandline`), chưa cài sẵn.
+   - `npm run clean` (rimraf) để dọn `test-results/`, `allure-results/`, `allure-report/`
+   - Screenshot auto-attach on failure; đính request/response bằng `testInfo.attach()`
    - Test step logging trong report
 
 2. **CI/CD Pipeline** (nếu user yêu cầu):

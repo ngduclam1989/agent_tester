@@ -15,6 +15,22 @@ skills:
 > - **Skill:** `.claude/skills/ui_debug_agent/SKILL.md` — Inspect DOM khi chạy browser
 > - **Workflow:** `.claude/commands/generate_cross_module_test_plan.md` — Hiểu cấu trúc ma trận đầu vào
 
+
+## ⚠️ Nơi lưu test data (BẮT BUỘC)
+
+Test data xuất ra dạng **file** (`.ts`, `.json`, `.csv`, `.xlsx`) PHẢI nằm trong
+`TestScript/test-data/` ở gốc repo:
+
+- Data dạng code (TypeScript) → `TestScript/test-data/<module>.data.ts`
+- File Excel cho test data-driven → `TestScript/test-data/data/`
+- JSON Schema dùng validate response → `TestScript/test-data/json_schema/`
+
+`TestScript/` là npm project độc lập — copy riêng thư mục đó sang repo khác phải chạy được ngay.
+Vì vậy data phải nằm **bên trong** nó, và code đọc data phải neo đường dẫn bằng `__dirname`,
+TUYỆT ĐỐI KHÔNG dùng `process.cwd()`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 ---
 
 ## Mối quan hệ với các workflows khác
@@ -250,7 +266,7 @@ Tạo artifact file(s) theo format user yêu cầu:
 
 **Code (TypeScript example):**
 ```typescript
-// test-data/payment-record.data.ts
+// TestScript/test-data/payment-record.data.ts
 export const combinatorialData = [
   {
     id: 'COMBO_01',

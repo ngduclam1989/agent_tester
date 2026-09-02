@@ -13,7 +13,7 @@ Agent có thể:
 
 - Thiết kế project structure theo best practices
 - Sinh base classes, config management, browser management
-- Tích hợp reporting (Playwright HTML Report, Allure)
+- Tích hợp reporting (`monocart-reporter` mặc định, `allure-playwright` tuỳ chọn)
 - Cấu hình CI/CD pipeline (GitHub Actions, GitLab CI, Jenkins)
 - Sinh template Page Object Model, fixtures, helpers
 - Tạo file cấu hình (package.json, playwright.config.ts)
@@ -38,8 +38,8 @@ Trigger keywords: "create framework", "design framework", "scaffold project", "t
 
 | Stack | Ngôn ngữ | Runner | Report | Build Tool |
 |---|---|---|---|---|
-| **Playwright + TypeScript** (Web UI) | TypeScript | Playwright Test | HTML Report, Allure | npm |
-| **Playwright API** (API testing) | TypeScript | Playwright Test | HTML Report | npm |
+| **Playwright + TypeScript** (Web UI) | TypeScript | Playwright Test | monocart-reporter (mặc định), Allure (tuỳ chọn) | npm |
+| **Playwright API** (API testing) | TypeScript | Playwright Test | monocart-reporter (mặc định), Allure (tuỳ chọn) | npm |
 
 ---
 
@@ -83,9 +83,20 @@ Mỗi framework PHẢI bao gồm các thành phần sau (tùy chỉnh theo stack
 - Date/Time helpers, String generators
 
 ### 8. Reporting (Mandatory)
-- Tích hợp ít nhất 1 reporting tool
-- Screenshot attach on failure
-- Test execution summary (pass/fail/skip counts)
+
+Stack report đã chốt cho project này, KHÔNG tự đổi sang tool khác:
+
+- **Mặc định: `monocart-reporter`** → `TestScript/test-results/report.html`.
+  Xem báo cáo bằng `cd TestScript && npm run report`.
+- **TUYỆT ĐỐI KHÔNG dùng `npx playwright show-report`** — lệnh đó chỉ mở reporter `html`
+  có sẵn của Playwright, mà config này không bật `html` nên sẽ không có gì để mở.
+- **Tuỳ chọn: `allure-playwright`** — bật qua CLI override trong `npm run test:api:allure`,
+  ghi JSON thô vào `TestScript/allure-results/`. Render ra HTML cần Allure CLI riêng
+  (`allure-commandline`), hiện chưa cài trong project.
+- **Dọn kết quả cũ:** `npm run clean` (dùng `rimraf`) trước mỗi lần chạy full.
+- Screenshot attach on failure; đính request/response bằng `testInfo.attach()`, KHÔNG `console.log`.
+- Test execution summary (pass/fail/skip counts).
+- `test-results/`, `allure-results/`, `allure-report/` đều đã gitignore — không commit.
 
 ### 9. CI/CD Pipeline (Optional — nhưng khuyến khích)
 - GitHub Actions / GitLab CI / Jenkins pipeline template
@@ -98,36 +109,42 @@ Mỗi framework PHẢI bao gồm các thành phần sau (tùy chỉnh theo stack
 
 ### Playwright + TypeScript
 
+> **BẮT BUỘC:** scaffold vào thư mục `TestScript/` ở gốc repo, KHÔNG scaffold ra gốc repo.
+> `TestScript/` là một npm project độc lập — copy riêng nó sang repo khác phải chạy được ngay.
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 ```
-project-root/
-├── playwright.config.ts        # Playwright configuration
+TestScript/                     # Gốc npm project (mọi lệnh npm/playwright chạy từ đây)
+├── playwright.config.ts        # Playwright configuration (projects: api / web)
 ├── package.json                # Dependencies + scripts
+├── tsconfig.json               # TypeScript config
+├── .env                        # Credentials thật — gitignored, KHÔNG commit
 ├── .env.example                # Environment template
 ├── .gitignore
-├── README.md
-├── src/
-│   ├── pages/                  # Page Object classes
-│   │   ├── base.page.ts        # Base page (common methods)
-│   │   ├── login.page.ts
-│   │   └── dashboard.page.ts
-│   ├── fixtures/               # Custom fixtures
-│   │   ├── auth.fixture.ts     # Authentication fixture
-│   │   └── base.fixture.ts     # Extended test with all fixtures
-│   ├── utils/                  # Helpers & utilities
-│   │   ├── test-data.ts        # Data generators
-│   │   ├── env.config.ts       # Environment config reader
-│   │   └── helpers.ts          # Common helper functions
-│   └── tests/                  # Test specs
-│       ├── auth/
-│       │   └── login.spec.ts
-│       └── dashboard/
-│           └── dashboard.spec.ts
-├── test-data/                  # External test data (JSON/YAML)
-│   └── users.json
-└── .github/
-    └── workflows/
-        └── playwright.yml      # CI pipeline
+├── config/
+│   └── env.ts                  # Đọc biến môi trường + resolveUrl (không hardcode URL/credentials)
+├── common/                     # Login, tạo header, sinh data random traceable
+│   ├── api-common.ts
+│   └── ui-common.ts
+├── pages/                      # Page Object classes
+│   ├── base.page.ts            # Base page (common methods)
+│   └── login.page.ts
+├── utils/                      # Helpers & utilities
+│   ├── api-function.ts         # Validate status code / JSON schema / JSON node
+│   └── excel-reader.ts         # Đọc test data từ Excel
+├── tests/
+│   ├── api/
+│   │   └── product-add.spec.ts # Test specs API
+│   ├── web/
+│   │   └── login.spec.ts       # Test specs UI
+│   └── fixtures/               # Custom fixtures (auth token, base test mở rộng)
+└── test-data/
+    ├── data/                   # File Excel cho test data-driven
+    └── json_schema/            # JSON Schema dùng validate response
 ```
+
+CI pipeline (`.github/workflows/playwright.yml`) đặt ở gốc repo và phải `cd TestScript` trước
+khi chạy `npm ci` / `npx playwright test`.
 
 ---
 

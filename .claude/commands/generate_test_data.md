@@ -14,6 +14,22 @@ skills:
 > - **Skill:** `.claude/skills/test_data_generator/SKILL.md` — Quy tắc sinh data
 > - **Rule:** `.claude/rules/automation_rules.md` — Section Test Data
 
+
+## ⚠️ Nơi lưu test data (BẮT BUỘC)
+
+Test data xuất ra dạng **file** (`.ts`, `.json`, `.csv`, `.xlsx`) PHẢI nằm trong
+`TestScript/test-data/` ở gốc repo:
+
+- Data dạng code (TypeScript) → `TestScript/test-data/<module>.data.ts`
+- File Excel cho test data-driven → `TestScript/test-data/data/`
+- JSON Schema dùng validate response → `TestScript/test-data/json_schema/`
+
+`TestScript/` là npm project độc lập — copy riêng thư mục đó sang repo khác phải chạy được ngay.
+Vì vậy data phải nằm **bên trong** nó, và code đọc data phải neo đường dẫn bằng `__dirname`,
+TUYỆT ĐỐI KHÔNG dùng `process.cwd()`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 ---
 
 ## Input cần từ User
@@ -207,7 +223,7 @@ Trả kết quả theo format User yêu cầu (mặc định: JSON):
 #### Format Code (TypeScript example)
 
 ```typescript
-// test-data/registration.data.ts
+// TestScript/test-data/registration.data.ts
 export const registrationData = {
   positive: {
     email: `auto_register_${Date.now()}@test.com`,

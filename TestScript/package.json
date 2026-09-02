@@ -4,17 +4,21 @@
   "private": true,
   "type": "commonjs",
   "scripts": {
+    "clean": "rimraf test-results allure-results allure-report",
     "test": "npx playwright test",
     "test:api": "npx playwright test --project=api",
     "test:api:ui": "npx playwright test --project=api --ui",
+    "test:api:allure": "npx playwright test --project=api --reporter=line,allure-playwright",
     "test:web": "npx playwright test --project=web --headed",
-    "report": "npx playwright show-report"
+    "report": "npx monocart show-report test-results/report.html"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",
     "@types/node": "^25.6.0",
+    "allure-playwright": "^3.7.1",
     "dotenv": "^17.2.3",
-    "monocart-reporter": "^2.10.1"
+    "monocart-reporter": "^2.10.1",
+    "rimraf": "^6.1.3"
   },
   "dependencies": {
     "ajv": "^8.20.0",

@@ -254,6 +254,23 @@ Module 3: tax_note      = "auto_c01_tax_1712049200"
 
 ---
 
+## ⚠️ Nơi lưu test data (BẮT BUỘC)
+
+Test data xuất ra dạng **file** (`.ts`, `.json`, `.csv`, `.xlsx`) PHẢI nằm trong
+`TestScript/test-data/` ở gốc repo:
+
+- Data dạng code (TypeScript) → `TestScript/test-data/<module>.data.ts`
+- File Excel cho test data-driven → `TestScript/test-data/data/`
+- JSON Schema dùng validate response → `TestScript/test-data/json_schema/`
+
+`TestScript/` là npm project độc lập — copy riêng thư mục đó sang repo khác phải chạy được ngay.
+Vì vậy data phải nằm **bên trong** nó, và code đọc data phải neo đường dẫn bằng `__dirname`,
+TUYỆT ĐỐI KHÔNG dùng `process.cwd()` (sai cwd là hỏng âm thầm, test vẫn báo xanh).
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
+---
+
 ## Rules References
 
 - `.claude/rules/automation_rules.md` — Test data generation rules (Section 2)

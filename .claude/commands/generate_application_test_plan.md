@@ -10,6 +10,18 @@ skills:
 
 > **BẮT BUỘC (MANDATORY SKILL):** Bạn PHẢI nạp và đọc kỹ nội dung của skill **`qa_automation_engineer`** (tại `.claude/skills/qa_automation_engineer/SKILL.md`) trước khi bắt đầu. Ngoài ra, tham khảo thêm skill **`requirements_analyzer`** và **`ui_debug_agent`** để hỗ trợ phân tích UI.
 
+
+## ⚠️ Nơi lưu code (BẮT BUỘC)
+
+Mọi file code sinh ra hoặc chỉnh sửa đều nằm trong `TestScript/` ở gốc repo:
+Page Object → `TestScript/pages/`, spec → `TestScript/tests/api/` và `TestScript/tests/web/`,
+helper dùng chung → `TestScript/common/` và `TestScript/utils/`, test data → `TestScript/test-data/`.
+
+KHÔNG tạo file code ở gốc repo, KHÔNG import vượt ra ngoài `TestScript/`, luôn neo đường dẫn file
+bằng `__dirname` thay cho `process.cwd()`. Mọi lệnh chạy từ bên trong: `cd TestScript && npm run test:api`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 Workflow này giúp agent tự động khám phá một ứng dụng web, phân tích cấu trúc, xác định các modules/user flows quan trọng, và sinh ra Test Plan hoàn chỉnh.
 
 ## ⚠️ Nguyên tắc thực thi

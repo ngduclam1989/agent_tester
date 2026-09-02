@@ -7,15 +7,15 @@ reference by default.
 
 | Task | First skill/workflow | References to load when needed |
 | --- | --- | --- |
-| Convert reviewed manual TC to automation | `generate_automation_from_testcases` | `playwright-e2e-page_object_model.md`, `playwright-e2e-locator_strategies.md` |
-| Automate observed UI flow | `generate_automation_from_ui_flow` | `webapp-playwright-common_patterns.md`, `webapp-playwright-locator_strategies.md`, `playwright-cli-running-code.md` |
-| UI recon / inspect DOM / current behavior | `ui_debug_agent` | `webapp-playwright-common_patterns.md`, `playwright-cli-element-attributes.md`, `playwright-cli-test-generation.md` |
+| Convert reviewed manual TC to automation | `generate_automation_from_testcases` | `playwright-e2e-page_object_model.md`, `playwright-e2e-locator_strategies.md`, `playwright-cli-spec-driven-testing.md`, `playwright-cli-playwright-tests.md` |
+| Automate observed UI flow | `generate_automation_from_ui_flow` | `webapp-playwright-common_patterns.md`, `webapp-playwright-locator_strategies.md`, `playwright-cli-running-code.md`, `playwright-cli-request-mocking.md` |
+| UI recon / inspect DOM / current behavior | `ui_debug_agent` | `webapp-playwright-common_patterns.md`, `playwright-cli-element-attributes.md`, `playwright-cli-test-generation.md`, `playwright-cli-session-management.md` |
 | Stable locator generation | `smart_locator_agent` | `playwright-e2e-locator_strategies.md` |
-| Locator healing after UI changes | `locator_healer_agent` | `playwright-e2e-debugging.md`, `webapp-playwright-common_patterns.md` |
-| Flaky test analysis | `flaky_test_analyzer` | `regression-flaky-management.md`, `playwright-e2e-debugging.md` |
+| Locator healing after UI changes | `locator_healer_agent` | `playwright-e2e-debugging.md`, `webapp-playwright-common_patterns.md`, `playwright-cli-spec-driven-testing.md` |
+| Flaky test analysis | `flaky_test_analyzer` | `regression-flaky-management.md`, `playwright-e2e-debugging.md`, `playwright-cli-video-recording.md`, `playwright-cli-request-mocking.md` |
 | API automation | `generate_api_tests_from_swagger` | `api-rest-api-patterns.md`, `api-schema-validation.md`, `api-contract-testing.md`, `api-playwright-api-testing.md` |
 | Regression suite strategy | `generate_application_test_plan` or RBT | `regression-regression-strategy.md`, `regression-ci-cd-integration.md`, `regression-flaky-management.md` |
-| Accessibility automation | automation workflow + target stack | `a11y-playwright-wcag21aa-checklist.md`, `a11y-playwright-aria_patterns.md` |
+| Accessibility automation | automation workflow + target stack | `a11y-playwright-wcag21aa-checklist.md`, `a11y-playwright-aria_patterns.md`, `a11y-playwright-snippets.md` |
 | Framework scaffold | `framework_architect` | `playwright-e2e-file-map-template.md`, `regression-ci-cd-integration.md` |
 
 ## Stack Selection

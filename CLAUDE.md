@@ -131,6 +131,31 @@ Test chỉ được coi là **hoàn thành** khi đáp ứng **toàn bộ** các
 | Test Framework    | Playwright Test                                 |
 | Build Tool        | npm                                              |
 
+### Nơi lưu code automation — `TestScript/` (BẮT BUỘC)
+
+Toàn bộ code Playwright nằm trong `TestScript/` ở gốc repo. Thư mục này là **một npm project độc lập**:
+copy riêng nó sang repo khác phải chạy được ngay, không cần sửa gì.
+
+| Thành phần | Vị trí |
+| --- | --- |
+| Spec API / Web | `TestScript/tests/api/`, `TestScript/tests/web/` |
+| Page Object | `TestScript/pages/` |
+| Helper dùng chung | `TestScript/common/`, `TestScript/utils/` |
+| Test data (Excel, JSON schema) | `TestScript/test-data/` |
+| Config + credentials | `TestScript/config/env.ts`, `TestScript/.env` |
+| Runner config, dependencies | `TestScript/playwright.config.ts`, `TestScript/package.json`, `TestScript/tsconfig.json` |
+
+Quy tắc bắt buộc:
+
+- **KHÔNG** tạo `package.json`, `playwright.config.ts`, `tsconfig.json`, `node_modules/`, `tests/`,
+  `pages/`, `utils/`, `common/`, `config/`, `test-data/` ở gốc repo. Gốc repo chỉ chứa công cụ QA và
+  sản phẩm bàn giao (`.claude/`, `plans/`, `practices/`, `scripts/`).
+- **KHÔNG** import hay đọc file vượt ra ngoài `TestScript/` — làm vậy là phá tính độc lập của thư mục.
+- Neo đường dẫn file bằng `__dirname`, **KHÔNG** dùng `process.cwd()` (sai cwd là hỏng âm thầm).
+- Mọi lệnh chạy từ bên trong: `cd TestScript && npm install`, `cd TestScript && npm run test:api`.
+
+> Định nghĩa đầy đủ: `.claude/skills/qa_automation_engineer/SKILL.md` → mục **Automation Project Root**.
+
 ## 4. Tham Chiếu Rules Chi Tiết
 
 Agent phải tham chiếu quy tắc chi tiết trong `.claude/rules/`:

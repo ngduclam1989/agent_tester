@@ -391,7 +391,7 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
 
 **Agent phải (lặp lại cho từng sub-module nếu có ≥2 sub-module):**
 
-1. Xây dựng **Traceability Matrix** ánh xạ: `Requirements (REQ-ID) ↔ Test Conditions ↔ Test Scenarios / Test Cases` (Tham chiếu `templates/traceability-matrix.csv` để sử dụng format chuẩn khi xuất cấu trúc matrix).
+1. Xây dựng **Traceability Matrix** ánh xạ: `Requirements (REQ-ID) ↔ Test Conditions ↔ Test Scenarios / Test Cases`. Format chuẩn khi xuất matrix gồm các cột: `REQ-ID | Mô tả requirement | Test Condition ID | Test Case ID | Trạng thái | Ghi chú`.
 2. Cross-check xem có yêu cầu nào bị thiếu trong danh sách phân rã (Gap Analysis) để phát hiện lỗ hổng kiểm thử (Test coverage gaps).
 3. Liệt kê High-Level Test Scenarios cho từng Module, **BẮT BUỘC dùng đúng 5 nhóm risk category giống hệt Bước 5** (KHÔNG dùng taxonomy khác/tương đương — sai lệch taxonomy giữa Bước 4 và Bước 5 là nguyên nhân phổ biến khiến sót nhóm khi sinh TC chi tiết):
    - **Function** (High risk) — Happy path + Unhappy path theo từng luồng nghiệp vụ/scenario đã phân rã ở Bước 2/3
@@ -726,14 +726,12 @@ Các template này chỉ dùng khi user yêu cầu artifact tương ứng hoặc
 | Test plan / strategy | `templates/test-plan.md` |
 | Risk assessment matrix | `templates/risk-assessment-matrix.md` |
 | Test conditions | `templates/test-conditions.md` |
-| Traceability matrix | `templates/traceability-matrix.csv` |
 | Test environment readiness | `templates/test-environment-checklist.md` |
 | Exploratory charter | `templates/exploratory-charter.md` |
-| Bug report / defect log | `templates/bug-report.md`, `templates/bug-log.csv` |
+| Bug report / defect log | `templates/bug-report.md` |
 | Regression suite definition | `templates/regression-suite.md` |
 | Test summary report | `templates/test-summary-report.md` |
 | Optional grill decision record | `templates/grill-test-strategy-decision-record.md` |
-| Optional QA artifact source | `templates/test-cases.csv`, `templates/playwright-spec.ts` |
 
 Nếu template tham chiếu có schema khác với mẫu TC cũ của project, chỉ dùng nội dung đó làm gợi ý phân tích; không thay thế
 schema bảng TC chính.

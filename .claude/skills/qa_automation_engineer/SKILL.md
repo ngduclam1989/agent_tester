@@ -348,6 +348,74 @@ Triggers when user asks:
 
 # Automation Framework
 
+## Automation Project Root — `TestScript/` (MANDATORY)
+
+All Playwright code lives in `TestScript/` at the repository root. That folder is a
+**self-contained npm project**: copying `TestScript/` alone into another repository must
+produce a runnable suite with no edits. Every rule below exists to protect that property.
+
+Generated files go here and nowhere else:
+
+| What you generate | Where it goes |
+| --- | --- |
+| API test specs | `TestScript/tests/api/<feature>.spec.ts` |
+| Web/UI test specs | `TestScript/tests/web/<feature>.spec.ts` |
+| Page Object classes | `TestScript/pages/<Name>Page.ts` |
+| Login / header / random-data helpers | `TestScript/common/` |
+| Validation & utility helpers | `TestScript/utils/` |
+| Environment + credentials access | `TestScript/config/env.ts` |
+| Test data (Excel, JSON schema, fixtures) | `TestScript/test-data/` |
+| Runner config, dependencies, TS config | `TestScript/playwright.config.ts`, `TestScript/package.json`, `TestScript/tsconfig.json` |
+
+Hard rules:
+
+1. **NEVER** create `package.json`, `playwright.config.ts`, `tsconfig.json`, `node_modules/`,
+   `tests/`, `pages/`, `utils/`, `common/`, `config/` or `test-data/` at the repository root.
+   They belong inside `TestScript/` only. The repository root is for QA tooling and
+   deliverables (`.claude/`, `plans/`, `practices/`, `scripts/`), never for runnable code.
+2. **NEVER** import or read a path that escapes `TestScript/` — no `../../practices/...`,
+   no `../scripts/...`. If generated code needs a file, put that file inside
+   `TestScript/test-data/`. An import that escapes the folder silently breaks portability.
+3. **Anchor every file path to `__dirname`, never to `process.cwd()`.** `process.cwd()` depends
+   on the directory the runner was launched from, and when it is wrong the failure is silent
+   (a missing schema only warns, the test still reports green). See `loadSchema()` in
+   `TestScript/utils/api-function.ts` for the correct pattern.
+4. **Run every command from inside `TestScript/`**: `cd TestScript && npm install`, then
+   `cd TestScript && npm run test:api`. Never run `npx playwright test` from the repository root.
+5. Secrets live in `TestScript/.env` (gitignored) and are documented in `TestScript/.env.example`.
+   Never hardcode credentials or base URLs in a spec — read them through `config/env.ts`.
+6. When adding a dependency, add it to `TestScript/package.json` and install it from inside
+   `TestScript/`. Never install into the repository root.
+
+## Reporting — monocart-reporter (MANDATORY)
+
+The report stack is fixed and already wired inside `TestScript/`. Do not swap it out per task.
+
+| Concern | Library / command |
+| --- | --- |
+| Default report | `monocart-reporter` → `TestScript/test-results/report.html` |
+| View the report | `cd TestScript && npm run report` (= `npx monocart show-report test-results/report.html`) |
+| Alternative report | `allure-playwright` → raw JSON in `TestScript/allure-results/` |
+| Run with Allure | `cd TestScript && npm run test:api:allure` |
+| Clean old results | `cd TestScript && npm run clean` (uses `rimraf`) |
+
+Rules:
+
+1. **NEVER tell the user to run `npx playwright show-report`** for this project, and never put it in
+   an npm script. That command only opens Playwright's built-in `html` reporter, which this config
+   does not enable — it finds nothing to show. Use `npm run report` (monocart) instead.
+2. Keep `monocart-reporter` as the default reporter in `playwright.config.ts`. Allure is opt-in via
+   the `--reporter=line,allure-playwright` CLI override inside `npm run test:api:allure` — do not
+   add Allure to the default `reporter` array.
+3. Rendering Allure into HTML needs the separate Allure CLI (`allure-commandline`), which is **not**
+   installed here. `allure-playwright` only writes raw JSON into `allure-results/`.
+4. Attach request/response evidence with `testInfo.attach()`, never `console.log`. Monocart renders
+   attachments inline in the report; stdout logs are lost and violate the Cleanup rule in CLAUDE.md.
+5. `test-results/`, `allure-results/` and `allure-report/` are gitignored — never commit them, and
+   run `npm run clean` before a fresh full run so old artifacts do not mix into the new report.
+
+---
+
 Default automation stack:
 
 - **Language:** TypeScript

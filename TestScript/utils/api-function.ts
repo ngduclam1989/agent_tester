@@ -46,9 +46,13 @@ export async function validateSchema(response: APIResponse, schema: object): Pro
         .toBe(true);
 }
 
-/** Đọc file JSON Schema theo đường dẫn tương đối tính từ thư mục gốc project. */
+/**
+ * Đọc file JSON Schema theo đường dẫn tương đối tính từ thư mục gốc project (TestScript/).
+ * Neo theo `__dirname` chứ không phải `process.cwd()`, nên chạy test từ thư mục nào
+ * cũng tìm đúng file — kể cả khi copy nguyên thư mục TestScript sang repo khác.
+ */
 export function loadSchema(relativePath: string): object | null {
-    const fullPath = path.resolve(process.cwd(), relativePath);
+    const fullPath = path.resolve(__dirname, '..', relativePath);
     if (!fs.existsSync(fullPath)) {
         return null;
     }
