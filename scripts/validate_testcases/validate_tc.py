@@ -65,12 +65,19 @@ CHILD_ROW_ID_NUM_RE = re.compile(r'_TC_(\d+)')
 API_HEADER_START = "| Test Case ID | Function | Group Tests | Risk Level"
 API_EXPECTED_HEADER = [
     "Test Case ID", "Function", "Group Tests", "Risk Level", "Test Case Title",
-    "Pre-conditions", "Test Data", "Test Steps", "Expected result",
+    "Pre-conditions", "Test Steps", "Test Data", "Expected result",
     "Environment", "Priority", "Regression", "Automation",
     "Manual Test Results Round 1", "Manual Test Results Round 2",
     "Automation Test Results", "Actual result", "BugID", "Notes",
 ]
 API_TC_ROW_RE = re.compile(r'^\|\s*([A-Z][A-Z0-9]*(?:_[A-Z0-9\-]+)+_TC_(\d+))\s*\|')
+# Cot 'Test Case ID' co 2 che do (API-Gen-TC-From-TD-v4.md muc VII.1):
+#   - SINH MOI: `<DU_AN>_<MODULE>_TC_<NNN>`, danh so lien tuc toan file.
+#   - TAI DUNG ID GOC: khi co bo TC goc cua khach, o nay mang dung ID cua khach
+#     (khuon tuy y, co the trung neu chinh file goc trung) va de TRONG cho TC moi
+#     them, kem nhan [TC MOI THEM] o cot Notes.
+API_GEN_ID_RE = re.compile(r'^([A-Z][A-Z0-9]*(?:_[A-Z0-9\-]+)+)_TC_(\d+)$')
+API_NEW_TC_MARK = "[TC MOI THEM]"
 API_GROUP_ROW_RE = re.compile(r'^\|\s*\*\*(.+?)\*\*\s*\|')
 API_TD_REF_RE = re.compile(r'\bTD:\s*(TD_P[1-4]_\d+)')
 API_RISK_ENUM = {"High", "Medium", "Low"}
@@ -118,6 +125,8 @@ def _validate_api(path, lines):
         fail(errors, f"Header bảng TC API không khớp contract 19 cột. Thiếu: {missing or 'không'} | Thừa: {extra or 'không'}")
 
     tc_ids, tc_nums, prefixes = [], [], Counter()
+    source_ids = []
+    tc_row_count = 0
     block_risk = {}
     blocks_seen = []
     group_labels = []
@@ -138,32 +147,48 @@ def _validate_api(path, lines):
             group_labels.append((i + 1, gm.group(1).strip()))
             continue
 
-        tm = API_TC_ROW_RE.match(line)
-        if not tm:
+        # Dong TC = dong NAM SAU header bang TC va co cot Function mang 1 trong 4 nhom
+        # rui ro (hoac o dau dung khuon ID sinh moi). Khong nhan dien qua rieng cot ID
+        # nua vi o do co the de trong; chan tren header_idxs[0] de khong an nham bang
+        # Traceability Matrix o phia truoc (bang do cung co cot 'NHÓM ...').
+        is_tc_row = i > header_idxs[0] and (
+            bool(API_TC_ROW_RE.match(line))
+            or (len(cells) > 1 and cells[1].upper().startswith("NHÓM"))
+        )
+        if not is_tc_row:
             continue
 
         if len(cells) != 19:
-            fail(errors, f"Dòng {i+1}: có {len(cells)} cột, contract yêu cầu đúng 19 cột. TC: {tm.group(1)}")
+            fail(errors, f"Dòng {i+1}: có {len(cells)} cột, contract yêu cầu đúng 19 cột. TC: {cells[0] or '(ô Test Case ID để trống)'}")
             continue
 
-        tc_id, num = tm.group(1), int(tm.group(2))
-        tc_ids.append(tc_id)
-        tc_nums.append(num)
-        prefixes[tc_id.rsplit("_TC_", 1)[0]] += 1
+        tc_row_count += 1
+        tc_id = cells[0]
+        tc_label = tc_id or f"TC mới thêm, dòng {i+1}"
+        gid = API_GEN_ID_RE.match(tc_id) if tc_id else None
+        if not tc_id:
+            if API_NEW_TC_MARK not in cells[18]:
+                fail(errors, f"Dòng {i+1}: ô 'Test Case ID' để trống nhưng cột 'Notes' thiếu nhãn '{API_NEW_TC_MARK}' — TC chưa có ID bắt buộc phải tự khai là TC mới thêm.")
+        elif gid:
+            tc_ids.append(tc_id)
+            tc_nums.append(int(gid.group(2)))
+            prefixes[gid.group(1)] += 1
+        else:
+            source_ids.append(tc_id)
 
         function, block, risk = cells[1], cells[2], cells[3]
         scenario, precond, notes = cells[4], cells[5], cells[18]
 
         if risk not in API_RISK_ENUM:
-            fail(errors, f"Dòng {i+1} ({tc_id}): Risk Level = '{risk}' — phải là enum sạch High/Medium/Low, không thêm chú thích.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): Risk Level = '{risk}' — phải là enum sạch High/Medium/Low, không thêm chú thích.")
         if block and block == function:
-            fail(errors, f"Dòng {i+1} ({tc_id}): cột 'Group Tests' đang copy lại cột 'Function' ('{function}') — phải mang TÊN BLOCK lấy từ Test Design.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): cột 'Group Tests' đang copy lại cột 'Function' ('{function}') — phải mang TÊN BLOCK lấy từ Test Design.")
         if not block:
-            fail(errors, f"Dòng {i+1} ({tc_id}): cột 'Group Tests' (tên block) đang để trống.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): cột 'Group Tests' (tên block) đang để trống.")
 
         key = (function, block)
         if key in block_risk and block_risk[key] != risk:
-            fail(errors, f"Dòng {i+1} ({tc_id}): block '{block}' có Risk Level không nhất quán ('{risk}' vs '{block_risk[key]}') — Risk gán ở mức block, mọi TC trong cùng block phải giống nhau.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): block '{block}' có Risk Level không nhất quán ('{risk}' vs '{block_risk[key]}') — Risk gán ở mức block, mọi TC trong cùng block phải giống nhau.")
         else:
             block_risk.setdefault(key, risk)
         if key not in blocks_seen:
@@ -171,53 +196,61 @@ def _validate_api(path, lines):
         summary_counter[(function, block, risk)] += 1
 
         if not TITLE_PREFIX_RE.match(scenario):
-            fail(errors, f"Dòng {i+1} ({tc_id}): 'Test Case Title' = '{scenario[:70]}' không bắt đầu bằng 'Kiểm tra ...'. Convention bắt buộc: 'Kiểm tra <hành động> <đối tượng> với <dữ liệu/điều kiện>'.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): 'Test Case Title' = '{scenario[:70]}' không bắt đầu bằng 'Kiểm tra ...'. Convention bắt buộc: 'Kiểm tra <hành động> <đối tượng> với <dữ liệu/điều kiện>'.")
 
         if not API_TD_REF_RE.search(notes):
-            fail(errors, f"Dòng {i+1} ({tc_id}): cột 'Notes' thiếu mỏ neo traceability 'TD: <Node ID>' (vd 'TD: TD_P3_003') — bắt buộc từ contract 19 cột.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): cột 'Notes' thiếu mỏ neo traceability 'TD: <Node ID>' (vd 'TD: TD_P3_003') — bắt buộc từ contract 19 cột.")
 
         vm = VAGUE_EXPECTED_RE.search(cells[8])
         if vm:
-            fail(errors, f"Dòng {i+1} ({tc_id}): 'Expected result' chứa cụm mơ hồ không verify được: '{vm.group(0)}'.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): 'Expected result' chứa cụm mơ hồ không verify được: '{vm.group(0)}'.")
 
-        tdm = API_TESTDATA_NUMBERED_RE.search(cells[6])
+        tdm = API_TESTDATA_NUMBERED_RE.search(cells[7])
         if tdm:
-            fail(errors, f"Dòng {i+1} ({tc_id}): 'Test Data' đang đánh số `1. 2. 3.` (thấy '{tdm.group(1)}:') — phải dùng gạch đầu dòng `- `. Đánh số chỉ dành cho Test Steps / Expected result.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): 'Test Data' đang đánh số `1. 2. 3.` (thấy '{tdm.group(1)}:') — phải dùng gạch đầu dòng `- `. Đánh số chỉ dành cho Test Steps / Expected result.")
         if API_PRECOND_NUMBERED_RE.search(precond):
-            fail(errors, f"Dòng {i+1} ({tc_id}): 'Pre-conditions' đang đánh số `1. 2. 3.` — phải dùng gạch đầu dòng `- `. Đánh số chỉ dành cho Test Steps / Expected result.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): 'Pre-conditions' đang đánh số `1. 2. 3.` — phải dùng gạch đầu dòng `- `. Đánh số chỉ dành cho Test Steps / Expected result.")
         bm = API_PRECOND_BANNED_RE.search(precond)
         if bm:
-            fail(errors, f"Dòng {i+1} ({tc_id}): 'Pre-conditions' còn chứa '{bm.group(1)}:' — Env/URL/Endpoint/Header phải nằm ở cột 'Test Data', không lặp ở đây.")
+            fail(errors, f"Dòng {i+1} ({tc_label}): 'Pre-conditions' còn chứa '{bm.group(1)}:' — Env/URL/Endpoint/Header phải nằm ở cột 'Test Data', không lặp ở đây.")
         for part in ("User/Quyền", "Trạng thái hệ thống", "Dữ liệu có sẵn"):
             if part.lower() not in precond.lower():
-                warnings.append(f"Dòng {i+1} ({tc_id}): 'Pre-conditions' thiếu thành phần '{part}' (bắt buộc đủ 3 thành phần).")
+                warnings.append(f"Dòng {i+1} ({tc_label}): 'Pre-conditions' thiếu thành phần '{part}' (bắt buộc đủ 3 thành phần).")
                 break
 
-    # ---- TC ID: 1 prefix duy nhat, danh so lien tuc 001..N ----
-    if len(prefixes) > 1:
-        fail(errors, f"File dùng nhiều prefix TC ID khác nhau: {dict(prefixes)} — contract yêu cầu 1 prefix `<DỰ_ÁN>_<MODULE>` duy nhất cho cả file.")
-    dupes = [i for i, c in Counter(tc_ids).items() if c > 1]
-    if dupes:
-        fail(errors, f"TC ID bị trùng: {sorted(dupes)[:10]}")
-    if tc_nums:
+    # ---- TC ID: kiem theo dung che do file dang dung ----
+    if tc_ids and source_ids:
+        fail(errors, f"File trộn 2 chế độ Test Case ID: {len(tc_ids)} ô theo khuôn sinh mới `<DỰ_ÁN>_<MODULE>_TC_<NNN>` và {len(source_ids)} ô theo ID của bộ TC gốc — phải chọn đúng 1 chế độ cho cả file.")
+    if tc_ids:
+        if len(prefixes) > 1:
+            fail(errors, f"File dùng nhiều prefix TC ID khác nhau: {dict(prefixes)} — contract yêu cầu 1 prefix `<DỰ_ÁN>_<MODULE>` duy nhất cho cả file.")
+        dupes = [i for i, c in Counter(tc_ids).items() if c > 1]
+        if dupes:
+            fail(errors, f"TC ID bị trùng: {sorted(dupes)[:10]}")
         expected = list(range(1, len(tc_nums) + 1))
         if sorted(tc_nums) != expected:
             missing = sorted(set(expected) - set(tc_nums))
             fail(errors, f"Số thứ tự TC ID không liên tục 001..{len(tc_nums):03d} (KHÔNG reset theo cấu phần). Số bị thiếu: {missing[:10]}")
         if tc_nums != sorted(tc_nums):
             fail(errors, "TC ID không tăng dần theo thứ tự xuất hiện trong file.")
+    elif source_ids:
+        # Chi canh bao khi trung: chinh file TC goc cua khach co the da trung ID,
+        # sua o day se lam lech truy vet nguoc ve file khach.
+        sdupes = sorted(i for i, c in Counter(source_ids).items() if c > 1)
+        if sdupes:
+            warnings.append(f"Test Case ID lấy từ bộ TC gốc bị trùng: {sdupes[:10]} — đối chiếu lại file gốc của khách xem có trùng thật không.")
 
     # ---- Dong tieu de nhom: moi block dung 1 dong ----
     if not group_labels:
-        fail(errors, "Không tìm thấy dòng tiêu đề nhóm nào (`| **NHÓM ... · BLOCK: ... · Risk: ...** | | ... |`) — contract mục VI.4 bắt buộc mỗi block có 1 dòng đứng trước TC đầu tiên.")
+        fail(errors, "Không tìm thấy dòng tiêu đề nhóm nào (`| **NHÓM <nhóm rủi ro> - <tên block>** | | ... |`) — contract mục VI.4 bắt buộc mỗi block có 1 dòng đứng trước TC đầu tiên.")
     elif len(group_labels) != len(blocks_seen):
         fail(errors, f"Số dòng tiêu đề nhóm ({len(group_labels)}) khác số block thực tế trong bảng TC ({len(blocks_seen)}) — mỗi block phải có đúng 1 dòng tiêu đề.")
 
     # ---- Tong so TC khai bao ----
     text = "\n".join(lines)
     dm = API_TOTAL_DECLARED_RE.search(text)
-    if dm and int(dm.group(1)) != len(tc_ids):
-        fail(errors, f"'Tổng số Test Case' khai báo = {dm.group(1)} nhưng đếm thật trong bảng = {len(tc_ids)}.")
+    if dm and int(dm.group(1)) != tc_row_count:
+        fail(errors, f"'Tổng số Test Case' khai báo = {dm.group(1)} nhưng đếm thật trong bảng = {tc_row_count}.")
     elif not dm:
         warnings.append("Không tìm thấy dòng 'Tổng số Test Case: **N**' để đối chiếu.")
 

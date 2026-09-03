@@ -5,13 +5,13 @@
  *
  * Khác với md_to_xlsx.js (chỉ đọc bảng Markdown 9 cột của rbt_manual_testing/UI),
  * script này đọc trực tiếp file .tsv 19 cột (Test Case ID, Function, Group Tests,
- * Risk Level, Test Case Title, Pre-conditions, Test Data, Test Steps,
+ * Risk Level, Test Case Title, Pre-conditions, Test Steps, Test Data,
  * Expected result, Environment, Priority, Regression, Automation,
  * Manual Test Results Round 1, Manual Test Results Round 2, Automation Test Results,
  * Actual result, BugID, Notes) do skill api_test_design sinh ra.
  *
  * Chuẩn hóa theo RBT (v2):
- *   - Nhận diện DÒNG TIÊU ĐỀ NHÓM (ô đầu dạng "**NHÓM ... BLOCK: ... Risk: ...**",
+ *   - Nhận diện DÒNG TIÊU ĐỀ NHÓM (ô đầu dạng "**<NHÓM rủi ro> - <tên block>**",
  *     19 ô còn lại rỗng) — không tính vào tổng số TC.
  *   - File .md tách mỗi NHÓM RỦI RO RBT (cột Function) thành 1 section "##" riêng, kèm
  *     bảng tổng hợp số TC theo Nhóm x Block x Risk Level tính lại từ nội dung thật.
@@ -64,8 +64,8 @@ const EXPECTED_HEADER = [
   "Risk Level",
   "Test Case Title",
   "Pre-conditions",
-  "Test Data",
   "Test Steps",
+  "Test Data",
   "Expected result",
   "Environment",
   "Priority",
@@ -288,7 +288,7 @@ function applyStyles(ws, header, rows) {
     const r = idx + 1;
     const group = isGroupRow(row);
     // Dòng nhóm mang tên NHÓM ngay trong nhãn; dòng TC lấy từ cột Function
-    const fn = group ? (row[0] || "").replace(/\*/g, "").split("·")[0].trim() : row[1];
+    const fn = group ? (row[0] || "").replace(/\*/g, "").split(" - ")[0].trim() : row[1];
     let fill = null;
     if (group) {
       fill = fn && fn !== lastFn ? PALETTE.group1 : PALETTE.group2;
@@ -326,7 +326,7 @@ function buildXlsx(header, rows, outputPath) {
 
   // Column widths — tuned cho 19 cột (ID ngắn, Title/Steps/Expected dài)
   const colWidths = [
-    22, 20, 22, 11, 58, 34, 34, 48, 42, 10, 10, 11, 11, 14, 14, 16, 14, 10, 30,
+    22, 20, 22, 11, 58, 34, 48, 34, 42, 10, 10, 11, 11, 14, 14, 16, 14, 10, 30,
   ];
   ws["!cols"] = colWidths.map((w) => ({ wch: w }));
 

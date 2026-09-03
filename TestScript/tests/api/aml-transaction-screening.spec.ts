@@ -7,11 +7,16 @@ import { amlEnv, resolveUrl } from '../../config/env';
 /**
  * API AML Transaction Screening (MSB) — data-driven từ bộ 327 manual TC.
  *
- * Nguồn TC : practices/testcases/msb-aml-tf/api/TC_AML_TRANSACTION_SCREENING_API 4.xlsx
+ * Nguồn TC : practices/testcases/msb-aml-tf/api/TC_AML_TRANSACTION_SCREENING_API 5.xlsx
  * Data chạy: test-data/data/test_aml_screening.xlsx (bản convert sang schema automation)
  *
+ * Bản v5 dựng lại toàn bộ Test Data theo cURL thật của SIT: header đúng thứ tự cURL
+ * (Authorization `Basic YWE6YmI=`, `branchCd VN0001001`, thêm `requestUserId` và `Cookie`),
+ * envelope SWIFT dạng Output, và bản tin thật cho các TC trước đây chỉ ghi câu mô tả.
+ *
  * Dòng nào có cột `${Run}` = No sẽ bị skip kèm lý do ở cột `${SkipReason}` — đây là các TC
- * không thể tự động hoá tất định (mâu thuẫn dữ liệu, hoặc cần dựng lỗi phía server).
+ * không thể tự động hoá tất định (TC gộp nhiều request, TC thiếu Body ở file nguồn, mâu thuẫn
+ * dữ liệu, hoặc cần dựng lỗi phía server).
  */
 
 // Service SIT dùng chứng chỉ tự ký nên phải bỏ qua lỗi TLS cho riêng suite này.

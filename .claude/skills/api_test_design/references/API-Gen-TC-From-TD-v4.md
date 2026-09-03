@@ -2,6 +2,17 @@
 
 > **Prompt Version:** 4.4 | **Last Updated:** 2026-09-01
 >
+> **Changelog v4.5 — đổi chỗ `Test Steps` / `Test Data`:**
+> - Thứ tự cột nay là `Pre-conditions` → **`Test Steps`** → **`Test Data`** → `Expected result`.
+>   Test Steps là mạch đọc chính (làm gì, theo thứ tự nào); Test Data là phụ lục tra cứu của
+>   các bước đó, nên phải đứng sau. Trước đây Test Data chen vào giữa Pre-conditions và
+>   Test Steps làm người đọc phải nhảy qua một ô rất dài mới tới được các bước.
+> - Mục VII đánh số lại: 6="Test Steps", 7="Test Data"; các mục khác giữ nguyên số.
+> - Dòng tiêu đề nhóm rút gọn còn `**<NHÓM rủi ro> - <tên block>**` (bỏ `BLOCK: ` và
+>   `· Risk: <mức>` — Risk đã có cột riêng). Xem mục VI.4.
+> - Cột `Test Case ID` có thêm **chế độ B — tái dùng ID của bộ TC gốc** khi input có sẵn bộ
+>   TC của khách. Xem mục VII.1.
+>
 > **Changelog v4.4 — gộp cột tiêu đề, contract 19 cột:**
 > - Gộp `Scenario Outline` + `Test Case Summary` thành **1 cột `Test Case Title`**
 >   (vị trí thứ 5). Từ v4.2 cột `Scenario Outline` đã đổi sang khuôn "Kiểm tra ..." nên
@@ -238,8 +249,11 @@ AUDIT CHECKLIST — GEN TC FROM TEST DESIGN v4.0:
 [ ] Mọi dòng TC đều có `TD: <Node ID>` ở cột Notes không? (thiếu 1 dòng → FAIL)
 [ ] Có TC nào không map về Node nào trong Registry không? (TC mồ côi → Xóa ngay)
 
---- SCHEMA 20 CỘT & PHÂN NHÓM ---
+--- SCHEMA 19 CỘT & PHÂN NHÓM ---
 [ ] Mỗi dòng TC có đúng 19 cột (18 ký tự tab) không?
+[ ] Ngắt khối đúng mục 2b chưa? (`Pre-conditions` / `Test Data` / `Expected result`
+    cách khối bằng 1 dòng trống; `Test Steps` chỉ xuống dòng 1 lần giữa 2 bước, KHÔNG
+    chèn dòng trống; trong khối `- Headers:` mỗi header nằm trên một dòng riêng)
 [ ] Cột `Group Tests` = tên BLOCK (KHÔNG copy lại giá trị cột `Function`) không?
 [ ] Cột `Risk Level` là enum sạch High/Medium/Low, và mọi TC trong cùng 1 block có
     cùng Risk Level không?
@@ -332,7 +346,7 @@ Sau đó in thêm thông báo sau PHÍA SAU toàn bộ nội dung TSV (ngoài co
 - Header (Dòng 1 - Copy chính xác):
 
   ```text
-  "Test Case ID"	"Function"	"Group Tests"	"Risk Level"	"Test Case Title"	"Pre-conditions"	"Test Data"	"Test Steps"	"Expected result"	"Environment"	"Priority"	"Regression"	"Automation"	"Manual Test Results Round 1"	"Manual Test Results Round 2"	"Automation Test Results"	"Actual result"	"BugID"	"Notes"
+  "Test Case ID"	"Function"	"Group Tests"	"Risk Level"	"Test Case Title"	"Pre-conditions"	"Test Steps"	"Test Data"	"Expected result"	"Environment"	"Priority"	"Regression"	"Automation"	"Manual Test Results Round 1"	"Manual Test Results Round 2"	"Automation Test Results"	"Actual result"	"BugID"	"Notes"
   ```
 
 - Các dòng dữ liệu: Mỗi Test Case là **1 dòng duy nhất**.
@@ -349,6 +363,39 @@ Sau đó in thêm thông báo sau PHÍA SAU toàn bộ nội dung TSV (ngoài co
 - **Quote All:** Tất cả ô dữ liệu phải được bao bởi dấu ngoặc kép đôi `""`.
 - **Escape:** Nếu trong nội dung có `"`, nhân đôi thành `""`.
 - **Newline:** Dùng `\n` bên trong ô. KHÔNG xuống dòng vật lý.
+
+### 2b. Quy tắc ngắt khối trong ô (BẮT BUỘC)
+
+Ô nhiều dòng mà không có dòng trống ngăn cách thì đọc trong Excel rất khó — chữ dồn thành
+một mảng đặc. Quy ước chung: một **khối** bắt đầu ở dòng mở bằng `- ` hoặc `N. `; mọi dòng
+còn lại (thân JSON, thân bản tin SWIFT/XML, danh sách header) thuộc về khối ngay trước nó.
+
+| Cột | Ngắt khối |
+|---|---|
+| `Pre-conditions` | 3 khối (User/Quyền · Trạng thái hệ thống · Dữ liệu có sẵn) cách nhau **đúng 1 dòng trống** (`\n\n`) |
+| `Test Steps` | Mỗi bước một dòng riêng, giữa 2 bước **chỉ 1 lần `\n`** — KHÔNG dùng `\n\n`. Các bước là một mạch trình tự liên tục, tách rời ra làm mất cảm giác thứ tự |
+| `Test Data` | Các khối `- Endpoint:` · `- Headers:` · `- Body:` (và `- DB:` nếu có) cách nhau **đúng 1 dòng trống**. Trong khối `- Headers:` **mỗi header một dòng riêng** |
+| `Expected result` | Các khối (`N. Kiểm tra HTTP Status...` · `- Json trả về có...` · `- Json có dạng theo format:` + JSON) cách nhau **đúng 1 dòng trống**; JSON dính liền dòng nhãn của nó |
+
+Khuôn `Test Data` chuẩn (viết trong TSV, `\n` là 2 ký tự):
+
+```text
+- Endpoint: POST https://<host>/<path>\n\n- Headers:\nContent-Type: application/json\n<header>: <giá trị>\nAuthorization: Basic <token>\n\n- Body:\n<body giữ nguyên định dạng gốc>
+```
+
+Khi mở ra trong `.xlsx` (ô đã bật `wrapText`) sẽ thành:
+
+```text
+- Endpoint: POST https://<host>/<path>
+
+- Headers:
+Content-Type: application/json
+<header>: <giá trị>
+Authorization: Basic <token>
+
+- Body:
+<body giữ nguyên định dạng gốc>
+```
 
 ### 3. Quy tắc cột Notes (Cột 19)
 
@@ -367,25 +414,42 @@ TD: TD_P3_003 | [PENDING_DOC] Error message chưa có trong PTTK
 Đây là mỏ neo duy nhất nối TC ↔ node Test Design sau khi TC ID đã bỏ mã node (mục V.1).
 Thiếu `TD:` ở bất kỳ dòng nào → PHASE 3 Self-Audit FAIL.
 
+Khi file chạy **chế độ B của cột `Test Case ID`** (tái dùng ID bộ TC gốc — mục VII.1), `Notes`
+phải mang thêm đúng 1 trong 2 nhãn nguồn gốc, đặt ngay sau mỏ neo `TD:`:
+
+```text
+TD: TD_P3_013 | [GIU NGUYEN] ID goc: AML_API_MT_01
+TD: TD_P3_006 | [TC MOI THEM] [BVA+] | Ly do: TC goc chua co case bien tren cho transactionId
+```
+
+Dòng có ô `Test Case ID` để trống mà `Notes` thiếu `[TC MOI THEM]` → Self-Audit FAIL: không
+phân biệt được "TC mới thêm" với "quên điền ID".
+
 ### 4. Dòng tiêu đề nhóm (Group Header Row) — BẮT BUỘC
 
 Trước dòng TC đầu tiên của **mỗi block**, chèn **1 dòng tiêu đề nhóm**: ô đầu tiên chứa nhãn
 in đậm, **18 ô còn lại để trống**.
 
 ```text
-"**<TÊN NHÓM RỦI RO> · BLOCK: <Tên block> · Risk: <Mức>**"	""	""	...	""
+"**<TÊN NHÓM RỦI RO> - <Tên block>**"	""	""	...	""
 ```
 
 Ví dụ thực tế:
 
 ```text
-"**NHÓM FUNCTION · BLOCK: Happy Path · Risk: High**"	""	""	""	...
-"**NHÓM VALIDATE · BLOCK: Field 'amount' · Risk: Medium**"	""	""	""	...
-"**NHÓM PHÂN QUYỀN · BLOCK: Authentication · Risk: High**"	""	""	""	...
-"**NHÓM ẢNH HƯỞNG CHỨC NĂNG LIÊN QUAN · BLOCK: Response Data · Risk: High**"	""	...
+"**NHÓM FUNCTION - Happy Path**"	""	""	""	...
+"**NHÓM VALIDATE - Field 'amount'**"	""	""	""	...
+"**NHÓM PHÂN QUYỀN - Authentication**"	""	""	""	...
+"**NHÓM ẢNH HƯỞNG CHỨC NĂNG LIÊN QUAN - Response Data**"	""	...
 ```
 
 - `<TÊN NHÓM RỦI RO>` là 1 trong 4 giá trị của cột `Function` (mục VII.2), viết HOA.
+- Dấu phân cách là **` - `** (khoảng trắng + gạch nối + khoảng trắng). **KHÔNG** ghi tiền tố
+  `BLOCK: `, **KHÔNG** ghi hậu tố `· Risk: <mức>` — Risk Level đã có cột riêng ở từng dòng TC
+  nên nhắc lại trên nhãn chỉ làm nhãn dài, khó đọc khi mở file Excel.
+- Tên block giữ nguyên như cột `Group Tests`, kể cả khi bản thân nó chứa dấu `—`
+  (VD `**NHÓM VALIDATE - Bản tin MSB003 — InvolvedParty**`). Script
+  `api_tsv_to_md_xlsx.js` tách tên nhóm bằng lần xuất hiện đầu tiên của ` - `.
 - Dòng tiêu đề nhóm **không được đánh TC ID** và **không tính vào tổng số TC**.
 - Đây chính là cơ chế phân nhóm trực quan mà `rbt_manual_testing` dùng cho TC UI
   (`| **NHÓM FUNCTION** | | | ... |`) — script `api_tsv_to_md_xlsx.js` nhận diện dòng này
@@ -395,10 +459,31 @@ Ví dụ thực tế:
 
 ### 1. "Test Case ID"
 
+Cột này có **2 chế độ**, chọn đúng 1 chế độ cho cả file — không được trộn.
+
+**Chế độ A — SINH MỚI** (mặc định, khi không có bộ TC gốc của khách):
+
 - Format: `<DỰ_ÁN>_<MODULE>_TC_<NNN>` (VD: `NHS_MINVAL_TC_001`, `MSB_AMLSCREEN_TC_042`).
 - Prefix `<DỰ_ÁN>_<MODULE>` cố định cho toàn file, viết HOA.
 - `<NNN>`: bộ đếm liên tục toàn file, **không reset** (xem mục V.4).
-- Node Test Design ghi ở cột `Notes` dạng `TD: <Node ID>`, **không** nhét vào ID.
+
+**Chế độ B — TÁI DÙNG ID CỦA BỘ TC GỐC** (bắt buộc dùng khi input có file TC sẵn của khách):
+
+- TC giữ lại từ bộ gốc → ô `Test Case ID` ghi **đúng ID trong file khách**, copy nguyên văn
+  (VD `AML_API_EP_01`), không đổi khuôn, không đánh số lại.
+- TC do mình sinh thêm để lấp gap coverage → **để trống ô này**, và cột `Notes` phải mang nhãn
+  `[TC MOI THEM]`. Người chủ bộ TC sẽ tự cấp ID theo hệ thống đánh số của họ; mình cấp ID mới
+  ở đây sẽ đâm vào dải ID họ đang dùng.
+- ID trùng nhau **được phép** ở chế độ này nếu chính file gốc trùng — sửa cho hết trùng là làm
+  lệch truy vết ngược về file khách. Ghi rõ chỗ trùng trong báo cáo bàn giao.
+- Mỗi dòng vẫn giữ đủ 2 mỏ neo ở cột `Notes`: `TD: <Node ID>` (về Test Design) và
+  `[GIU NGUYEN] ID goc: <ID>` / `[TC MOI THEM]` (về bộ TC gốc). Với TC chưa có ID, `TD: <Node ID>`
+  chính là cách duy nhất để định vị dòng TC từ Traceability Matrix.
+- Bảng Traceability Matrix khi đó cột `Test Case ID` cũng ghi ID gốc — không tạo thêm cột
+  "dải TC ID" thứ hai lặp lại đúng nội dung đó.
+
+**Chung cho cả 2 chế độ:** node Test Design ghi ở cột `Notes` dạng `TD: <Node ID>`, **không**
+nhét vào ID.
 
 ### 2. "Function"
 
@@ -540,56 +625,17 @@ Ví dụ đúng:
 
 - ❌ KHÔNG đánh số `1.` `2.` `3.` — dùng gạch đầu dòng `- `.
 - ❌ KHÔNG ghi `Env: SIT` — đã có cột `Environment` riêng, ghi lại là trùng.
-- ❌ KHÔNG ghi `URL:` / `Endpoint:` / `Header:` — chuyển hết sang cột `Test Data` (mục VII.6).
+- ❌ KHÔNG ghi `URL:` / `Endpoint:` / `Header:` — chuyển hết sang cột `Test Data` (mục VII.7).
   Trước đây 3 thông tin này bị ghi ở CẢ hai cột, làm ô Pre-conditions dài gấp đôi mà không
   thêm thông tin nào.
 - ❌ KHÔNG dùng định lượng mơ hồ ("≥1 record", "một vài giao dịch", "dữ liệu hợp lệ") —
   phải nêu ID/giá trị cụ thể.
 
-### 6. "Test Data"
-
-Cột này chứa **toàn bộ thứ cần để dựng được request**, kể cả endpoint và headers. Mỗi
-thành phần viết **1 dòng bắt đầu bằng `- `**:
-
-- 1 API đơn lẻ:
-
-  ```text
-  - Endpoint: <METHOD> <Base URL><Endpoint path>
-  - Headers: Content-Type=application/json, Authorization=<token nếu có>, <custom headers>
-  - File: <Tên_API>.json
-  - Body: {<json body từ PTTK, override theo test case>}
-  - DB: <IP:Port/service, username: X>     ← CHỈ khi TC có verify/query DB
-  ```
-
-- Luồng nhiều API:
-
-  ```text
-  - Endpoint: <METHOD> <Base URL><Endpoint path>
-  - Headers: <...>
-  - <Tên_API_1>: {<json>}
-  - <Tên_API_2>: {<json>}
-  ```
-
-> **KHÔNG đánh số `1.` `2.` `3.` ở cột này** — giống cột `Pre-conditions` (mục VII.5).
-> Đánh số chỉ dùng cho `Test Steps` và `Expected result`, nơi thứ tự thực hiện là bắt buộc
-> và Expected phải map 1-1 với số bước. Test Data là **tập thành phần cấu thành request**,
-> không có thứ tự thực hiện.
->
-> Riêng phần nội dung của Body (JSON/XML/bản tin SWIFT) viết tiếp ở các dòng sau `- Body:`
-> và **giữ nguyên định dạng gốc** — không thêm `- ` vào từng dòng của body.
-
-Nếu Base URL hoặc thông tin DB không có trong tài liệu → ghi `[PENDING_DOC]`, không bịa.
-
-> **Đây là NƠI DUY NHẤT chứa URL / Headers / file `.json` / Body / DB connection.**
-> Cột `Test Steps` **KHÔNG được lặp lại** 4 thông tin này (xem mục VII.7). Trước đây mỗi TC
-> chép nguyên 3–4 dòng setup ("Thiết lập URL...", "Thiết lập Header...", "Thiết lập Body từ
-> file...") vào Test Steps, làm ô dài gấp đôi mà không thêm thông tin nào so với Test Data.
-
-### 7. "Test Steps"
+### 6. "Test Steps"
 
 > **QUY TẮC BẮT BUỘC:** Test Steps chỉ ghi **hành động thực thi**, KHÔNG chép lại phần setup
 > request. URL / Headers / Body / tên file `.json` / DB connection nằm ở cột `Test Data`
-> (mục VII.6) — nhắc lại trong Test Steps là trùng lặp, làm ô dữ liệu dài vô ích.
+> (mục VII.7) — nhắc lại trong Test Steps là trùng lặp, làm ô dữ liệu dài vô ích.
 
 Chỉ có **2 Skeleton**, chọn theo DB Verify rule (mục V.3):
 
@@ -644,6 +690,45 @@ Riêng `[RSP-Data]` (TD_P4): bước 3–4 là **query đối chiếu read-only*
 ❌ Sai:  1. Thiết lập URL: https://api.sit.env, Endpoint: /v1/trans/minval.   ← thuộc về Test Data
 ❌ Sai:  1. Gửi POST request tới API transaction-screening với dữ liệu không hợp lệ.  ← mơ hồ, không biết sai gì
 ```
+
+### 7. "Test Data"
+
+Cột này chứa **toàn bộ thứ cần để dựng được request**, kể cả endpoint và headers. Mỗi
+thành phần viết **1 dòng bắt đầu bằng `- `**:
+
+- 1 API đơn lẻ:
+
+  ```text
+  - Endpoint: <METHOD> <Base URL><Endpoint path>
+  - Headers: Content-Type=application/json, Authorization=<token nếu có>, <custom headers>
+  - File: <Tên_API>.json
+  - Body: {<json body từ PTTK, override theo test case>}
+  - DB: <IP:Port/service, username: X>     ← CHỈ khi TC có verify/query DB
+  ```
+
+- Luồng nhiều API:
+
+  ```text
+  - Endpoint: <METHOD> <Base URL><Endpoint path>
+  - Headers: <...>
+  - <Tên_API_1>: {<json>}
+  - <Tên_API_2>: {<json>}
+  ```
+
+> **KHÔNG đánh số `1.` `2.` `3.` ở cột này** — giống cột `Pre-conditions` (mục VII.5).
+> Đánh số chỉ dùng cho `Test Steps` và `Expected result`, nơi thứ tự thực hiện là bắt buộc
+> và Expected phải map 1-1 với số bước. Test Data là **tập thành phần cấu thành request**,
+> không có thứ tự thực hiện.
+>
+> Riêng phần nội dung của Body (JSON/XML/bản tin SWIFT) viết tiếp ở các dòng sau `- Body:`
+> và **giữ nguyên định dạng gốc** — không thêm `- ` vào từng dòng của body.
+
+Nếu Base URL hoặc thông tin DB không có trong tài liệu → ghi `[PENDING_DOC]`, không bịa.
+
+> **Đây là NƠI DUY NHẤT chứa URL / Headers / file `.json` / Body / DB connection.**
+> Cột `Test Steps` **KHÔNG được lặp lại** 4 thông tin này (xem mục VII.6). Trước đây mỗi TC
+> chép nguyên 3–4 dòng setup ("Thiết lập URL...", "Thiết lập Header...", "Thiết lập Body từ
+> file...") vào Test Steps, làm ô dài gấp đôi mà không thêm thông tin nào so với Test Data.
 
 ### 8. "Expected result"
 
@@ -763,7 +848,7 @@ verify response phải đủ **3 dòng thông tin**:
 ### Dòng tiêu đề nhóm (chèn trước TC đầu tiên của mỗi block)
 
 ```text
-"**NHÓM 1 — METHOD & HEADER · BLOCK: Common · Risk: Medium**"	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""
+"**NHÓM VALIDATE - Common**"	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""	""
 ```
 
 ---
@@ -778,8 +863,8 @@ verify response phải đủ **3 dòng thông tin**:
 | **Risk Level** | "Medium" |
 | **Test Case Title** | "Kiểm tra gọi API thành công với Method, Token, Content-Type và Accept header đều hợp lệ" |
 | **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT (không cần kết nối DB cho TC này)\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active" |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz, Accept=application/json\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":50000,""reason"":""test""}" |
 | **Test Steps** | "1. Gửi POST request tới API minval với Method, Token, Content-Type và Accept header đều hợp lệ (giữ nguyên data từ file minval.json).\n2. Kiểm tra thông tin HTTP Status và Response Body trả về." |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz, Accept=application/json\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":50000,""reason"":""test""}" |
 | **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n- Json trả về có thông báo xử lý thành công: ""OK""\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""message"": ""OK""\n}" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
@@ -797,8 +882,8 @@ verify response phải đủ **3 dòng thông tin**:
 | **Risk Level** | "Medium" |
 | **Test Case Title** | "Kiểm tra API từ chối request thất bại khi thiếu field bắt buộc 'amount' trong body" |
 | **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT (không cần kết nối DB cho TC này)\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active" |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""reason"":""test""}" |
 | **Test Steps** | "1. Gửi POST request tới API minval với body thiếu field bắt buộc 'amount'.\n2. Kiểm tra thông tin HTTP Status và Response Body trả về." |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""reason"":""test""}" |
 | **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 400 Bad Request\n- Json trả về có thông báo lỗi thiếu field bắt buộc 'amount': [PENDING_DOC]\n- Json có dạng theo format:\n{\n  ""code"": ""ERR_MISSING_FIELD"",\n  ""message"": [PENDING_DOC]\n}" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
@@ -816,8 +901,8 @@ verify response phải đủ **3 dòng thông tin**:
 | **Risk Level** | "High" |
 | **Test Case Title** | "Kiểm tra tạo yêu cầu thành công với 'amount' tại biên dưới (Min = 10,000)" |
 | **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT; kết nối DB 10.53.115.66:1521/nhs25pdb (username USER_DB) sẵn sàng để verify\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active, KHÔNG có yêu cầu nào ở trạng thái PENDING" |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":10000,""reason"":""boundary test""}\n- DB: 10.53.115.66:1521/nhs25pdb, username: USER_DB" |
 | **Test Steps** | "1. Gửi POST request tới API minval với 'amount' = 10000 (tại biên dưới Min hợp lệ).\n2. Kiểm tra thông tin HTTP Status và Response Body trả về.\n3. Truy vấn thông tin tại bảng THRESHOLD_REQUESTS với điều kiện account_id = 'ACC001' ORDER BY created_at DESC FETCH FIRST 1 ROW.\n4. Verify thông tin dữ liệu trong Database." |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":10000,""reason"":""boundary test""}\n- DB: 10.53.115.66:1521/nhs25pdb, username: USER_DB" |
 | **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n- Json trả về có thông tin yêu cầu vừa tạo: amount = 10000, status = ""PENDING""\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""data"": {\n    ""request_id"": ""<any UUID>"",\n    ""amount"": 10000,\n    ""status"": ""PENDING""\n  }\n}\n\n4. Verify thông tin dữ liệu trong Database:\n- Table: THRESHOLD_REQUESTS\n- Record tồn tại (được tạo mới thành công)\n- Column AMOUNT = 10000\n- Column STATUS = 'PENDING'" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
@@ -835,8 +920,8 @@ verify response phải đủ **3 dòng thông tin**:
 | **Risk Level** | "High" |
 | **Test Case Title** | "Kiểm tra API chặn truy cập thành công khi 'account_id' hợp lệ nhưng thuộc sở hữu của user khác" |
 | **Pre-conditions** | "- User/Quyền: Tài khoản User A (role TRANS_REQUESTER), Bearer token_userA còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT (không cần kết nối DB cho TC này)\n- Dữ liệu có sẵn: Tài khoản ACC002 tồn tại trong DB và thuộc sở hữu của User B (không phải User A)" |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_userA\n- File: minval.json\n- Body: {""account_id"":""ACC002"",""amount"":50000,""reason"":""idor test""}" |
 | **Test Steps** | "1. Gửi POST request tới API minval bằng token của User A với 'account_id' = ""ACC002"" (tài khoản hợp lệ nhưng thuộc sở hữu User B).\n2. Kiểm tra thông tin HTTP Status và Response Body trả về." |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_userA\n- File: minval.json\n- Body: {""account_id"":""ACC002"",""amount"":50000,""reason"":""idor test""}" |
 | **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 403 Forbidden\n- Json trả về có thông báo từ chối truy cập tài khoản không thuộc sở hữu: [PENDING_DOC]\n- Json có dạng theo format:\n{\n  ""code"": ""ERR_FORBIDDEN"",\n  ""message"": [PENDING_DOC]\n}" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
@@ -854,8 +939,8 @@ verify response phải đủ **3 dòng thông tin**:
 | **Risk Level** | "Medium" |
 | **Test Case Title** | "Kiểm tra response trả về đúng kiểu Number cho field 'data.amount' với amount = 123456" |
 | **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT (không cần kết nối DB cho TC này)\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active, KHÔNG có yêu cầu nào ở trạng thái PENDING" |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":123456,""reason"":""schema type check""}" |
 | **Test Steps** | "1. Gửi POST request tới API minval với 'amount' = 123456 để kiểm tra kiểu dữ liệu field trả về.\n2. Kiểm tra thông tin HTTP Status, Response Header Content-Type và cấu trúc/kiểu dữ liệu của Response Body." |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":123456,""reason"":""schema type check""}" |
 | **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n- Response Header: Content-Type = application/json\n- Json trả về có đúng kiểu dữ liệu từng field: $.code là String, $.data.amount là Number (123456) — KHÔNG phải String (""123456""), $.data.status là String, $.data.request_id là String/UUID không rỗng; KHÔNG có field lạ ngoài cấu trúc PTTK\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""data"": {\n    ""request_id"": ""<UUID không rỗng>"",\n    ""amount"": 123456,\n    ""status"": ""PENDING""\n  }\n}" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |

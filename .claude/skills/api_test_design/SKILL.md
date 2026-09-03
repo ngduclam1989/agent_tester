@@ -62,30 +62,73 @@ Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1
 
 **Output — schema 19 cột (Contract cố định, copy chính xác header):**
 ```
-"Test Case ID"	"Function"	"Group Tests"	"Risk Level"	"Test Case Title"	"Pre-conditions"	"Test Data"	"Test Steps"	"Expected result"	"Environment"	"Priority"	"Regression"	"Automation"	"Manual Test Results Round 1"	"Manual Test Results Round 2"	"Automation Test Results"	"Actual result"	"BugID"	"Notes"
+"Test Case ID"	"Function"	"Group Tests"	"Risk Level"	"Test Case Title"	"Pre-conditions"	"Test Steps"	"Test Data"	"Expected result"	"Environment"	"Priority"	"Regression"	"Automation"	"Manual Test Results Round 1"	"Manual Test Results Round 2"	"Automation Test Results"	"Actual result"	"BugID"	"Notes"
 ```
 
+> **Thứ tự cột:** `Pre-conditions` → `Test Steps` → `Test Data` → `Expected result`.
+> Test Steps là mạch đọc chính (làm gì, theo thứ tự nào), Test Data là phụ lục tra cứu của
+> chính các bước đó nên đứng sau — không để Test Data chen vào giữa.
+>
 > **Chuẩn hóa theo RBT (thay cho contract cũ):** thêm cột `Risk Level` ở vị trí 4;
 > gộp `Scenario Outline` + `Test Case Summary` thành 1 cột `Test Case Title` ở vị trí 5;
 > `Group Tests` mang **tên block** thay vì lặp lại `Function`; mỗi block có **1 dòng tiêu đề
-> nhóm** in đậm đứng trước (giống `| **NHÓM FUNCTION** |` của TC UI); `Notes` bắt buộc chứa
-> `TD: <Node ID>` để giữ traceability về Test Design.
+> nhóm** in đậm đứng trước, nhãn dạng `**<NHÓM rủi ro> - <tên block>**` (VD
+> `**NHÓM VALIDATE - Header: transactionId**`) — không ghi tiền tố `BLOCK: `, không lặp
+> `Risk` vì đã có cột `Risk Level`; `Notes` bắt buộc chứa `TD: <Node ID>` để giữ traceability
+> về Test Design.
+>
+> **Ghi chú thực thi đi chung cột `Notes`, không mở cột mới.** Khi bộ TC gốc của khách có
+> cột ghi chú (kể cả cột không đặt tên) hoặc khi cần ghi lý do TC không PASS ("off server",
+> "UAT chưa có đầu kênh"...), nối vào cuối `Notes` dưới dạng `| Ghi chu TC goc: <nội dung>`
+> — giữ nguyên contract 19 cột, mỏ neo `TD: <node>` vẫn đứng đầu ô nên không hỏng traceability.
 
 **Định dạng file cuối cùng bàn giao là `.md` + `.xlsx`, KHÔNG phải `.tsv`.** TSV chỉ dùng làm **định dạng sinh trung gian tạm thời** (dễ escape/parse đúng 19 cột khi model viết tuần tự) — xem chi tiết quy trình convert + xóa TSV ở mục "Lưu trữ" bên dưới.
 
 **Các điểm mapping quan trọng** (chi tiết đầy đủ nằm trong file reference, mục V–VII):
-- **Test Case ID**: `<DỰ_ÁN>_<MODULE>_TC_<NNN>` (VD: `MSB_AMLSCREEN_TC_042`) — cùng quy tắc TC ID của `rbt_manual_testing`. `<NNN>` đánh số **liên tục toàn file, KHÔNG reset**. Node Test Design chuyển sang cột `Notes` dạng `TD: TD_P1_005`.
+- **Test Case ID** — 2 chế độ, chọn đúng 1 cho cả file (chi tiết ở reference mục VII.1):
+  | Chế độ | Dùng khi | Nội dung ô |
+  |---|---|---|
+  | A — Sinh mới (mặc định) | Không có bộ TC gốc của khách | `<DỰ_ÁN>_<MODULE>_TC_<NNN>` (VD `MSB_AMLSCREEN_TC_042`), `<NNN>` **liên tục toàn file, KHÔNG reset** |
+  | B — Tái dùng ID gốc | Input có file TC sẵn của khách | TC giữ lại: ghi **đúng ID trong file khách** (VD `AML_API_EP_01`). TC mình sinh thêm: **để trống**, `Notes` mang nhãn `[TC MOI THEM]` để khách tự cấp ID theo hệ thống của họ |
+  Chế độ B cho phép ID trùng nếu chính file gốc trùng — sửa cho hết trùng là làm lệch truy vết ngược. Cả 2 chế độ đều đưa node Test Design sang cột `Notes` dạng `TD: TD_P1_005`.
 - **Function**: là **nhóm rủi ro RBT** — `NHÓM FUNCTION` / `NHÓM VALIDATE` / `NHÓM PHÂN QUYỀN` / `NHÓM ẢNH HƯỞNG CHỨC NĂNG LIÊN QUAN` (bản API của 5 nhóm rủi ro TC UI, bỏ nhóm *UI & Behavior*). KHÔNG ghi tên 4 cấu phần kỹ thuật vào cột này — 4-phase là cách **sinh** Test Condition, không phải cách **trình bày** Test Case; lớp kỹ thuật vẫn truy được qua `TD_P1..TD_P4` ở cột `Notes`.
 - **Group Tests / Risk Level**: đọc từ Header `### BLOCK: <tên> — Risk: <mức>` của Test Design. `Risk Level` là enum sạch High/Medium/Low, gán ở **mức block**, khác trục với `Priority` (gán theo tag kỹ thuật).
 - **Test Case Title**: cột tiêu đề duy nhất của TC (đã gộp `Scenario Outline` + `Test Case Summary` cũ), bắt buộc theo convention `Kiểm tra <hành động> <đối tượng> với <dữ liệu/điều kiện>` — dùng chung khuôn đặt tên với cột `Test Title` của TC UI. Giả định/`[ASSUMPTION]` ghi ở cột `Notes`.
 - **Pre-conditions**: đúng 3 thành phần (User/Quyền · Trạng thái hệ thống · Dữ liệu có sẵn cụ thể), mỗi thành phần 1 dòng bắt đầu bằng `- ` — **không đánh số**. Endpoint/Headers/Base URL/DB connection chuyển hết sang cột `Test Data`.
-- **Test Data**: là **nơi duy nhất** chứa URL / Headers / file `.json` / Body / DB connection. Test Steps KHÔNG lặp lại 4 thông tin này. Mỗi thành phần 1 dòng bắt đầu bằng `- ` — **không đánh số** (nội dung body giữ nguyên định dạng gốc, không thêm gạch đầu dòng vào từng dòng body).
 - **Test Steps** rút gọn, chỉ ghi hành động thực thi — dùng 1 trong **2 Skeleton**:
   | Skeleton | Áp dụng khi | Nội dung |
   |---|---|---|
   | 1 | Toàn bộ TD_P1; mọi Negative case; API read-only; TD_P4 `[RSP-Schema]`/`[RSP-Error]`/`[RSP-Pagination]`/`[Smoke]` | **2 bước**: `1. Gửi <METHOD> request tới API <tên> với <tóm gọn case đang test>.` → `2. Kiểm tra thông tin HTTP Status và Response Body trả về.` |
   | 2 | Write API Happy Path P2/P3; `[BVA+]`; `[Extra-Fields]`/`[Whitespace]` expected HTTP 200; TD_P4 `[RSP-Data]` | **4 bước**: bước 1–2 như Skeleton 1, thêm `3. Truy vấn bảng <tên> với điều kiện <where>.` → `4. Verify thông tin dữ liệu trong Database.` |
   Phần `<tóm gọn case đang test>` bám sát `Scenario Outline`, nêu rõ field override + giá trị — không viết mơ hồ ("dữ liệu không hợp lệ"), không giải thích business rule.
+- **Test Data**: là **nơi duy nhất** chứa URL / Headers / file `.json` / Body / DB connection. Test Steps KHÔNG lặp lại 4 thông tin này. Mỗi thành phần 1 dòng bắt đầu bằng `- ` — **không đánh số** (nội dung body giữ nguyên định dạng gốc, không thêm gạch đầu dòng vào từng dòng body).
+- **Xuống dòng trong ô (bắt buộc — quyết định ô có đọc được hay không).** Quy tắc chung:
+  một **khối** bắt đầu ở dòng mở bằng `- ` hoặc `N. `; mọi dòng còn lại (thân JSON, thân
+  bản tin, danh sách header) thuộc về khối ngay trước nó.
+
+  | Chỗ | Quy tắc |
+  |---|---|
+  | `Pre-conditions` | 3 khối (User/Quyền · Trạng thái hệ thống · Dữ liệu có sẵn) — **cách nhau đúng 1 dòng trống** |
+  | `Test Steps` | Mỗi bước `1.` `2.` `3.` `4.` một dòng riêng — chỉ **1 lần xuống dòng** giữa 2 bước, **KHÔNG** chèn dòng trống (khác 3 cột kia: các bước là một mạch đọc liên tục, tách rời ra làm mất cảm giác trình tự) |
+  | `Test Data` | Các khối `- Endpoint:` · `- Headers:` · `- Body:` (và `- DB:` nếu có) — **cách nhau đúng 1 dòng trống**. Trong khối `- Headers:` mỗi header một dòng riêng, không dồn nhiều header vào một dòng |
+  | `Expected result` | Các khối (`N. Kiểm tra HTTP Status...` · `- Json trả về có...` · `- Json có dạng theo format:` + JSON) — **cách nhau đúng 1 dòng trống**; JSON giữ nguyên định dạng nhiều dòng và dính liền dòng nhãn của nó |
+
+  Khuôn `Test Data` chuẩn:
+
+  ```text
+  - Endpoint: POST https://<host>/<path>
+
+  - Headers:
+  Content-Type: application/json
+  <header nghiệp vụ 1>: <giá trị>
+  <header nghiệp vụ 2>: <giá trị>
+  Authorization: Basic <token>
+
+  - Body:
+  <nội dung body, giữ nguyên định dạng gốc nhiều dòng>
+  ```
+
+  Trong TSV trung gian, xuống dòng viết bằng 2 ký tự `\n`; dòng trống là `\n\n`. Converter tự đổi thành xuống dòng thật cho `.xlsx` (ô đã bật `wrapText`) và thành `<br>` cho bảng `.md`.
 - **Expected result** mở đầu bằng đúng số bước verify (`2.` cho response, `4.` cho DB), mỗi khối response gồm đủ 3 dòng: `2. Kiểm tra thông tin HTTP Status trả về: <mã + tên>` → `- Json trả về có <thông báo/thông tin>: ...` → `- Json có dạng theo format:` + FULL JSON body.
 - **Verify DB**: mặc định KHÔNG verify cho mọi Negative case, toàn bộ TD_P1, và TD_P4 (trừ `[RSP-Data]` — chỉ query đối chiếu). BẮT BUỘC verify DB cho Happy Path/`[BVA+]` trên Write API. Xem bảng đầy đủ ở file reference mục V.3.
 - **Priority** map theo tag: `[Smoke]` `[BVA]` `[BVA+]` `[IDOR]` `[RSP-Schema]` `[RSP-Data]` `[Security]` → High; `[ECP]` `[DT]` `[ST]` `[Accept]` `[Format]` `[Basic]` `[Malformed]` `[Extra-Fields]` `[BVA/ECP]` `[RSP-Error]` `[RSP-Pagination]` → Medium; `[EG]` `[Whitespace]` → Low.
