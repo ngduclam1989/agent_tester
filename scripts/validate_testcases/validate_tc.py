@@ -213,10 +213,16 @@ def _validate_api(path, lines):
         bm = API_PRECOND_BANNED_RE.search(precond)
         if bm:
             fail(errors, f"Dòng {i+1} ({tc_label}): 'Pre-conditions' còn chứa '{bm.group(1)}:' — Env/URL/Endpoint/Header phải nằm ở cột 'Test Data', không lặp ở đây.")
-        for part in ("User/Quyền", "Trạng thái hệ thống", "Dữ liệu có sẵn"):
+        # TC API chi bat buoc 2 thanh phan. Dong "Trang thai he thong" bi bo vi noi
+        # dung giong het nhau o moi TC cua cung 1 API (service dang chay, moi truong
+        # san sang) nen lap lai hang tram lan khong them thong tin; Base URL da nam o
+        # cot Test Data, gia dinh ve DB da ghi o muc 1 va muc 5 cua file .md.
+        for part in ("User/Quyền", "Dữ liệu có sẵn"):
             if part.lower() not in precond.lower():
-                warnings.append(f"Dòng {i+1} ({tc_label}): 'Pre-conditions' thiếu thành phần '{part}' (bắt buộc đủ 3 thành phần).")
+                warnings.append(f"Dòng {i+1} ({tc_label}): 'Pre-conditions' thiếu thành phần '{part}' (TC API bắt buộc đủ 2 thành phần: User/Quyền và Dữ liệu có sẵn).")
                 break
+        if "trạng thái hệ thống" in precond.lower():
+            warnings.append(f"Dòng {i+1} ({tc_label}): 'Pre-conditions' còn dòng 'Trạng thái hệ thống' — TC API bỏ dòng này, đưa thông tin môi trường về mục 1 của file .md.")
 
     # ---- TC ID: kiem theo dung che do file dang dung ----
     if tc_ids and source_ids:

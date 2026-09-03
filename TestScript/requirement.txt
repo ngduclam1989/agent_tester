@@ -128,3 +128,30 @@
 
  faker / @faker-js/faker Không cài. Test data random sinh bằng hàm tự viết tại
                          common/api-common.ts -> generateTraceableToken()
+
+
+
+
+
+
+curl --location 'https://10.0.137.75:7001/transaction-screening/v1/transaction-screening' \
+--header 'Content-Type: application/json' \
+--header 'transactionId: TF002' \
+--header 'requestId: TF001' \
+--header 'transactionType: MT' \
+--header 'channel: T24' \
+--header 'isCallBack: N' \
+--header 'requestUserId: 1' \
+--header 'Cookie: JSESSIONID=y2YyMBjrxzc7dswUyMO_K0_EX5gYVjC42KjbIC1m8U3Wr_WC059j!663991662' \
+--header 'branchCd: VN0001001' \
+--header 'Authorization: Basic YWE6YmI=' \
+--data '{1:F01MCOBVNVXAXXX0000000000}
+{2:O2951201260724BFICCUHHAXXX00010000012607241201N}
+{3:{108:MT295TEST0003}}
+{4:
+:20:QRY2607240003
+:21:NONREF
+:75:PLEASE CONFIRM STATUS\S TRANSACTION
+-}{5:{MAC:00000000}{CHK:1A2B3C4D5E6F}}'
+
+
