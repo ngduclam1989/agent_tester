@@ -178,6 +178,22 @@ function buildXlsx(tables, outputPath) {
   // ── AutoFilter ─────────────────────────────────────────────────────────
   ws["!autofilter"] = { ref: `A1:I${allRows.length + 1}` };
 
+  // ── Outline group: TC thụt vào dưới dòng tiêu đề nhóm gần nhất ────────────
+  // g1 (nhóm rủi ro) cấp 0, g2 (nhóm con theo trường) cấp 1, TC luôn là cấp thấp nhất
+  // → đóng/mở được cả nhóm rủi ro lẫn từng trường. summaryBelow=false vì tiêu đề nằm TRÊN cụm TC.
+  ws["!outline"] = { above: true };
+  let lastGroupKind = null;
+  ws["!rows"] = [
+    {},
+    ...kinds.map((kind) => {
+      if (kind !== "tc") {
+        lastGroupKind = kind;
+        return kind === "g2" ? { level: 1 } : {};
+      }
+      return { level: lastGroupKind === "g2" ? 2 : 1 };
+    }),
+  ];
+
   // ── Tô màu theo bảng màu template ──────────────────────────────────────
   const base = { name: FONT, sz: 10 };
   const e = { style: "thin", color: { rgb: PALETTE.border } };

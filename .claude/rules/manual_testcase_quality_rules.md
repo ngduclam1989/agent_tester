@@ -48,8 +48,36 @@ Cả 2 lớp lỗi này **không phải lỗi logic nghiệp vụ** (không sai 
     `- Body:` thì giữ nguyên định dạng gốc, không thêm gạch đầu dòng vào từng dòng body.
     `validate_tc.py` báo lỗi khi phát hiện Pre-condition hoặc Test Data còn đánh số.
 
+12. **Ô nhiều dòng phải ngắt khối bằng 1 dòng trống.** Một **khối** bắt đầu ở dòng mở bằng
+    `- ` hoặc `N. `; mọi dòng còn lại (thân JSON, thân bản tin SWIFT/XML, danh sách header)
+    thuộc về khối ngay trước nó. Áp dụng:
+    - `Pre-condition`, `Test Data`, `Expected result`: các khối **cách nhau đúng 1 dòng trống**.
+    - `Test Steps`: mỗi bước một dòng riêng nhưng **chỉ xuống dòng 1 lần** giữa 2 bước —
+      KHÔNG chèn dòng trống, vì các bước là một mạch trình tự liên tục, tách rời ra làm mất
+      cảm giác thứ tự.
+    - Trong khối `- Headers:` của `Test Data`, **mỗi header nằm trên một dòng riêng**.
+
+    Rule ra đời sau khi bàn giao bộ TC API AML: nội dung ô đã có xuống dòng thật và ô Excel
+    đã bật `wrapText`, nhưng các nhóm thông tin khác loại dính liền nhau thành một mảng chữ
+    đặc nên người review không đọc nổi. "Có xuống dòng rồi" chưa đủ để kết luận ô đọc được.
+
+13. **Pre-Condition của TC API chỉ có 2 thành phần: `User/Quyền` và `Dữ liệu có sẵn`** —
+    **KHÔNG viết dòng `Trạng thái hệ thống`**. Nội dung dòng đó (service đang chạy, môi
+    trường sẵn sàng, có/không kết nối DB) **giống hệt nhau ở mọi TC của cùng 1 API**, nên
+    lặp lại hàng trăm lần chỉ làm ô dày thêm mà không thêm thông tin; nó thuộc về mục 1
+    (Thông tin chung) và mục 5 (Ambiguities & Assumptions) của file `.md` bàn giao. Không
+    nhúng credential (`Basic ...`, token, mật khẩu) vào Pre-Condition — credential thuộc về
+    cột `Test Data`.
+
+    Đây là **điểm khác biệt có chủ đích so với rule 9 (Pre-Condition của TC UI)**: TC UI vẫn
+    bắt buộc đủ 3 thành phần vì "màn hình đang đứng" là thông tin riêng của từng TC, còn API
+    không có khái niệm màn hình và "trạng thái hệ thống" lại là hằng số dùng chung.
+    `validate_tc.py` cảnh báo khi TC API thiếu 1 trong 2 thành phần, hoặc khi còn sót dòng
+    `Trạng thái hệ thống`.
+
 ## Tham chiếu
 
 - Skill chính: `.claude/skills/rbt_manual_testing/SKILL.md` — Bước 5 mục 6 (Traceability Coverage Audit), Bước 6 phần "BƯỚC 3: VALIDATE TRƯỚC KHI BÁO HOÀN THÀNH", mục "Quy tắc đặt tên Test Title/Test Scenario" (naming convention), mục "Quy tắc nội dung Pre-Condition (UI)" (3 thành phần bắt buộc).
+- Nhánh API (rule 12–13): `.claude/skills/api_test_design/SKILL.md` (mục mapping cột) và `.claude/skills/api_test_design/references/API-Gen-TC-From-TD-v4.md` mục **2b. Quy tắc ngắt khối trong ô** + mục **5. "Pre-conditions"**.
 - Script: `scripts/validate_testcases/validate_tc.py`.
 - Hook: `.claude/hooks/validate_testcases_on_write.sh`, khai báo tại `.claude/settings.json` → `hooks.PostToolUse`.

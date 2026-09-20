@@ -94,7 +94,14 @@ Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1
 - **Function**: là **nhóm rủi ro RBT** — `NHÓM FUNCTION` / `NHÓM VALIDATE` / `NHÓM PHÂN QUYỀN` / `NHÓM ẢNH HƯỞNG CHỨC NĂNG LIÊN QUAN` (bản API của 5 nhóm rủi ro TC UI, bỏ nhóm *UI & Behavior*). KHÔNG ghi tên 4 cấu phần kỹ thuật vào cột này — 4-phase là cách **sinh** Test Condition, không phải cách **trình bày** Test Case; lớp kỹ thuật vẫn truy được qua `TD_P1..TD_P4` ở cột `Notes`.
 - **Group Tests / Risk Level**: đọc từ Header `### BLOCK: <tên> — Risk: <mức>` của Test Design. `Risk Level` là enum sạch High/Medium/Low, gán ở **mức block**, khác trục với `Priority` (gán theo tag kỹ thuật).
 - **Test Case Title**: cột tiêu đề duy nhất của TC (đã gộp `Scenario Outline` + `Test Case Summary` cũ), bắt buộc theo convention `Kiểm tra <hành động> <đối tượng> với <dữ liệu/điều kiện>` — dùng chung khuôn đặt tên với cột `Test Title` của TC UI. Giả định/`[ASSUMPTION]` ghi ở cột `Notes`.
-- **Pre-conditions**: đúng 3 thành phần (User/Quyền · Trạng thái hệ thống · Dữ liệu có sẵn cụ thể), mỗi thành phần 1 dòng bắt đầu bằng `- ` — **không đánh số**. Endpoint/Headers/Base URL/DB connection chuyển hết sang cột `Test Data`.
+- **Pre-conditions (TC API)**: đúng **2 thành phần**, mỗi thành phần 1 dòng bắt đầu bằng `- ` — **không đánh số**:
+  ```text
+  - User/Quyền: Tài khoản đăng nhập có quyền gọi API <tên API> - token còn hạn
+
+  - Dữ liệu có sẵn: Thông tin dữ liệu mẫu <loại> hợp lệ có thông số <field phân loại> đang test, transactionId là <giá trị>; <điều kiện riêng của TC>
+  ```
+  **KHÔNG viết dòng `Trạng thái hệ thống`** (service đang chạy, môi trường sẵn sàng, có/không verify DB) — nội dung này giống hệt nhau ở mọi TC của cùng 1 API nên lặp lại hàng trăm lần không thêm thông tin; nó thuộc về **mục 1 (Thông tin chung)** và **mục 5 (Ambiguities & Assumptions)** của file `.md`. Đây là điểm **khác với Pre-Condition của TC UI** — TC UI vẫn giữ đủ 3 thành phần (User · Màn hình đang đứng · Dữ liệu cần thiết) vì màn hình xuất phát là thông tin riêng của từng TC.
+  Không nhúng credential (`Basic ...`, token, mật khẩu) vào `Pre-conditions` — credential thuộc về cột `Test Data`. Endpoint/Headers/Base URL/DB connection cũng chuyển hết sang `Test Data`.
 - **Test Steps** rút gọn, chỉ ghi hành động thực thi — dùng 1 trong **2 Skeleton**:
   | Skeleton | Áp dụng khi | Nội dung |
   |---|---|---|
@@ -108,7 +115,7 @@ Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1
 
   | Chỗ | Quy tắc |
   |---|---|
-  | `Pre-conditions` | 3 khối (User/Quyền · Trạng thái hệ thống · Dữ liệu có sẵn) — **cách nhau đúng 1 dòng trống** |
+  | `Pre-conditions` | 2 khối (User/Quyền · Dữ liệu có sẵn) — **cách nhau đúng 1 dòng trống** |
   | `Test Steps` | Mỗi bước `1.` `2.` `3.` `4.` một dòng riêng — chỉ **1 lần xuống dòng** giữa 2 bước, **KHÔNG** chèn dòng trống (khác 3 cột kia: các bước là một mạch đọc liên tục, tách rời ra làm mất cảm giác trình tự) |
   | `Test Data` | Các khối `- Endpoint:` · `- Headers:` · `- Body:` (và `- DB:` nếu có) — **cách nhau đúng 1 dòng trống**. Trong khối `- Headers:` mỗi header một dòng riêng, không dồn nhiều header vào một dòng |
   | `Expected result` | Các khối (`N. Kiểm tra HTTP Status...` · `- Json trả về có...` · `- Json có dạng theo format:` + JSON) — **cách nhau đúng 1 dòng trống**; JSON giữ nguyên định dạng nhiều dòng và dính liền dòng nhãn của nó |
@@ -176,6 +183,21 @@ dòng. File mẫu để đối chiếu mắt thường:
 
 Viền mảnh `4472C4` cho mọi ô; freeze dòng header; bật AutoFilter. Nhãn dòng nhóm bỏ dấu `**`
 khi ghi sang Excel (chỉ `.md` mới cần `**` để in đậm).
+
+**Quote-prefix (dấu `'` đầu ô) — bật cho MỌI ô:** rất nhiều ô của bộ TC mở đầu bằng `- `
+(`Pre-conditions`, `Test Data`) hoặc `=` / `+`. Khi người review bấm vào ô rồi Enter, Excel
+hiểu ký tự đầu là toán tử và cố parse thành công thức → hiện hộp thoại lỗi hoặc `#NAME?`.
+Converter tự bật thuộc tính `quotePrefix` cho toàn bộ ô nên Excel luôn coi ô là text, kể cả
+khi nhập lại. Dấu `'` này **không nằm trong nội dung ô** — chỉ hiện trên thanh công thức,
+đúng như khi tự gõ `'` trong Excel; bản `.md` không bị ảnh hưởng. Agent **không** phải tự chèn
+`'` vào nội dung TSV — chèn tay sẽ làm dấu `'` hiện ra trong ô.
+
+**Outline group (đóng/mở cụm TC):** converter tự set `outlineLevel = 1` cho mọi dòng Test Case,
+dòng tiêu đề nhóm giữ cấp 0 — người review bấm nút `−` ở lề trái để thu gọn cả block, chỉ còn
+danh sách tiêu đề nhóm. Bắt buộc kèm `summaryBelow = false` vì dòng tiêu đề nằm **trên** cụm TC;
+để mặc định thì Excel gắn nút `+/−` lệch xuống dòng dưới cùng của block. File `.xlsx` bàn giao trước khi có tính năng
+này (đã xoá `.tsv` nguồn) vá được bằng công thức ở `scripts/convert_excel/README.md` mục
+"Vá outline cho file `.xlsx` đã bàn giao trước đó".
 
 > **Điều kiện tiên quyết:** lần đầu dùng phải chạy `cd scripts/convert_excel && npm install`.
 > Converter dùng `xlsx-js-style` (fork SheetJS **ghi** được style) — bản `xlsx` community chỉ

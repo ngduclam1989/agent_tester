@@ -609,6 +609,14 @@ dạng dòng. File mẫu để đối chiếu mắt thường:
 Viền mảnh `4472C4`, freeze dòng header, bật AutoFilter. Dấu `**` của nhãn dòng nhóm được bỏ
 khi ghi sang Excel (chỉ `.md` mới cần để in đậm).
 
+**Outline group (đóng/mở cụm TC):** converter tự set outline level theo đúng 3 tầng dòng —
+dòng nhóm rủi ro cấp 0, dòng nhóm con `— Trường: ...` cấp 1, dòng Test Case luôn là cấp thấp
+nhất (cấp 2 nếu nằm trong nhóm con, cấp 1 nếu nhóm rủi ro không có nhóm con). Nhờ vậy bấm nút
+`−` ở lề trái thu gọn được cả nhóm rủi ro lẫn từng trường. Bắt buộc kèm `summaryBelow = false`
+vì dòng tiêu đề nằm **trên** cụm TC. File `.xlsx` bàn giao trước khi có tính năng
+này (đã xoá `.tsv` nguồn) vá được bằng công thức ở `scripts/convert_excel/README.md` mục
+"Vá outline cho file `.xlsx` đã bàn giao trước đó".
+
 #### BƯỚC 3: VALIDATE TRƯỚC KHI BÁO HOÀN THÀNH (BẮT BUỘC)
 
 - Chạy `python3 scripts/validate_testcases/validate_tc.py <đường_dẫn_file_markdown>` — script kiểm tra: TC ID tuần tự không trùng/thiếu, số cột mỗi dòng khớp header, "Tổng số TC" khai báo khớp số dòng thật, bảng Risk Level/Priority summary khớp đếm thật, mọi TC ID được trích dẫn trong văn xuôi (mục Q&A...) trỏ tới dòng thật đang tồn tại.

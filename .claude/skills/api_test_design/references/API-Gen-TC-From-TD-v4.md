@@ -261,8 +261,8 @@ AUDIT CHECKLIST — GEN TC FROM TEST DESIGN v4.0:
     (dòng tiêu đề nhóm không có TC ID và không tính vào tổng số TC)
 [ ] Cột `Test Case Title` của MỌI dòng đều bắt đầu bằng "Kiểm tra " không?
     (Nếu còn dòng nào viết cụt kiểu "Happy Path ...", "amount Missing Validation" → sửa ngay)
-[ ] Cột `Pre-conditions` có đủ 3 thành phần (User/Quyền, Trạng thái hệ thống, Dữ liệu có sẵn)
-    và KHÔNG còn `Env:` / `URL:` / `Endpoint:` / `Header:` không?
+[ ] Cột `Pre-conditions` có đủ 2 thành phần (User/Quyền, Dữ liệu có sẵn), KHÔNG còn dòng
+    `Trạng thái hệ thống`, và KHÔNG còn `Env:` / `URL:` / `Endpoint:` / `Header:` không?
 [ ] Cột `Test Data` có Endpoint + Headers + Body không? (thông tin này đã chuyển từ
     Pre-conditions sang đây)
 
@@ -372,7 +372,7 @@ còn lại (thân JSON, thân bản tin SWIFT/XML, danh sách header) thuộc v�
 
 | Cột | Ngắt khối |
 |---|---|
-| `Pre-conditions` | 3 khối (User/Quyền · Trạng thái hệ thống · Dữ liệu có sẵn) cách nhau **đúng 1 dòng trống** (`\n\n`) |
+| `Pre-conditions` | 2 khối (User/Quyền · Dữ liệu có sẵn) cách nhau **đúng 1 dòng trống** (`\n\n`) |
 | `Test Steps` | Mỗi bước một dòng riêng, giữa 2 bước **chỉ 1 lần `\n`** — KHÔNG dùng `\n\n`. Các bước là một mạch trình tự liên tục, tách rời ra làm mất cảm giác thứ tự |
 | `Test Data` | Các khối `- Endpoint:` · `- Headers:` · `- Body:` (và `- DB:` nếu có) cách nhau **đúng 1 dòng trống**. Trong khối `- Headers:` **mỗi header một dòng riêng** |
 | `Expected result` | Các khối (`N. Kiểm tra HTTP Status...` · `- Json trả về có...` · `- Json có dạng theo format:` + JSON) cách nhau **đúng 1 dòng trống**; JSON dính liền dòng nhãn của nó |
@@ -595,15 +595,21 @@ Nội dung `<đối tượng>` và `<dữ liệu/điều kiện>` lấy theo t�
 ### 5. "Pre-conditions"
 
 Cột này **chỉ chứa điều kiện tiền đề thật** — thứ phải chuẩn bị xong TRƯỚC khi chạy Test
-Steps. Format bắt buộc đúng **3 thành phần**, mỗi thành phần **1 dòng bắt đầu bằng `- `**:
+Steps. Format bắt buộc đúng **2 thành phần**, mỗi thành phần **1 dòng bắt đầu bằng `- `**,
+**2 dòng cách nhau 1 dòng trống**:
 
 ```text
-- User/Quyền: <tài khoản + role dùng để gọi API, hoặc "Không cần xác thực (public API)">
-- Trạng thái hệ thống: <service/endpoint đang chạy, feature flag, cấu hình, kết nối DB nếu TC có verify DB>
-- Dữ liệu có sẵn: <ID/giá trị CỤ THỂ đã tồn tại trong hệ thống trước khi test>
+- User/Quyền: Tài khoản đăng nhập có quyền gọi API <tên API> - token còn hạn
+
+- Dữ liệu có sẵn: <mô tả dữ liệu mẫu + ID/giá trị CỤ THỂ đã tồn tại trước khi test>
 ```
 
-> **KHÔNG đánh số `1.` `2.` `3.` ở cột này.** Đánh số chỉ dùng cho `Test Steps` và
+> **KHÔNG viết dòng `Trạng thái hệ thống`.** Nội dung của nó (service đang chạy, môi trường
+> sẵn sàng, có/không kết nối DB) **giống hệt nhau ở mọi TC của cùng 1 API**, nên lặp lại hàng
+> trăm lần chỉ làm ô dày thêm mà không thêm thông tin nào. Thông tin này thuộc về **mục 1
+> (Thông tin chung)** và **mục 5 (Ambiguities & Assumptions)** của file `.md` bàn giao.
+
+> **KHÔNG đánh số `1.` `2.` ở cột này.** Đánh số chỉ dùng cho `Test Steps` và
 > `Expected result` — nơi thứ tự thực hiện là bắt buộc và Expected phải map 1-1 với số bước.
 > Pre-conditions là **tập điều kiện phải đồng thời đúng**, không có thứ tự thực hiện, nên
 > đánh số gây hiểu nhầm là phải làm tuần tự.
@@ -611,15 +617,18 @@ Steps. Format bắt buộc đúng **3 thành phần**, mỗi thành phần **1 d
 Ví dụ đúng:
 
 ```text
-- User/Quyền: Tài khoản kycadmn (role API_CALLER), Basic Auth còn hiệu lực
-- Trạng thái hệ thống: Service transaction-screening đang chạy trên SIT; kết nối DB
-  10.53.115.66:1521/nhs25pdb (username USER_DB) sẵn sàng
-- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active, chưa có yêu cầu nào ở trạng thái PENDING
+- User/Quyền: Tài khoản đăng nhập có quyền gọi API sàng lọc giao dịch - token còn hạn
+
+- Dữ liệu có sẵn: Thông tin dữ liệu mẫu MT700 hợp lệ có thông số transactionType đang test,
+  đầy đủ toàn bộ trường mandatory theo chuẩn, transactionId là TF_AML_MT700_MND_07; Body
+  MT700 KHÔNG có tag :31C:; các thông tin mandatory khác vẫn đủ
 ```
 
-> **Đây là bản API của quy tắc Pre-Condition 3 thành phần** mà `rbt_manual_testing` áp cho
-> TC UI (User đăng nhập / Màn hình đang đứng / Dữ liệu cụ thể phải có). Với API, "màn hình
-> đang đứng" được thay bằng "trạng thái hệ thống".
+> **Khác với Pre-Condition của TC UI.** `rbt_manual_testing` yêu cầu TC UI đủ **3 thành
+> phần** (User đăng nhập / Màn hình đang đứng / Dữ liệu cụ thể phải có) — ở đó "màn hình
+> đang đứng" là thông tin **riêng của từng TC** nên bắt buộc phải có. Với API không có khái
+> niệm màn hình, và "trạng thái hệ thống" lại là hằng số dùng chung, nên TC API rút còn 2
+> thành phần.
 
 **LỆNH CẤM cho cột này:**
 
@@ -862,10 +871,10 @@ verify response phải đủ **3 dòng thông tin**:
 | **Group Tests** | "Common" |
 | **Risk Level** | "Medium" |
 | **Test Case Title** | "Kiểm tra gọi API thành công với Method, Token, Content-Type và Accept header đều hợp lệ" |
-| **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT (không cần kết nối DB cho TC này)\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active" |
+| **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active" |
 | **Test Steps** | "1. Gửi POST request tới API minval với Method, Token, Content-Type và Accept header đều hợp lệ (giữ nguyên data từ file minval.json).\n2. Kiểm tra thông tin HTTP Status và Response Body trả về." |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz, Accept=application/json\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":50000,""reason"":""test""}" |
-| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n- Json trả về có thông báo xử lý thành công: ""OK""\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""message"": ""OK""\n}" |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n\n- Headers:\nContent-Type: application/json\nAuthorization: Bearer token_xyz\nAccept: application/json\n\n- File: minval.json\n\n- Body:\n{""account_id"":""ACC001"",""amount"":50000,""reason"":""test""}" |
+| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n\n- Json trả về có thông báo xử lý thành công: ""OK""\n\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""message"": ""OK""\n}" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
 | **Notes** | "TD: TD_P1_001" |
@@ -881,10 +890,10 @@ verify response phải đủ **3 dòng thông tin**:
 | **Group Tests** | "Field 'amount'" |
 | **Risk Level** | "Medium" |
 | **Test Case Title** | "Kiểm tra API từ chối request thất bại khi thiếu field bắt buộc 'amount' trong body" |
-| **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT (không cần kết nối DB cho TC này)\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active" |
+| **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active" |
 | **Test Steps** | "1. Gửi POST request tới API minval với body thiếu field bắt buộc 'amount'.\n2. Kiểm tra thông tin HTTP Status và Response Body trả về." |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""reason"":""test""}" |
-| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 400 Bad Request\n- Json trả về có thông báo lỗi thiếu field bắt buộc 'amount': [PENDING_DOC]\n- Json có dạng theo format:\n{\n  ""code"": ""ERR_MISSING_FIELD"",\n  ""message"": [PENDING_DOC]\n}" |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n\n- Headers:\nContent-Type: application/json\nAuthorization: Bearer token_xyz\n\n- File: minval.json\n\n- Body:\n{""account_id"":""ACC001"",""reason"":""test""}" |
+| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 400 Bad Request\n\n- Json trả về có thông báo lỗi thiếu field bắt buộc 'amount': [PENDING_DOC]\n\n- Json có dạng theo format:\n{\n  ""code"": ""ERR_MISSING_FIELD"",\n  ""message"": [PENDING_DOC]\n}" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
 | **Notes** | "TD: TD_P2_004 | [PENDING_DOC] Error message chưa có trong PTTK" |
@@ -900,10 +909,10 @@ verify response phải đủ **3 dòng thông tin**:
 | **Group Tests** | "Field 'amount'" |
 | **Risk Level** | "High" |
 | **Test Case Title** | "Kiểm tra tạo yêu cầu thành công với 'amount' tại biên dưới (Min = 10,000)" |
-| **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT; kết nối DB 10.53.115.66:1521/nhs25pdb (username USER_DB) sẵn sàng để verify\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active, KHÔNG có yêu cầu nào ở trạng thái PENDING" |
+| **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active, KHÔNG có yêu cầu nào ở trạng thái PENDING" |
 | **Test Steps** | "1. Gửi POST request tới API minval với 'amount' = 10000 (tại biên dưới Min hợp lệ).\n2. Kiểm tra thông tin HTTP Status và Response Body trả về.\n3. Truy vấn thông tin tại bảng THRESHOLD_REQUESTS với điều kiện account_id = 'ACC001' ORDER BY created_at DESC FETCH FIRST 1 ROW.\n4. Verify thông tin dữ liệu trong Database." |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":10000,""reason"":""boundary test""}\n- DB: 10.53.115.66:1521/nhs25pdb, username: USER_DB" |
-| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n- Json trả về có thông tin yêu cầu vừa tạo: amount = 10000, status = ""PENDING""\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""data"": {\n    ""request_id"": ""<any UUID>"",\n    ""amount"": 10000,\n    ""status"": ""PENDING""\n  }\n}\n\n4. Verify thông tin dữ liệu trong Database:\n- Table: THRESHOLD_REQUESTS\n- Record tồn tại (được tạo mới thành công)\n- Column AMOUNT = 10000\n- Column STATUS = 'PENDING'" |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n\n- Headers:\nContent-Type: application/json\nAuthorization: Bearer token_xyz\n\n- File: minval.json\n\n- Body:\n{""account_id"":""ACC001"",""amount"":10000,""reason"":""boundary test""}\n\n- DB: 10.53.115.66:1521/nhs25pdb, username: USER_DB" |
+| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n\n- Json trả về có thông tin yêu cầu vừa tạo: amount = 10000, status = ""PENDING""\n\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""data"": {\n    ""request_id"": ""<any UUID>"",\n    ""amount"": 10000,\n    ""status"": ""PENDING""\n  }\n}\n\n\n4. Verify thông tin dữ liệu trong Database:\n\n- Table: THRESHOLD_REQUESTS\n\n- Record tồn tại (được tạo mới thành công)\n\n- Column AMOUNT = 10000\n\n- Column STATUS = 'PENDING'" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
 | **Notes** | "TD: TD_P3_003" |
@@ -919,10 +928,10 @@ verify response phải đủ **3 dòng thông tin**:
 | **Group Tests** | "Field 'account_id'" |
 | **Risk Level** | "High" |
 | **Test Case Title** | "Kiểm tra API chặn truy cập thành công khi 'account_id' hợp lệ nhưng thuộc sở hữu của user khác" |
-| **Pre-conditions** | "- User/Quyền: Tài khoản User A (role TRANS_REQUESTER), Bearer token_userA còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT (không cần kết nối DB cho TC này)\n- Dữ liệu có sẵn: Tài khoản ACC002 tồn tại trong DB và thuộc sở hữu của User B (không phải User A)" |
+| **Pre-conditions** | "- User/Quyền: Tài khoản User A (role TRANS_REQUESTER), Bearer token_userA còn hiệu lực\n\n- Dữ liệu có sẵn: Tài khoản ACC002 tồn tại trong DB và thuộc sở hữu của User B (không phải User A)" |
 | **Test Steps** | "1. Gửi POST request tới API minval bằng token của User A với 'account_id' = ""ACC002"" (tài khoản hợp lệ nhưng thuộc sở hữu User B).\n2. Kiểm tra thông tin HTTP Status và Response Body trả về." |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_userA\n- File: minval.json\n- Body: {""account_id"":""ACC002"",""amount"":50000,""reason"":""idor test""}" |
-| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 403 Forbidden\n- Json trả về có thông báo từ chối truy cập tài khoản không thuộc sở hữu: [PENDING_DOC]\n- Json có dạng theo format:\n{\n  ""code"": ""ERR_FORBIDDEN"",\n  ""message"": [PENDING_DOC]\n}" |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n\n- Headers:\nContent-Type: application/json\nAuthorization: Bearer token_userA\n\n- File: minval.json\n\n- Body:\n{""account_id"":""ACC002"",""amount"":50000,""reason"":""idor test""}" |
+| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 403 Forbidden\n\n- Json trả về có thông báo từ chối truy cập tài khoản không thuộc sở hữu: [PENDING_DOC]\n\n- Json có dạng theo format:\n{\n  ""code"": ""ERR_FORBIDDEN"",\n  ""message"": [PENDING_DOC]\n}" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
 | **Notes** | "TD: TD_P3_013" |
@@ -938,10 +947,10 @@ verify response phải đủ **3 dòng thông tin**:
 | **Group Tests** | "Common" |
 | **Risk Level** | "Medium" |
 | **Test Case Title** | "Kiểm tra response trả về đúng kiểu Number cho field 'data.amount' với amount = 123456" |
-| **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n- Trạng thái hệ thống: Service trans-minval đang chạy trên SIT (không cần kết nối DB cho TC này)\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active, KHÔNG có yêu cầu nào ở trạng thái PENDING" |
+| **Pre-conditions** | "- User/Quyền: Tài khoản user_a (role TRANS_REQUESTER), Bearer token_xyz còn hiệu lực\n\n- Dữ liệu có sẵn: Tài khoản ACC001 trạng thái Active, KHÔNG có yêu cầu nào ở trạng thái PENDING" |
 | **Test Steps** | "1. Gửi POST request tới API minval với 'amount' = 123456 để kiểm tra kiểu dữ liệu field trả về.\n2. Kiểm tra thông tin HTTP Status, Response Header Content-Type và cấu trúc/kiểu dữ liệu của Response Body." |
-| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n- Headers: Content-Type=application/json, Authorization=Bearer token_xyz\n- File: minval.json\n- Body: {""account_id"":""ACC001"",""amount"":123456,""reason"":""schema type check""}" |
-| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n- Response Header: Content-Type = application/json\n- Json trả về có đúng kiểu dữ liệu từng field: $.code là String, $.data.amount là Number (123456) — KHÔNG phải String (""123456""), $.data.status là String, $.data.request_id là String/UUID không rỗng; KHÔNG có field lạ ngoài cấu trúc PTTK\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""data"": {\n    ""request_id"": ""<UUID không rỗng>"",\n    ""amount"": 123456,\n    ""status"": ""PENDING""\n  }\n}" |
+| **Test Data** | "- Endpoint: POST https://api.sit.env/v1/trans/minval\n\n- Headers:\nContent-Type: application/json\nAuthorization: Bearer token_xyz\n\n- File: minval.json\n\n- Body:\n{""account_id"":""ACC001"",""amount"":123456,""reason"":""schema type check""}" |
+| **Expected result** | "2. Kiểm tra thông tin HTTP Status trả về: 200 OK\n\n- Response Header: Content-Type = application/json\n\n- Json trả về có đúng kiểu dữ liệu từng field: $.code là String, $.data.amount là Number (123456) — KHÔNG phải String (""123456""), $.data.status là String, $.data.request_id là String/UUID không rỗng; KHÔNG có field lạ ngoài cấu trúc PTTK\n\n- Json có dạng theo format:\n{\n  ""code"": ""SUCCESS"",\n  ""data"": {\n    ""request_id"": ""<UUID không rỗng>"",\n    ""amount"": 123456,\n    ""status"": ""PENDING""\n  }\n}" |
 | **Environment** | "SIT" |
 | **Priority** | "High" |
 | **Notes** | "TD: TD_P4_003" |
