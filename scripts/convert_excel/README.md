@@ -6,7 +6,7 @@ Convert file Test Cases sang Excel (`.xlsx`) có format đẹp, sẵn sàng chia
 
 | Script | Dùng cho | Input | Output |
 |---|---|---|---|
-| `md_to_xlsx.js` | **TC UI** (schema 9 cột của `rbt_manual_testing`) | bảng Markdown `.md` | `.xlsx` |
+| `md_to_xlsx.js` | **TC UI** (schema 9 cột của `rbt_manual_testing`; cột thêm sau `Test Data` như `TC ID gốc` được giữ nguyên theo header `.md`) | bảng Markdown `.md` | `.xlsx` |
 | `api_tsv_to_md_xlsx.js` | **TC API** (schema 19 cột của `api_test_design`) | `.tsv` 19 cột | `.md` **và** `.xlsx` (có tô màu, 2 sheet: `API Test Cases` + `Tong hop`) |
 | `reorder_api_tc.js` | Sắp xếp lại thứ tự dòng TC API theo nhóm/block | `.tsv` | `.tsv` |
 
@@ -73,7 +73,7 @@ File `.xlsx` với các tính năng:
 | **Outline group** | Nút `+/−` ở lề trái để đóng/mở cụm TC dưới mỗi dòng tiêu đề nhóm |
 | **Line breaks** | Các bước test (`<br>`) chuyển thành xuống dòng trong cell |
 | **Clean text** | Tự động xóa emoji, backtick markdown |
-| **Quote-prefix** | Bật dấu `'` (text-force) cho mọi ô — ô mở đầu bằng `- `/`=`/`+` không bị Excel hiểu nhầm là công thức khi người dùng sửa rồi Enter. Dấu `'` chỉ hiện trên thanh công thức, không nằm trong nội dung ô |
+| **Quote-prefix** | Bắt buộc ở cả 2 converter, dùng chung `quote_prefix.js`. Bật dấu `'` (text-force) cho mọi ô — ô mở đầu bằng `- `/`=`/`+` không bị Excel hiểu nhầm là công thức khi người dùng sửa rồi Enter. Dấu `'` chỉ hiện trên thanh công thức, không nằm trong nội dung ô |
 
 ## Bảng màu file .xlsx
 

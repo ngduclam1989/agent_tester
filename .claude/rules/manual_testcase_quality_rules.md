@@ -75,6 +75,15 @@ Cả 2 lớp lỗi này **không phải lỗi logic nghiệp vụ** (không sai 
     `validate_tc.py` cảnh báo khi TC API thiếu 1 trong 2 thành phần, hoặc khi còn sót dòng
     `Trạng thái hệ thống`.
 
+14. **Mọi file `.xlsx` TC đầu ra (UI lẫn API) phải bật dấu `'` (quotePrefix) cho mọi ô**,
+    tối thiểu `Pre-condition`, `Test Steps`, `Expected result` — không phụ thuộc file gốc của
+    khách có hay không. Cả 2 converter đều tự bật qua `scripts/convert_excel/quote_prefix.js`;
+    xuất `.xlsx` bằng cách khác thì phải tự set rồi kiểm tra lại trước khi bàn giao.
+
+    Rule ra đời sau khi bàn giao `MSB_AML_TM_Create_Case_v1.1.xlsx`: converter API đã có
+    quotePrefix từ trước, nhưng converter UI (`md_to_xlsx.js`) bị thiếu nên mọi file TC UI
+    ra đời không có dấu `'`.
+
 ## Tham chiếu
 
 - Skill chính: `.claude/skills/rbt_manual_testing/SKILL.md` — Bước 5 mục 6 (Traceability Coverage Audit), Bước 6 phần "BƯỚC 3: VALIDATE TRƯỚC KHI BÁO HOÀN THÀNH", mục "Quy tắc đặt tên Test Title/Test Scenario" (naming convention), mục "Quy tắc nội dung Pre-Condition (UI)" (3 thành phần bắt buộc).

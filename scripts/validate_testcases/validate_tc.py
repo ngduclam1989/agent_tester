@@ -79,7 +79,13 @@ API_TC_ROW_RE = re.compile(r'^\|\s*([A-Z][A-Z0-9]*(?:_[A-Z0-9\-]+)+_TC_(\d+))\s*
 API_GEN_ID_RE = re.compile(r'^([A-Z][A-Z0-9]*(?:_[A-Z0-9\-]+)+)_TC_(\d+)$')
 API_NEW_TC_MARK = "[TC MOI THEM]"
 API_GROUP_ROW_RE = re.compile(r'^\|\s*\*\*(.+?)\*\*\s*\|')
-API_TD_REF_RE = re.compile(r'\bTD:\s*(TD_P[1-4]_\d+)')
+# Mo neo node Test Design. Hai he node duoc chap nhan:
+#   - TD_P1..TD_P4  : he 4-phase cua skill api_test_design (API co request/response).
+#   - TD_D<n>[A|B]  : he nhom dieu kien kiem thu du lieu/ETL (D1 Completeness, D2 Accuracy,
+#     D3A Integrity khoa, D3B Integrity tham chieu, D4 Validity, D5 Transformation,
+#     D6 Load Mechanism, D7 Downstream Readiness). Phuong phap 4-phase khong ap dung cho
+#     test tang DB nen ETL dung truc node rieng.
+API_TD_REF_RE = re.compile(r'\bTD:\s*(TD_P[1-4]_\d+|TD_D\d[A-Z]?_[A-Z0-9_]+)')
 API_RISK_ENUM = {"High", "Medium", "Low"}
 API_TOTAL_DECLARED_RE = re.compile(r'T[ổo]ng s[ốo] Test Case:\s*\*\*(\d+)\*\*')
 API_PRECOND_BANNED_RE = re.compile(r'(?:^|<br>)\s*(?:\d+\.|-)\s*(Env|URL|Endpoint|Header)\s*:', re.IGNORECASE)

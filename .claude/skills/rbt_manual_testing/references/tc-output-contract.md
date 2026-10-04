@@ -22,6 +22,9 @@ TC ID | Module | Test Scenario | Pre-Condition | Test Steps | Test Data | Expect
 TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data
 ```
 
+Ngoai le: khi dung lai tu bo TC UI san co cua khach, them dung 1 cot cuoi `TC ID gốc` (ID nguyen van
+cua khach; TC bo sung de trong). 9 cot chuan khong doi vi tri.
+
 ## Xu ly thong tin bo sung
 
 Neu can ghi nhan thong tin ngoai schema TC nhu `Technique`, `Automation Candidate`, `Test Type`,

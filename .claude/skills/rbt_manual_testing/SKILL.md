@@ -100,7 +100,7 @@ Sinh test cases **nhanh, đủ chất lượng** từ requirements/user stories 
 
 **Agent phải:**
 
-1. **Tiền xử lý file tài liệu (nếu áp dụng):** Nếu tài liệu requirements được cung cấp dưới dạng file Word (`.docx`) và chưa có file `.md` tương ứng trong workspace, Agent bắt buộc chạy `node scripts/convert_doc/docx_to_md.js <đường_dẫn_tới_file_docx>` để tạo file `.md` trước.
+1. **Tiền xử lý file tài liệu (nếu áp dụng):** Nếu tài liệu requirements được cung cấp dưới dạng file Word (`.doc`/`.docx`) và chưa có file `.md` tương ứng trong workspace, Agent bắt buộc convert theo skill `doc_to_markdown`: `python scripts/convert_doc/word_to_md/convert_word_to_markdown.py <đường_dẫn_tới_file_word>` để tạo file `.md` trước.
 2. **Đọc và hiểu requirements** được cung cấp (sử dụng file `.md` đã được chuyển đổi nếu áp dụng)
 3. **Xác định các luồng chính:**
    - Happy Path (luồng chính - bắt buộc gồm cả case nhập full thông tin và case chỉ nhập thông tin bắt buộc tối thiểu)
@@ -299,9 +299,9 @@ Quy trình bài bản, tuần tự cho module phức tạp. Bao gồm phân tíc
    - Mô tả hệ thống hiện tại và bối cảnh tích hợp (downstream/upstream)
    - Mục tiêu kiểm thử (MVP, Regression, Smoke...)
    - Tài liệu yêu cầu (Requirements, User Stories, Figma link, API Swagger, PDF...)
-2. **Tiền xử lý file tài liệu Word (.docx):**
-   - Nếu tài liệu yêu cầu người dùng cung cấp có định dạng Word (`.docx`) và chưa có file `.md` tương ứng trong workspace, Agent **bắt buộc** phải tự động chạy script `node scripts/convert_doc/docx_to_md.js <path_to_docx>` để tạo file `.md` trước.
-   - Nếu là file `.doc` cũ, thông báo người dùng Save As sang `.docx` trước khi chạy script.
+2. **Tiền xử lý file tài liệu Word (.doc/.docx):**
+   - Nếu tài liệu yêu cầu người dùng cung cấp có định dạng Word (`.doc`/`.docx`) và chưa có file `.md` tương ứng trong workspace, Agent **bắt buộc** convert theo skill `doc_to_markdown`: `python scripts/convert_doc/word_to_md/convert_word_to_markdown.py <path_to_word>` để tạo file `.md` trước.
+   - File `.doc` cần LibreOffice; máy không có thì thông báo người dùng Save As sang `.docx` trước khi chạy script.
 3. **Đọc hiểu sâu tài liệu yêu cầu (sử dụng file `.md` đã được chuyển đổi nếu áp dụng) & Trích xuất:**
    - **Bắt buộc** trích xuất và liệt kê toàn bộ danh sách các trường dữ liệu (form/API fields), kiểu dữ liệu (data types), các ràng buộc validation tương ứng và các Feature Flags quy định trong requirements.
    - Xác định rõ **mục tiêu nghiệp vụ chính**, các tích hợp downstream/hệ thống bên thứ ba (ví dụ: IAM Keycloak, Database, Kafka Events) và các **ràng buộc kế thừa hệ thống cũ (legacy baseline)** để đảm bảo độ bao phủ.
@@ -550,6 +550,10 @@ File Markdown phải chứa TOÀN BỘ các thông tin sau:
 *Các cột bắt buộc trong Bảng Test Cases:* `TC ID | Module | Risk Level | Test Title | Pre-Condition | Test Steps | Expected Result | Priority | Test Data`
 
 - Đây là schema FULL RBT / Excel mapping cố định. Không thêm/xóa/sửa cột nếu user không yêu cầu rõ.
+- **Ngoại lệ duy nhất — dựng lại từ bộ TC UI sẵn có của khách:** đánh TC ID mới theo khuôn
+  `[DỰ_ÁN]_[MODULE]_TC_[SỐ]` và thêm **1 cột cuối** `TC ID gốc` (sau `Test Data`) chứa nguyên văn
+  ID của khách (vd `TM_CC_2.1`); TC do agent bổ sung để trống ô này. Cột đặt cuối để 9 cột chuẩn
+  giữ nguyên vị trí — `validate_tc.py` và `md_to_xlsx.js` tự nhận cột thêm theo header.
 - **Quy tắc Test Title:** Bắt buộc theo convention "Kiểm tra <hành động> <đối tượng> với <loại dữ liệu>" — xem mục "Quy tắc đặt tên Test Title/Test Scenario" ở Mode QUICK phía trên (áp dụng chung cho cả 2 mode). `validate_tc.py` tự động FAIL nếu Test Title không bắt đầu bằng "Kiểm tra".
 - **Quy tắc TC ID:** Bắt buộc tuân thủ nghiêm ngặt định dạng **`[DỰ_ÁN]_[MODULE]_TC_[SỐ]`** (Ví dụ: `CARDOCTOR_ONBOARD_TC_001`). Đánh số tuần tự, liên tiếp từ `001` đến hết cho toàn bộ test cases (không chèn thêm các ký tự phụ như `VAL`, `UI` giữa các nhóm test cases).
 - **Phân nhóm trong Excel:** Để tạo các dòng tiêu đề phân nhóm trực quan trong file Excel Excel, hãy chèn một hàng rỗng chứa tiêu đề in đậm vào cột `TC ID` tại đầu mỗi nhóm, các cột khác để trống. Ví dụ:
@@ -608,6 +612,16 @@ dạng dòng. File mẫu để đối chiếu mắt thường:
 
 Viền mảnh `4472C4`, freeze dòng header, bật AutoFilter. Dấu `**` của nhãn dòng nhóm được bỏ
 khi ghi sang Excel (chỉ `.md` mới cần để in đậm).
+
+**Quote-prefix (dấu `'` đầu ô) — BẮT BUỘC trên mọi file `.xlsx` đầu ra, bật cho MỌI ô**
+(trong đó có `Pre-Condition`, `Test Steps`, `Expected Result`), **bất kể file gốc của khách
+có hay không**. Các ô này mở đầu bằng `- ` hoặc `1. `; thiếu dấu `'` thì khi người review bấm
+vào ô rồi Enter, Excel parse thành công thức/số → hộp thoại lỗi, `#NAME?` hoặc mất định dạng.
+`md_to_xlsx.js` tự bật qua `scripts/convert_excel/quote_prefix.js` (dùng chung với converter
+API). Dấu `'` không nằm trong nội dung ô, chỉ hiện trên thanh công thức. Agent **không** tự chèn
+`'` vào `.md`, vì chèn tay sẽ làm dấu `'` hiện ra trong ô. Nếu xuất `.xlsx` bằng cách khác
+(openpyxl, sửa thẳng file khách...), phải tự set `quotePrefix` cho mọi ô có dữ liệu, rồi mở
+lại file để kiểm tra trước khi bàn giao.
 
 **Outline group (đóng/mở cụm TC):** converter tự set outline level theo đúng 3 tầng dòng —
 dòng nhóm rủi ro cấp 0, dòng nhóm con `— Trường: ...` cấp 1, dòng Test Case luôn là cấp thấp

@@ -182,6 +182,7 @@ Agent sử dụng skills trong `.claude/skills/` tùy theo nhiệm vụ:
 | `flaky_test_analyzer`    | Phân tích và khắc phục flaky tests                                                   |
 | `framework_architect`    | Thiết kế & scaffold automation framework (Playwright) — project structure, base classes, config, reporting, CI/CD |
 | `diagram-design`         | Vẽ diagram kỹ thuật (architecture, sequence, flowchart, ER, state machine, timeline, org chart...) dạng HTML tự chứa (inline SVG) — output vào `practices/diagram/`. Được `rbt_manual_testing` gọi tới khi thiếu sơ đồ nghiệp vụ (Bước 1 mục 6) |
+| `doc_to_markdown`        | Chuyển Word (.doc/.docx) → Markdown giữ bảng, tách ảnh ra `<tên>_images/` (markitdown) — bước tiền xử lý tài liệu của `requirements_analyzer`, `rbt_manual_testing` |
 
 ## 6. Kế Hoạch Kiểm Thử (Plan Templates)
 
@@ -261,4 +262,5 @@ Agent sử dụng workflows trong `.claude/commands/` — mỗi file là một s
 | `/generate_combinatorial_test_data`   | Sinh test data cho ma trận kết hợp — offline hoặc pipeline qua browser          |
 | `/generate_api_tests_from_swagger`      | Sinh API tests từ Swagger spec                             |
 | `/generate_diagram`                     | Vẽ diagram kỹ thuật (architecture, sequence, flowchart, ER, state machine...) bằng skill `diagram-design` — output vào `practices/diagram/` |
+| `/convert_doc_to_markdown`              | Convert file/thư mục Word (.doc/.docx) sang Markdown sạch bằng skill `doc_to_markdown` |
 | `/analyze_flaky_tests`                  | Phân tích và khắc phục flaky tests                     |

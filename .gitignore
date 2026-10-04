@@ -58,3 +58,9 @@ node_modules/
 # Google Service Account (ignore both naming conventions)
 service_account.json
 service-account.json
+
+# Python (scripts/convert_doc/word_to_md)
+__pycache__/
+*.py[cod]
+scripts/convert_doc/word_to_md/.venv/
+scripts/convert_doc/word_to_md/.uv-cache/

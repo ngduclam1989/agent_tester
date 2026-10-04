@@ -36,9 +36,9 @@ Agent cần thu thập từ user:
 ### Bước 1: Thu thập và đọc hiểu (Information Gathering)
 
 1. **Đọc requirement document** được user cung cấp (file .docx, .doc, .md, hoặc URL)
-   - **Tự động convert file Word (.docx):** Nếu tài liệu cung cấp là file `.docx` và chưa có file `.md` tương ứng trong workspace, Agent **bắt buộc** chạy lệnh Node.js sau để chuyển đổi trước khi phân tích:
-     `node scripts/convert_doc/docx_to_md.js <đường_dẫn_tới_file_docx>`
-   - Nếu là file `.doc` cũ, hướng dẫn người dùng "Save As" sang `.docx` trước.
+   - **Tự động convert file Word (.doc/.docx):** Nếu tài liệu cung cấp là file Word và chưa có file `.md` tương ứng trong workspace, Agent **bắt buộc** convert theo skill `doc_to_markdown` (hoặc `/convert_doc_to_markdown`) trước khi phân tích:
+     `python scripts/convert_doc/word_to_md/convert_word_to_markdown.py <đường_dẫn_tới_file_word>`
+   - File `.doc` cần LibreOffice; máy không có thì hướng dẫn người dùng "Save As" sang `.docx` trước.
    - Nếu file .doc format HTML (export từ Jira): parse HTML để trích xuất nội dung
    - Xác định: Ticket ID, Type, Priority, Status, Reporter, Assignee, Fix Version, Sprint, Labels
 2. **Đọc mockup/screenshot** nếu có — phân tích UI layout, components, fields

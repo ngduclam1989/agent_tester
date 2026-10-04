@@ -9,6 +9,8 @@
 
 const fs = require("fs");
 const path = require("path");
+// Dấu ' đầu ô (quotePrefix) — dùng chung với api_tsv_to_md_xlsx.js
+const { applyQuotePrefix } = require("./quote_prefix");
 
 // xlsx-js-style: fork của SheetJS, API y hệt nhưng GHI được style (fill/font/border/wrap).
 // Bản `xlsx` community chỉ đọc được style, ghi ra sẽ mất màu.
@@ -93,6 +95,9 @@ function parseMdTables(filepath) {
     if (stripped.startsWith("|") && stripped.includes("TC ID") && stripped.includes("Test Title")) {
       headerFound = true;
       currentTable = [];
+      if (!tables.header) {
+        tables.header = stripped.split("|").slice(1, -1).map((c) => c.trim());
+      }
       continue;
     }
 
@@ -141,15 +146,18 @@ function buildXlsx(tables, outputPath) {
     "Priority",
     "Test Data",
   ];
+  // Cột phụ đặt SAU Test Data (vd "TC ID gốc" map sang bộ TC của khách) — 9 cột chuẩn giữ nguyên vị trí
+  const extraHeaders = (tables.header || []).slice(headers.length);
+  headers.push(...extraHeaders);
 
-  const colWidths = [22, 22, 14, 50, 35, 60, 60, 12, 40];
+  const colWidths = [22, 22, 14, 50, 35, 60, 60, 12, 40, ...extraHeaders.map(() => 18)];
 
   // Collect all rows
   const allRows = [];
   for (const table of tables) {
     for (const row of table) {
       const cleaned = [];
-      for (let i = 0; i < 9; i++) {
+      for (let i = 0; i < headers.length; i++) {
         cleaned.push(cleanCell(row[i] || ""));
       }
       allRows.push(cleaned);
@@ -176,7 +184,7 @@ function buildXlsx(tables, outputPath) {
   ws["!freeze"] = { xSplit: 0, ySplit: 1, topLeftCell: "A2", state: "frozen" };
 
   // ── AutoFilter ─────────────────────────────────────────────────────────
-  ws["!autofilter"] = { ref: `A1:I${allRows.length + 1}` };
+  ws["!autofilter"] = { ref: `A1:${XLSX.utils.encode_col(headers.length - 1)}${allRows.length + 1}` };
 
   // ── Outline group: TC thụt vào dưới dòng tiêu đề nhóm gần nhất ────────────
   // g1 (nhóm rủi ro) cấp 0, g2 (nhóm con theo trường) cấp 1, TC luôn là cấp thấp nhất
@@ -232,6 +240,7 @@ function buildXlsx(tables, outputPath) {
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Test Cases");
   XLSX.writeFile(wb, outputPath);
+  applyQuotePrefix(outputPath);
 
   // Chỉ đếm dòng TC thật, không tính dòng tiêu đề nhóm
   return kinds.filter((k) => k === "tc").length;

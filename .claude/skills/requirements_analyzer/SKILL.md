@@ -12,11 +12,11 @@ Kỹ năng này cung cấp các hướng dẫn chi tiết để AI (Claude Code)
 - Đảm bảo tính nhất quán, tính bao quát cho cả Happy Path và Edge Cases (Trường hợp ngoại lệ/báo lỗi).
 - Định dạng xuất ra một cách chuyên nghiệp (Sử dụng cấu trúc Artifact).
 
-## 2. Tiền xử lý tài liệu Word (.docx)
-Khi nhận được tài liệu yêu cầu đầu vào dạng file Word (`.docx`) và chưa có file `.md` tương ứng trong workspace:
-- Agent **bắt buộc** phải tự động chạy script convert bằng cách gọi lệnh Node.js sau để tạo file `.md` trước khi phân tích:
-  `node scripts/convert_doc/docx_to_md.js <đường_dẫn_tới_file_docx>`
-- Nếu file ở định dạng `.doc` cũ, Agent cần thông báo và hướng dẫn người dùng "Save As" sang `.docx` trước khi thực hiện.
+## 2. Tiền xử lý tài liệu Word (.doc/.docx)
+Khi nhận được tài liệu yêu cầu đầu vào dạng file Word (`.doc`/`.docx`) và chưa có file `.md` tương ứng trong workspace:
+- Agent **bắt buộc** convert theo skill `doc_to_markdown` (`.claude/skills/doc_to_markdown/SKILL.md`) trước khi phân tích:
+  `python scripts/convert_doc/word_to_md/convert_word_to_markdown.py <đường_dẫn_tới_file_word>`
+- File `.doc` cần LibreOffice; máy không có thì hướng dẫn người dùng "Save As" sang `.docx`.
 - Sử dụng nội dung file `.md` được sinh ra làm dữ liệu đầu vào chính để phân tích.
 
 ## 3. Quy trình trích xuất thông tin
