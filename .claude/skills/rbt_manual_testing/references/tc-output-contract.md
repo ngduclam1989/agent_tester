@@ -7,6 +7,9 @@ Muc tieu: giu nguyen schema output TC hien co cua `rbt_manual_testing`.
 - Khong doi ten cot, thu tu cot, hoac so luong cot cua bang TC hien tai.
 - Khong them cot ISTQB moi vao bang TC neu user khong yeu cau ro.
 - Khong xoa cot hien co de "don gian hoa" output.
+- Khong co cot `STT` / so thu tu trong bang TC (.md lan .xlsx) - cot dau tien luon la `TC ID`. Template
+  Excel cua khach co san cot `STT` thi bo cot do khi map, sua lai cong thuc/dropdown/freeze pane theo
+  vi tri cot moi (rule 15 `manual_testcase_quality_rules.md`).
 - Khong doi format TC ID, group header, newline bang `<br>`, hoac quy tac convert Excel.
 - Dung cac reference ISTQB/RBT de cai thien phan tich, risk, coverage, wording, test data, test steps va expected result.
 

@@ -49,6 +49,36 @@ node scripts/convert_excel/md_to_xlsx.js requirements/crm/test_cases_crm_login.m
 node scripts/convert_excel/md_to_xlsx.js requirements/crm/test_cases_crm_login.md output/crm_login.xlsx
 ```
 
+### Nhiều sheet trong 1 file Excel
+
+Mặc định mọi bảng TC trong `.md` gộp vào 1 sheet `Test Cases`. Muốn tách sheet (vd giữ đúng các
+tab của bộ TC gốc của khách), đặt dòng `<!-- sheet: TÊN_SHEET -->` ngay trước header của từng bảng:
+
+```markdown
+<!-- sheet: SCN_WF_TM_AUTO -->
+| TC ID | Module | Risk Level | Test Title | ... |
+|---|---|---|---|---|
+...
+
+<!-- sheet: SCN_WF_TM_DVKH -->
+| TC ID | Module | Risk Level | Test Title | ... |
+```
+
+Mỗi sheet có header, màu, freeze, AutoFilter và outline riêng. Bảng không khai tên sheet vẫn vào
+sheet `Test Cases`. Tên sheet bị cắt còn 31 ký tự (giới hạn của Excel).
+
+### Giữ các tab phụ của file khách (Cover, Records, Test Report, Legend)
+
+Sau khi convert, chạy `merge_customer_tabs.py` (cần `openpyxl`) để chép các tab phụ từ file gốc
+của khách sang, theo đúng thứ tự tab của file gốc. Sheet TC trùng tên được giữ bản chuẩn hóa.
+Công thức ở tab phụ trỏ tới sheet TC cũ phải ghi đè bằng `--set`, nếu sót script báo lỗi:
+
+```bash
+python3 scripts/convert_excel/merge_customer_tabs.py <file_v1.1.xlsx> <file_khach_v1.0.xlsx> \
+  --set "Cover!E16=1.1" --set "Records!A14=2026-10-05" --merge "Records!C14:E14" \
+  --set "Test Report!F16=75"
+```
+
 ## Đầu vào (Input)
 
 File Markdown chứa bảng test cases theo format:
@@ -87,6 +117,7 @@ File `.xlsx` với các tính năng:
 | Dòng nhóm cấp 1 | `9DC3E6` xanh vừa | Arial 10 đậm |
 | Dòng nhóm cấp 2 | `BDD7EE` xanh nhạt | Arial 10 đậm |
 | Dòng Test Case | trắng | Arial 10 thường, wrap text, căn trên |
+| Dòng Test Case bổ sung (chỉ `md_to_xlsx.js`, bảng có cột `TC ID gốc` và ô này trống) | trắng | Arial 10 thường, **chữ đỏ** `C00000` |
 
 Hai cấp nhóm được suy ra khác nhau tùy loại file:
 

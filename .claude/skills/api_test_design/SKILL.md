@@ -65,6 +65,11 @@ Sau khi xong đủ 4 cấu phần → gộp toàn bộ Test Condition thành **1
 "Test Case ID"	"Function"	"Group Tests"	"Risk Level"	"Test Case Title"	"Pre-conditions"	"Test Steps"	"Test Data"	"Expected result"	"Environment"	"Priority"	"Regression"	"Automation"	"Manual Test Results Round 1"	"Manual Test Results Round 2"	"Automation Test Results"	"Actual result"	"BugID"	"Notes"
 ```
 
+> **Không có cột `STT` / số thứ tự** — cột đầu tiên luôn là `Test Case ID`, cả ở `.md` lẫn `.xlsx`.
+> Template Excel của khách có sẵn cột `STT` thì bỏ cột đó khi map, rồi sửa lại công thức
+> dashboard/`Test Report`, dropdown, freeze pane theo vị trí cột mới (rule 15
+> `.claude/rules/manual_testcase_quality_rules.md`).
+>
 > **Thứ tự cột:** `Pre-conditions` → `Test Steps` → `Test Data` → `Expected result`.
 > Test Steps là mạch đọc chính (làm gì, theo thứ tự nào), Test Data là phụ lục tra cứu của
 > chính các bước đó nên đứng sau — không để Test Data chen vào giữa.

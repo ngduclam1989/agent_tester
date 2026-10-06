@@ -29,6 +29,7 @@ const PALETTE = {
   group1: "9DC3E6", // xanh vừa — dòng nhóm rủi ro (**NHÓM ...**)
   group2: "BDD7EE", // xanh nhạt — dòng nhóm con trong nhóm Validate (**— Trường: ...**)
   border: "4472C4",
+  added: "C00000", // đỏ — chữ của TC bổ sung (cột "TC ID gốc" trống)
 };
 const FONT = "Arial";
 // Cột căn giữa: TC ID(0) · Risk Level(2) · Priority(7)
@@ -87,14 +88,24 @@ function parseMdTables(filepath) {
   const tables = [];
   let currentTable = null;
   let headerFound = false;
+  // Tên sheet khai ngay trước bảng bằng `<!-- sheet: TÊN -->`; bảng không khai → sheet mặc định
+  let pendingSheet = null;
 
   for (const line of lines) {
     const stripped = line.trim();
+
+    const sm = stripped.match(/^<!--\s*sheet:\s*(.+?)\s*-->$/i);
+    if (sm) {
+      pendingSheet = sm[1];
+      continue;
+    }
 
     // Detect header row of a test-case table
     if (stripped.startsWith("|") && stripped.includes("TC ID") && stripped.includes("Test Title")) {
       headerFound = true;
       currentTable = [];
+      currentTable.sheet = pendingSheet || DEFAULT_SHEET;
+      pendingSheet = null;
       if (!tables.header) {
         tables.header = stripped.split("|").slice(1, -1).map((c) => c.trim());
       }
@@ -134,7 +145,29 @@ function parseMdTables(filepath) {
 
 // ── Build Excel ────────────────────────────────────────────────────────────
 
+const DEFAULT_SHEET = "Test Cases";
+
+/** Gom bảng theo tên sheet (giữ thứ tự xuất hiện): mỗi sheet = 1 worksheet trong file Excel */
 function buildXlsx(tables, outputPath) {
+  const sheets = new Map();
+  for (const table of tables) {
+    if (!sheets.has(table.sheet)) sheets.set(table.sheet, []);
+    sheets.get(table.sheet).push(table);
+  }
+  const wb = XLSX.utils.book_new();
+  let count = 0;
+  for (const [name, sheetTables] of sheets) {
+    const { ws, tcCount } = buildSheet(sheetTables, tables.header);
+    // Excel giới hạn tên sheet 31 ký tự
+    XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+    count += tcCount;
+  }
+  XLSX.writeFile(wb, outputPath);
+  applyQuotePrefix(outputPath);
+  return count;
+}
+
+function buildSheet(tables, headerCells) {
   const headers = [
     "TC ID",
     "Module",
@@ -147,7 +180,7 @@ function buildXlsx(tables, outputPath) {
     "Test Data",
   ];
   // Cột phụ đặt SAU Test Data (vd "TC ID gốc" map sang bộ TC của khách) — 9 cột chuẩn giữ nguyên vị trí
-  const extraHeaders = (tables.header || []).slice(headers.length);
+  const extraHeaders = (headerCells || []).slice(headers.length);
   headers.push(...extraHeaders);
 
   const colWidths = [22, 22, 14, 50, 35, 60, 60, 12, 40, ...extraHeaders.map(() => 18)];
@@ -218,13 +251,16 @@ function buildXlsx(tables, outputPath) {
     };
   }
 
+  // Bộ TC dựng lại từ file khách: dòng TC có cột "TC ID gốc" trống là TC agent bổ sung → chữ đỏ
+  const origCol = headers.indexOf("TC ID gốc");
   kinds.forEach((kind, idx) => {
     const fill = kind === "g1" ? PALETTE.group1 : kind === "g2" ? PALETTE.group2 : null;
+    const added = kind === "tc" && origCol >= 0 && !allRows[idx][origCol];
     for (let c = 0; c < headers.length; c++) {
       const addr = XLSX.utils.encode_cell({ r: idx + 1, c });
       if (!ws[addr]) continue;
       ws[addr].s = {
-        font: { ...base, bold: kind !== "tc" },
+        font: { ...base, bold: kind !== "tc", ...(added ? { color: { rgb: PALETTE.added } } : {}) },
         ...(fill ? { fill: { fgColor: { rgb: fill } } } : {}),
         alignment: {
           vertical: "top",
@@ -236,14 +272,8 @@ function buildXlsx(tables, outputPath) {
     }
   });
 
-  // ── Create workbook & save ─────────────────────────────────────────────
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Test Cases");
-  XLSX.writeFile(wb, outputPath);
-  applyQuotePrefix(outputPath);
-
   // Chỉ đếm dòng TC thật, không tính dòng tiêu đề nhóm
-  return kinds.filter((k) => k === "tc").length;
+  return { ws, tcCount: kinds.filter((k) => k === "tc").length };
 }
 
 // ── Main ───────────────────────────────────────────────────────────────────
@@ -276,8 +306,9 @@ function main() {
 
   const flat = tables.flat();
   const groupRows = flat.filter(isGroupRow).length;
+  const sheetNames = [...new Set(tables.map((t) => t.sheet))];
   console.log(
-    `📊 Tìm thấy ${tables.length} bảng, ${flat.length - groupRows} test case + ${groupRows} dòng tiêu đề nhóm`
+    `📊 Tìm thấy ${tables.length} bảng, ${flat.length - groupRows} test case + ${groupRows} dòng tiêu đề nhóm, ${sheetNames.length} sheet: ${sheetNames.join(", ")}`
   );
 
   const count = buildXlsx(tables, outputPath);

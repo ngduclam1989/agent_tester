@@ -84,6 +84,20 @@ Cả 2 lớp lỗi này **không phải lỗi logic nghiệp vụ** (không sai 
     quotePrefix từ trước, nhưng converter UI (`md_to_xlsx.js`) bị thiếu nên mọi file TC UI
     ra đời không có dấu `'`.
 
+15. **Mọi bảng TC sinh ra (UI lẫn API, `.md` lẫn `.xlsx`) KHÔNG có cột `STT` / số thứ tự** —
+    cột đầu tiên luôn là TC ID (`TC ID` / `Test Case ID` / `Test case Id`). Áp dụng cả khi
+    convert/map sang template Excel của khách mà template đó có sẵn cột `STT` (vd mẫu MSB
+    `MSB_AML_TM_UI_v1.0.xlsx`): bỏ cột `STT`, dịch các cột còn lại sang trái, rồi **sửa lại
+    mọi thứ tham chiếu theo chữ cái cột** — công thức dashboard (`COUNTIFS` trỏ cột Priority /
+    Test Results), công thức sheet tổng hợp (`Test Report`), data validation (dropdown), freeze
+    pane, độ rộng cột. Mở lại file bằng LibreOffice/Excel để chắc không có ô `#REF!`/`#NAME?`
+    và số đếm dashboard vẫn đúng.
+
+    Rule ra đời khi chuẩn hoá bộ TC MSB AML TM theo template khách: cột `STT` chỉ là số đếm
+    dòng, không định danh được TC (TC ID đã làm việc đó), lại phải đánh lại mỗi khi thêm/bớt
+    TC và dễ lệch khi lọc/sắp xếp. `validate_tc.py` báo lỗi khi header bảng TC mở đầu bằng
+    `STT` / `No.` / `#`.
+
 ## Tham chiếu
 
 - Skill chính: `.claude/skills/rbt_manual_testing/SKILL.md` — Bước 5 mục 6 (Traceability Coverage Audit), Bước 6 phần "BƯỚC 3: VALIDATE TRƯỚC KHI BÁO HOÀN THÀNH", mục "Quy tắc đặt tên Test Title/Test Scenario" (naming convention), mục "Quy tắc nội dung Pre-Condition (UI)" (3 thành phần bắt buộc).

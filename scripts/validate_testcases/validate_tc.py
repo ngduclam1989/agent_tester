@@ -619,9 +619,25 @@ def _validate_rollup(path, lines, child_table_idx):
     return errors, warnings
 
 
+STT_HEADER_RE = re.compile(r"^\|\s*(STT|No\.?|#)\s*\|.*\b(TC ID|Test Case ID|Test case Id)\b", re.IGNORECASE)
+
+
+def _stt_column_errors(lines):
+    """Bang TC khong duoc co cot STT (so thu tu) - cot dau tien phai la TC ID."""
+    return [
+        f"Dòng {i+1}: bảng TC có cột STT/số thứ tự ở đầu — bỏ cột này, cột đầu tiên phải là TC ID "
+        f"(rule 15 manual_testcase_quality_rules.md). Nội dung: {line[:100]}"
+        for i, line in enumerate(lines) if STT_HEADER_RE.match(line.strip())
+    ]
+
+
 def validate_file(path):
     with open(path, encoding="utf-8") as f:
         lines = f.read().splitlines()
+
+    stt_errors = _stt_column_errors(lines)
+    if stt_errors:
+        return stt_errors, []
 
     for line in lines:
         if line.strip().startswith(API_HEADER_START):

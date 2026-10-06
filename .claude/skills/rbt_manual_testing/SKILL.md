@@ -23,6 +23,7 @@ description: Skill sinh manual test cases với 2 modes — QUICK (sinh nhanh t�
 
 - **KHÔNG** đổi tên cột, thứ tự cột, số lượng cột hoặc format bảng TC hiện tại.
 - **KHÔNG** thêm các cột mới như Technique, Automation Candidate, Test Type, Risk Score vào bảng TC chính nếu user không yêu cầu rõ.
+- **KHÔNG có cột `STT` / số thứ tự** trong mọi bảng TC (`.md` lẫn `.xlsx`) — cột đầu tiên luôn là `TC ID`. Kể cả khi map sang template Excel của khách có sẵn cột `STT`: bỏ cột đó, dịch cột sang trái và sửa lại công thức dashboard/`Test Report`, dropdown, freeze pane, độ rộng cột theo vị trí mới (rule 15 `.claude/rules/manual_testcase_quality_rules.md`; `validate_tc.py` FAIL nếu header mở đầu bằng `STT`/`No.`/`#`).
 - Các reference ISTQB/RBT chỉ dùng để cải thiện phân tích, độ phủ, risk, test data, test steps và expected result.
 - Thông tin bổ sung ngoài schema TC phải đặt ở phần metadata/summary/ma trận/phụ lục của file Markdown tổng hợp.
 - Trước khi sinh hoặc mapping TC, đọc `references/tc-output-contract.md` nếu có bất kỳ nghi ngờ nào về format output.
