@@ -12,7 +12,9 @@
     "test:api:allure": "npx playwright test --project=api --reporter=line,allure-playwright",
     "test:web": "npx playwright test --project=web --headed",
     "test:db": "npx playwright test --project=db",
+    "test:db:test-bnk": "npx playwright test --project=db tests/db/test-bnk-script-verify.spec.ts",
     "sample:excel": "tsx scripts/create-sample-excel.ts",
+    "convert:test-bnk": "tsx scripts/convert-test-bnk-testdata.ts",
     "typecheck": "tsc --noEmit",
     "report": "npx monocart show-report test-results/report.html"
   },
