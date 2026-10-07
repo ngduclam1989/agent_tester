@@ -122,7 +122,7 @@ TestScript/                     # Gốc npm project (mọi lệnh npm/playwright
 ├── .env.example                # Environment template
 ├── .gitignore
 ├── config/
-│   └── env.ts                  # Đọc biến môi trường + resolveUrl (không hardcode URL/credentials)
+│   └── env.ts                  # Đọc biến môi trường + resolveUrl + dbEnv (không hardcode URL/credentials)
 ├── common/                     # Login, tạo header, sinh data random traceable
 │   ├── api-common.ts
 │   └── ui-common.ts
@@ -131,16 +131,21 @@ TestScript/                     # Gốc npm project (mọi lệnh npm/playwright
 │   └── login.page.ts
 ├── utils/                      # Helpers & utilities
 │   ├── api-function.ts         # Validate status code / JSON schema / JSON node
-│   └── excel-reader.ts         # Đọc test data từ Excel
+│   ├── excel-reader.ts         # Đọc test data từ Excel (cả sheet hoặc 1 ô)
+│   ├── db-client.ts            # Lớp DUY NHẤT import 'oracledb'
+│   └── data-source.ts          # Đọc SQL / giá trị mong đợi từ txt hoặc ô Excel
 ├── tests/
 │   ├── api/
 │   │   └── product-add.spec.ts # Test specs API
 │   ├── web/
 │   │   └── login.spec.ts       # Test specs UI
-│   └── fixtures/               # Custom fixtures (auth token, base test mở rộng)
+│   ├── db/
+│   │   └── db-verify.spec.ts   # Test specs verify Oracle DB (data-driven)
+│   └── fixtures/               # Custom fixtures (auth token, fixture `db` scope worker)
 └── test-data/
     ├── data/                   # File Excel cho test data-driven
-    └── json_schema/            # JSON Schema dùng validate response
+    ├── json_schema/            # JSON Schema dùng validate response
+    └── db/                     # db-verify-cases.ts, db-queries.xlsx, sql/*.txt
 ```
 
 CI pipeline (`.github/workflows/playwright.yml`) đặt ở gốc repo và phải `cd TestScript` trước
@@ -168,6 +173,7 @@ khi chạy `npm ci` / `npx playwright test`.
 | Global mutable state | Isolated fixtures/setup per test |
 | Monolithic test file (1 file 500+ dòng) | Tách theo module/feature |
 | `console.log()` | Logger framework (winston, pino) |
+| Nối chuỗi giá trị vào SQL, `import oracledb` ngoài `utils/db-client.ts` | Bind biến `:ten_bien`, truy vấn qua fixture `db` |
 
 ---
 
@@ -178,3 +184,4 @@ Agent PHẢI tuân thủ các rules chi tiết:
 - `.claude/rules/automation_rules.md` — General automation best practices
 - `.claude/rules/locator_strategy.md` — Locator selection priority
 - `.claude/rules/playwright_rules.md` — Playwright-specific rules
+- `.claude/rules/database_rules.md` — Oracle DB: kết nối, viết truy vấn, SQL nạp từ txt / Excel

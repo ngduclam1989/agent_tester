@@ -163,6 +163,7 @@ Agent phải tham chiếu quy tắc chi tiết trong `.claude/rules/`:
 - [Quy tắc chung Automation](.claude/rules/automation_rules.md) — POM, Test Data, Naming, Assertions
 - [Chiến lược chọn Locator](.claude/rules/locator_strategy.md) — Thứ tự ưu tiên locator
 - [Quy tắc Playwright](.claude/rules/playwright_rules.md) — Browser setup, locator semantic, wait strategy
+- [Quy tắc Database (Oracle)](.claude/rules/database_rules.md) — Kết nối Oracle, bind biến, SQL nạp từ txt / Excel chỉ cho SELECT
 - [Quy tắc Chất Lượng Manual Test Case](.claude/rules/manual_testcase_quality_rules.md) — Traceability Coverage Audit, chống rớt REQ/scenario khi sinh TC hàng loạt, bắt buộc chạy `scripts/validate_testcases/validate_tc.py` trước khi báo hoàn thành
 
 ## 5. Tham Chiếu Skills

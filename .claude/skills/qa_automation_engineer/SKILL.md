@@ -360,6 +360,7 @@ Generated files go here and nowhere else:
 | --- | --- |
 | API test specs | `TestScript/tests/api/<feature>.spec.ts` |
 | Web/UI test specs | `TestScript/tests/web/<feature>.spec.ts` |
+| DB verify specs (Oracle) | `TestScript/tests/db/<feature>.spec.ts` — cases in `TestScript/test-data/db/` |
 | Page Object classes | `TestScript/pages/<Name>Page.ts` |
 | Login / header / random-data helpers | `TestScript/common/` |
 | Validation & utility helpers | `TestScript/utils/` |
@@ -462,6 +463,7 @@ The agent MUST also follow the detailed rules defined in `.claude/rules/`:
 - [automation_rules.md](.claude/rules/automation_rules.md) — General automation best practices
 - [locator_strategy.md](.claude/rules/locator_strategy.md) — Detailed locator selection rules
 - [playwright_rules.md](.claude/rules/playwright_rules.md) — Playwright-specific rules
+- [database_rules.md](.claude/rules/database_rules.md) — Oracle DB: connection, queries, SQL loaded from txt / Excel
 
 ---
 
@@ -489,6 +491,7 @@ Depending on the request, the agent may return:
 - Manual test cases (structured format)
 - Automation scripts (TypeScript)
 - API tests (Playwright API testing)
+- DB verify tests (Oracle, SQL from txt / Excel — `TestScript/tests/db/`)
 - Locator recommendations
 - Test data (structured, randomized, traceable)
 - Automation framework design
