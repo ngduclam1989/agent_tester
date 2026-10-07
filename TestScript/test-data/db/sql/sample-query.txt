@@ -1,0 +1,4 @@
+-- Câu SQL mẫu: chạy được trên mọi Oracle DB.
+-- Thay bằng câu SELECT nghiệp vụ, giữ nguyên cách dùng bind biến :ten_bien.
+SELECT :status AS STATUS
+FROM dual

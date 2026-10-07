@@ -46,6 +46,10 @@ export default defineConfig({
             testDir: './tests/api',
         },
         {
+            name: 'db',
+            testDir: './tests/db',
+        },
+        {
             name: 'web',
             testDir: './tests/web',
             use: {

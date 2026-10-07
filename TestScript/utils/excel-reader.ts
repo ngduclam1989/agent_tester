@@ -53,6 +53,32 @@ export function readExcel(filePath: string, sheetName: string): ExcelRow[] {
 }
 
 /**
+ * Đọc nội dung 1 ô Excel dạng chuỗi theo sheet + địa chỉ ô (ví dụ "B2").
+ * Ô trống trả về chuỗi rỗng; ô công thức trả về kết quả đã tính lưu trong file.
+ */
+export function readExcelCell(filePath: string, sheetName: string, address: string): string {
+    const resolvedPath = path.resolve(filePath);
+    if (!fs.existsSync(resolvedPath)) {
+        throw new Error(`File not found: ${resolvedPath}`);
+    }
+
+    const workbook = XLSX.readFile(resolvedPath);
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) {
+        const availableSheets = workbook.SheetNames.join(', ');
+        throw new Error(
+            `Sheet "${sheetName}" not found in file "${resolvedPath}". Available sheets: ${availableSheets}`
+        );
+    }
+
+    const cell: XLSX.CellObject | undefined = sheet[address];
+    if (!cell || cell.v === undefined || cell.v === null) {
+        return '';
+    }
+    return cell.t === 's' ? String(cell.v) : cell.w ?? String(cell.v);
+}
+
+/**
  * Ghi 1 giá trị vào ô Excel.
  * FIX #8: bỏ console.log; bỏ `type: 'binary'` dùng sai, chỉ giữ bookType xlsx.
  */

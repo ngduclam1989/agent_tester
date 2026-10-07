@@ -59,6 +59,27 @@ export const amlEnv = {
     },
 };
 
+/**
+ * Config kết nối Oracle DB cho suite verify DB (`tests/db/`).
+ * Getter lazy: suite API/Web không bị ép khai báo biến DB.
+ */
+export const dbEnv = {
+    get user(): string {
+        return required('DB_USER');
+    },
+    get password(): string {
+        return required('DB_PASSWORD');
+    },
+    /** Dạng host:port/service_name, ví dụ 10.0.0.1:1521/ORCLPDB1 */
+    get connectString(): string {
+        return required('DB_CONNECT_STRING');
+    },
+    /** Chỉ có giá trị khi cần Thick mode (DB bật Native Network Encryption hoặc DB cũ hơn 12.1). */
+    get clientLibDir(): string {
+        return process.env.ORACLE_CLIENT_LIB_DIR?.trim() ?? '';
+    },
+};
+
 /** Ghép base URL với path, chấp nhận path đã là URL tuyệt đối. */
 export function resolveUrl(base: string, pathOrUrl: string): string {
     if (/^https?:\/\//i.test(pathOrUrl)) {
